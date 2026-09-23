@@ -66,7 +66,6 @@
 
 //@ exit(), atoi(), NULL, EXIT_*, malloc(), free(), abs(), setenv(), getenv()
 #include <stdlib.h>
-#define srand	md_srand	//@ use internal seed generator
 
 //@ errno, originally in begin.asm
 #include <errno.h>
@@ -133,7 +132,6 @@ typedef unsigned char byte;
  * Function types
  */
 //@ mach_dep.c originals
-int 	md_srand();
 void	setup(), flush_type(), credits();
 char	*newmem(unsigned int nbytes);
 byte	readchar();

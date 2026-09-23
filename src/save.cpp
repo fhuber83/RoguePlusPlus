@@ -274,6 +274,5 @@ rok:
 	//@ no_check = old_check;  //@ no longer your concern
 	mpos = 0;
 	ifterse1("%s, Welcome back!","Hello %s, Welcome back to the Dungeons of Doom!",whoami);
-	dnum = srand();     /* make it a little tougher on cheaters */
 	remove(save_name);
 }

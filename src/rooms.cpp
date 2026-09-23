@@ -39,7 +39,10 @@ do_rooms(void)
 	 * Clear things for a new level
 	 */
 	for (rp = rooms; rp < &rooms[MAXROOMS]; rp++)
-		rp->r_goldval = rp->r_nexits = rp->r_flags = 0;
+	{
+		rp->r_goldval = rp->r_nexits = 0;
+		rp->r_flags.reset();
+	}
 	/*
 	 * Put the gone rooms, if any, on the level
 	 */
@@ -47,10 +50,10 @@ do_rooms(void)
 	for (i = 0; i < left_out; i++) {
 		do
 			rp = &rooms[(rm = rnd_room())];
-		while (rp->r_flags & ISMAZE);
-		rp->r_flags |= ISGONE;
+		while (rp->r_flags.test(RoomFlag::Maze));
+		rp->r_flags.set(RoomFlag::Gone);
 		if (rm > 2 && level > 10 && rnd(20) < level - 9)
-			rp->r_flags |= ISMAZE;
+			rp->r_flags.set(RoomFlag::Maze);
 	}
 	/*
 	 * dig and populate all the rooms on the level
@@ -61,12 +64,12 @@ do_rooms(void)
 		 */
 		top.x = (i%3)*bsze.x + 1;
 		top.y = i/3*bsze.y;
-		if (rp->r_flags & ISGONE) {
+		if (rp->r_flags.test(RoomFlag::Gone)) {
 			/*
 			 * If the gone room is a maze room, draw the maze and set the
 			 * size equal to the maximum possible.
 			 */
-			if (rp->r_flags&ISMAZE) {
+			if (rp->r_flags.test(RoomFlag::Maze)) {
 				rp->r_pos.x = top.x;
 				rp->r_pos.y = top.y;
 				draw_maze(rp);
@@ -85,7 +88,7 @@ do_rooms(void)
 			continue;
 		}
 		if (rnd(10) < (level - 1))
-			rp->r_flags |= ISDARK;
+			rp->r_flags.set(RoomFlag::Dark);
 		/*
 		 * Find a place and size for a random room
 		 */
@@ -217,14 +220,14 @@ enter_room(coord *cp)
 	THING *tp;
 
 	rp = proom = roomin(cp);
-	if (bailout || ((rp->r_flags & ISGONE) && (rp->r_flags & ISMAZE) == 0)) {
+	if (bailout || (rp->r_flags.test(RoomFlag::Gone) && !rp->r_flags.test(RoomFlag::Maze))) {
 #ifdef DEBUG
 		msg("in a gone room");
 #endif //DEBUG
 		return;
 	}
 	door_open(rp);
-	if (!(rp->r_flags&ISDARK) && !on(player,ISBLIND) && !(rp->r_flags&ISMAZE))
+	if (!rp->r_flags.test(RoomFlag::Dark) && !on(player,ISBLIND) && !rp->r_flags.test(RoomFlag::Maze))
 		for (y = rp->r_pos.y; y < rp->r_max.y + rp->r_pos.y; y++) {
 			move(y, rp->r_pos.x);
 			for (x = rp->r_pos.x; x < rp->r_max.x + rp->r_pos.x; x++) {
@@ -257,8 +260,8 @@ leave_room(coord *cp)
 
 	rp = proom;
 	proom = &passages[flat(cp->y, cp->x) & F_PNUM];
-	floor = ((rp->r_flags & ISDARK) && !on(player, ISBLIND)) ? ' ' : FLOOR;
-	if (rp->r_flags & ISMAZE)
+	floor = (rp->r_flags.test(RoomFlag::Dark) && !on(player, ISBLIND)) ? ' ' : FLOOR;
+	if (rp->r_flags.test(RoomFlag::Maze))
 		floor = PASSAGE;
 	for (y = rp->r_pos.y + 1; y < rp->r_max.y + rp->r_pos.y - 1; y++)
 		for (x = rp->r_pos.x + 1; x < rp->r_max.x + rp->r_pos.x - 1; x++)

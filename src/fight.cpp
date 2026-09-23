@@ -305,7 +305,7 @@ roll_em(THING *thatt, THING *thdef, THING *weap, bool hurl)
 {
 	struct stats *att, *def;
 	const char *cp;
-	int ndice, nsides, def_arm;
+	int def_arm;
 	bool did_hit = FALSE;
 	int hplus;
 	int dplus;
@@ -361,7 +361,7 @@ roll_em(THING *thatt, THING *thdef, THING *weap, bool hurl)
 		}
 	}
 
-	//@ New NULL check to prevent segfault on atoi()
+	//@ New NULL check to prevent segfault on parsing
 	if (cp == NULL)
 	{
 		return FALSE;
@@ -383,18 +383,11 @@ roll_em(THING *thatt, THING *thdef, THING *weap, bool hurl)
 		if (ISRING(RIGHT, R_PROTECT))
 			def_arm -= cur_ring[RIGHT]->o_ac;
 	}
-	for (;;)
+	for (const rogue::Dice &attack : rogue::parse_attacks(cp))
 	{
-		ndice = atoi(cp);
-		if ((cp = stpchr(cp, 'd')) == NULL)
-			break;
-		nsides = atoi(++cp);
 		if (swing(att->s_lvl, def_arm, hplus + str_plus(att->s_str)))
 		{
-			int proll;
-
-			proll = roll(ndice, nsides);
-			damage = dplus + proll + add_dam(att->s_str);
+			damage = dplus + attack.roll(rogue::rng()) + add_dam(att->s_str);
 			/*
 			 * special goodies for the commercial version of rogue
 			 */
@@ -406,9 +399,6 @@ roll_em(THING *thatt, THING *thdef, THING *weap, bool hurl)
 			def->s_hpt -= max(0, damage);
 			did_hit = TRUE;
 		}
-		if ((cp = stpchr(cp, '/')) == NULL)
-			break;
-		cp++;
 	}
 	return did_hit;
 }

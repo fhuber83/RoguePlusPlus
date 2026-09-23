@@ -197,7 +197,7 @@ wake_monster(int y, int x)
 	{
 		rp = proom;
 		dst = DISTANCE(y, x, hero.y, hero.x);
-		if ((rp != NULL && !(rp->r_flags & ISDARK)) || dst < LAMPDIST) {
+		if ((rp != NULL && !rp->r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
 			tp->t_flags |= ISFOUND;
 			if (!save(VS_MAGIC)) {
 				if (on(player, ISHUH))

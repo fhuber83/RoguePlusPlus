@@ -77,14 +77,14 @@ do_zap()
 		else
 		{
 			ws_know[WS_LIGHT] = TRUE;
-			if (proom->r_flags & ISGONE)
+			if (proom->r_flags.test(RoomFlag::Gone))
 				msg("the corridor glows and then fades");
 			else
 				msg("the room is lit by a shimmering blue light");
 		}
-		if (!(proom->r_flags & ISGONE))
+		if (!proom->r_flags.test(RoomFlag::Gone))
 		{
-			proom->r_flags &= ~ISDARK;
+			proom->r_flags.unset(RoomFlag::Dark);
 			/*
 			 * Light the room and put the player back up
 			 */
@@ -307,7 +307,7 @@ drain()
 		corp = &passages[flat(hero.y, hero.x) & F_PNUM];
 	else
 		corp = NULL;
-	inpass = (proom->r_flags & ISGONE);
+	inpass = proom->r_flags.test(RoomFlag::Gone);
 	dp = drainee;
 	for (mp = mlist; mp != NULL; mp = next(mp))
 		if (mp->t_room == proom || mp->t_room == corp ||
@@ -417,7 +417,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 					msg("the %s whizzes past the %s",
 						name, monsters[ch-'A'].m_name);
 				}
-			} else if (hit_hero && ce(pos, hero)) {
+			} else if (hit_hero && (pos == hero)) {
 				hit_hero = FALSE;
 				changed = !changed;
 				if (!save(VS_MAGIC)) {

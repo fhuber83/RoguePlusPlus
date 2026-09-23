@@ -101,7 +101,7 @@ do_motion(THING *obj, int ydelta, int xdelta)
 		/*
 		 * Erase the old one
 		 */
-		if (under != '@' && !ce(obj->o_pos, hero) && cansee(unc(obj->o_pos)))
+		if (under != '@' && !(obj->o_pos == hero) && cansee(unc(obj->o_pos)))
 			mvaddch(obj->o_pos.y, obj->o_pos.x, under);
 		/*
 		 * Get the new position

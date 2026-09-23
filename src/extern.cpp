@@ -328,7 +328,6 @@ const char *ws_type[MAXSTICKS];		/* Is it a wand or a staff */
 int maxrow;			/* Last Line used for map  */
 int max_level;				/* Deepest player has gone */
 int ntraps;				/* Number of traps on this level */
-int dnum;				/* Dungeon number */
 int level = 1;				/* What level rogue is on */
 int purse = 0;				/* How much gold the rogue has */
 int mpos = 0;				/* Where cursor is on top line */
@@ -343,7 +342,6 @@ int quiet = 0;				/* Number of quiet turns */
 int food_left;				/* Amount of food in hero's stomach */
 int group = 2;				/* Current group number */
 int hungry_state = 0;			/* How hungry is he */
-long seed;				/* Random number seed */
 
 char *_whoami;
 
@@ -363,18 +361,20 @@ struct room rooms[MAXROOMS];		/* One for each room -- A level */
 #define ___ {XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX} //@ 12 exits
 struct room passages[MAXPASS] =		/* One for each passage */
 {
-	{ {0, 0}, {0, 0}, {0, 0}, 0, ISGONE|ISDARK, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, ISGONE|ISDARK, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, ISGONE|ISDARK, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, ISGONE|ISDARK, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, ISGONE|ISDARK, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, ISGONE|ISDARK, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, ISGONE|ISDARK, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, ISGONE|ISDARK, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, ISGONE|ISDARK, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, ISGONE|ISDARK, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, ISGONE|ISDARK, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, ISGONE|ISDARK, 0, ___ }
+	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
+	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
+	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
+	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
+	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
+	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
+	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
+	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
+	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
+	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
+	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
+	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
+	//@ 13th entry was missing in the original, leaving that passage lit
+	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ }
 };
 #undef ___
 #undef XX
@@ -405,9 +405,9 @@ struct monster monsters[26] =
 	{ "centaur",	 15,	0,	{ XX, 25,   4,   4, ___, "1d6/1d6", ___ } },
 	{ "dragon",	 100,	ISMEAN,	{ XX,6800, 10,  -1, ___, "1d8/1d8/3d10", ___ } },
 	{ "emu",	 0,	ISMEAN,	{ XX,  2,   1,   7, ___, "1d2", ___ } },
-		/* NOTE: the damage is %%% so that xstr won't merge this */
+		/*@ damage is overwritten per game via f_damage, see new_monster() */
 		/* string with others, since it is written on in the program */
-	{ "venus flytrap",0,	ISMEAN,	{ XX, 80,   8,   3, ___, "%%%d0", ___ } },
+	{ "venus flytrap",0,	ISMEAN,	{ XX, 80,   8,   3, ___, "0d0", ___ } },
 	{ "griffin",	 20,	ISMEAN|ISFLY|ISREGEN,	{XX,2000, 13, 2,___, "4d3/3d5/4d3", ___ } },
 	{ "hobgoblin",	 0,	ISMEAN,	{ XX,  3,   1,   5, ___, "1d8", ___ } },
 	{ "ice monster", 0,	ISMEAN,	{ XX,  15,   1,   9, ___, "1d2", ___ } },

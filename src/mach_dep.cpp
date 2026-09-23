@@ -78,38 +78,6 @@ md_nanosleep(long nanoseconds)
 }
 
 
-/*@
- * Renamed from srand() to avoid collision with <stdlib.h>
- * Signature and usage completely different from srand()
- *
- * Call DOS INT 21h service 2C (Get Time) and return the sum of return
- * registers CX and DX, a combination of HH:MM:SS.ss with hundredths of a
- * second resolution as an integer.
- *
- * The portable version uses time() and return the seconds since epoch as an
- * integer. Note that not only numbers have a completely different meaning from
- * the DOS version, but also time() has only second resolution, and INT 21h/2C
- * has a 24-hour cycle.
- *
- * However, for an RNG seed both are suitable.
- */
-/*
- * returns a seed for a random number generator
- */
-int
-md_srand()
-{
-#ifdef DEBUG
-	return ++dnum;
-#else
-	/*
-	 * Get Time
-	 */
-	return (int)md_time();
-#endif  // DEBUG
-}
-
-
 /*
  * flush_type:
  *	Flush typebuf for traps, etc.

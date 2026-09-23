@@ -231,7 +231,8 @@ execcom()
 		when CTRL('R'): after = FALSE; msg(huh);
 		when 'v':
 			after = FALSE;
-			msg("Rogue version %d.%d (Mr. Mctesq was here)", revno, verno);
+			msg("Rogue version %d.%d (Mr. Mctesq was here), dungeon %u", revno, verno,
+				rogue::rng().seed());
 		when 'S': after = FALSE; save_game();
 		when '.': doctor();
 		when '^':

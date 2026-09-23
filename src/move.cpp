@@ -76,7 +76,7 @@ over:
 	 * If you are running and the move does
 	 * not get you anywhere stop running
 	 */
-	if (running && ce(hero, nh))
+	if (running && (hero == nh))
 		after = running = FALSE;
 	fl = flat(nh.y, nh.x);
 	ch = winat(nh.y, nh.x);
@@ -199,7 +199,7 @@ door_open(struct room *rp)
 	byte ch;
 	THING *item;
 
-	if (!(rp->r_flags & ISGONE) && !on(player, ISBLIND))
+	if (!rp->r_flags.test(RoomFlag::Gone) && !on(player, ISBLIND))
 		for (j = rp->r_pos.y; j < rp->r_pos.y + rp->r_max.y; j++)
 			for (k = rp->r_pos.x; k < rp->r_pos.x + rp->r_max.x; k++) {
 				ch = winat(j, k);
@@ -211,7 +211,7 @@ door_open(struct room *rp)
 					{
 						continue;
 					}
-					if (item->t_oldch == ' ' && !(rp->r_flags & ISDARK)
+					if (item->t_oldch == ' ' && !rp->r_flags.test(RoomFlag::Dark)
 						&& !on(player, ISBLIND))
 							item->t_oldch = chat(j, k);
 				}

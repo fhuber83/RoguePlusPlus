@@ -67,11 +67,6 @@ new_level(void)
 		rm = rnd_room();
 	rnd_pos(&rooms[rm], &stairs);
 	index = INDEX(stairs.y, stairs.x);
-	if (i++ > 100)
-	{
-		i = 0;
-		seed = srand();
-	}
 	} while (!isfloor(_level[index]));
 	_level[index] = STAIRS;
 	/*
@@ -120,7 +115,7 @@ rnd_room(void)
 
 	do
 	rm = rnd(MAXROOMS);
-	while (!((rooms[rm].r_flags & ISGONE)==0||(rooms[rm].r_flags & ISMAZE)));
+	while (!(!rooms[rm].r_flags.test(RoomFlag::Gone)||rooms[rm].r_flags.test(RoomFlag::Maze)));
 	return rm;
 }
 

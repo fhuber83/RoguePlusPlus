@@ -108,7 +108,7 @@ sight(void)
 	{
 		extinguish(sight);
 		player.t_flags &= ~ISBLIND;
-		if (!(proom->r_flags & ISGONE))
+		if (!proom->r_flags.test(RoomFlag::Gone))
 			enter_room(&hero);
 		msg("the veil of darkness lifts");
 	}

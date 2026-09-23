@@ -47,7 +47,7 @@ conn(int r1, int r2)
 		 * If we are drawing from/to regular or maze rooms, we have
 		 * to pick the spot we draw from/to
 		 */
-		if ((rpf->r_flags & ISGONE) == 0 || (rpf->r_flags & ISMAZE)) {
+		if (!rpf->r_flags.test(RoomFlag::Gone) || rpf->r_flags.test(RoomFlag::Maze)) {
 			spos.y = rpf->r_pos.y + rpf->r_max.y - 1;
 			do {
 				spos.x = rpf->r_pos.x + rnd(rpf->r_max.x - 2) + 1;
@@ -57,7 +57,7 @@ conn(int r1, int r2)
 			spos.y = rpf->r_pos.y;
 		}
 		epos.y = rpt->r_pos.y;
-		if ((rpt->r_flags & ISGONE) == 0 || (rpt->r_flags & ISMAZE)) {
+		if (!rpt->r_flags.test(RoomFlag::Gone) || rpt->r_flags.test(RoomFlag::Maze)) {
 			do {
 				epos.x = rpt->r_pos.x + rnd(rpt->r_max.x - 2) + 1;
 			} while (chat(epos.y,epos.x) == ' ');
@@ -72,7 +72,7 @@ conn(int r1, int r2)
 		rpt = &rooms[rmt];
 		del.x = 1;
 		del.y = 0;
-		if ((rpf->r_flags & ISGONE) == 0 || (rpf->r_flags & ISMAZE)) {
+		if (!rpf->r_flags.test(RoomFlag::Gone) || rpf->r_flags.test(RoomFlag::Maze)) {
 			spos.x = rpf->r_pos.x + rpf->r_max.x-1;
 			do {
 				spos.y = rpf->r_pos.y + rnd(rpf->r_max.y-2)+1;
@@ -82,7 +82,7 @@ conn(int r1, int r2)
 			spos.y = rpf->r_pos.y;
 		}
 		epos.x = rpt->r_pos.x;
-		if ((rpt->r_flags & ISGONE) == 0 || (rpt->r_flags & ISMAZE)) {
+		if (!rpt->r_flags.test(RoomFlag::Gone) || rpt->r_flags.test(RoomFlag::Maze)) {
 			do {
 				epos.y = rpt->r_pos.y + rnd(rpt->r_max.y-2)+1;
 			} while (chat(epos.y, epos.x) == ' ');
@@ -102,11 +102,11 @@ conn(int r1, int r2)
 	 * Draw in the doors on either side of the passage or just put #'s
 	 * if the rooms are gone.
 	 */
-	if (!(rpf->r_flags & ISGONE))
+	if (!rpf->r_flags.test(RoomFlag::Gone))
 		door(rpf, &spos);
 	else
 		psplat(spos.y, spos.x);
-	if (rpt && !(rpt->r_flags & ISGONE))
+	if (rpt && !rpt->r_flags.test(RoomFlag::Gone))
 		door(rpt, &epos);
 	else
 		psplat(epos.y, epos.x);
@@ -142,7 +142,7 @@ conn(int r1, int r2)
 	}
 	curr.x += del.x;
 	curr.y += del.y;
-	if (!ce(curr, epos)) {
+	if (!(curr == epos)) {
 	epos.x -= del.x;
 	epos.y -= del.y;
 	psplat(epos.y, epos.x);

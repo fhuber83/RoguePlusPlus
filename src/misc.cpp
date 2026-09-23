@@ -57,7 +57,7 @@ look(bool wakeup)
 	/*
 	 * if the hero has moved
 	 */
-	if (!ce(oldpos, hero)) {
+	if (!(oldpos == hero)) {
 		if (!on(player,ISBLIND)) {
 			for (x = oldpos.x - 1; x <= (oldpos.x + 1); x++)
 				for (y = oldpos.y - 1; y <= (oldpos.y + 1); y++) {
@@ -66,7 +66,7 @@ look(bool wakeup)
 					move(y,x);
 					ch = inch();
 					if (ch == FLOOR) {
-						if ((oldrp->r_flags & (ISGONE|ISDARK)) == ISDARK)
+						if (oldrp->r_flags.test(RoomFlag::Dark) && !oldrp->r_flags.test(RoomFlag::Gone))
 							addch(' ');
 					} else {
 						fp = &_flags[INDEX(y,x)];
@@ -140,7 +140,7 @@ look(bool wakeup)
 					if (wakeup)
 						wake_monster(y, x);
 					if (tp->t_oldch != ' ' ||
-						(!(rp->r_flags & ISDARK) && !on(player, ISBLIND)))
+						(!rp->r_flags.test(RoomFlag::Dark) && !on(player, ISBLIND)))
 							tp->t_oldch = _level[index];
 					if (see_monst(tp))
 						ch = tp->t_disguise;
@@ -651,17 +651,7 @@ help(struct h_list *helpscr)
 int
 DISTANCE(int y1, int x1, int y2, int x2)
 {
-	int dx, dy;
-
-	dx = (x1 - x2);
-	dy = (y1 - y2);
-	return dx * dx + dy * dy;
-}
-
-bool
-_ce(coord *a, coord *b)
-{
-	return(a->x == b->x && a->y == b->y);
+	return rogue::distance_sq({x1, y1}, {x2, y2});
 }
 
 int

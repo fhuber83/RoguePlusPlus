@@ -4,6 +4,14 @@
  * rogue.h	1.4 (AI Design) 12/14/84
  */
 
+/*@
+ * Modern headers first: extern.h and this file define macros such as max(),
+ * next(), pack and when that would break standard library headers.
+ */
+#include "core/Coord.hpp"
+#include "core/Dice.hpp"
+#include "core/Flags.hpp"
+#include "core/Random.hpp"
 
 #include "extern.h"
 
@@ -68,7 +76,6 @@
 #define until(expr)	while(!(expr))
 #define next(ptr)	(*ptr).l_next
 #define prev(ptr)	(*ptr).l_prev
-#define ce(a,b)		_ce(&(a),&(b))
 #define hero		player.t_pos
 #define pstats		player.t_stats
 #define pack		player.t_pack
@@ -87,7 +94,7 @@
 #define flat(y,x)	(_flags[INDEX(y,x)])
 #define unc(cp)		(cp).y, (cp).x
 #define isfloor(c)	((c) == FLOOR || (c) == PASSAGE)
-#define isgone(rp)	(((rp)->r_flags&ISGONE) && ((rp)->r_flags&ISMAZE) == 0)
+#define isgone(rp)	((rp)->r_flags.test(RoomFlag::Gone) && !(rp)->r_flags.test(RoomFlag::Maze))
 #ifdef WIZARD
 #define debug		if (wizard) msg
 #endif
@@ -128,11 +135,6 @@
 /*
  * Various flag bits
  */
-/* flags for rooms */
-#define ISDARK	 0x0001		/* room is dark */
-#define ISGONE	 0x0002		/* room is gone (a corridor) */
-#define	ISMAZE	 0x0004		/* room is a maze */
-
 /* flags for objects */
 #define ISCURSED 0x0001		/* object is cursed */
 #define ISKNOW	 0x0002		/* player knows details about the object */
@@ -303,10 +305,7 @@ struct h_list {
 /*
  * Coordinate data type
  */
-typedef struct {
-	shint x;
-	shint y;
-} coord;
+using coord = rogue::Coord;  //@ see core/Coord.hpp
 
 /*@
  * Data type for strength values and modifiers
@@ -332,12 +331,24 @@ struct array {
 /*
  * Room structure
  */
+namespace rogue {
+enum class RoomFlag : unsigned short {
+	Dark = 0x0001,	/* room is dark */
+	Gone = 0x0002,	/* room is gone (a corridor) */
+	Maze = 0x0004,	/* room is a maze */
+};
+template <>
+inline constexpr bool enable_flags<RoomFlag> = true;
+}  // namespace rogue
+using rogue::RoomFlag;
+using RoomFlags = rogue::Flags<RoomFlag>;
+
 struct room {
 	coord r_pos;			/* Upper left corner */
 	coord r_max;			/* Size of room */
 	coord r_gold;			/* Where the gold is */
 	int r_goldval;			/* How much the gold is worth */
-	short r_flags;			/* Info about the room */
+	RoomFlags r_flags;		/* Info about the room */
 	shint r_nexits;			/* Number of exits */
 	coord r_exit[12];			/* Where the exits are */
 };
@@ -468,12 +479,11 @@ extern char huh[], runch, *typebuf, take;
 
 extern struct h_list helpcoms[], helpobjs[];
 
-extern int	a_chances[], a_class[], count, dnum, food_left,
+extern int	a_chances[], a_class[], count, food_left,
 		fung_hit, group, hungry_state, inpack,
 		level, max_level, mpos, no_command, no_food, no_move,
 		ntraps, purse, quiet, total;
 
-extern long seed;
 
 extern char *_whoami;  //@ defined (no value set) but seems unused
 
@@ -642,8 +652,9 @@ void	endit(void);
 void	playit(char *sname);
 void	quit(void);
 void	leave(void);
-int	rnd(int range);
-int	roll(int number, int sides);
+//@ legacy wrappers around rogue::rng()
+inline int	rnd(int range) { return rogue::rng().below(range); }
+inline int	roll(int number, int sides) { return rogue::rng().roll(number, sides); }
 
 //@ maze.c
 void	draw_maze(struct room *rp);
@@ -673,7 +684,6 @@ bool	is_current(THING *obj);
 bool	get_dir(void);
 bool	find_dir(byte ch, coord *cp);
 bool	step_ok(byte ch);
-bool	_ce(coord *a, coord *b);
 bool	offmap(int y, int x);
 const char	*tr_name(byte type);
 const char	*vowelstr(const char *str);

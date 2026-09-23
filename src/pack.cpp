@@ -58,7 +58,7 @@ add_pack(THING *obj, bool silent)
 	 *  any room even exist. proom is set in enter_room(), which is first
 	 *  called in new_level()
 	 */
-	floor = (proom != NULL && (proom->r_flags & ISGONE)) ? PASSAGE : FLOOR;
+	floor = (proom != NULL && proom->r_flags.test(RoomFlag::Gone)) ? PASSAGE : FLOOR;
 	if (obj->o_group)
 	{
 		for (op = pack; op != NULL; op = next(op))
@@ -412,7 +412,7 @@ money(int value)
 {
 	byte floor;
 
-	floor = (proom->r_flags & ISGONE) ? PASSAGE : FLOOR;
+	floor = proom->r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
 	purse += value;
 	mvaddch(hero.y, hero.x, floor);
 	chat(hero.y, hero.x) = floor;

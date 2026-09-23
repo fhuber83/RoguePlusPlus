@@ -70,7 +70,7 @@ do_chase(THING *th)
 	 * our goal.
 	 */
 over:
-	if (rer != ree && (rer->r_flags & ISMAZE) == 0)
+	if (rer != ree && !rer->r_flags.test(RoomFlag::Maze))
 	{
 		for (i	= 0; i < rer->r_nexits;	i++) {	/*	loop through doors */
 			dist = DISTANCE(th->t_dest->y, th->t_dest->x,rer->r_exit[i].y, rer->r_exit[i].x);
@@ -111,10 +111,10 @@ over:
 	 * or stop running
 	 */
 	chase(th, &target);
-	if (ce(ch_ret, hero)) {
+	if (ch_ret == hero) {
 		attack(th);
 		return;
-	} else if (ce(ch_ret,	*th->t_dest)) {
+	} else if (ch_ret == *th->t_dest) {
 		for (obj = lvl_obj; obj != NULL; obj =	next(obj))
 			if	(th->t_dest == &obj->o_pos) {
 				byte oldchar;
@@ -122,7 +122,7 @@ over:
 				detach(lvl_obj, obj);
 				attach(th->t_pack, obj);
 				oldchar = chat(obj->o_pos.y, obj->o_pos.x) =
-				(th->t_room->r_flags & ISGONE) ? PASSAGE : FLOOR;
+				th->t_room->r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
 				if (cansee(obj->o_pos.y, obj->o_pos.x))
 					mvaddch(obj->o_pos.y, obj->o_pos.x, oldchar);
 				th->t_dest = find_dest(th);
@@ -145,7 +145,7 @@ over:
 			mvaddch(th->t_pos.y, th->t_pos.x, th->t_oldch);
 	}
 	oroom = th->t_room;
-	if (!ce(ch_ret, th->t_pos))
+	if (!(ch_ret == th->t_pos))
 	{
 		if ((th->t_room = roomin(&ch_ret)) == NULL) {
 			th->t_room	= oroom;
@@ -171,7 +171,7 @@ over:
 	else
 		th->t_oldch = '@';
 
-	if (th->t_oldch == FLOOR && (oroom->r_flags & ISDARK))
+	if (th->t_oldch == FLOOR && oroom->r_flags.test(RoomFlag::Dark))
 		th->t_oldch = ' ';
 	standend();
 }
@@ -188,8 +188,8 @@ see_monst(THING *mp)
 	if (on(*mp,	ISINVIS) && !on(player,	CANSEE))
 		return	FALSE;
 	if (DISTANCE(mp->t_pos.y, mp->t_pos.x, hero.y, hero.x) >= LAMPDIST &&
-	  ((mp->t_room != proom || (mp->t_room->r_flags & ISDARK) ||
-	  (mp->t_room->r_flags & ISMAZE))))
+	  ((mp->t_room != proom || mp->t_room->r_flags.test(RoomFlag::Dark) ||
+	  mp->t_room->r_flags.test(RoomFlag::Maze))))
 		return FALSE;
 	/*
 	 * If we are seeing	the enemy of a vorpally	enchanted weapon for the first
@@ -393,7 +393,7 @@ cansee(int y, int x)
 	tp.y = y;
 	tp.x = x;
 	rer	= roomin(&tp);
-	return (rer	== proom && !(rer->r_flags & ISDARK));
+	return (rer	== proom && !rer->r_flags.test(RoomFlag::Dark));
 }
 
 /*

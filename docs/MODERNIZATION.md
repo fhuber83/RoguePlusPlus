@@ -23,6 +23,17 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
    - K&R definitions were converted to prototypes, and `register` was removed.
    - String handling is `const`-correct: tables, struct fields, parameters and return types.
    - Fixed one undefined behaviour: the fungus attack wrote into a string literal. It now writes to the `f_damage` buffer.
+3. **Foundations.**
+   - CMake now builds a `rogue_game` static library, a thin `rogue++` executable (`src/app/main.cpp`) and a `rogue_tests` GoogleTest suite (v1.17.0 via FetchContent, run with `ctest`).
+   - `src/` is a quote-only include path (`-iquote`) so that `src/curses.h` does not hide the system `<curses.h>`.
+   - `core/Random`: `std::mt19937` with its own range mapping, so seeds reproduce on every platform. It replaces `seed`/`ran()`/`dnum`/`md_srand`. `rnd()`/`roll()` remain as inline wrappers around `rogue::rng()`.
+   - `rogue++ -d <seed>` replays a dungeon, and the `v` command shows the seed.
+   - Removed the stair-placement re-seed hack. It only existed because the old generator had short cycles.
+   - `core/Dice` parses damage strings, and `roll_em` uses `parse_attacks()`. The venus flytrap's placeholder `"%%%d0"` became `"0d0"`.
+   - `core/Coord` is now the `coord` type, with `==`, `+`, `-` and `distance_sq`. It replaces `ce()`/`_ce()`.
+   - `core/Flags<E>` is an opt-in, type-safe bitset. Room flags are now `RoomFlags` (`RoomFlag::Dark/Gone/Maze`).
+   - Fixed an original bug found by a test: the 13th entry of `passages[]` was never initialized as a dark corridor.
+   - **Deferred to phase 6:** item kinds as an `enum class`, and creature/object flags as `Flags`. Item kinds double as map glyphs (`POTION == '!'`), and both flag sets live in `union thing`, so they move together with the THING split.
 
 ## Target architecture
 
@@ -46,10 +57,6 @@ Dependency rule: `ui` → `game` → (`rules`, `entities`, `items`, `world`) →
 
 Each phase is a series of small commits that each build and play.
 
-3. **Foundations.**
-   - Add a CMake library target and a test executable (GoogleTest or doctest).
-   - Add `core/` types: a `Random` class that replaces `rnd`/`ran`/`seed`, `Coord` with operators, and a `Dice` value type.
-   - Add `enum class` item kinds and flags with a small bitflag helper.
 4. **UI seam.**
    - Define `ui::Display` and `ui::Input`.
    - Route `msg`/`addmsg`/`more`, the map drawing (`mvaddch` in game files), the status line and the full-screen views through them.
@@ -58,6 +65,7 @@ Each phase is a series of small commits that each build and play.
 5. **Game state.** Gather the ~90 globals from `extern.cpp`/`init.cpp` into a `Game` context (player, level, monster list, floor items, RNG, scheduler, known-item tables, options). Free functions take or reach it explicitly, and globals are removed one group at a time.
 6. **Entities.**
    - Split `union thing` into `Monster` and `Item`.
+   - Item kinds become an `enum class` with a separate glyph mapping, and creature/object flags become `rogue::Flags`.
    - Replace the intrusive `l_next`/`l_prev` lists (`list.cpp`) with standard containers of `std::unique_ptr` and stable IDs.
    - Replace the `#define t_pos _t._t_pos` accessor macros with members.
 7. **Domain modules.**

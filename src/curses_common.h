@@ -158,29 +158,23 @@ bool	cursor(bool ison);
 void	getrc(int *rp, int *cp);
 void	cur_refresh(void);
 void	cur_clrtoeol(void);
-void	cur_mvaddstr(int r, int c, char *s);
+void	cur_mvaddstr(int r, int c, const char *s);
 void	cur_mvaddch(int r, int c, byte chr);
 byte	cur_mvinch(int r, int c);
 void	cur_addch(byte chr);
-void	cur_addstr(char *s);
+void	cur_addstr(const char *s);
 void	set_attr(int bute);
 void	winit(void);
 void	wdump(void);
 void	wrestor(void);
 void	cur_endwin(void);
 void	cur_box(int ul_r, int ul_c, int lr_r, int lr_c);
-void	center(int row, char *string);
+void	center(int row, const char *string);
 void	cur_printw(const char *msg, ...);
 void	repchr(byte chr, int cnt);
 void	implode(void);
 void	drop_curtain(void);
 void	raise_curtain(void);
-byte	get_mode(void);
-byte	video_mode(int type);
-#ifdef ROGUE_DOS_CURSES
-void	switch_page(int pn);
-void	blot_out(int ul_row, int ul_col, int lr_row, int lr_col);
-#endif
 
 //@ originally in dos.asm
 void	cur_beep(void);

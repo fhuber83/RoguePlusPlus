@@ -66,7 +66,6 @@
 
 //@ exit(), atoi(), NULL, EXIT_*, malloc(), free(), abs(), setenv(), getenv()
 #include <stdlib.h>
-#define srand	md_srand	//@ use internal seed generator
 
 //@ errno, originally in begin.asm
 #include <errno.h>
@@ -77,7 +76,6 @@
 
 //@ time(), nanosleep()
 #include <time.h>
-#define clock	md_clock
 
 //@ vsprintf()
 #include <stdarg.h>
@@ -85,33 +83,13 @@
 //@ bool type, originally typedef unsigned char
 #include <stdbool.h>
 
-#ifdef __linux__
-//@ open()
-#include <fcntl.h>
-//@ ioctl()
-#include <sys/ioctl.h>
-//@ KDGKBLED
-#include <linux/kd.h>
-#endif
-
 //@ setlocale()
 #include <locale.h>
 
 
 /*@
- * Project includes, defines and typedefs
+ * Project defines and typedefs
  */
-#include "swint.h"
-
-//@ created for fakedos(), but could also be used in save.c and load.c
-#ifndef ROGUE_DOS_DRIVE
-#ifndef ROGUE_CURRENT_DRIVE
-#define ROGUE_CURRENT_DRIVE	('C' - 'A')
-#endif
-#ifndef ROGUE_LAST_DRIVE
-#define ROGUE_LAST_DRIVE	('F' - 'A')
-#endif
-#endif  // ROGUE_DOS_DRIVE
 
 //@ moved from curses.h so it's close to 'bool' definition
 #ifndef TRUE
@@ -143,8 +121,6 @@ struct md_tm {
 };
 typedef struct md_tm TM;
 
-typedef uintptr_t	intptr;  //@ size of a real pointer
-typedef uint16_t	dosptr;  //@ size of a pointer in DOS, as Rogue relies on
 /*
  *  MANX C compiler funnies
  *  @ moved from rogue.h
@@ -156,34 +132,15 @@ typedef unsigned char byte;
  * Function types
  */
 //@ mach_dep.c originals
-int 	md_srand(), bdos(), swint(), sysint();
-void	setup(), flush_type(), credits(), one_tick();
-char	*newmem();
+void	setup(), flush_type(), credits();
+char	*newmem(unsigned int nbytes);
 byte	readchar();
-bool	set_ctrlb();
-#ifdef ROGUE_DOS_CLOCK
-void	clock_on(void);
-void	no_clock(void);
-#endif
 
 //@ new functions
 byte	swap_bits(byte data, unsigned i, unsigned j, unsigned width);
-int 	md_keyboard_leds(void);
 long	md_time(void);
 TM  	*md_localtime(void);
 void	md_nanosleep(long nanoseconds);
-
-//@ dos.asm
-int 	csum();
-byte 	peekb();
-void	pokeb();
-void	out();
-byte	in();
-void	dmaout();
-void	dmain();
-void	_halt();
-void	md_clock();
-void	COFF();
 
 //@ moved from main.c
 void	fatal(const char *msg, ...);
@@ -195,20 +152,6 @@ void	md_exit(int status);
 /*@
  * Global vars
  */
-#ifdef ROGUE_DOS_CLOCK
-extern unsigned int tick;  //@ from dos.asm
-#endif
-#ifdef ROGUE_DOS_CURSES
-extern char do_force;
-#endif
 extern int bwflag;  //@ from main.c, originally declared in rogue.h
-extern struct sw_regs *regs; //@ from main.c, originally declared in swint.h
-#ifdef ROGUE_DEBUG
-extern bool print_int_calls;
-#endif
-#ifndef ROGUE_DOS_DRIVE
-extern int current_drive;
-extern int last_drive;
-#endif
 
 #endif //EXTERN_H

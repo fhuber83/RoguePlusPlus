@@ -12,26 +12,11 @@
  */
 
 /*
- * copy protection
- */
-#define PROTECTED
-#define CSUM	-1632
-#ifdef PROTECTED
-#define P_DAMAGE 6
-#else
-#define P_DAMAGE 1
-#endif //PROTECTED
-
-/*
  * if DEBUG or WIZARD is changed
  * might as well recompile everything
  */
 #define HELP
-#ifdef ROGUE_DEMO
-#define DEMO
-#else
 #undef DEMO
-#endif
 #define DEMOTIME 10
 /*
  * DEMO
@@ -83,15 +68,7 @@
 #define until(expr)	while(!(expr))
 #define next(ptr)	(*ptr).l_next
 #define prev(ptr)	(*ptr).l_prev
-#ifdef UNIX
-#define winat(y,x)	(moat(y,x) != NULL ? moat(y,x)->t_disguise : chat(y,x))
-#define DISTANCE(y1,x1,y2,x2) (((x2)-(x1))*((x2)-(x1))+((y2)-(y1))*((y2)-(y1)))
-#endif
-#ifdef UNIX
-#define ce(a,b)		((a).x == (b).x && (a).y == (b).y)
-#else
 #define ce(a,b)		_ce(&(a),&(b))
-#endif
 #define hero		player.t_pos
 #define pstats		player.t_stats
 #define pack		player.t_pack
@@ -320,7 +297,7 @@
  */
 struct h_list {
 	byte h_chstr[6];  //@ either (ch) or (ch,sep,ch2) appended with ": "
-	char *h_desc;
+	const char *h_desc;
 };
 
 /*
@@ -343,7 +320,7 @@ typedef unsigned int str_t;
  */
 
 struct magic_item {
-	char *mi_name;
+	const char *mi_name;
 	shint mi_prob;
 	short mi_worth;
 };
@@ -374,7 +351,7 @@ struct stats {
 	shint s_lvl;			/* Level of mastery */
 	shint s_arm;			/* Armor class */
 	shint s_hpt;			/* Hit points */
-	char *s_dmg;			/* String describing damage done */
+	const char *s_dmg;			/* String describing damage done */
 	shint s_maxhp;			/* Max hit points */
 };
 
@@ -401,8 +378,8 @@ union thing {
 	coord _o_pos;			/* Where it lives on the screen */
 	char *_o_text;			/* What it says if you read it */
 	char _o_launch;			/* What you need to launch it */
-	char *_o_damage;		/* Damage if used like sword */
-	char *_o_hurldmg;		/* Damage if thrown */
+	const char *_o_damage;		/* Damage if used like sword */
+	const char *_o_hurldmg;		/* Damage if thrown */
 	shint _o_count;			/* Count for plural objects */
 	shint _o_which;			/* Which object of a type it is */
 	shint _o_hplus;			/* Plusses to hit */
@@ -449,7 +426,7 @@ typedef union thing THING;
  * Array containing information on all the various types of monsters
  */
 struct monster {
-	char *m_name;			/* What to call the monster */
+	const char *m_name;			/* What to call the monster */
 	shint m_carry;			/* Probability of carrying something */
 	unsigned short m_flags;			/* Things about the monster */
 	struct stats m_stats;		/* Initial stats */
@@ -468,7 +445,8 @@ extern int iguess;
 extern bool bailout;
 
 //@ nullstr should probably be used in misc and wizard instead of (size_t)NULL
-extern char nullstr[], *it, *you, *no_mem;
+extern char nullstr[];
+extern const char *it, *you, *no_mem;
 
 extern char *s_guess[], *p_guess[], *r_guess[], *ws_guess[];
 extern char f_damage[];
@@ -484,9 +462,9 @@ bool wizard;
 
 extern bool p_know[], r_know[], s_know[], ws_know[];
 
-extern char *a_names[], *flashmsg, *he_man[], huh[],
-		*intense, *p_colors[], *r_stones[], runch, *typebuf, take,
-		*w_names[], *ws_made[], *ws_type[];
+extern const char *a_names[], *flashmsg, *he_man[], *intense, *p_colors[],
+		*r_stones[], *w_names[], *ws_made[], *ws_type[];
+extern char huh[], runch, *typebuf, take;
 
 extern struct h_list helpcoms[], helpobjs[];
 
@@ -497,12 +475,7 @@ extern int	a_chances[], a_class[], count, dnum, food_left,
 
 extern long seed;
 
-//@ related to copy protection
-extern int hit_mul;
-extern char *your_na, *kild_by;
-extern int goodchk;
 extern char *_whoami;  //@ defined (no value set) but seems unused
-extern int cksum;
 
 extern THING *cur_armor, *cur_ring[], *cur_weapon,
 		*lvl_obj, *mlist, player;
@@ -520,9 +493,6 @@ extern struct magic_item	p_magic[], r_magic[], s_magic[],
 
 extern struct array s_names[], _guesses[];
 
-#ifdef LOG
-extern int captains_log;
-#endif //LOG
 
 /*@
  * Definition commented out:
@@ -558,8 +528,6 @@ extern char *ring_buf;
  */
 
 
-//@ protect.c
-extern int no_step;  //@ used in clock(), originally set by dos.asm
 
 
 /*
@@ -609,10 +577,7 @@ void	nohaste(void);
 void	stomach(void);
 
 //@ env.h
-bool	setenv_from_file(char *envfile);
-
-//@ fakedos.c
-void	fakedos(void);
+bool	setenv_from_file(const char *envfile);
 
 //@ fight.c
 bool	fight(coord *mp, char mn, THING *weap, bool thrown);
@@ -623,10 +588,10 @@ bool	save(int which);
 bool	is_magic(THING *obj);
 void	attack(THING *mp);
 void	check_level(void);
-void	hit(char *er, char *ee);
-void	miss(char *er, char *ee);
+void	hit(const char *er, const char *ee);
+void	miss(const char *er, const char *ee);
 void	raise_level(void);
-void	thunk(THING *weap, char *mname, char *does, char *did);
+void	thunk(THING *weap, const char *mname, const char *does, const char *did);
 void	remove_monster(coord *mp, THING *tp, bool waskill);
 void	killed(THING *tp, bool pr);
 int	str_plus(str_t str);
@@ -642,7 +607,7 @@ void	init_materials(void);
 void	init_ds(void);
 void	free_ds(void);
 char	*getsyl(void);
-char	rchr(char *string);
+char	rchr(const char *string);
 
 //@ io.c
 void	ifterse(const char *tfmt, const char *fmt, ...);
@@ -652,16 +617,16 @@ void	addmsg(const char *fmt, ...);
 void	doadd(const char *fmt, va_list argp);
 void	wait_msg(const char *msg);
 void	endmsg(void);
-void	more(char *msg);
+void	more(const char *msg);
 void	putmsg(int msgline, char *msg);
 void	scrlmsg(int msgline, char *str1, char *str2);
 void	status(void);
 void	wait_for(byte ch);
 void	show_win(char *message);
-void	str_attr(char *str);
+void	str_attr(const char *str);
 void	SIG2(void);
 char	*io_unctrl(byte ch);
-char	*noterse(char *str);
+const char	*noterse(const char *str);
 
 //@ list.c
 THING	*new_item(void);
@@ -670,14 +635,7 @@ void	list_attach(THING **list, THING *item);
 void	list_free(THING **ptr);
 int	discard(THING *item);
 
-//@ load.c
-void	epyx_yuck(void);
-int	find_drive(void);
 
-#ifdef ROGUE_SPLASH
-//@ load_sdl.c - not in original
-int	epyx_yeah(const char* path);
-#endif //ROGUE_SPLASH
 
 //@ main.c
 void	endit(void);
@@ -717,20 +675,14 @@ bool	find_dir(byte ch, coord *cp);
 bool	step_ok(byte ch);
 bool	_ce(coord *a, coord *b);
 bool	offmap(int y, int x);
-char	*tr_name(byte type);
-char	*vowelstr(char *str);
+const char	*tr_name(byte type);
+const char	*vowelstr(const char *str);
 char	goodch(THING *obj);
 shint	sign(int nm);
 byte	winat(int y, int x);
 int	spread(int nm);
 int	DISTANCE(int y1, int x1, int y2, int x2);
 int	INDEX(int y, int x);
-#ifdef ME
-bool	me(void);
-#endif
-#ifdef TEST
-bool	istest(void);
-#endif
 
 //@ monsters.c
 char	randmonster(bool wander);
@@ -746,7 +698,7 @@ THING	*moat(int my, int mx);
 void	do_run(byte ch);
 void	do_move(int dy, int dx);
 void	door_open(struct room *rp);
-void	descend(char *mesg);
+void	descend(const char *mesg);
 void	rndmove(THING *who, coord *newmv);
 
 //@ new_leve.c
@@ -755,11 +707,11 @@ void	put_things(void);
 int	rnd_room(void);
 
 //@ pack.c
-THING	*get_item(char *purpose, int type);
+THING	*get_item(const char *purpose, int type);
 void	add_pack(THING *obj, bool silent);
 void	pick_up(byte ch);
 void	money(int value);
-byte	inventory(THING *list, int type, char *lstr);
+byte	inventory(THING *list, int type, const char *lstr);
 byte	pack_char(THING *obj);
 
 //@ passages.c
@@ -776,27 +728,17 @@ void	invis_on(void);
 void	th_effect(THING *obj, THING *tp);
 bool	turn_see(bool turn_off);
 
-//@ protect.c
-#ifndef ROGUE_NOGOOD
-void	protect(int UNUSED(drive));
-#else
-void	protect(int drive);
-#endif
-
 //@ rings.c
 void	ring_on(void);
 void	ring_off(void);
-char	*ring_num(THING *obj);
-int	ring_eat();
+const char	*ring_num(THING *obj);
+int	ring_eat(int hand);
 
 //@ rip.c
 void	score(int amount, int flags, char monst);
 void	death(char monst);
 void	total_winner(void);
 char	*killname(byte monst, bool doart);
-#ifdef DEMO
-void	demo(int endtype);
-#endif //DEMO
 
 //@ rooms.c
 void	do_rooms(void);
@@ -820,7 +762,7 @@ bool	plop_monster(int r, int c, coord *cp);
 void	fix_stick(THING *cur);
 void	do_zap(void);
 void	drain(void);
-void	fire_bolt(coord *start, coord *dir, char *name);
+void	fire_bolt(coord *start, coord *dir, const char *name);
 char	*charge_str(THING *obj);
 
 //@ strings.c
@@ -841,8 +783,8 @@ void	drop(void);
 void	discovered(void);
 bool	can_drop(THING *op);
 THING	*new_thing(void);
-byte	add_line(char *use, char *fmt, char *arg);
-byte	end_line(char *use);
+byte	add_line(const char *use, const char *fmt, const char *arg);
+byte	end_line(const char *use);
 
 //@ weapons.c
 void	missile(int ydelta, int xdelta);
@@ -863,8 +805,4 @@ void	create_obj();
 
 
 /*@ functions declared but not found
-int	auto_save();
-int	tstp();
-THING	*find_mons();
-char	*balloc();
 */

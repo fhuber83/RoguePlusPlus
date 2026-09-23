@@ -1,0 +1,548 @@
+/*
+ * Various input/output functions
+ *
+ * io.c		1.4		(A.I. Design) 12/10/84
+ */
+
+#include	"rogue.h"
+#include	"curses.h"
+
+#define AC(a) (-((a)-11))
+#define PT(i,j) ((COLS==40)?i:j)
+/*
+ * msg:
+ *	Display a message at the top of the screen.
+ */
+static int newpos = 0;
+
+/* VARARGS1 */
+/*@ nope, it was not vargars. But now it is */
+void
+ifterse(const char *tfmt, const char *fmt, ...)
+{
+	va_list argp;
+	va_start(argp, fmt);
+
+	if (expert)
+		vmsg(tfmt, argp);
+	else
+		vmsg(fmt, argp);
+
+	va_end(argp);
+}
+
+//@ va_list variant of msg()
+void
+vmsg(const char *fmt, va_list argp)
+{
+	/*
+	 * if the string is "", just clear the line
+	 */
+	if (*fmt == '\0')
+	{
+		move(0, 0);
+		clrtoeol();
+		mpos = 0;
+		return;
+	}
+	/*
+	 * otherwise add to the message and flush it out
+	 */
+	doadd(fmt, argp);
+	endmsg();
+}
+
+//@ varargs variant, now a wrapper for vmsg()
+void
+msg(const char *fmt, ...)
+{
+	va_list argp;
+	va_start(argp, fmt);
+
+	vmsg(fmt, argp);
+
+	va_end(argp);
+}
+/* VARARGS1
+ * @ now for real
+ */
+/*
+ * addmsg:
+ *	Add things to the current message
+ */
+void
+addmsg(const char *fmt, ...)
+{
+	va_list argp;
+	va_start(argp, fmt);
+
+	doadd(fmt, argp);
+
+	va_end(argp);
+}
+
+/*
+ * endmsg:
+ *	Display a new msg (giving him a chance to see the previous one
+ *	if it is up there with the -More-)
+ */
+void
+endmsg(void)
+{
+	if (save_msg)
+		strcpy(huh, msgbuf);
+	if (mpos) {
+		look(FALSE);
+		move(0,mpos);
+		more(" More ");
+	}
+	/*
+	 * All messages should start with uppercase, except ones that
+	 * start with a pack addressing character
+	 */
+	if (is_lower(msgbuf[0]) && msgbuf[1] != ')')
+		msgbuf[0] = toupper(msgbuf[0]);
+	putmsg(0,msgbuf);
+	mpos = newpos;
+	newpos = 0;
+}
+
+
+/*
+ *  More:  tag the end of a line and wait for a space
+ */
+void
+more(const char *msg)
+{
+	int x, y;
+	int i, msz;
+	char mbuf[80];
+	int morethere = TRUE;
+	int covered = FALSE;
+
+	msz = strlen(msg);
+	getxy(&x,&y);
+	/*
+	 * it is reasonable to assume that if the you are no longer
+	 * on line 0, you must have wrapped.
+	 */
+	if (x != 0) {
+		x=0;
+		y=COLS;
+	}
+	if ((y+msz)>COLS) {
+		move(x,y=COLS-msz);
+		covered = TRUE;
+	}
+
+	for(i=0;i<msz;i++) {
+		mbuf[i] = inch();
+		if ((i+y) < (COLS-2))
+			move(x,y+i+1);
+		mbuf[i+1] = 0;
+	}
+
+	move(x,y);
+	standout();
+	addstr(msg);
+	standend();
+
+	while (readchar() != ' ') {
+		if (covered && morethere) {
+			move(x,y);
+			addstr(mbuf);
+			morethere = FALSE;
+		}
+		else if (covered)
+		{
+			move(x,y);
+			standout();
+			addstr(msg);
+			standend();
+			morethere = TRUE;
+		}
+	}
+	move(x,y);
+	addstr(mbuf);
+}
+
+
+/*@
+* arguments changed from fixed ints to va_list.
+* no need of a varargs version as this is only used internally by io.c
+* varargs-aware functions
+*/
+/*
+ * doadd:
+ *	Perform an add onto the message buffer
+ */
+void
+doadd(const char *fmt, va_list argp)
+{
+
+	vsnprintf(&msgbuf[newpos], BUFSIZE - newpos, fmt, argp);
+	newpos = strlen(msgbuf);
+}
+
+/*
+ * putmsg:
+ *  put a msg on the line, make sure that it will fit, if it won't
+ *  scroll msg sideways until he has read it all
+ */
+void
+putmsg(int msgline, char *msg)
+{
+	char *curmsg, *lastmsg=0, *tmpmsg;
+	int curlen;
+
+	curmsg = msg;
+	do {
+		scrlmsg(msgline,lastmsg,curmsg);
+		newpos = curlen = strlen(curmsg);
+		if (curlen > COLS) {
+			more(" Cont ");
+			lastmsg = curmsg;
+			do {
+				tmpmsg = strpbrk(curmsg," ");
+				/*
+				 * If there are no blanks in line
+				 */
+				if ((tmpmsg==0 || tmpmsg>=&lastmsg[COLS]) && lastmsg==curmsg) {
+					curmsg = &lastmsg[COLS];
+					break;
+				}
+				if ((tmpmsg >= (lastmsg+COLS)) || ((signed)strlen(curmsg) < COLS))
+					break;
+				curmsg = tmpmsg + 1;
+			} while (1);
+		}
+	} while (curlen > COLS);
+}
+
+/*
+ * scrlmsg:  scroll a message accross the line
+ * @ renamed to avoid conflict with <curses.h>.
+ * @ Purpose is completely unrelated to curses
+ */
+void
+scrlmsg(int msgline, char *str1, char *str2)
+{
+	const char *fmt;
+
+	if (COLS > 40)
+		fmt = "%.80s";
+	else
+		fmt = "%.40s";
+
+	if (str1 == 0) {
+		move(msgline,0);
+		if ((signed)strlen(str2) < COLS)
+			clrtoeol();
+		printw(fmt,str2);
+	}
+	else
+		while (str1 <= str2) {
+			move(msgline,0);
+			printw(fmt,str1++);
+			if ((signed)strlen(str1) < (COLS-1))
+				clrtoeol();
+		}
+}
+/*
+ * io_unctrl:
+ *	Print a readable version of a certain character
+ *	@ renamed to avoid conflict with <curses.h>
+ *	@ same purpose but different behavior, so not using the curses version
+ */
+char *
+io_unctrl(byte ch)
+{
+	static char chstr[9];		/* Defined in curses library */
+
+	if (is_space(ch))
+		strcpy(chstr," ");
+	else if (!is_print(ch))
+		if (ch < ' ')
+			sprintf(chstr, "^%c", ch + '@');
+		else
+			sprintf(chstr, "\\x%x",ch);
+	else {
+		chstr[0] = ch;
+		chstr[1] = 0;
+	}
+
+	return chstr;
+}
+
+/*
+ * status:
+ *	Display the important stats line.  Keep the cursor where it was.
+ */
+void
+status(void)
+{
+	int oy, ox;
+	static int s_hungry;
+	static int s_lvl, s_pur = -1, s_hp, s_ac = 0;
+	static str_t s_str;
+	static int s_elvl = 0;
+	static const char *state_name[] =
+	{
+		"      ", "Hungry", "Weak", "Faint","?"
+	};
+
+	SIG2();
+
+	getyx(stdscr, oy, ox);
+	if (is_color)
+		yellow();
+
+	/*@
+	 * Rogue used a rudimentary custom sprintf() that didn't fully support
+	 * the (quite sophisticated) numeric formatting strings used on status.
+	 * As <stdio.h>'s sprintf() does, formatting was simplified so the output
+	 * matches the original.
+	 */
+
+	/*
+	 * Level:
+	 */
+	if (s_lvl != level)
+	{
+		s_lvl = level;
+	move(PT(22,23),0);
+	printw("Level:%-4d", level);
+	}
+
+	/*
+	 * Hits:
+	 */
+	if (s_hp != pstats.s_hpt)
+	{
+		s_hp = pstats.s_hpt;
+		move(PT(22,23),12);
+		printw("Hits:%d(%d) ", pstats.s_hpt, max_hp);
+		/* just in case they get wraithed with 3 digit max hits */
+		if (pstats.s_hpt < 100)
+			addch(' ');
+	}
+
+	/*
+	 * Str:
+	 */
+	if (pstats.s_str != s_str)
+	{
+		s_str = pstats.s_str;
+		move(PT(22,23),26);
+		printw("Str:%d(%d) ", pstats.s_str, max_stats.s_str);
+	}
+
+	/*
+	 * Gold
+	 */
+	if(s_pur != purse)
+	{
+		s_pur = purse;
+		move(23, PT(0,40));
+		printw("Gold:%-5u",purse);
+	}
+
+	/*
+	 * Armor:
+	 */
+	if(s_ac != (cur_armor != NULL ? cur_armor->o_ac : pstats.s_arm))
+	{
+		s_ac = (cur_armor != NULL ? cur_armor->o_ac : pstats.s_arm);
+		if (ISRING(LEFT,R_PROTECT))
+			s_ac -= cur_ring[LEFT]->o_ac;
+		if (ISRING(RIGHT,R_PROTECT))
+			s_ac -= cur_ring[RIGHT]->o_ac;
+		move(23,PT(12,52));
+		printw("Armor:%-2d",
+		AC(cur_armor != NULL ? cur_armor->o_ac : pstats.s_arm));
+	}
+
+	/*
+	 * Exp:
+	 */
+	if (s_elvl != pstats.s_lvl)
+	{
+		s_elvl = pstats.s_lvl;
+		move(23, PT(22, 62));
+		printw("%-12s", he_man[s_elvl-1]);
+	}
+
+	/*
+	 * Hungry state
+	 */
+	if (s_hungry != hungry_state)
+	{
+		s_hungry = hungry_state;
+		move(24, PT(28,58));
+		addstr(state_name[0]);
+		move(24, PT(28,58));
+		if (hungry_state)
+		{
+			bold();
+			addstr(state_name[hungry_state]);
+			standend();
+		}
+	}
+
+	if (is_color)
+		standend();
+
+	move(oy, ox);
+}
+
+/*
+ * wait_for
+ *	Sit around until the guy types the right key
+ */
+void
+wait_for(byte ch)
+{
+	/*@
+	 * stdio and ncurses will map all stream line endings to '\n'
+	 * Hooray ANSI! :)
+	 *
+	char c;
+
+	if (ch == '\n')
+		while ((c = readchar()) != '\n' && c != '\r')
+			continue;
+	else
+	 */
+	while (readchar() != ch)
+		continue;
+}
+
+/*@
+ * Wait with a message until user press Enter
+ * New function, used to block before leaving the game
+ */
+void
+wait_msg(const char *msg)
+{
+	standend();
+	move(LINES-1,0);
+	cursor(TRUE);
+	if (*msg)
+	{
+		printw("[Press Enter to %s]", msg);
+	}
+	else
+	{
+		printw("[Press Enter]");
+	}
+	flush_type();
+	wait_for('\n');
+	move(LINES-1,0);
+}
+
+/*
+ * show_win:
+ *	Function used to display a window and wait before returning
+ *	@ a window? looks like a single message to me!
+ */
+void
+show_win(char *message)
+{
+	mvaddstr(0,0,message);
+	move(hero.y, hero.x);
+	wait_for(' ');
+}
+
+
+/*
+ * str_attr:  format a string with attributes.
+ *
+ *    formats:
+ *        %i - the following character is turned inverse vidio
+ *        %I - All characters upto %$ or null are turned inverse vidio
+ *        %u - the following character is underlined
+ *        %U - All characters upto %$ or null are underlined
+ *        %$ - Turn off all attributes
+ *
+ *     Attributes do not nest, therefore turning on an attribute while
+ *     a different one is in effect simply changes the attribute.
+ *
+ *     "No attribute" is the default and is set on leaving this routine
+ *
+ *     Eventually this routine will contain colors and character intensity
+ *     attributes.  And I'm not sure how I'm going to interface this with
+ *     printf certainly '%' isn't a good choice of characters.  jll.
+ */
+void
+str_attr(const char *str)
+{
+	while (*str)
+	{
+		if (*str == '%') {
+			str++;
+			standout();
+		}
+		addch(*str++);
+		standend();
+	}
+}
+
+/*
+ * key_state:
+ *	@ Periodic status update: draws the clock in the bottom-right corner.
+ *	@ The original also showed NUM LOCK/CAP LOCK and toggled "Fast Play" via
+ *	@ Scroll Lock by reading keyboard LEDs through BIOS; terminals cannot
+ *	@ report those, so faststate stays FALSE.
+ */
+void
+SIG2(void)
+{
+	static int key_init = TRUE;
+	static int tspot;
+	static int bighand, littlehand;
+	int showtime = FALSE, spare;
+	int x, y;
+	static long cur_time = 0;
+	long new_time = md_time();
+
+	/*@
+	 * Do not update between wdump()/wrestor() operations
+	 * (when the user is in a non-game screen like inventory or discoveries)
+	 * Or if the screen is not yet initialized.
+	 */
+	if (is_saved || scr_type < 0)
+		return;
+	if (new_time - cur_time >= 60)
+	{
+		TM *local = md_localtime();
+		bighand = local->hour % 12;
+		littlehand = local->minute;
+		cur_time = new_time - local->second;
+		showtime = TRUE;
+	}
+
+	if (key_init || reinit)
+	{
+		reinit = key_init = FALSE;
+		tspot = (COLS == 40) ? 35 : 75;
+		showtime = TRUE;
+	}
+
+	if (showtime)
+	{
+		getxy(&x, &y);
+		/* work around the compiler buggie boos */
+		spare = littlehand % 10;
+		move(24,tspot);
+		bold();
+		printw("%2d:%1d%1d",bighand?bighand:12,littlehand/10,spare);
+		standend();
+		move(x, y);
+	}
+}
+
+const char *
+noterse(const char *str)
+{
+	return( terse || expert ? nullstr : str);
+}

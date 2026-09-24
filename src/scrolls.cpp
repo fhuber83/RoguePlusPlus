@@ -138,7 +138,7 @@ read_scroll()
 		 * Scroll of food detection
 		 */
 		ch = FALSE;
-		for (op = level.objects; op != NULL; op = next(op)) {
+		for (op = level.objects.first(); op != NULL; op = level.objects.after(op)) {
 			if (op->o_type == ItemKind::Food) {
 				ch = TRUE;
 				display().draw_tile(op->o_pos, FOOD, TileStyle::Inverse);

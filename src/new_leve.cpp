@@ -40,7 +40,7 @@ new_level(void)
 	/*
 	 * Free up the monsters on the last level
 	 */
-	for (tp = level.monsters; tp != NULL; tp = next(tp))
+	for (tp = level.monsters.first(); tp != NULL; tp = level.monsters.after(tp))
 		free_list(tp->t_pack);
 	free_list(level.monsters);
 	/*

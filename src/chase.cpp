@@ -20,7 +20,7 @@ runners()
 	Creature *tp;
 	int dist;
 
-	for	(tp = game().level.monsters; tp	!= NULL; tp = next(tp)) {
+	for (tp = game().level.monsters.first(); tp != NULL; tp = game().level.monsters.after(tp)) {
 		if (!on(*tp, ISHELD) && on(*tp, ISRUN)) {
 			dist = DISTANCE(hero.y, hero.x, tp->t_pos.y, tp->t_pos.x);
 			if	(!(on(*tp, ISSLOW) || (tp->t_type == 'S' && dist > 3)) || tp->t_turn)
@@ -114,7 +114,7 @@ over:
 		attack(th);
 		return;
 	} else if (ch_ret == *th->t_dest) {
-		for (obj = game().level.objects; obj != NULL; obj =	next(obj))
+		for (obj = game().level.objects.first(); obj != NULL; obj = game().level.objects.after(obj))
 			if	(th->t_dest == &obj->o_pos) {
 				byte oldchar;
 
@@ -302,7 +302,7 @@ chase(Creature *tp, coord *ee)
 					 */
 					if (ch ==	SCROLL)
 					{
-						for (obj = game().level.objects; obj != NULL; obj	= next(obj))
+						for (obj = game().level.objects.first(); obj != NULL; obj = game().level.objects.after(obj))
 						{
 							if (y ==	obj->o_pos.y &&	x == obj->o_pos.x)
 								break;
@@ -408,13 +408,13 @@ find_dest(Creature *tp)
 	|| see_monst(tp))
 		return &hero;
 	rp = tp->t_room;
-	for	(obj = game().level.objects;	obj != NULL; obj = next(obj))
+	for (obj = game().level.objects.first(); obj != NULL; obj = game().level.objects.after(obj))
 	{
 	if (obj->o_type == ItemKind::Scroll && obj->o_which == S_SCARE)
 		continue;
 	if (roomin(&obj->o_pos) == rp && rnd(100) < prob)
 	{
-		for (tp = game().level.monsters; tp != NULL; tp = next(tp))
+		for (tp = game().level.monsters.first(); tp != NULL; tp = game().level.monsters.after(tp))
 		if (tp->t_dest == &obj->o_pos)
 			break;
 		if	(tp == NULL)

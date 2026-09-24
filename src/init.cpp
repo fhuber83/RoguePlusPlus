@@ -20,7 +20,7 @@ init_player()
 	/*
 	 * initialize things
 	 */
-	game().pool = {};
+	game().pool = rogue::Pool();
 	/*
 	 * Give the rogue his weaponry.  First a mace.
 	 */

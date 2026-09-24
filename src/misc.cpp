@@ -239,7 +239,7 @@ find_obj(int y, int x)
 {
 	Item *op;
 
-	for (op = game().level.objects; op != NULL; op = next(op))
+	for (op = game().level.objects.first(); op != NULL; op = game().level.objects.after(op))
 		if (op->o_pos.y == y && op->o_pos.x == x)
 			return op;
 #ifdef DEBUG
@@ -368,7 +368,7 @@ aggravate()
 {
 	Creature *mi;
 
-	for (mi = game().level.monsters; mi != NULL; mi = next(mi))
+	for (mi = game().level.monsters.first(); mi != NULL; mi = game().level.monsters.after(mi))
 		start_run(&mi->t_pos);
 }
 

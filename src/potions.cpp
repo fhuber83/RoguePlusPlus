@@ -82,7 +82,7 @@ quaff(void)
 		msg("you feel stronger. What bulging muscles!");
 	when P_MFIND:
 		fuse(turn_see_off, HUHDURATION);
-		if (game().level.monsters == NULL)
+		if (game().level.monsters.empty())
 			msg("you have a strange feeling%s.",
 				noterse(" for a moment"));
 		else
@@ -99,13 +99,13 @@ quaff(void)
 		 * the level and show him where they are.  Also give hints as
 		 * to whether he would want to use the object.
 		 */
-		if (game().level.objects != NULL)
+		if (!game().level.objects.empty())
 		{
 			Item *tp;
 			bool show;
 
 			show = FALSE;
-			for (tp = game().level.objects; tp != NULL; tp = next(tp))
+			for (tp = game().level.objects.first(); tp != NULL; tp = game().level.objects.after(tp))
 			{
 				if (is_magic(tp))
 				{
@@ -114,9 +114,9 @@ quaff(void)
 					items.p_know[P_TFIND] = TRUE;
 				}
 			}
-			for (th = game().level.monsters; th != NULL; th = next(th))
+			for (th = game().level.monsters.first(); th != NULL; th = game().level.monsters.after(th))
 			{
-				for (tp = th->t_pack; tp != NULL; tp = next(tp))
+				for (tp = th->t_pack.first(); tp != NULL; tp = th->t_pack.after(tp))
 				{
 					if (is_magic(tp))
 					{
@@ -222,7 +222,7 @@ invis_on(void)
 	Creature *th;
 
 	game().player.body.t_flags.set(CANSEE);
-	for (th = game().level.monsters; th != NULL; th = next(th))
+	for (th = game().level.monsters.first(); th != NULL; th = game().level.monsters.after(th))
 	if (on(*th, ISINVIS) && see_monst(th))
 	{
 		display().draw_tile(th->t_pos, th->t_disguise);
@@ -241,7 +241,7 @@ turn_see(bool turn_off)
 	byte was_there = ' ';
 
 	add_new = FALSE;
-	for (mp = game().level.monsters; mp != NULL; mp = next(mp)) {
+	for (mp = game().level.monsters.first(); mp != NULL; mp = game().level.monsters.after(mp)) {
 		can_see = (see_monst(mp) || (was_there = display().tile_at(mp->t_pos)) == mp->t_type);
 		if (turn_off) {
 			if (!see_monst(mp) && mp->t_oldch != '@')

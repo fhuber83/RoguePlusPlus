@@ -115,7 +115,7 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - Verified with the A/B and descending replays: identical.
    - **What stays outside `Game`, deliberately:** fixed tables (`monsters`, `w_names`, `a_names`, `a_class`, `a_chances`, `he_man`, help, the `*_base` odds, `e_levels`), common strings (`nullstr`, `it`, `you`, ...), scratch buffers (`prbuf`, `tbuf`, `ring_buf`, phase 9), per-algorithm file statics (`maze.cpp`, `passages.cpp`, `ch_ret`, `nh`, `slimy`, `things.cpp`'s paging, `env.cpp`'s parser, `rip.cpp`'s `file`, phase 7), and the clock state in `SIG2()`. `w_names[FLAME]` is still overwritten while a bolt flies (`sticks.cpp`).
 
-6. **Entities** (in progress).
+6. **Entities.**
    - **6.1 Creature and Item.**
      - `union thing` (`THING`) is split into `rogue::Creature` (`entities/Creature.hpp`, a monster or the rogue's body, was `_t`) and `rogue::Item` (`entities/Item.hpp`, was `_o`). The members keep their `t_*`/`o_*` names but are real fields now, so the `#define t_pos _t._t_pos` accessor macros are gone. `o_charges` and `o_goldval` remain macro aliases of `o_ac`.
      - Every declaration and prototype got the type its role needs. Variables that held both kinds were split: `treas_room()`, `read_scroll()`, `add_pack()`'s monster loop and `door_open()`.
@@ -131,6 +131,11 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - `get_item()` and `inventory()` take an `ItemFilter`: one kind, `ItemFilter::all()` or `ItemFilter::callable()`, which replace the `0` and `CALLABLE` (-1) sentinels.
      - Switches over a kind that the original left without a default now end in `otherwise: break;`, so the new enum values are handled explicitly and `-Wswitch` stays quiet.
      - Verified with the A/B and descending replays, plus a wizard replay on scratch `WIZARD` builds of both trees. It creates potions, scrolls, wands, rings, weapons, armor, food, gold and the amulet, then quaffs, reads, zaps, puts on, wears, wields, throws, eats, drops and names them. Identical. `tests/entities/ItemTest.cpp` covers the glyph mapping and the filter.
+   - **6.4 Lists.**
+     - The intrusive `l_next`/`l_prev` links are gone. `rogue::List<T>` (`entities/List.hpp`, over `std::list<T *>`) holds the level's `monsters` and `objects` and every creature's `t_pack`. `attach()`/`detach()`/`free_list()` stay as macros over it, and the `next()`/`prev()` macros are gone.
+     - Walks keep their original shape: `for (tp = list.first(); tp != NULL; tp = list.after(tp))`. `after()` returns null for an entry that is no longer in the list, just as a detached node's cleared `l_next` did. `runners()` relies on that: when a nymph or leprechaun vanishes during its move, the other monsters skip theirs that turn, as in the original.
+     - **Deviation from the plan:** the pool in `game().pool` still owns creatures and items, instead of `std::unique_ptr`. The original reads things after freeing them, and that only works because a freed slot keeps its contents until it is reused: the nymph's theft message after `discard()`, `t_dest` pointing into gold the rogue picked up, and a vanished thief that is hasted or flying moving again in `runners()`. With heap ownership each of these is a use-after-free. A pool slot is a stable identity, so saving games (phase 8) can refer to slots. Moving to owning containers needs those reads fixed first (phase 7).
+     - Verified with the A/B, descending and wizard item replays: identical. `tests/entities/ListTest.cpp` covers the list, including a walk that detaches its current entry.
 
 ## Target architecture
 
@@ -169,11 +174,11 @@ Each phase is a series of small commits that each build and play.
    5. *Done:* items (see above).
    6. *Done:* the scheduler (`daemon.cpp` slots) and the RNG.
    Algorithm scratch state (`maze.cpp`, `passages.cpp`, `ch_ret`, ...) and fixed tables stay where they are until phase 7.
-6. **Entities** (*in progress*, see above).
+6. **Entities** (*done*, see above).
    - *Done:* split `union thing` into `Creature` (monster or player) and `Item`.
    - *Done:* creature/object flags become `rogue::Flags`.
    - *Done:* item kinds become an `enum class` with a separate glyph mapping.
-   - Replace the intrusive `l_next`/`l_prev` lists (`list.cpp`) with standard containers of `std::unique_ptr` and stable IDs.
+   - *Done:* replace the intrusive `l_next`/`l_prev` lists (`list.cpp`) with standard containers. Ownership stays with the pool, whose slots are the stable IDs (see 6.4 for why not `std::unique_ptr` yet).
    - *Done:* replace the `#define t_pos _t._t_pos` accessor macros with members.
 7. **Domain modules.**
    - Move behaviour into the target directories: item effects become per-kind handlers, `fight` becomes `Combat`, `chase` becomes `MonsterAI`, and the level generation files become `LevelGenerator`.
@@ -190,6 +195,7 @@ Each phase is a series of small commits that each build and play.
 
 ## Notes for whoever continues
 
+- Code reads creatures and items after `discard()`, which is safe only because pool slots keep their contents until reused. Before creatures and items can move to `std::unique_ptr` ownership, these reads have to go: `inv_name(steal)` after `discard(steal)` in `attack()` (nymph), `t_dest` left pointing at gold that `pick_up()` discards, and `runners()` chasing a monster again after `attack()` removed it (hasted or flying thieves). Fixing them changes behaviour in those corners, so do it as its own step.
 - `score()` writes `sc_name[38]` to `rogue.scr` with uninitialized bytes after the name. Harmless, but compare score files by the name up to its NUL. Phase 8 replaces the format.
 
 - `faststate` ("Fast Play") used to be toggled by Scroll Lock and is now always `FALSE`. Reintroduce it as a real option or key if wanted.

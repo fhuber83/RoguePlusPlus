@@ -214,7 +214,7 @@ attack(Creature *mp)
 			 * and pick out one we like.
 			 */
 			steal = NULL;
-			for (nobj = 0, obj = pack; obj != NULL; obj = next(obj))
+			for (nobj = 0, obj = pack.first(); obj != NULL; obj = pack.after(obj))
 			if (obj != player.armor && obj != player.weapon
 				&& obj != player.rings[LEFT] && obj != player.rings[RIGHT]
 				&& is_magic(obj) && rnd(++nobj) == 0)
@@ -590,9 +590,9 @@ remove_monster(coord *mp, Creature *tp, bool waskill)
 	if (tp == NULL)
 		return;
 
-	for (obj = tp->t_pack; obj != NULL; obj = nexti)
+	for (obj = tp->t_pack.first(); obj != NULL; obj = nexti)
 	{
-		nexti = next(obj);
+		nexti = tp->t_pack.after(obj);
 		bcopy(obj->o_pos,tp->t_pos);
 		detach(tp->t_pack, obj);
 		if (waskill)

@@ -6,7 +6,7 @@
 
 /*@
  * Modern headers first: extern.h and this file define macros such as max(),
- * next(), pack and when that would break standard library headers.
+ * pack and when that would break standard library headers.
  */
 #include <optional>
 
@@ -14,6 +14,7 @@
 #include "core/Dice.hpp"
 #include "core/Flags.hpp"
 #include "core/Random.hpp"
+#include "entities/List.hpp"
 #include "ui/Display.hpp"
 #include "ui/Input.hpp"
 
@@ -90,16 +91,14 @@ const int maxrow = MAXLINES - 2;
 #define when		break;case
 #define otherwise	break;default
 #define until(expr)	while(!(expr))
-#define next(ptr)	(*ptr).l_next
-#define prev(ptr)	(*ptr).l_prev
 #define hero		game().player.body.t_pos
 #define pstats		game().player.body.t_stats
 #define pack		game().player.body.t_pack
 #define proom		game().player.body.t_room
 #define max_hp		game().player.body.t_stats.s_maxhp
-#define attach(a,b)	list_attach(&a,b)
-#define detach(a,b)	list_detach(&a,b)
-#define free_list(a)	list_free(&a)
+#define attach(a,b)	(a).push_front(b)
+#define detach(a,b)	(a).remove(b)
+#define free_list(a)	list_free(a)
 #define max(a,b)	((a) > (b) ? (a) : (b))
 #define on(thing,flag)	((thing).t_flags.test(flag))
 #define GOLDCALC	(rnd(50 + 10 * game().level.depth) + 2)
@@ -367,6 +366,7 @@ struct stats {
 
 using rogue::Creature;
 using rogue::Item;
+using rogue::List;
 using rogue::ItemKind;
 using rogue::ItemFilter;
 using rogue::glyph_of;
@@ -565,62 +565,18 @@ int	discard(Item *item);
 int	discard(Creature *item);
 
 /*@
- * The intrusive lists (l_next/l_prev) of creatures and of items, used
- * through the attach(), detach() and free_list() macros.
- */
-
-/*
- * detach:
- *	Takes an item out of whatever linked list it might be in
+ * Empties a list of creatures or items and gives them back to the pool
+ * (was _free_list)
  */
 template <class T>
 void
-list_detach(T **list, T *item)
-{
-	if (*list == item)
-		*list = next(item);
-	if (prev(item) != NULL) item->l_prev->l_next = next(item);
-	if (next(item) != NULL) item->l_next->l_prev = prev(item);
-	item->l_next = NULL;
-	item->l_prev = NULL;
-}
-
-/*
- * _attach:
- *	add an item to the head of a list
- */
-template <class T>
-void
-list_attach(T **list, T *item)
-{
-	if (*list != NULL)
-	{
-		item->l_next = *list;
-		(*list)->l_prev = item;
-		item->l_prev = NULL;
-	}
-	else
-	{
-		item->l_next = NULL;
-		item->l_prev = NULL;
-	}
-	*list = item;
-}
-
-/*
- * _free_list:
- *	Throw the whole blamed thing away
- */
-template <class T>
-void
-list_free(T **ptr)
+list_free(rogue::List<T> &list)
 {
 	T *item;
 
-	while (*ptr != NULL)
+	while ((item = list.first()) != NULL)
 	{
-	item = *ptr;
-	*ptr = next(item);
+	detach(list, item);
 	discard(item);
 	}
 }
@@ -699,7 +655,7 @@ Item	*get_item(const char *purpose, ItemFilter type);
 void	add_pack(Item *obj, bool silent);
 void	pick_up(byte ch);
 void	money(int value);
-byte	inventory(Item *list, ItemFilter type, const char *lstr);
+byte	inventory(const List<Item> &list, ItemFilter type, const char *lstr);
 byte	pack_char(Item *obj);
 
 //@ passages.c

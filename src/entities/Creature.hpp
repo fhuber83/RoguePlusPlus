@@ -36,7 +36,6 @@ using CreatureFlags = Flags<CreatureFlag>;
 struct Item;
 
 struct Creature {
-	Creature *l_next, *l_prev;	/* Next pointer in link */
 	coord t_pos;				/* Position */
 	char t_turn;				/* If slowed, is it a turn to move */
 	char t_type;				/* What it is */
@@ -46,7 +45,7 @@ struct Creature {
 	CreatureFlags t_flags;		/* State word */
 	struct stats t_stats;		/* Physical description */
 	struct room *t_room;		/* Current room for thing */
-	Item *t_pack;				/* What the thing is carrying */
+	List<Item> t_pack;			/* What the thing is carrying */
 };
 
 }  // namespace rogue

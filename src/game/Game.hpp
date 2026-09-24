@@ -119,8 +119,8 @@ struct Level {
 	 */
 	byte map[(MAXLINES-3)*MAXCOLS] = {};	/* _level */
 	byte flags[(MAXLINES-3)*MAXCOLS] = {};	/* _flags */
-	Item *objects = nullptr;		/* lvl_obj: list of objects on this level */
-	Creature *monsters = nullptr;		/* mlist: list of monsters on the level */
+	List<Item> objects;				/* lvl_obj: list of objects on this level */
+	List<Creature> monsters;		/* mlist: list of monsters on the level */
 
 	//@ Passages are dark rooms that are gone. The original table left the
 	//@ 13th one lit by mistake.

@@ -343,7 +343,7 @@ rndmove(Creature *who, coord *newmv)
 		if (!step_ok(ch))
 			goto bad;
 		if (ch == SCROLL) {
-			for (obj = game().level.objects; obj != NULL; obj = next(obj))
+			for (obj = game().level.objects.first(); obj != NULL; obj = game().level.objects.after(obj))
 				if (y == obj->o_pos.y && x == obj->o_pos.x)
 					break;
 			if (obj != NULL && obj->o_which == S_SCARE)

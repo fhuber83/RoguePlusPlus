@@ -244,7 +244,7 @@ total_winner(void)
 	display().clear_page();
 	display().write_at(0, 0, "   Worth  Item");
 	oldpurse = game().player.purse;
-	for (c = 'a', obj = pack; obj != NULL; c++, obj = next(obj))
+	for (c = 'a', obj = pack.first(); obj != NULL; c++, obj = pack.after(obj))
 	{
 	switch (obj->o_type)
 	{

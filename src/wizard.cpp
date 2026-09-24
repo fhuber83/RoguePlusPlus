@@ -23,7 +23,7 @@ whatis(void)
 	Item *obj;
 	rogue::Items &items = game().items;
 
-	if (pack == NULL) {
+	if (pack.empty()) {
 		msg("You don't have anything in your pack to identify");
 		return;
 	}

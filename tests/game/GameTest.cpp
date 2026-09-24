@@ -102,7 +102,7 @@ TEST(Level, PassagesAreGoneAndDark)
 // the single pool of the original.
 TEST(Pool, CreaturesAndItemsShareTheLimit)
 {
-	game().pool = {};
+	game().pool = rogue::Pool();
 	std::vector<Item *> items;
 	for (int i = 0; i < MAXITEMS - 1; i++)
 		items.push_back(new_item());
@@ -117,5 +117,5 @@ TEST(Pool, CreaturesAndItemsShareTheLimit)
 
 	Creature outside{};
 	EXPECT_EQ(discard(&outside), 0);
-	game().pool = {};
+	game().pool = rogue::Pool();
 }

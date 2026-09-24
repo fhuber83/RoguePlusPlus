@@ -141,9 +141,9 @@ do_zap()
 			}
 			else if (which_one == WS_POLYMORPH)
 			{
-				Item *pp;
+				List<Item> pp;
 
-				pp = tp->t_pack;
+				pp = std::move(tp->t_pack);
 				detach(game().level.monsters, tp);
 				if (see_monst(tp))
 					display().draw_tile({x, y}, chat(y, x));
@@ -154,7 +154,7 @@ do_zap()
 				if (see_monst(tp))
 					display().draw_tile({x, y}, monster);
 				tp->t_oldch = oldch;
-				tp->t_pack = pp;
+				tp->t_pack = std::move(pp);
 				game().items.ws_know[WS_POLYMORPH] |= (monster != omonst);
 			}
 			else if (which_one == WS_CANCEL)
@@ -306,7 +306,7 @@ drain()
 		corp = NULL;
 	inpass = proom->r_flags.test(RoomFlag::Gone);
 	dp = drainee;
-	for (mp = game().level.monsters; mp != NULL; mp = next(mp))
+	for (mp = game().level.monsters.first(); mp != NULL; mp = game().level.monsters.after(mp))
 		if (mp->t_room == proom || mp->t_room == corp ||
 			(inpass && chat(mp->t_pos.y, mp->t_pos.x) == DOOR &&
 			&game().level.passages[flat(mp->t_pos.y, mp->t_pos.x) & F_PNUM] == proom))

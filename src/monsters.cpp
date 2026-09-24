@@ -80,7 +80,7 @@ new_monster(Creature *tp, byte type, coord *cp)
 	tp->t_stats.s_exp = mp->m_stats.s_exp + lev_add * 10 + exp_add(tp);
 	tp->t_flags = mp->m_flags;
 	tp->t_turn = TRUE;
-	tp->t_pack = NULL;
+	tp->t_pack.clear();
 	if (ISWEARING(R_AGGR))
 		start_run(cp);
 	if (type == 'F')
@@ -266,7 +266,7 @@ moat(int my, int mx)
 {
 	Creature *tp;
 
-	for (tp = game().level.monsters ; tp != NULL ; tp = next(tp))
+	for (tp = game().level.monsters.first(); tp != NULL; tp = game().level.monsters.after(tp))
 		if (tp->t_pos.x == mx  && tp->t_pos.y == my)
 			return(tp);
 	return(NULL);

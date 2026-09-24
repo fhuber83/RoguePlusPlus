@@ -13,7 +13,7 @@ pack_obj(byte ch, byte *chp)
 	Item *obj;
 	byte och;
 
-	for (obj = pack, och = 'a'; obj != NULL; obj = next(obj), och++)
+	for (obj = pack.first(), och = 'a'; obj != NULL; obj = pack.after(obj), och++)
 		if (ch == och)
 			return obj;
 	*chp = och;
@@ -61,7 +61,7 @@ add_pack(Item *obj, bool silent)
 	floor = (proom != NULL && proom->r_flags.test(RoomFlag::Gone)) ? PASSAGE : FLOOR;
 	if (obj->o_group)
 	{
-		for (op = pack; op != NULL; op = next(op))
+		for (op = pack.first(); op != NULL; op = pack.after(op))
 		{
 			if (op->o_group == obj->o_group)
 			{
@@ -117,7 +117,7 @@ add_pack(Item *obj, bool silent)
 	 * Search for an object of the same type
 	 */
 	exact = FALSE;
-	for (op = pack; op != NULL; op = next(op))
+	for (op = pack.first(); op != NULL; op = pack.after(op))
 		if (obj->o_type == op->o_type)
 			break;
 	if (op == NULL)
@@ -125,7 +125,7 @@ add_pack(Item *obj, bool silent)
 		/*
 		 * Put it at the end of the pack since it is a new type
 		 */
-		for (op = pack; op != NULL; op = next(op))
+		for (op = pack.first(); op != NULL; op = pack.after(op))
 		{
 			if (op->o_type != ItemKind::Food)
 				break;
@@ -145,7 +145,7 @@ add_pack(Item *obj, bool silent)
 				break;
 			}
 			lp = op;
-			if ((op = next(op)) == NULL)
+			if ((op = pack.after(op)) == NULL)
 				break;
 		}
 	}
@@ -154,14 +154,7 @@ add_pack(Item *obj, bool silent)
 		/*
 		 * Didn't find an exact match, just stick it here
 		 */
-		if (pack == NULL)
-			pack = obj;
-		else
-		{
-			lp->l_next = obj;
-			obj->l_prev = lp;
-			obj->l_next = NULL;
-		}
+		pack.insert_after(lp, obj);	//@ lp is NULL only when the pack is empty
 	}
 	else
 	{
@@ -176,23 +169,14 @@ add_pack(Item *obj, bool silent)
 			obj = op;
 			goto picked_up;
 		}
-		if ((obj->l_prev = prev(op)) != NULL)
-		{
-			obj->l_prev->l_next = obj;
-		}
-		else
-		{
-			pack = obj;
-		}
-		obj->l_next = op;
-		op->l_prev = obj;
+		pack.insert_before(op, obj);
 	}
 picked_up:
 	/*
 	 * If this was the object of something's desire, that monster will
 	 * get mad and run at the hero
 	 */
-	for (mp = game().level.monsters; mp != NULL; mp = next(mp))
+	for (mp = game().level.monsters.first(); mp != NULL; mp = game().level.monsters.after(mp))
 	{
 		/*
 		 *  compiler bug: jll : 2-7-83
@@ -232,14 +216,15 @@ picked_up:
  *	List what is in the pack
  */
 byte
-inventory(Item *list, ItemFilter type, const char *lstr)
+inventory(const List<Item> &list, ItemFilter type, const char *lstr)
 {
 	byte ch;
+	Item *obj;
 	int n_objs;
 	char inv_temp[MAXSTR];
 
 	n_objs = 0;
-	for (ch = 'a'; list != NULL; ch++, list = next(list))
+	for (ch = 'a', obj = list.first(); obj != NULL; ch++, obj = list.after(obj))
 	{
 		/*
 		 * Don't print this one if:
@@ -247,15 +232,15 @@ inventory(Item *list, ItemFilter type, const char *lstr)
 		 *	it isn't a callable type AND
 		 *	it isn't a zappable weapon
 		 */
-		if (!type.is_all() && !type.is(list->o_type) && !(type.is_callable() &&
-		  (list->o_type == ItemKind::Scroll || list->o_type == ItemKind::Potion ||
-		  list->o_type == ItemKind::Ring || list->o_type == ItemKind::Stick)) &&
-		  !(type.is(ItemKind::Weapon) && list->o_type == ItemKind::Potion) &&
-		  !(type.is(ItemKind::Stick) && list->o_enemy && list->o_charges))
+		if (!type.is_all() && !type.is(obj->o_type) && !(type.is_callable() &&
+		  (obj->o_type == ItemKind::Scroll || obj->o_type == ItemKind::Potion ||
+		  obj->o_type == ItemKind::Ring || obj->o_type == ItemKind::Stick)) &&
+		  !(type.is(ItemKind::Weapon) && obj->o_type == ItemKind::Potion) &&
+		  !(type.is(ItemKind::Stick) && obj->o_enemy && obj->o_charges))
 			continue;
 		n_objs++;
 		sprintf(inv_temp, "%c) %%s", ch);
-		add_line(lstr, inv_temp, inv_name(list, FALSE));
+		add_line(lstr, inv_temp, inv_name(obj, FALSE));
 	}
 	if (n_objs == 0)
 	{
@@ -319,7 +304,7 @@ get_item(const char *purpose, ItemFilter type)
 		once_only = TRUE;
 
 	gi_state = game().turn.again;
-	if (pack == NULL)
+	if (pack.empty())
 		msg("you aren't carrying anything");
 	else {
 		ch = lch;
@@ -395,7 +380,7 @@ pack_char(Item *obj)
 	byte c;
 
 	c = 'a';
-	for (item = pack; item != NULL; item = next(item))
+	for (item = pack.first(); item != NULL; item = pack.after(item))
 		if (item == obj)
 			return c;
 		else

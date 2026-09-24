@@ -111,7 +111,6 @@ inline constexpr bool enable_flags<ItemFlag> = true;
 using ItemFlags = Flags<ItemFlag>;
 
 struct Item {
-	Item *l_next, *l_prev;		/* Next pointer in link */
 	ItemKind o_type;			/* What kind of object it is */
 	coord o_pos;				/* Where it lives on the screen */
 	char *o_text;				/* What it says if you read it */

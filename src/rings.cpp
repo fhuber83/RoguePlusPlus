@@ -19,12 +19,12 @@ ring_on()
 	int ring = -1;
 	rogue::Player &player = game().player;
 
-	if ((obj = get_item("put on", RING)) == NULL)
+	if ((obj = get_item("put on", ItemKind::Ring)) == NULL)
 		goto no_ring;
 	/*
 	 * Make certain that it is somethings that we want to wear
 	 */
-	if (obj->o_type != RING) {
+	if (obj->o_type != ItemKind::Ring) {
 		msg("you can't put that on your finger");
 		goto no_ring;
 	}

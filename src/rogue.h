@@ -8,6 +8,8 @@
  * Modern headers first: extern.h and this file define macros such as max(),
  * next(), pack and when that would break standard library headers.
  */
+#include <optional>
+
 #include "core/Coord.hpp"
 #include "core/Dice.hpp"
 #include "core/Flags.hpp"
@@ -103,7 +105,7 @@ const int maxrow = MAXLINES - 2;
 #define GOLDCALC	(rnd(50 + 10 * game().level.depth) + 2)
 #define ISRING(h,r)	(game().player.rings[h] != NULL && game().player.rings[h]->o_which == r)
 #define ISWEARING(r)	(ISRING(LEFT, r) || ISRING(RIGHT, r))
-#define ISMULT(type) 	(type==POTION || type==SCROLL || type==FOOD || type==GOLD)
+#define ISMULT(type) 	(type==ItemKind::Potion || type==ItemKind::Scroll || type==ItemKind::Food || type==ItemKind::Gold)
 #define chat(y,x)	(game().level.map[INDEX(y,x)])
 #define flat(y,x)	(game().level.flags[INDEX(y,x)])
 #define unc(cp)		(cp).y, (cp).x
@@ -365,6 +367,10 @@ struct stats {
 
 using rogue::Creature;
 using rogue::Item;
+using rogue::ItemKind;
+using rogue::ItemFilter;
+using rogue::glyph_of;
+using rogue::kind_of_glyph;
 using rogue::CreatureFlags;
 using rogue::ItemFlags;
 
@@ -689,11 +695,11 @@ void	put_things(void);
 int	rnd_room(void);
 
 //@ pack.c
-Item	*get_item(const char *purpose, int type);
+Item	*get_item(const char *purpose, ItemFilter type);
 void	add_pack(Item *obj, bool silent);
 void	pick_up(byte ch);
 void	money(int value);
-byte	inventory(Item *list, int type, const char *lstr);
+byte	inventory(Item *list, ItemFilter type, const char *lstr);
 byte	pack_char(Item *obj);
 
 //@ passages.c

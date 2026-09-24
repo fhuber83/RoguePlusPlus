@@ -126,6 +126,11 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - `t_flags` and `m_flags` are `CreatureFlags` (`rogue::Flags<CreatureFlag>`), and `o_flags` is `ItemFlags`. The legacy names (`ISBLIND`, `ISKNOW`, ...) remain as typed constants in `rogue.h`, so mixing a creature flag into an item, or the reverse, no longer compiles. `x |= F`, `x &= ~F` and `x & F` became `set`, `unset` and `test`, and `on()` uses `test`.
      - Two original quirks keep their bits. Scare monster scrolls remembered being picked up with the creature flag `ISFOUND`, the same bit as `ISEGO`; that is `ItemFlag::Found` now. The leprechaun has `ISGREED` (0x40) in its carry column, so it carries something 64% of the time and is not greedy.
      - Verified with the A/B and descending replays: identical. `StaticTablesTest` pins the monster flags.
+   - **6.3 Item kinds.**
+     - `o_type` is a `rogue::ItemKind` (`None`, `Potion`, ..., `Gold`, plus `Missile` for the bolt a wand of magic missile shoots). Kinds no longer share values with glyphs: `glyph_of(kind)` gives the CP437 glyph the map shows, and `kind_of_glyph(ch)` reads one back. The glyph constants (`POTION`, `GOLD`, ...) stay for the map, the help screen and `pick_up()`. Items are put on the map through `glyph_of()` in `new_leve.cpp`, `things.cpp` and `weapons.cpp`.
+     - `get_item()` and `inventory()` take an `ItemFilter`: one kind, `ItemFilter::all()` or `ItemFilter::callable()`, which replace the `0` and `CALLABLE` (-1) sentinels.
+     - Switches over a kind that the original left without a default now end in `otherwise: break;`, so the new enum values are handled explicitly and `-Wswitch` stays quiet.
+     - Verified with the A/B and descending replays, plus a wizard replay on scratch `WIZARD` builds of both trees. It creates potions, scrolls, wands, rings, weapons, armor, food, gold and the amulet, then quaffs, reads, zaps, puts on, wears, wields, throws, eats, drops and names them. Identical. `tests/entities/ItemTest.cpp` covers the glyph mapping and the filter.
 
 ## Target architecture
 
@@ -167,7 +172,7 @@ Each phase is a series of small commits that each build and play.
 6. **Entities** (*in progress*, see above).
    - *Done:* split `union thing` into `Creature` (monster or player) and `Item`.
    - *Done:* creature/object flags become `rogue::Flags`.
-   - Item kinds become an `enum class` with a separate glyph mapping.
+   - *Done:* item kinds become an `enum class` with a separate glyph mapping.
    - Replace the intrusive `l_next`/`l_prev` lists (`list.cpp`) with standard containers of `std::unique_ptr` and stable IDs.
    - *Done:* replace the `#define t_pos _t._t_pos` accessor macros with members.
 7. **Domain modules.**

@@ -25,7 +25,7 @@ init_player()
 	 * Give the rogue his weaponry.  First a mace.
 	 */
 	obj = new_item();
-	obj->o_type = WEAPON;
+	obj->o_type = ItemKind::Weapon;
 	obj->o_which = MACE;
 	init_weapon(obj, MACE);
 	obj->o_hplus = 1;
@@ -39,7 +39,7 @@ init_player()
 	 * Now a +1 bow
 	 */
 	obj = new_item();
-	obj->o_type = WEAPON;
+	obj->o_type = ItemKind::Weapon;
 	obj->o_which = BOW;
 	init_weapon(obj, BOW);
 	obj->o_hplus = 1;
@@ -52,7 +52,7 @@ init_player()
 	 * Now some arrows
 	 */
 	obj = new_item();
-	obj->o_type = WEAPON;
+	obj->o_type = ItemKind::Weapon;
 	obj->o_which = ARROW;
 	init_weapon(obj, ARROW);
 	obj->o_count = rnd(15) + 25;
@@ -63,7 +63,7 @@ init_player()
 	 * And his suit of armor
 	 */
 	obj = new_item();
-	obj->o_type = ARMOR;
+	obj->o_type = ItemKind::Armor;
 	obj->o_which = RING_MAIL;
 	obj->o_ac = a_class[RING_MAIL] - 1;
 	obj->o_flags.set(ISKNOW);
@@ -75,7 +75,7 @@ init_player()
 	 * Give him some food too
 	 */
 	obj = new_item();
-	obj->o_type = FOOD;
+	obj->o_type = ItemKind::Food;
 	obj->o_count = 1;
 	obj->o_which = 0;
 	obj->o_group = 0;

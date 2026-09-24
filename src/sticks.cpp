@@ -48,10 +48,10 @@ do_zap()
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
 
-	if ((obj = get_item("zap with", STICK)) == NULL)
+	if ((obj = get_item("zap with", ItemKind::Stick)) == NULL)
 		return;
 	which_one = obj->o_which;
-	if (obj->o_type != STICK)
+	if (obj->o_type != ItemKind::Stick)
 	{
 		if (obj->o_enemy && obj->o_charges)
 			which_one = MAXSTICKS;
@@ -201,7 +201,7 @@ do_zap()
 		Item bolt;
 
 		game().items.ws_know[WS_MISSILE] = TRUE;
-		bolt.o_type = '*';
+		bolt.o_type = ItemKind::Missile;
 		bolt.o_hurldmg = "1d8";
 		bolt.o_hplus = 1000;
 		bolt.o_dplus = 1;
@@ -352,7 +352,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 	bool is_frost;
 
 	is_frost = (strcmp(name, "frost") == 0);
-	bolt.o_type = WEAPON;
+	bolt.o_type = ItemKind::Weapon;
 	bolt.o_which = FLAME;
 	bolt.o_damage = bolt.o_hurldmg = "6d6";
 	bolt.o_hplus = 30;

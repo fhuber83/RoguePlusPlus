@@ -260,7 +260,7 @@ be_trapped(coord *tc)
 			Item *arrow;
 
 			if ((arrow = new_item()) != NULL) {
-				arrow->o_type = WEAPON;
+				arrow->o_type = ItemKind::Weapon;
 				arrow->o_which = ARROW;
 				init_weapon(arrow, ARROW);
 				arrow->o_count = 1;

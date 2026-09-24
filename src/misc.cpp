@@ -261,9 +261,9 @@ eat()
 	Item *obj;
 	rogue::Player &player = game().player;
 
-	if ((obj = get_item("eat", FOOD)) == NULL)
+	if ((obj = get_item("eat", ItemKind::Food)) == NULL)
 		return;
-	if (obj->o_type != FOOD)
+	if (obj->o_type != ItemKind::Food)
 	{
 		msg("ugh, you would get ill if you ate that");
 		return;
@@ -535,13 +535,13 @@ goodch(Item *obj)
 	if (obj->o_flags.test(ISCURSED))
 		ch = BMAGIC;
 	switch (obj->o_type) {
-	when ARMOR:
+	when ItemKind::Armor:
 		if (obj->o_ac > a_class[obj->o_which])
 			ch = BMAGIC;
-	when WEAPON:
+	when ItemKind::Weapon:
 		if (obj->o_hplus < 0 || obj->o_dplus < 0)
 			ch = BMAGIC;
-	when SCROLL:
+	when ItemKind::Scroll:
 		switch (obj->o_which) {
 		when S_SLEEP:
 		case S_CREATE:
@@ -549,7 +549,7 @@ goodch(Item *obj)
 			ch = BMAGIC;
 			break;
 		}
-	when POTION:
+	when ItemKind::Potion:
 		switch (obj->o_which) {
 		when P_CONFUSE:
 		case P_PARALYZE:
@@ -558,14 +558,14 @@ goodch(Item *obj)
 			ch = BMAGIC;
 			break;
 		}
-	when STICK:
+	when ItemKind::Stick:
 		switch (obj->o_which) {
 		when WS_HASTE_M:
 		case WS_TELTO:
 			ch = BMAGIC;
 			break;
 		}
-	when RING:
+	when ItemKind::Ring:
 		switch (obj->o_which) {
 		when R_PROTECT:
 		case R_ADDSTR:
@@ -578,6 +578,8 @@ goodch(Item *obj)
 			ch = BMAGIC;
 			break;
 		}
+		break;
+	otherwise:	//@ the other kinds of item: nothing
 		break;
 	}
 	return ch;
@@ -770,7 +772,7 @@ call()
 	bool *know;
 	rogue::Items &items = game().items;
 
-	obj = get_item("call", CALLABLE);
+	obj = get_item("call", ItemFilter::callable());
 	/*
 	 * Make certain that it is somethings that we want to wear
 	 */
@@ -778,22 +780,22 @@ call()
 		return;
 	switch (obj->o_type)
 	{
-	when RING:
+	when ItemKind::Ring:
 		guess = (char **)items.r_guess;
 		know = items.r_know;
 		elsewise = (*guess[obj->o_which] != '\0' ?
 			guess[obj->o_which] : items.r_stones[obj->o_which]);
-	when POTION:
+	when ItemKind::Potion:
 		guess = (char **)items.p_guess;
 		know = items.p_know;
 		elsewise = (*guess[obj->o_which] != '\0' ?
 			guess[obj->o_which] : items.p_colors[obj->o_which]);
-	when SCROLL:
+	when ItemKind::Scroll:
 		guess = (char **)items.s_guess;
 		know = items.s_know;
 		elsewise = (*guess[obj->o_which] != '\0' ?
 			guess[obj->o_which] : items.s_names[obj->o_which].storage);
-	when STICK:
+	when ItemKind::Stick:
 		guess = (char **)items.ws_guess;
 		know = items.ws_know;
 		elsewise = (*guess[obj->o_which] != '\0' ?

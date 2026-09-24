@@ -22,9 +22,9 @@ wear()
 		game().turn.after = FALSE;
 		return;
 	}
-	if ((obj = get_item("wear",ARMOR)) == NULL)
+	if ((obj = get_item("wear", ItemKind::Armor)) == NULL)
 		return;
-	if (obj->o_type != ARMOR) {
+	if (obj->o_type != ItemKind::Armor) {
 		msg("you can't wear that");
 		return;
 	}

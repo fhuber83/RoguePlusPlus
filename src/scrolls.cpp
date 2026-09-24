@@ -26,10 +26,10 @@ read_scroll()
 	rogue::Level &level = game().level;
 	rogue::Items &items = game().items;
 
-	obj = get_item("read", SCROLL);
+	obj = get_item("read", ItemKind::Scroll);
 	if (obj == NULL)
 		return;
-	if (obj->o_type != SCROLL){
+	if (obj->o_type != ItemKind::Scroll){
 		msg("there is nothing on it to read");
 		return;
 	}
@@ -139,11 +139,11 @@ read_scroll()
 		 */
 		ch = FALSE;
 		for (op = level.objects; op != NULL; op = next(op)) {
-			if (op->o_type == FOOD) {
+			if (op->o_type == ItemKind::Food) {
 				ch = TRUE;
 				display().draw_tile(op->o_pos, FOOD, TileStyle::Inverse);
 			} else /* as a bonus this will detect amulets as well */
-			if (op->o_type == AMULET) {
+			if (op->o_type == ItemKind::Amulet) {
 				ch = TRUE;
 				display().draw_tile(op->o_pos, AMULET, TileStyle::Inverse);
 			}
@@ -167,7 +167,7 @@ read_scroll()
 			items.s_know[S_TELEP] = TRUE;
 		}
 	when S_ENCH:
-		if (player.weapon == NULL || player.weapon->o_type != WEAPON)
+		if (player.weapon == NULL || player.weapon->o_type != ItemKind::Weapon)
 		msg("you feel a strange sense of loss");
 		else
 		{
@@ -219,7 +219,7 @@ read_scroll()
 		 *
 		 * If he doesn't have a weapon I get to chortle again!
 		 */
-		if (player.weapon == NULL || player.weapon->o_type != WEAPON)
+		if (player.weapon == NULL || player.weapon->o_type != ItemKind::Weapon)
 			msg(laugh, game().options.brief() ? "" : in_dist);
 		else {
 			/*

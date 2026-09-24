@@ -410,7 +410,7 @@ find_dest(Creature *tp)
 	rp = tp->t_room;
 	for	(obj = game().level.objects;	obj != NULL; obj = next(obj))
 	{
-	if (obj->o_type == SCROLL && obj->o_which == S_SCARE)
+	if (obj->o_type == ItemKind::Scroll && obj->o_which == S_SCARE)
 		continue;
 	if (roomin(&obj->o_pos) == rp && rnd(100) < prob)
 	{

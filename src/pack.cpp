@@ -92,7 +92,7 @@ add_pack(Item *obj, bool silent)
 	/*
 	 * Check for and deal with scare monster scrolls
 	 */
-	if (obj->o_type == SCROLL && obj->o_which == S_SCARE)
+	if (obj->o_type == ItemKind::Scroll && obj->o_which == S_SCARE)
 	{
 		if (obj->o_flags.test(rogue::ItemFlag::Found))
 		{
@@ -127,7 +127,7 @@ add_pack(Item *obj, bool silent)
 		 */
 		for (op = pack; op != NULL; op = next(op))
 		{
-			if (op->o_type != FOOD)
+			if (op->o_type != ItemKind::Food)
 				break;
 			lp = op;
 		}
@@ -214,7 +214,7 @@ picked_up:
 			mp->t_dest = &hero;
 	}
 
-	if (obj->o_type == AMULET)
+	if (obj->o_type == ItemKind::Amulet)
 	{
 		game().player.has_amulet = TRUE;
 		game().player.saw_amulet = TRUE;
@@ -232,7 +232,7 @@ picked_up:
  *	List what is in the pack
  */
 byte
-inventory(Item *list, int type, const char *lstr)
+inventory(Item *list, ItemFilter type, const char *lstr)
 {
 	byte ch;
 	int n_objs;
@@ -247,11 +247,11 @@ inventory(Item *list, int type, const char *lstr)
 		 *	it isn't a callable type AND
 		 *	it isn't a zappable weapon
 		 */
-		if (type && type != list->o_type && !(type == CALLABLE &&
-		  (list->o_type == SCROLL || list->o_type == POTION ||
-		  list->o_type == RING || list->o_type == STICK)) &&
-		  !(type == WEAPON && list->o_type == POTION) &&
-		  !(type == STICK && list->o_enemy && list->o_charges))
+		if (!type.is_all() && !type.is(list->o_type) && !(type.is_callable() &&
+		  (list->o_type == ItemKind::Scroll || list->o_type == ItemKind::Potion ||
+		  list->o_type == ItemKind::Ring || list->o_type == ItemKind::Stick)) &&
+		  !(type.is(ItemKind::Weapon) && list->o_type == ItemKind::Potion) &&
+		  !(type.is(ItemKind::Stick) && list->o_enemy && list->o_charges))
 			continue;
 		n_objs++;
 		sprintf(inv_temp, "%c) %%s", ch);
@@ -259,7 +259,7 @@ inventory(Item *list, int type, const char *lstr)
 	}
 	if (n_objs == 0)
 	{
-		msg(type == 0 ? "you are empty handed" :
+		msg(type.is_all() ? "you are empty handed" :
 					"you don't have anything appropriate");
 		return 0;
 	}
@@ -304,7 +304,7 @@ pick_up(byte ch)
  *	Pick something out of a pack for a purpose
  */
 Item *
-get_item(const char *purpose, int type)
+get_item(const char *purpose, ItemFilter type)
 {
 	Item *obj;
 	byte ch;

@@ -40,7 +40,7 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 	mname = monsters[mn-'A'].m_name;
 	if (on(player.body, ISBLIND))
 		mname = it;
-	if (roll_em(&player.body, tp, weap, thrown)||(weap && weap->o_type == POTION)) {
+	if (roll_em(&player.body, tp, weap, thrown)||(weap && weap->o_type == ItemKind::Potion)) {
 		bool did_huh = FALSE;
 
 		if (thrown)
@@ -48,7 +48,7 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 		else
 			hit(NULL, mname);
 		//@ original missed NULL check for weap
-		if (weap && weap->o_type == POTION) {
+		if (weap && weap->o_type == ItemKind::Potion) {
 			th_effect(weap, tp);
 			if (!thrown) {
 				if (weap->o_count > 1)
@@ -354,7 +354,7 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 		/*
 		 * Drain a staff of striking
 		 */
-		if (weap->o_type == STICK && weap->o_which == WS_HIT
+		if (weap->o_type == ItemKind::Stick && weap->o_which == WS_HIT
 			&& --weap->o_charges < 0)
 		{
 			cp = weap->o_damage = "0d0";
@@ -566,7 +566,7 @@ raise_level(void)
 void
 thunk(Item *weap, const char *mname, const char *does, const char *did)
 {
-	if (weap->o_type == WEAPON)
+	if (weap->o_type == ItemKind::Weapon)
 		addmsg("the %s %s ", w_names[weap->o_which], does);
 	else
 		addmsg("you %s ", did);
@@ -618,16 +618,18 @@ is_magic(Item *obj)
 {
 	switch (obj->o_type)
 	{
-	case ARMOR:
+	case ItemKind::Armor:
 		return obj->o_ac != a_class[obj->o_which];
-	case WEAPON:
+	case ItemKind::Weapon:
 		return obj->o_hplus != 0 || obj->o_dplus != 0;
-	case POTION:
-	case SCROLL:
-	case STICK:
-	case RING:
-	case AMULET:
+	case ItemKind::Potion:
+	case ItemKind::Scroll:
+	case ItemKind::Stick:
+	case ItemKind::Ring:
+	case ItemKind::Amulet:
 		return TRUE;
+	otherwise:	//@ the other kinds of item: nothing
+		break;
 	}
 	return FALSE;
 }
@@ -653,7 +655,7 @@ killed(Creature *tp, bool pr)
 
 		if ((gold = new_item()) == NULL)
 			return;
-		gold->o_type = GOLD;
+		gold->o_type = ItemKind::Gold;
 		gold->o_goldval = GOLDCALC;
 		if (save(VS_MAGIC))
 			gold->o_goldval += GOLDCALC + GOLDCALC + GOLDCALC + GOLDCALC;

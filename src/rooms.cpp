@@ -118,7 +118,7 @@ do_rooms(void)
 				bcopy(gold->o_pos,rp->r_gold);
 				gold->o_flags = ISMANY;
 				gold->o_group = GOLDGRP;
-				gold->o_type = GOLD;
+				gold->o_type = ItemKind::Gold;
 				attach(level.objects, gold);
 				chat(rp->r_gold.y, rp->r_gold.x) = GOLD;
 			}

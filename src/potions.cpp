@@ -28,12 +28,12 @@ quaff(void)
 	rogue::Player &player = game().player;
 	rogue::Items &items = game().items;
 
-	if ((obj = get_item("quaff", POTION)) == NULL)
+	if ((obj = get_item("quaff", ItemKind::Potion)) == NULL)
 		return;
 	/*
 	 * Make certain that it is somethings that we want to drink
 	 */
-	if (obj->o_type != POTION)
+	if (obj->o_type != ItemKind::Potion)
 	{
 		msg("yuk! Why would you want to drink that?");
 		return;

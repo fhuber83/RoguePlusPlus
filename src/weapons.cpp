@@ -41,7 +41,7 @@ missile(int ydelta, int xdelta)
 	/*
 	 * Get which thing we are hurling
 	 */
-	if ((obj = get_item("throw", WEAPON)) == NULL)
+	if ((obj = get_item("throw", ItemKind::Weapon)) == NULL)
 		return;
 	if (!can_drop(obj) || is_current(obj))
 		return;
@@ -115,7 +115,7 @@ do_motion(Item *obj, int ydelta, int xdelta)
 			 */
 			if (cansee(unc(obj->o_pos))) {
 				under = chat(obj->o_pos.y, obj->o_pos.x);
-				display().draw_tile(obj->o_pos, obj->o_type);
+				display().draw_tile(obj->o_pos, glyph_of(obj->o_type));
 				tick_pause();
 			} else
 				under = '@';
@@ -130,14 +130,14 @@ const char *
 short_name(Item *obj)
 {
 	switch (obj->o_type) {
-		case WEAPON: return w_names[obj->o_which];
-		case ARMOR: return a_names[obj->o_which];
-		case FOOD: return "food";
-		case POTION:
-		case SCROLL:
-		case AMULET:
-		case STICK:
-		case RING:
+		case ItemKind::Weapon: return w_names[obj->o_which];
+		case ItemKind::Armor: return a_names[obj->o_which];
+		case ItemKind::Food: return "food";
+		case ItemKind::Potion:
+		case ItemKind::Scroll:
+		case ItemKind::Amulet:
+		case ItemKind::Stick:
+		case ItemKind::Ring:
 			return strchr(inv_name(obj, TRUE), ' ') + 1;
 		default:
 			return "bizzare thing";
@@ -158,16 +158,16 @@ fall(Item *obj, bool pr)
 	{
 	case 1:
 		index = INDEX(fpos.y, fpos.x);
-		game().level.map[index] = obj->o_type;
+		game().level.map[index] = glyph_of(obj->o_type);
 		bcopy(obj->o_pos,fpos);
 		if (cansee(fpos.y, fpos.x))
 		{
-			display().draw_tile(fpos, obj->o_type,
+			display().draw_tile(fpos, glyph_of(obj->o_type),
 					((flat(obj->o_pos.y, obj->o_pos.x) & F_PASS) ||
 					 (flat(obj->o_pos.y, obj->o_pos.x) & F_MAZE))
 						? TileStyle::Inverse : TileStyle::Normal);
 			if (moat(fpos.y,fpos.x) != NULL)
-				moat(fpos.y,fpos.x)->t_oldch = obj->o_type;
+				moat(fpos.y,fpos.x)->t_oldch = glyph_of(obj->o_type);
 		}
 		attach(game().level.objects, obj);
 		return;
@@ -255,14 +255,14 @@ wield(void)
 		return;
 	}
 	player.weapon = oweapon;
-	if ((obj = get_item("wield", WEAPON)) == NULL)
+	if ((obj = get_item("wield", ItemKind::Weapon)) == NULL)
 	{
 bad:
 		game().turn.after = FALSE;
 		return;
 	}
 
-	if (obj->o_type == ARMOR)
+	if (obj->o_type == ItemKind::Armor)
 	{
 		msg("you can't wield armor");
 		goto bad;

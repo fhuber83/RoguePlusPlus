@@ -154,7 +154,7 @@ put_things(void)
 				cur->o_hplus = cur->o_dplus = 0;
 				cur->o_damage = cur->o_hurldmg = "0d0";
 				cur->o_ac = 11;
-				cur->o_type = AMULET;
+				cur->o_type = ItemKind::Amulet;
 				/*
 				 * Put it somewhere
 				 */
@@ -189,7 +189,7 @@ put_things(void)
 				rm = rnd_room();
 				rnd_pos(&level.rooms[rm], &tp);
 			} while (!isfloor(chat(tp.y, tp.x)));
-			chat(tp.y, tp.x) = cur->o_type;
+			chat(tp.y, tp.x) = glyph_of(cur->o_type);
 			bcopy(cur->o_pos,tp);
 		}
 }
@@ -227,7 +227,7 @@ treas_room(void)
 		obj = new_thing();
 		bcopy(obj->o_pos,mp);
 		attach(level.objects, obj);
-		level.map[index] = obj->o_type;
+		level.map[index] = glyph_of(obj->o_type);
 	}
 
 	/*

@@ -196,7 +196,7 @@ execcom()
 			else
 				turn.after = FALSE;
 		when 'Q': turn.after = FALSE; quit();
-		when 'i': turn.after = FALSE; inventory(pack, 0, "");
+		when 'i': turn.after = FALSE; inventory(pack, ItemFilter::all(), "");
 		when 'd': drop();
 		when 'q': quaff();
 		when 'r': read_scroll();

@@ -124,7 +124,7 @@ over:
 				oldchar = chat(obj->o_pos.y, obj->o_pos.x) =
 				th->t_room->r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
 				if (cansee(obj->o_pos.y, obj->o_pos.x))
-					mvaddch(obj->o_pos.y, obj->o_pos.x, oldchar);
+					display().draw_tile(obj->o_pos, oldchar);
 				th->t_dest = find_dest(th);
 				break;
 			}
@@ -137,12 +137,12 @@ over:
 	if (th->t_oldch != '@') {
 		if	(th->t_oldch ==	' ' && cansee(th->t_pos.y, th->t_pos.x)
 			   && _level[INDEX(th->t_pos.y,th->t_pos.x)] == FLOOR)
-			mvaddch(th->t_pos.y, th->t_pos.x, FLOOR);
+			display().draw_tile(th->t_pos, FLOOR);
 		else if (th->t_oldch == FLOOR && !cansee(th->t_pos.y, th->t_pos.x)
 				&& !on(player, SEEMONST))
-			mvaddch(th->t_pos.y, th->t_pos.x, ' ');
+			display().draw_tile(th->t_pos, ' ');
 		else
-			mvaddch(th->t_pos.y, th->t_pos.x, th->t_oldch);
+			display().draw_tile(th->t_pos, th->t_oldch);
 	}
 	oroom = th->t_room;
 	if (!(ch_ret == th->t_pos))
@@ -157,23 +157,20 @@ over:
 	}
 
 	if (see_monst(th)) {
-		if (flat(ch_ret.y,ch_ret.x) & F_PASS)
-			standout();
-		th->t_oldch = mvinch(ch_ret.y, ch_ret.x);
-		mvaddch(ch_ret.y, ch_ret.x, th->t_disguise);
+		th->t_oldch = display().tile_at(ch_ret);
+		display().draw_tile(ch_ret, th->t_disguise,
+				(flat(ch_ret.y,ch_ret.x) & F_PASS) ? TileStyle::Inverse : TileStyle::Normal);
 	}
 	else if (on(player,	SEEMONST))
 	{
-		standout();
-		th->t_oldch = mvinch(ch_ret.y, ch_ret.x);
-		mvaddch(ch_ret.y, ch_ret.x, th->t_type);
+		th->t_oldch = display().tile_at(ch_ret);
+		display().draw_tile(ch_ret, th->t_type, TileStyle::Inverse);
 	}
 	else
 		th->t_oldch = '@';
 
 	if (th->t_oldch == FLOOR && oroom->r_flags.test(RoomFlag::Dark))
 		th->t_oldch = ' ';
-	standend();
 }
 
 /*

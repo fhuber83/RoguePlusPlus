@@ -1,8 +1,19 @@
 #pragma once
 
+#include <cstdint>
 #include <string_view>
 
+#include "core/Coord.hpp"
+
 namespace rogue::ui {
+
+/// How a map tile is drawn, besides its glyph.
+enum class TileStyle : std::uint8_t {
+	Normal,
+	Inverse,  ///< passages and mazes, sensed monsters, detected items
+	Bolt,      ///< a magic bolt (fire, lightning) in flight
+	FrostBolt, ///< a bolt of frost in flight
+};
 
 /// What the status lines at the bottom of the screen show.
 struct Status {
@@ -39,6 +50,14 @@ public:
 	/// Removes the prompt again.
 	virtual void hide_more() = 0;
 
+	// Map
+
+	/// Draws `glyph` (a CP437 code, for now) at a map position. Positions
+	/// off the screen are ignored.
+	virtual void draw_tile(Coord pos, std::uint8_t glyph, TileStyle style = TileStyle::Normal) = 0;
+	/// The glyph last drawn at a map position: the hero's view of the level.
+	virtual std::uint8_t tile_at(Coord pos) const = 0;
+
 	// Status lines
 
 	/// Redraws the fields that changed since the last call.
@@ -46,6 +65,14 @@ public:
 	virtual void draw_status(const Status &status) = 0;
 	/// Shows the time (12-hour clock). The cursor does not move.
 	virtual void draw_clock(int hour, int minute) = 0;
+	/// Shows the repeat count typed before a command, or blanks it for 0.
+	virtual void draw_count(int count) = 0;
+
+	// Output
+
+	/// Makes everything drawn so far visible, for animations.
+	virtual void flush() = 0;
+	virtual void bell() = 0;
 };
 
 /// The display the game uses.

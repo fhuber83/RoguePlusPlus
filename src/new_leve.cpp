@@ -97,7 +97,7 @@ new_level(void)
 
 	mpos = 0;
 	enter_room(&hero);
-	mvaddch(hero.y, hero.x, PLAYER);
+	display().draw_tile(hero, PLAYER);
 	bcopy(oldpos,hero);
 	oldrp = proom;
 	if (on(player, SEEMONST))

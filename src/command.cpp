@@ -30,7 +30,7 @@ command()
 				msg("you can move again");
 				no_command = 0;
 			}
-			cur_refresh();  //@ sleeping, fainted, frozen, etc
+			display().flush();  //@ sleeping, fainted, frozen, etc
 		} else
 			execcom();
 		do_fuses();
@@ -99,13 +99,13 @@ get_prefix()
 		do_take = lasttake;
 		retch = lastch;
 		fastmode = FALSE;
-		cur_refresh();  //@ repeated commands, ie, "10s"
+		display().flush();  //@ repeated commands, ie, "10s"
 	} else {
 		count = 0;
 		if (running) {
 			retch = runch;
 			do_take = lasttake;
-			cur_refresh();  //@ running ("H", "fh", "L", etc)
+			display().flush();  //@ running ("H", "fh", "L", etc)
 		} else {
 			for (retch = 0; retch == 0; ) {
 				switch (ch = com_char()) {
@@ -171,11 +171,7 @@ get_prefix()
 void
 show_count()
 {
-	move(LINES-2, COLS-4);
-	if (count)
-		printw("%-4d", count);
-	else
-		addstr("    ");
+	display().draw_count(count);
 }
 
 void

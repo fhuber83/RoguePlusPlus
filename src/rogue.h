@@ -12,6 +12,7 @@
 #include "core/Dice.hpp"
 #include "core/Flags.hpp"
 #include "core/Random.hpp"
+#include "ui/Display.hpp"
 
 #include "extern.h"
 
@@ -306,6 +307,10 @@ struct h_list {
  * Coordinate data type
  */
 using coord = rogue::Coord;  //@ see core/Coord.hpp
+
+//@ Game output goes through the display, see ui/Display.hpp
+using rogue::ui::display;
+using rogue::ui::TileStyle;
 
 /*@
  * Data type for strength values and modifiers

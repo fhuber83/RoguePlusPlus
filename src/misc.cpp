@@ -63,11 +63,10 @@ look(bool wakeup)
 				for (y = oldpos.y - 1; y <= (oldpos.y + 1); y++) {
 					if ((y == hero.y && x == hero.x) || offmap(y,x))
 						continue;
-					move(y,x);
-					ch = inch();
+					ch = display().tile_at({x, y});
 					if (ch == FLOOR) {
 						if (oldrp->r_flags.test(RoomFlag::Dark) && !oldrp->r_flags.test(RoomFlag::Gone))
-							addch(' ');
+							display().draw_tile({x, y}, ' ');
 					} else {
 						fp = &_flags[INDEX(y,x)];
 						/*
@@ -78,7 +77,7 @@ look(bool wakeup)
 						if (((*fp&F_MAZE) || (*fp&F_PASS)) && (ch!=PASSAGE)
 							&& (ch != STAIRS) &&
 							((*fp & F_PNUM) == (pfl & F_PNUM)) )
-								addch(PASSAGE);
+								display().draw_tile({x, y}, PASSAGE);
 					}
 				}
 		}
@@ -147,17 +146,13 @@ look(bool wakeup)
 				}
 			}
 
-			if ((ch!=PASSAGE) && (*fp & (F_PASS | F_MAZE)))
-				/*
-				 * The current character used for IBM ARMOR doesn't
-				 * look right in Inverse
-				 */
-				if (ch != ARMOR)
-					standout();
-
-			move(y, x);
-			addch(ch);
-			standend();
+			/*
+			 * The current character used for IBM ARMOR doesn't
+			 * look right in Inverse
+			 */
+			display().draw_tile({x, y}, ch,
+					((ch!=PASSAGE) && (*fp & (F_PASS | F_MAZE)) && ch != ARMOR)
+						? TileStyle::Inverse : TileStyle::Normal);
 
 			if (door_stop && !firstmove && running) {
 				switch (runch) {
@@ -213,7 +208,6 @@ look(bool wakeup)
 		}
 	if (door_stop && !firstmove && passcount > 1)
 		running = FALSE;
-	move(hero.y, hero.x);
 	/*@
 	 * The expression (was_trapped > TRUE) would never evaluate to true if
 	 * `was_trapped` was a real boolean. I guess this is specifically testing
@@ -224,13 +218,12 @@ look(bool wakeup)
 	 * I guess int would be a better type, or perhape another logic to detect
 	 * teleport traps.
 	 */
-	if ((flat(hero.y,hero.x) & F_PASS) || (was_trapped > TRUE)
+	display().draw_tile(hero, PLAYER,
+			((flat(hero.y,hero.x) & F_PASS) || (was_trapped > TRUE)
 					|| (flat(hero.y,hero.x) & F_MAZE))
-		standout();
-	addch(PLAYER);
-	standend();
+				? TileStyle::Inverse : TileStyle::Normal);
 	if (was_trapped) {
-		beep();
+		display().bell();
 		was_trapped = FALSE;
 	}
 }

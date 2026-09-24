@@ -27,7 +27,7 @@ slime_split(THING *tp)
 	new_monster(nslime, 'S', &slimy);
 	if (cansee(slimy.y, slimy.x)) {
 		nslime->t_oldch = chat(slimy.y, slimy.x);
-		mvaddch(slimy.y, slimy.x, 'S');
+		display().draw_tile(slimy, 'S');
 	}
 	start_run(&slimy);
 }

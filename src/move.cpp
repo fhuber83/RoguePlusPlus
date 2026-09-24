@@ -175,7 +175,7 @@ hit_bound:
 			if (ch != STAIRS)
 				take = ch;
 move_stuff:
-			mvaddch(hero.y, hero.x, chat(hero.y, hero.x));
+			display().draw_tile(hero, chat(hero.y, hero.x));
 			if ((fl & F_PASS) && (chat(oldpos.y, oldpos.x) == DOOR
 					|| (flat(oldpos.y, oldpos.x) & F_MAZE)))
 				leave_room(&nh);
@@ -269,7 +269,7 @@ be_trapped(coord *tc)
 		}
 	when T_TELEP:
 		teleport();
-		mvaddch(tc->y, tc->x, TRAP); /* since the hero's leaving, look()
+		display().draw_tile(*tc, TRAP); /* since the hero's leaving, look()
 						won't put it on for us */
 		/*@
 		 * I guess this increment is used solely to signal look() at move.c

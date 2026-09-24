@@ -159,3 +159,61 @@ TEST(ScreenDisplay, ClockBottomRightKeepsCursor)
 	EXPECT_EQ(s.row(), 3);
 	EXPECT_EQ(s.col(), 4);
 }
+
+TEST(ScreenDisplay, TilesAreDrawnAndReadBack)
+{
+	Screen s;
+	ScreenDisplay d(s);
+	d.draw_tile({10, 5}, 'K');
+	EXPECT_EQ(d.tile_at({10, 5}), 'K');
+	EXPECT_EQ(s.at(5, 10).ch, 'K');
+	EXPECT_EQ(s.at(5, 10).attr, rogue::ui::dos::Normal);
+	EXPECT_EQ(d.tile_at({11, 5}), ' ');
+}
+
+TEST(ScreenDisplay, TileStylesPickTheAttribute)
+{
+	namespace dos = rogue::ui::dos;
+	using rogue::ui::TileStyle;
+	Screen s;
+	ScreenDisplay d(s);
+	d.draw_tile({1, 2}, 'K', TileStyle::Inverse);
+	d.draw_tile({2, 2}, '*', TileStyle::Bolt);
+	d.draw_tile({3, 2}, '*', TileStyle::FrostBolt);
+	EXPECT_EQ(s.at(2, 1).attr, dos::Standout);
+	EXPECT_EQ(s.at(2, 2).attr, dos::Red);
+	EXPECT_EQ(s.at(2, 3).attr, dos::Blue);
+}
+
+TEST(ScreenDisplay, MapGlyphsGetTheirColours)
+{
+	namespace dos = rogue::ui::dos;
+	Screen s;
+	ScreenDisplay d(s);
+	d.draw_tile({4, 4}, 0xfa); // FLOOR
+	d.draw_tile({5, 4}, 0x01, rogue::ui::TileStyle::Inverse); // PLAYER in a passage
+	EXPECT_EQ(s.at(4, 4).attr, dos::Green | dos::Bright);
+	EXPECT_EQ(s.at(4, 5).attr, dos::Yellow | dos::Standout);
+}
+
+TEST(ScreenDisplay, TilesOffTheScreenAreIgnored)
+{
+	Screen s;
+	ScreenDisplay d(s);
+	s.set_cursor(3, 3);
+	d.draw_tile({-1, 5}, 'X');
+	d.draw_tile({5, Screen::Rows}, 'X');
+	EXPECT_EQ(d.tile_at({-1, 5}), ' ');
+	EXPECT_EQ(s.row(), 3);
+	EXPECT_EQ(s.col(), 3);
+}
+
+TEST(ScreenDisplay, CountShowsAndClears)
+{
+	Screen s;
+	ScreenDisplay d(s);
+	d.draw_count(12);
+	EXPECT_EQ(row_text(s, 23, 76, 4), "12  ");
+	d.draw_count(0);
+	EXPECT_EQ(row_text(s, 23, 76, 4), "    ");
+}

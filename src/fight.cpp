@@ -583,6 +583,7 @@ void
 remove_monster(coord *mp, THING *tp, bool waskill)
 {
 	THING *obj, *nexti;
+	TileStyle style;
 
 	if (tp == NULL)
 		return;
@@ -597,13 +598,11 @@ remove_monster(coord *mp, THING *tp, bool waskill)
 		else
 			discard(obj);
 	}
-	if (_level[INDEX(mp->y,mp->x)] == PASSAGE)
-		standout();
+	style = (_level[INDEX(mp->y,mp->x)] == PASSAGE) ? TileStyle::Inverse : TileStyle::Normal;
 	if (tp->t_oldch == FLOOR && !cansee(mp->y, mp->x))
-		mvaddch(mp->y, mp->x, ' ');
+		display().draw_tile(*mp, ' ', style);
 	else if (tp->t_oldch != '@')
-		mvaddch(mp->y, mp->x, tp->t_oldch);
-	standend();
+		display().draw_tile(*mp, tp->t_oldch, style);
 	detach(mlist, tp);
 	discard(tp);
 }

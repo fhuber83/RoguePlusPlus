@@ -125,14 +125,10 @@ read_scroll()
 				default:
 					ch = ' ';
 				}
-				if (ch == DOOR) {
-					move(y,x);
-					if (inch() != DOOR)
-						standout();
-				}
 				if (ch != ' ')
-					mvaddch(y, x, ch);
-				standend();
+					display().draw_tile({x, y}, ch,
+							(ch == DOOR && display().tile_at({x, y}) != DOOR)
+								? TileStyle::Inverse : TileStyle::Normal);
 			}
 	when S_GFIND:
 		/*
@@ -142,15 +138,11 @@ read_scroll()
 		for (op = lvl_obj; op != NULL; op = next(op)) {
 			if (op->o_type == FOOD) {
 				ch = TRUE;
-				standout();
-				mvwaddch(hw, op->o_pos.y, op->o_pos.x, FOOD);
-				standend();
+				display().draw_tile(op->o_pos, FOOD, TileStyle::Inverse);
 			} else /* as a bonus this will detect amulets as well */
 			if (op->o_type == AMULET) {
 				ch = TRUE;
-				standout();
-				mvwaddch(hw, op->o_pos.y, op->o_pos.x, AMULET);
-				standend();
+				display().draw_tile(op->o_pos, AMULET, TileStyle::Inverse);
 			}
 		}
 		if (ch) {

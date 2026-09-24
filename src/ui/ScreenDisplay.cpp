@@ -10,7 +10,9 @@ namespace {
 
 // set_attr() indexes, see the colour macros in curses_common.h
 constexpr int Plain = 0;
+constexpr int RedText = 3;
 constexpr int YellowText = 11;
+constexpr int BlueText = 13;
 constexpr int Reverse = 14;
 constexpr int BoldText = 16;
 
@@ -91,6 +93,27 @@ void ScreenDisplay::draw_covered()
 	prompt_shown_ = false;
 }
 
+// Map
+
+void ScreenDisplay::draw_tile(Coord pos, std::uint8_t glyph, TileStyle style)
+{
+	int base = Plain;
+	switch (style) {
+	case TileStyle::Normal: base = Plain; break;
+	case TileStyle::Inverse: base = Reverse; break;
+	case TileStyle::Bolt: base = RedText; break;
+	case TileStyle::FrostBolt: base = BlueText; break;
+	}
+	if (!screen_.set_cursor(pos.y, pos.x))
+		return;
+	screen_.put(glyph, glyph_attr(glyph, dos_attr(base)));
+}
+
+std::uint8_t ScreenDisplay::tile_at(Coord pos) const
+{
+	return Screen::contains(pos.y, pos.x) ? screen_.at(pos.y, pos.x).ch : ' ';
+}
+
 // Status lines
 
 /*@
@@ -168,6 +191,27 @@ void ScreenDisplay::draw_clock(int hour, int minute)
 	text_at(HungerRow, ClockCol, buf);
 	screen_.set_attr(dos_attr(Plain));
 	screen_.set_cursor(row, col);
+}
+
+void ScreenDisplay::draw_count(int count)
+{
+	char buf[8] = "    ";
+
+	if (count)
+		std::snprintf(buf, sizeof buf, "%-4d", count);
+	text_at(StatusRow, Screen::Cols - 4, buf);
+}
+
+// Output
+
+void ScreenDisplay::flush()
+{
+	screen_.refresh();
+}
+
+void ScreenDisplay::bell()
+{
+	screen_.bell();
 }
 
 // Helpers

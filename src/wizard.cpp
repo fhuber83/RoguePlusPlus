@@ -164,7 +164,7 @@ teleport(void)
 	int rm;
 	coord c;
 
-	mvaddch(hero.y, hero.x, chat(hero.y, hero.x));
+	display().draw_tile(hero, chat(hero.y, hero.x));
 	do
 	{
 		rm = rnd_room();
@@ -181,7 +181,7 @@ teleport(void)
 		bcopy(hero,c);
 		look(TRUE);
 	}
-	mvaddch(hero.y, hero.x, PLAYER);
+	display().draw_tile(hero, PLAYER);
 	/*
 	 * turn off ISHELD in case teleportation was done while fighting
 	 * a Fungi

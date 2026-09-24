@@ -72,7 +72,7 @@ add_pack(THING *obj, bool silent)
 				if (from_floor)
 				{
 					detach(lvl_obj, obj);
-					mvaddch(hero.y, hero.x, floor);
+					display().draw_tile(hero, floor);
 					chat(hero.y, hero.x) = floor;
 				}
 				discard(obj);
@@ -97,7 +97,7 @@ add_pack(THING *obj, bool silent)
 		if (obj->o_flags & ISFOUND)
 		{
 			detach(lvl_obj, obj);
-			mvaddch(hero.y, hero.x, floor);
+			display().draw_tile(hero, floor);
 			chat(hero.y, hero.x) = floor;
 			msg("the scroll turns to dust%s.", noterse(" as you pick it up"));
 			return;
@@ -110,7 +110,7 @@ add_pack(THING *obj, bool silent)
 	if (from_floor)
 	{
 		detach(lvl_obj, obj);
-		mvaddch(hero.y, hero.x, floor);
+		display().draw_tile(hero, floor);
 		chat(hero.y, hero.x) = floor;
 	}
 	/*
@@ -414,7 +414,7 @@ money(int value)
 
 	floor = proom->r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
 	purse += value;
-	mvaddch(hero.y, hero.x, floor);
+	display().draw_tile(hero, floor);
 	chat(hero.y, hero.x) = floor;
 	if (value > 0)
 	{

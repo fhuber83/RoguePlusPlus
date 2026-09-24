@@ -52,6 +52,12 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - `scrlmsg()` is gone. Its sideways scroll was never refreshed, so only the last frame was ever visible. The 40-column status positions (`PT()`) are gone too.
      - `wait_msg`, `show_win` and `str_attr` still draw directly. They move with the full-screen views in 4.4.
      - The same A/B replay gave identical captures. `tests/ui/ScreenDisplayTest.cpp` covers the layout.
+   - **4.3 Map.**
+     - Game code draws the map with `display().draw_tile(Coord, glyph, TileStyle)` and reads the hero's view back with `display().tile_at(Coord)`.
+     - `TileStyle` (`Normal`, `Inverse`, `Bolt`, `FrostBolt`) replaces the `standout()`/`blue()`/`red()` brackets. Inverse covers passages and mazes, sensed monsters, detected items and the teleport flash.
+     - The repeat count, animation refreshes and the trap bell go through `draw_count`, `flush` and `bell`. `rogue.h` includes `ui/Display.hpp` and brings `display` and `TileStyle` into scope.
+     - Domain files no longer call `mvaddch`, `mvinch`, `standout` or the colour macros. The exceptions are the full-screen views in `misc.cpp` (help), `things.cpp` (inventory) and `wizard.cpp` (`show_map`), plus `implode()` in `new_leve.cpp`, which all belong to 4.4.
+     - Verification: the A/B replay, a fuzz replay over six seeds, and scripted item scenarios on `WIZARD` builds (`C` creates items). All captures were identical. Frame-by-frame captures of zapped wands showed the same red bolt in both builds. `WIZARD` builds do not compile as is, so both trees were patched in scratch copies for this (see the notes below).
 
 ## Target architecture
 
@@ -78,7 +84,7 @@ Each phase is a series of small commits that each build and play.
 4. **UI seam.** Game logic stops touching the screen directly. Steps:
    1. *Done:* `ui::Screen` grid plus `ui::Terminal` backend (see above).
    2. *Done:* message and status lines behind `ui::Display` (see above).
-   3. **Map.** Game code draws and reads tiles through `Display` (`draw_tile(Coord, …)`, `tile_at(Coord)`) instead of `mvaddch`/`mvinch`.
+   3. *Done:* the map goes through `Display` (see above).
    4. **Full-screen views.** Inventory, discoveries, help, tombstone and scores, and credits become `Display` calls, along with the prompts `wait_msg`, `show_win` and `str_attr`.
    5. **Input.** `readchar`/`getinfo` go behind `ui::Input`.
    6. **Drop the DOS emulation.** Cells hold a `Glyph` and a style instead of CP437 codes and DOS attributes. `CursesTerminal` maps `Glyph → cchar_t`, and `curses_dos.h`, the CCODE tables and the attribute tables go away.
@@ -105,4 +111,5 @@ Each phase is a series of small commits that each build and play.
 
 - `faststate` ("Fast Play") used to be toggled by Scroll Lock and is now always `FALSE`. Reintroduce it as a real option or key if wanted.
 - `save_game()` prints "saving games is disabled" and `restore()` still contains the memory-dump code. Treat both as dead until phase 8.
+- `WIZARD` builds do not compile: `CTRL(D)` in `command.cpp` should be `CTRL('D')`, `rogue.h` defines `bool wizard;` in the header (it should be `extern`, while `extern.cpp` defines it only under `WIZARD`), and `create_obj()` passes a `short *` and `stdscr` to `get_num(int *)`.
 - The terminal must be 80×25. `COLS == 40` paths still exist for the old 40-column mode.

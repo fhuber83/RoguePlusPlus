@@ -22,8 +22,13 @@ public:
 	void show_more(std::string_view prompt, int col) override;
 	void blink_more() override;
 	void hide_more() override;
+	void draw_tile(Coord pos, std::uint8_t glyph, TileStyle style = TileStyle::Normal) override;
+	std::uint8_t tile_at(Coord pos) const override;
 	void draw_status(const Status &status) override;
 	void draw_clock(int hour, int minute) override;
+	void draw_count(int count) override;
+	void flush() override;
+	void bell() override;
 
 private:
 	void text(std::string_view s);

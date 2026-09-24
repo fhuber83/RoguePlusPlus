@@ -198,7 +198,7 @@ door_open(struct room *rp)
 {
 	int j, k;
 	byte ch;
-	THING *item;
+	Creature *tp;
 
 	if (!rp->r_flags.test(RoomFlag::Gone) && !on(game().player.body, ISBLIND))
 		for (j = rp->r_pos.y; j < rp->r_pos.y + rp->r_max.y; j++)
@@ -206,15 +206,15 @@ door_open(struct room *rp)
 				ch = winat(j, k);
 				/* move(j, k); Why do this,?????? */
 				if (ismonster(ch)) {
-					item = wake_monster(j, k);
+					tp = wake_monster(j, k);
 					//@ this sanity check was not in original
-					if (item == NULL)
+					if (tp == NULL)
 					{
 						continue;
 					}
-					if (item->t_oldch == ' ' && !rp->r_flags.test(RoomFlag::Dark)
+					if (tp->t_oldch == ' ' && !rp->r_flags.test(RoomFlag::Dark)
 						&& !on(game().player.body, ISBLIND))
-							item->t_oldch = chat(j, k);
+							tp->t_oldch = chat(j, k);
 				}
 			}
 }
@@ -257,7 +257,7 @@ be_trapped(coord *tc)
 				msg("oh no! An arrow shot you");
 		}
 		else {
-			THING *arrow;
+			Item *arrow;
 
 			if ((arrow = new_item()) != NULL) {
 				arrow->o_type = WEAPON;
@@ -320,11 +320,11 @@ descend(const char *mesg)
  *	Move in a random direction if the monster/person is confused
  */
 void
-rndmove(THING *who, coord *newmv)
+rndmove(Creature *who, coord *newmv)
 {
 	int x, y;
 	byte ch;
-	THING *obj;
+	Item *obj;
 
 	y = newmv->y = who->t_pos.y + rnd(3) - 1;
 	x = newmv->x = who->t_pos.x + rnd(3) - 1;

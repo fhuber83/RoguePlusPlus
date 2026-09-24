@@ -15,7 +15,7 @@ static int	gethand(void);
 void
 ring_on()
 {
-	THING *obj;
+	Item *obj;
 	int ring = -1;
 	rogue::Player &player = game().player;
 
@@ -80,7 +80,7 @@ void
 ring_off(void)
 {
 	int ring;
-	THING *obj;
+	Item *obj;
 	char packchar;
 	rogue::Player &player = game().player;
 
@@ -170,7 +170,7 @@ ring_eat(int hand)
  *	Print ring bonuses
  */
 const char *
-ring_num(THING *obj)
+ring_num(Item *obj)
 {
 	if (!(obj->o_flags & ISKNOW))
 		return "";

@@ -19,7 +19,7 @@ static char	*nothing(byte type);
  *	inventory.
  */
 char *
-inv_name(THING *obj, bool drop)
+inv_name(Item *obj, bool drop)
 {
 	int which = obj->o_which;
 	char *pb;
@@ -171,7 +171,7 @@ void
 drop(void)
 {
 	byte ch;
-	THING *nobj, *op;
+	Item *nobj, *op;
 
 	ch = chat(hero.y, hero.x);
 	if (ch != FLOOR && ch != PASSAGE)
@@ -220,7 +220,7 @@ drop(void)
  *	Do special checks for dropping or unweilding|unwearing|unringing
  */
 bool
-can_drop(THING *op)
+can_drop(Item *op)
 {
 	rogue::Player &player = game().player;
 	if (op == NULL)
@@ -265,10 +265,10 @@ can_drop(THING *op)
  * new_thing:
  *	Return a new thing
  */
-THING *
+Item *
 new_thing(void)
 {
-	THING *cur;
+	Item *cur;
 	int j, k;
 	rogue::Items &items = game().items;
 
@@ -433,7 +433,7 @@ print_disc(byte type)
 	bool *know = NULL;
 	char **guess = NULL;
 	int i, maxnum = 0, num_found;
-	static THING obj;
+	static Item obj;
 	static short order[MAX(MAXSCROLLS, MAXPOTIONS, MAXRINGS, MAXSTICKS)];
 	rogue::Items &items = game().items;
 

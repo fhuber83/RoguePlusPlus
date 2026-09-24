@@ -15,10 +15,11 @@ const char *in_dist = " in the distance";
 void
 read_scroll()
 {
-	THING *obj;
+	Item *obj;
 	int y, x;
 	byte ch;
-	THING *op;
+	Item *op;
+	Creature *mo;
 	int index;
 	bool discardit = FALSE;
 	rogue::Player &player = game().player;
@@ -61,9 +62,9 @@ read_scroll()
 		for (x = hero.x - 3; x <= hero.x + 3; x++)
 			if (x >= 0 && x < COLS)
 				for (y = hero.y - 3; y <= hero.y + 3; y++)
-					if ((y > 0 && y < maxrow) && ((op=moat(y, x)) != NULL)) {
-						op->t_flags &= ~ISRUN;
-						op->t_flags |= ISHELD;
+					if ((y > 0 && y < maxrow) && ((mo=moat(y, x)) != NULL)) {
+						mo->t_flags &= ~ISRUN;
+						mo->t_flags |= ISHELD;
 					}
 	when S_SLEEP:
 		/*
@@ -77,8 +78,8 @@ read_scroll()
 		{
 		coord mp;
 
-		if (plop_monster(hero.y, hero.x, &mp) && (op=new_item()) != NULL)
-			new_monster(op, randmonster(FALSE), &mp);
+		if (plop_monster(hero.y, hero.x, &mp) && (mo=new_creature()) != NULL)
+			new_monster(mo, randmonster(FALSE), &mp);
 		else
 			ifterse0("you hear a faint cry of anguish",
 				"you hear a faint cry of anguish in the distance");
@@ -120,9 +121,9 @@ read_scroll()
 				case DOOR:
 				case PASSAGE:
 				case STAIRS:
-					if ((op = moat(y, x)) != NULL)
-						if (op->t_oldch == ' ')
-							op->t_oldch = ch;
+					if ((mo = moat(y, x)) != NULL)
+						if (mo->t_oldch == ' ')
+							mo->t_oldch = ch;
 					break;
 				default:
 					ch = ' ';

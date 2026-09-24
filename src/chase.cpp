@@ -17,7 +17,7 @@ coord ch_ret;			/* Where chasing takes	you */
 void
 runners()
 {
-	THING *tp;
+	Creature *tp;
 	int dist;
 
 	for	(tp = game().level.monsters; tp	!= NULL; tp = next(tp)) {
@@ -40,11 +40,11 @@ runners()
  *	Make one thing chase another.
  */
 void
-do_chase(THING *th)
+do_chase(Creature *th)
 {
 	int	mindist	= 32767, i, dist;
 	bool door;
-	THING *obj;
+	Item *obj;
 	struct room	*oroom;
 	struct room	*rer, *ree;	/* room of chaser, room of chasee */
 	coord target;				/* Temporary	destination for	chaser */
@@ -177,7 +177,7 @@ over:
  *	Return TRUE if the hero can see the monster
  */
 bool
-see_monst(THING *mp)
+see_monst(Creature *mp)
 {
 	rogue::Player &player = game().player;
 	if (on(player.body, ISBLIND))
@@ -209,7 +209,7 @@ see_monst(THING *mp)
 void
 start_run(coord *runner)
 {
-	THING *tp;
+	Creature *tp;
 
 	/*
 	 * If we couldn't find him,	something is funny
@@ -238,11 +238,11 @@ start_run(coord *runner)
  *	@@ Wrong documentation: function is actually a void, there is no return
  */
 void
-chase(THING *tp, coord *ee)
+chase(Creature *tp, coord *ee)
 {
 	int	x, y;
 	int	dist, thisdist;
-	THING *obj;
+	Item *obj;
 	coord *er;
 	byte ch;
 	int	plcnt =	1;
@@ -398,9 +398,9 @@ cansee(int y, int x)
  *	find	the proper destination for the monster
  */
 coord *
-find_dest(THING *tp)
+find_dest(Creature *tp)
 {
-	THING *obj;
+	Item *obj;
 	int prob;
 	struct room *rp;
 

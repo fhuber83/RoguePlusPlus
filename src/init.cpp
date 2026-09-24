@@ -14,14 +14,13 @@
 void
 init_player()
 {
-	THING *obj;
+	Item *obj;
 	bcopy(pstats,game().player.max_stats);
 	game().player.food_left = HUNGERTIME;
 	/*
 	 * initialize things
 	 */
-	setmem(game().items.pool,MAXITEMS*sizeof(THING),0);
-	setmem(game().items.pool_used,MAXITEMS*sizeof(int),0);
+	game().pool = {};
 	/*
 	 * Give the rogue his weaponry.  First a mace.
 	 */

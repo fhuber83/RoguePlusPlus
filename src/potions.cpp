@@ -22,7 +22,8 @@ turn_see_off(void)
 void
 quaff(void)
 {
-	THING *obj, *th;
+	Item *obj;
+	Creature *th;
 	bool discardit = FALSE;
 	rogue::Player &player = game().player;
 	rogue::Items &items = game().items;
@@ -100,7 +101,7 @@ quaff(void)
 		 */
 		if (game().level.objects != NULL)
 		{
-			THING *tp;
+			Item *tp;
 			bool show;
 
 			show = FALSE;
@@ -218,7 +219,7 @@ quaff(void)
 void
 invis_on(void)
 {
-	THING *th;
+	Creature *th;
 
 	game().player.body.t_flags |= CANSEE;
 	for (th = game().level.monsters; th != NULL; th = next(th))
@@ -235,7 +236,7 @@ invis_on(void)
 bool
 turn_see(bool turn_off)
 {
-	THING *mp;
+	Creature *mp;
 	bool can_see, add_new;
 	byte was_there = ' ';
 
@@ -265,7 +266,7 @@ turn_see(bool turn_off)
  *	Compute the effect of this potion hitting a monster.
  */
 void
-th_effect(THING *obj, THING *tp)
+th_effect(Item *obj, Creature *tp)
 {
 	switch (obj->o_which)
 	{

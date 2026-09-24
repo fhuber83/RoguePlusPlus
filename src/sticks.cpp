@@ -12,7 +12,7 @@
  *	Set up a new stick
  */
 void
-fix_stick(THING *cur)
+fix_stick(Item *cur)
 {
 	if (strcmp(game().items.ws_type[cur->o_which], "staff") == 0)
 		cur->o_damage = "2d3";
@@ -40,8 +40,8 @@ fix_stick(THING *cur)
 void
 do_zap()
 {
-	THING *obj;
-	THING *tp;
+	Item *obj;
+	Creature *tp;
 	int y, x;
 	const char *name;
 	int which_one;
@@ -141,7 +141,7 @@ do_zap()
 			}
 			else if (which_one == WS_POLYMORPH)
 			{
-				THING *pp;
+				Item *pp;
 
 				pp = tp->t_pack;
 				detach(game().level.monsters, tp);
@@ -198,7 +198,7 @@ do_zap()
 	}
 	when WS_MISSILE:
 	{
-		THING bolt;
+		Item bolt;
 
 		game().items.ws_know[WS_MISSILE] = TRUE;
 		bolt.o_type = '*';
@@ -289,12 +289,12 @@ do_zap()
 void
 drain()
 {
-	THING *mp;
+	Creature *mp;
 	int cnt;
 	struct room *corp;
-	THING **dp;
+	Creature **dp;
 	bool inpass;
-	THING *drainee[40];
+	Creature *drainee[40];
 
 	/*
 	 * First cnt how many things we need to spread the hit points among
@@ -340,7 +340,7 @@ void
 fire_bolt(coord *start, coord *dir, const char *name)
 {
 	byte dirch = 0, ch;
-	THING *tp;
+	Creature *tp;
 	bool hit_hero, used, changed;
 	int i, j;
 	coord pos;
@@ -348,7 +348,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 		coord s_pos;
 		byte s_under;
 	} spotpos[BOLT_LENGTH*2];
-	THING bolt;
+	Item bolt;
 	bool is_frost;
 
 	is_frost = (strcmp(name, "frost") == 0);
@@ -452,7 +452,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
  *	Return an appropriate string for a wand charge
  */
 char *
-charge_str(THING *obj)
+charge_str(Item *obj)
 {
 	static char buf[20];
 

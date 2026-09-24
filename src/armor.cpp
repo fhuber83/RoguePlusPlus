@@ -13,7 +13,7 @@
 void
 wear()
 {
-	THING *obj;
+	Item *obj;
 	char *sp;
 
 	if (game().player.armor != NULL) {
@@ -42,7 +42,7 @@ wear()
 void
 take_off()
 {
-	THING *obj;
+	Item *obj;
 
 	if ((obj = game().player.armor) == NULL) {
 		game().turn.after = FALSE;

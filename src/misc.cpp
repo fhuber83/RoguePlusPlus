@@ -42,7 +42,7 @@ look(bool wakeup)
 	int x, y;
 	byte ch, pch;
 	int index;
-	THING *tp;
+	Creature *tp;
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
@@ -234,10 +234,10 @@ look(bool wakeup)
  * find_obj:
  *	Find the unclaimed object at y, x
  */
-THING *
+Item *
 find_obj(int y, int x)
 {
-	THING *op;
+	Item *op;
 
 	for (op = game().level.objects; op != NULL; op = next(op))
 		if (op->o_pos.y == y && op->o_pos.x == x)
@@ -258,7 +258,7 @@ find_obj(int y, int x)
 void
 eat()
 {
-	THING *obj;
+	Item *obj;
 	rogue::Player &player = game().player;
 
 	if ((obj = get_item("eat", FOOD)) == NULL)
@@ -366,7 +366,7 @@ add_haste(bool potion)
 void
 aggravate()
 {
-	THING *mi;
+	Creature *mi;
 
 	for (mi = game().level.monsters; mi != NULL; mi = next(mi))
 		start_run(&mi->t_pos);
@@ -398,7 +398,7 @@ vowelstr(const char *str)
  *	See if the object is one of the currently used items
  */
 bool
-is_current(THING *obj)
+is_current(Item *obj)
 {
 	if (obj == NULL)
 		return FALSE;
@@ -528,7 +528,7 @@ step_ok(byte ch)
  * printing.
  */
 char
-goodch(THING *obj)
+goodch(Item *obj)
 {
 	char ch = MAGIC;
 
@@ -764,7 +764,7 @@ u_level()
 void
 call()
 {
-	THING *obj;
+	Item *obj;
 	char **guess;
 	const char *elsewise;
 	bool *know;

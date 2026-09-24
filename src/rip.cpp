@@ -232,7 +232,7 @@ death(char monst)
 void
 total_winner(void)
 {
-	THING *obj;
+	Item *obj;
 	int worth = 0;
 	byte c;
 	int oldpurse;

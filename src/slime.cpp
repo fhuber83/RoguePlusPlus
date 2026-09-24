@@ -13,14 +13,14 @@
 
 static coord slimy;
 
-static bool	new_slime(THING *tp);
+static bool	new_slime(Creature *tp);
 
 void
-slime_split(THING *tp)
+slime_split(Creature *tp)
 {
-	THING *nslime;
+	Creature *nslime;
 
-	if (!new_slime(tp) || (nslime = new_item()) == NULL)
+	if (!new_slime(tp) || (nslime = new_creature()) == NULL)
 		return;
 	msg("The slime divides.  Ick!");
 	new_monster(nslime, 'S', &slimy);
@@ -33,11 +33,11 @@ slime_split(THING *tp)
 
 static
 bool
-new_slime(THING *tp)
+new_slime(Creature *tp)
 {
 	int y, x, ty, tx;
 	bool ret;
-	THING *ntp;
+	Creature *ntp;
 	coord sp;
 
 	ret = FALSE;

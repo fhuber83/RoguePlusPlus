@@ -88,7 +88,7 @@ unconfuse(void)
 void
 unsee(void)
 {
-	THING *th;
+	Creature *th;
 
 	for (th = game().level.monsters; th != NULL; th = next(th))
 		if (on(*th, ISINVIS) && see_monst(th) && th->t_oldch != '@')

@@ -385,72 +385,18 @@ struct stats {
 	shint s_maxhp;			/* Max hit points */
 };
 
-/*
- * Structure for monsters and player
+/*@
+ * The legacy union thing is split into a creature (monster or player) and an
+ * item. o_charges and o_goldval are other names for o_ac.
  */
-union thing {
-	struct {
-	union thing *_l_next, *_l_prev;	/* Next pointer in link */
-	coord _t_pos;			/* Position */
-	char _t_turn;			/* If slowed, is it a turn to move */
-	char _t_type;			/* What it is */
-	byte _t_disguise;		/* What mimic looks like */
-	byte _t_oldch;			/* Character that was where it was */
-	coord *_t_dest;			/* Where it is running to */
-	short _t_flags;			/* State word */
-	struct stats _t_stats;		/* Physical description */
-	struct room *_t_room;		/* Current room for thing */
-	union thing *_t_pack;		/* What the thing is carrying */
-	} _t;
-	struct {
-	union thing *_l_next, *_l_prev;	/* Next pointer in link */
-	shint _o_type;			/* What kind of object it is */
-	coord _o_pos;			/* Where it lives on the screen */
-	char *_o_text;			/* What it says if you read it */
-	char _o_launch;			/* What you need to launch it */
-	const char *_o_damage;		/* Damage if used like sword */
-	const char *_o_hurldmg;		/* Damage if thrown */
-	shint _o_count;			/* Count for plural objects */
-	shint _o_which;			/* Which object of a type it is */
-	shint _o_hplus;			/* Plusses to hit */
-	shint _o_dplus;			/* Plusses to damage */
-	short _o_ac;			/* Armor class */
-	short _o_flags;			/* Information about objects */
-	char _o_enemy;			/* If it is enchanted, who it hates */
-	shint _o_group;			/* Group number for this object */
-	} _o;
-};
+#include "entities/Item.hpp"
+#include "entities/Creature.hpp"
 
-typedef union thing THING;
+using rogue::Creature;
+using rogue::Item;
 
-#define l_next		_t._l_next
-#define l_prev		_t._l_prev
-#define t_pos		_t._t_pos
-#define t_turn		_t._t_turn
-#define t_type		_t._t_type
-#define t_disguise	_t._t_disguise
-#define t_oldch		_t._t_oldch
-#define t_dest		_t._t_dest
-#define t_flags		_t._t_flags
-#define t_stats		_t._t_stats
-#define t_pack		_t._t_pack
-#define t_room		_t._t_room
-#define o_type		_o._o_type
-#define o_pos		_o._o_pos
-#define o_text		_o._o_text
-#define o_launch	_o._o_launch
-#define o_damage	_o._o_damage
-#define o_hurldmg	_o._o_hurldmg
-#define o_count		_o._o_count
-#define o_which		_o._o_which
-#define o_hplus		_o._o_hplus
-#define o_dplus		_o._o_dplus
-#define o_ac		_o._o_ac
 #define o_charges	o_ac
 #define o_goldval	o_ac
-#define o_flags		_o._o_flags
-#define o_group		_o._o_group
-#define o_enemy		_o._o_enemy
 
 /*
  * Array containing information on all the various types of monsters
@@ -522,14 +468,14 @@ void	waste_time(void);
 
 //@ chase.c
 void	runners(void);
-void	do_chase(THING *th);
-void	chase(THING *tp, coord *ee);
+void	do_chase(Creature *th);
+void	chase(Creature *tp, coord *ee);
 void	start_run(coord *runner);
-bool	see_monst(THING *mp);
+bool	see_monst(Creature *mp);
 bool	diag_ok(coord *sp, coord *ep);
 bool	cansee(int y, int x);
 struct room	*roomin(coord *cp);
-coord	*find_dest(THING *tp);
+coord	*find_dest(Creature *tp);
 
 //@ command.c
 void	command(void);
@@ -558,20 +504,20 @@ void	stomach(void);
 bool	setenv_from_file(const char *envfile);
 
 //@ fight.c
-bool	fight(coord *mp, char mn, THING *weap, bool thrown);
+bool	fight(coord *mp, char mn, Item *weap, bool thrown);
 bool	swing(int at_lvl, int op_arm, int wplus);
-bool	roll_em(THING *thatt, THING *thdef, THING *weap, bool hurl);
-bool	save_throw(int which, THING *tp);
+bool	roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl);
+bool	save_throw(int which, Creature *tp);
 bool	save(int which);
-bool	is_magic(THING *obj);
-void	attack(THING *mp);
+bool	is_magic(Item *obj);
+void	attack(Creature *mp);
 void	check_level(void);
 void	hit(const char *er, const char *ee);
 void	miss(const char *er, const char *ee);
 void	raise_level(void);
-void	thunk(THING *weap, const char *mname, const char *does, const char *did);
-void	remove_monster(coord *mp, THING *tp, bool waskill);
-void	killed(THING *tp, bool pr);
+void	thunk(Item *weap, const char *mname, const char *does, const char *did);
+void	remove_monster(coord *mp, Creature *tp, bool waskill);
+void	killed(Creature *tp, bool pr);
 int	str_plus(str_t str);
 int	add_dam(str_t str);
 
@@ -606,13 +552,71 @@ char	*io_unctrl(byte ch);
 const char	*noterse(const char *str);
 
 //@ list.c
-THING	*new_item(void);
-void	list_detach(THING **list, THING *item);
-void	list_attach(THING **list, THING *item);
-void	list_free(THING **ptr);
-int	discard(THING *item);
+Item	*new_item(void);
+Creature	*new_creature(void);
+int	discard(Item *item);
+int	discard(Creature *item);
 
+/*@
+ * The intrusive lists (l_next/l_prev) of creatures and of items, used
+ * through the attach(), detach() and free_list() macros.
+ */
 
+/*
+ * detach:
+ *	Takes an item out of whatever linked list it might be in
+ */
+template <class T>
+void
+list_detach(T **list, T *item)
+{
+	if (*list == item)
+		*list = next(item);
+	if (prev(item) != NULL) item->l_prev->l_next = next(item);
+	if (next(item) != NULL) item->l_next->l_prev = prev(item);
+	item->l_next = NULL;
+	item->l_prev = NULL;
+}
+
+/*
+ * _attach:
+ *	add an item to the head of a list
+ */
+template <class T>
+void
+list_attach(T **list, T *item)
+{
+	if (*list != NULL)
+	{
+		item->l_next = *list;
+		(*list)->l_prev = item;
+		item->l_prev = NULL;
+	}
+	else
+	{
+		item->l_next = NULL;
+		item->l_prev = NULL;
+	}
+	*list = item;
+}
+
+/*
+ * _free_list:
+ *	Throw the whole blamed thing away
+ */
+template <class T>
+void
+list_free(T **ptr)
+{
+	T *item;
+
+	while (*ptr != NULL)
+	{
+	item = *ptr;
+	*ptr = next(item);
+	discard(item);
+	}
+}
 
 //@ main.c
 void	endit(void);
@@ -645,16 +649,16 @@ void	d_level(void);
 void	u_level(void);
 void	call(void);
 void	do_macro(char *buf, int sz);
-THING	*find_obj(int y, int x);
+Item	*find_obj(int y, int x);
 bool	add_haste(bool potion);
-bool	is_current(THING *obj);
+bool	is_current(Item *obj);
 bool	get_dir(void);
 bool	find_dir(byte ch, coord *cp);
 bool	step_ok(byte ch);
 bool	offmap(int y, int x);
 const char	*tr_name(byte type);
 const char	*vowelstr(const char *str);
-char	goodch(THING *obj);
+char	goodch(Item *obj);
 shint	sign(int nm);
 byte	winat(int y, int x);
 int	spread(int nm);
@@ -664,19 +668,19 @@ int	INDEX(int y, int x);
 //@ monsters.c
 char	randmonster(bool wander);
 char	pick_mons(void);
-void	new_monster(THING *tp, byte type, coord *cp);
+void	new_monster(Creature *tp, byte type, coord *cp);
 void	f_restor(void);
 void	wanderer(void);
-void	give_pack(THING *tp);
-THING	*wake_monster(int y, int x);
-THING	*moat(int my, int mx);
+void	give_pack(Creature *tp);
+Creature	*wake_monster(int y, int x);
+Creature	*moat(int my, int mx);
 
 //@ move.c
 void	do_run(byte ch);
 void	do_move(int dy, int dx);
 void	door_open(struct room *rp);
 void	descend(const char *mesg);
-void	rndmove(THING *who, coord *newmv);
+void	rndmove(Creature *who, coord *newmv);
 
 //@ new_leve.c
 void	new_level(void);
@@ -684,12 +688,12 @@ void	put_things(void);
 int	rnd_room(void);
 
 //@ pack.c
-THING	*get_item(const char *purpose, int type);
-void	add_pack(THING *obj, bool silent);
+Item	*get_item(const char *purpose, int type);
+void	add_pack(Item *obj, bool silent);
 void	pick_up(byte ch);
 void	money(int value);
-byte	inventory(THING *list, int type, const char *lstr);
-byte	pack_char(THING *obj);
+byte	inventory(Item *list, int type, const char *lstr);
+byte	pack_char(Item *obj);
 
 //@ passages.c
 void	conn(int r1, int r2);
@@ -702,13 +706,13 @@ void	psplat(shint y, shint x);
 //@ potions.c
 void	quaff(void);
 void	invis_on(void);
-void	th_effect(THING *obj, THING *tp);
+void	th_effect(Item *obj, Creature *tp);
 bool	turn_see(bool turn_off);
 
 //@ rings.c
 void	ring_on(void);
 void	ring_off(void);
-const char	*ring_num(THING *obj);
+const char	*ring_num(Item *obj);
 int	ring_eat(int hand);
 
 //@ rip.c
@@ -732,15 +736,15 @@ void	restore(char *savefile);
 void read_scroll(void);
 
 //@ slime.c
-void	slime_split(THING *tp);
+void	slime_split(Creature *tp);
 bool	plop_monster(int r, int c, coord *cp);
 
 //@ sticks.c
-void	fix_stick(THING *cur);
+void	fix_stick(Item *cur);
 void	do_zap(void);
 void	drain(void);
 void	fire_bolt(coord *start, coord *dir, const char *name);
-char	*charge_str(THING *obj);
+char	*charge_str(Item *obj);
 
 //@ strings.c
 bool	is_alpha(char ch);
@@ -755,23 +759,23 @@ char	*endblk(char *str);
 void	lcase(char *str);
 
 //@ things.c
-char	*inv_name(THING *obj, bool drop);
+char	*inv_name(Item *obj, bool drop);
 void	drop(void);
 void	discovered(void);
-bool	can_drop(THING *op);
-THING	*new_thing(void);
+bool	can_drop(Item *op);
+Item	*new_thing(void);
 byte	add_line(const char *use, const char *fmt, const char *arg);
 byte	end_line(const char *use);
 
 //@ weapons.c
 void	missile(int ydelta, int xdelta);
-void	do_motion(THING *obj, int ydelta, int xdelta);
-void	fall(THING *obj, bool pr);
-void	init_weapon(THING *weap, byte type);
+void	do_motion(Item *obj, int ydelta, int xdelta);
+void	fall(Item *obj, bool pr);
+void	init_weapon(Item *weap, byte type);
 void	wield(void);
 void	tick_pause(void);
 char	*num(int n1, int n2, char type);
-bool	hit_monster(int y, int x, THING *obj);
+bool	hit_monster(int y, int x, Item *obj);
 
 //@ wizard.c
 void	whatis(void);

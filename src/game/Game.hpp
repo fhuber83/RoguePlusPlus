@@ -5,7 +5,8 @@
 /*
  * The state of one game, gathered from the globals of the original sources.
  *
- * Included by rogue.h after the legacy types it holds (THING, struct room,
+ * Included by rogue.h after the legacy types it holds (Creature, Item,
+ * struct room,
  * ...). Game files include rogue.h, not this header. Member names must not
  * collide with the lowercase macros of rogue.h and extern.h (hero, pack, max,
  * on, next, ...).
@@ -76,13 +77,13 @@ struct Turn {
  * The rogue: the creature itself, what he carries and wears, his condition.
  */
 struct Player {
-	THING body = {};				/* player: position, stats, flags, pack */
+	Creature body = {};				/* player: position, stats, flags, pack */
 	struct stats max_stats = { 16, 0, 1, 10, 12, "1d4", 12 };	/* The maximum for the player */
 	int purse = 0;					/* How much gold the rogue has */
 	int in_pack = 0;				/* inpack: number of things in pack */
-	THING *armor = nullptr;			/* cur_armor: what a well dresssed rogue wears */
-	THING *weapon = nullptr;		/* cur_weapon: which weapon he is weilding */
-	THING *rings[2] = {};			/* cur_ring: which rings are being worn */
+	Item *armor = nullptr;			/* cur_armor: what a well dresssed rogue wears */
+	Item *weapon = nullptr;		/* cur_weapon: which weapon he is weilding */
+	Item *rings[2] = {};			/* cur_ring: which rings are being worn */
 	int food_left = 0;				/* Amount of food in hero's stomach */
 	int hungry_state = 0;			/* How hungry is he */
 	bool has_amulet = false;		/* amulet: he has the amulet */
@@ -118,8 +119,8 @@ struct Level {
 	 */
 	byte map[(MAXLINES-3)*MAXCOLS] = {};	/* _level */
 	byte flags[(MAXLINES-3)*MAXCOLS] = {};	/* _flags */
-	THING *objects = nullptr;		/* lvl_obj: list of objects on this level */
-	THING *monsters = nullptr;		/* mlist: list of monsters on the level */
+	Item *objects = nullptr;		/* lvl_obj: list of objects on this level */
+	Creature *monsters = nullptr;		/* mlist: list of monsters on the level */
 
 	//@ Passages are dark rooms that are gone. The original table left the
 	//@ 13th one lit by mistake.
@@ -132,7 +133,7 @@ struct Level {
 
 /*
  * What there is to find in this game, how it looks, and what the rogue knows
- * about it; plus the pool items are allocated from.
+ * about it.
  */
 struct Items {
 	/* Names, cumulative odds and worth of each kind; init_*() accumulate */
@@ -159,10 +160,6 @@ struct Items {
 	/* storage for the guesses (was _guesses) */
 	struct array guesses[MAXSCROLLS+MAXPOTIONS+MAXRINGS+MAXSTICKS] = {};
 	int iguess = 0;
-	/* The items in play, allocated by new_item() (list.cpp) */
-	THING pool[MAXITEMS] = {};				/* _things */
-	int pool_used[MAXITEMS] = {};			/* _t_alloc */
-	int total = 0;							/* Number of items in use */
 	int group = 2;							/* Current group number */
 
 	Items();
@@ -181,12 +178,27 @@ struct Scheduler {
 	Action actions[max_actions] = {};	/* d_list */
 };
 
+/*
+ * The creatures and items in play, allocated by new_creature() and
+ * new_item() (list.cpp). The original allocated both from one pool of
+ * MAXITEMS things (_things), so the count is shared: when it is full, neither
+ * kind can be made, and level generation checks it.
+ */
+struct Pool {
+	Item items[MAXITEMS] = {};
+	bool item_used[MAXITEMS] = {};
+	Creature creatures[MAXITEMS] = {};
+	bool creature_used[MAXITEMS] = {};
+	int total = 0;							/* Things of both kinds in use */
+};
+
 struct Game {
 	Random random{Random::from_clock()};	/* All randomness, see rng() */
 	Options options;
 	Player player;
 	Level level;
 	Items items;
+	Pool pool;
 	Scheduler scheduler;
 	MessageLine message;
 	Turn turn;

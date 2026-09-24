@@ -5,8 +5,8 @@ namespace rogue {
 /*
  * A position or offset on the 80x25 screen grid (x = column, y = row).
  *
- * Kept an aggregate without default member initializers: it lives inside
- * `union thing`, which needs trivially constructible members.
+ * Kept a trivial aggregate: legacy code copies creatures and items, which
+ * hold coords, with bcopy() (memmove).
  */
 struct Coord {
 	int x;

@@ -11,9 +11,9 @@
  *	The player attacks the monster.
  */
 bool
-fight(coord *mp, char mn, THING *weap, bool thrown)
+fight(coord *mp, char mn, Item *weap, bool thrown)
 {
-	THING *tp;
+	Creature *tp;
 	const char *mname;
 	rogue::Player &player = game().player;
 
@@ -86,7 +86,7 @@ fight(coord *mp, char mn, THING *weap, bool thrown)
  *	The monster attacks the player
  */
 void
-attack(THING *mp)
+attack(Creature *mp)
 {
 	const char *mname;
 	rogue::Player &player = game().player;
@@ -205,7 +205,7 @@ attack(THING *mp)
 		}
 		when 'N':
 		{
-			THING *obj, *steal;
+			Item *obj, *steal;
 			int nobj;
 			const char *she_stole = "she stole %s!";
 
@@ -302,7 +302,7 @@ check_level(void)
  *	Roll several attacks
  */
 bool
-roll_em(THING *thatt, THING *thdef, THING *weap, bool hurl)
+roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 {
 	rogue::Player &player = game().player;
 	struct stats *att, *def;
@@ -476,7 +476,7 @@ miss(const char *er, const char *ee)
  *	See if a creature save against something
  */
 bool
-save_throw(int which, THING *tp)
+save_throw(int which, Creature *tp)
 {
 	int need;
 
@@ -564,7 +564,7 @@ raise_level(void)
  *	A missile hit or missed a monster
  */
 void
-thunk(THING *weap, const char *mname, const char *does, const char *did)
+thunk(Item *weap, const char *mname, const char *does, const char *did)
 {
 	if (weap->o_type == WEAPON)
 		addmsg("the %s %s ", w_names[weap->o_which], does);
@@ -582,9 +582,9 @@ thunk(THING *weap, const char *mname, const char *does, const char *did)
  *	Remove a monster from the screen
  */
 void
-remove_monster(coord *mp, THING *tp, bool waskill)
+remove_monster(coord *mp, Creature *tp, bool waskill)
 {
-	THING *obj, *nexti;
+	Item *obj, *nexti;
 	TileStyle style;
 
 	if (tp == NULL)
@@ -614,7 +614,7 @@ remove_monster(coord *mp, THING *tp, bool waskill)
  *	Returns true if an object radiates magic
  */
 bool
-is_magic(THING *obj)
+is_magic(Item *obj)
 {
 	switch (obj->o_type)
 	{
@@ -637,7 +637,7 @@ is_magic(THING *obj)
  *	Called to put a monster to death
  */
 void
-killed(THING *tp, bool pr)
+killed(Creature *tp, bool pr)
 {
 	pstats.s_exp += tp->t_stats.s_exp;
 	/*
@@ -649,7 +649,7 @@ killed(THING *tp, bool pr)
 		game().player.body.t_flags &= ~ISHELD;
 		f_restor();
 	when 'L':;
-		THING *gold;
+		Item *gold;
 
 		if ((gold = new_item()) == NULL)
 			return;

@@ -26,8 +26,8 @@ static struct init_weps {
 	{"2d3",	"1d6",	NONE,     ISMISL}        	/* Spear */
 };
 
-static int	fallpos(THING *obj, coord *newpos);
-static const char	*short_name(THING *obj);
+static int	fallpos(Item *obj, coord *newpos);
+static const char	*short_name(Item *obj);
 
 /*
  * missile:
@@ -36,7 +36,7 @@ static const char	*short_name(THING *obj);
 void
 missile(int ydelta, int xdelta)
 {
-	THING *obj, *nitem;
+	Item *obj, *nitem;
 
 	/*
 	 * Get which thing we are hurling
@@ -86,7 +86,7 @@ missile(int ydelta, int xdelta)
  *	across the room
  */
 void
-do_motion(THING *obj, int ydelta, int xdelta)
+do_motion(Item *obj, int ydelta, int xdelta)
 {
 	byte under = '@';
 
@@ -127,7 +127,7 @@ do_motion(THING *obj, int ydelta, int xdelta)
 
 static
 const char *
-short_name(THING *obj)
+short_name(Item *obj)
 {
 	switch (obj->o_type) {
 		case WEAPON: return w_names[obj->o_which];
@@ -149,7 +149,7 @@ short_name(THING *obj)
  *	Drop an item someplace around here.
  */
 void
-fall(THING *obj, bool pr)
+fall(Item *obj, bool pr)
 {
 	static coord fpos;
 	int index;
@@ -186,7 +186,7 @@ fall(THING *obj, bool pr)
  *	Set up the initial goodies for a weapon
  */
 void
-init_weapon(THING *weap, byte type)
+init_weapon(Item *weap, byte type)
 {
 	struct init_weps *iwp;
 
@@ -209,10 +209,10 @@ init_weapon(THING *weap, byte type)
  *	Does the missile hit the monster?
  */
 bool
-hit_monster(int y, int x, THING *obj)
+hit_monster(int y, int x, Item *obj)
 {
 	static coord mp;
-	THING *mo = moat(y, x);
+	Creature *mo = moat(y, x);
 
 	if (mo) {
 		mp.y = y;
@@ -244,7 +244,7 @@ num(int n1, int n2, char type)
 void
 wield(void)
 {
-	THING *obj, *oweapon;
+	Item *obj, *oweapon;
 	char *sp;
 	rogue::Player &player = game().player;
 
@@ -282,10 +282,10 @@ bad:
  */
 static
 int
-fallpos(THING *obj, coord *newpos)
+fallpos(Item *obj, coord *newpos)
 {
 	int y, x, cnt = 0, ch;
-	THING *onfloor;
+	Item *onfloor;
 
 	for (y = obj->o_pos.y - 1; y <= obj->o_pos.y + 1; y++) {
 		for (x = obj->o_pos.x - 1; x <= obj->o_pos.x + 1; x++) {

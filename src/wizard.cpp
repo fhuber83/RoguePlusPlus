@@ -20,7 +20,7 @@ static int	get_num(int *place);
 void
 whatis(void)
 {
-	THING *obj;
+	Item *obj;
 	rogue::Items &items = game().items;
 
 	if (pack == NULL) {
@@ -74,7 +74,7 @@ whatis(void)
 void
 create_obj(void)
 {
-	THING *obj;
+	Item *obj;
 	byte ch, bless;
 
 	if ((obj = new_item()) == NULL)

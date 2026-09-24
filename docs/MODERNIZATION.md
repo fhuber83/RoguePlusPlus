@@ -115,6 +115,14 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - Verified with the A/B and descending replays: identical.
    - **What stays outside `Game`, deliberately:** fixed tables (`monsters`, `w_names`, `a_names`, `a_class`, `a_chances`, `he_man`, help, the `*_base` odds, `e_levels`), common strings (`nullstr`, `it`, `you`, ...), scratch buffers (`prbuf`, `tbuf`, `ring_buf`, phase 9), per-algorithm file statics (`maze.cpp`, `passages.cpp`, `ch_ret`, `nh`, `slimy`, `things.cpp`'s paging, `env.cpp`'s parser, `rip.cpp`'s `file`, phase 7), and the clock state in `SIG2()`. `w_names[FLAME]` is still overwritten while a bolt flies (`sticks.cpp`).
 
+6. **Entities** (in progress).
+   - **6.1 Creature and Item.**
+     - `union thing` (`THING`) is split into `rogue::Creature` (`entities/Creature.hpp`, a monster or the rogue's body, was `_t`) and `rogue::Item` (`entities/Item.hpp`, was `_o`). The members keep their `t_*`/`o_*` names but are real fields now, so the `#define t_pos _t._t_pos` accessor macros are gone. `o_charges` and `o_goldval` remain macro aliases of `o_ac`.
+     - Every declaration and prototype got the type its role needs. Variables that held both kinds were split: `treas_room()`, `read_scroll()`, `add_pack()`'s monster loop and `door_open()`.
+     - `new_item()` makes items and `new_creature()` makes monsters, from separate pools in `game().pool` that share one count. The original allocated both from one pool of `MAXITEMS` things, and level generation checks `total < MAXITEMS`, so the shared limit keeps dungeons identical. `discard()` has an overload for each.
+     - `list_attach`/`list_detach`/`list_free` are templates in `rogue.h` for both kinds of list.
+     - Verified with the A/B and descending replays: identical. `tests/game/GameTest.cpp` checks the shared pool limit.
+
 ## Target architecture
 
 ```
@@ -152,11 +160,11 @@ Each phase is a series of small commits that each build and play.
    5. *Done:* items (see above).
    6. *Done:* the scheduler (`daemon.cpp` slots) and the RNG.
    Algorithm scratch state (`maze.cpp`, `passages.cpp`, `ch_ret`, ...) and fixed tables stay where they are until phase 7.
-6. **Entities.**
-   - Split `union thing` into `Monster` and `Item`.
+6. **Entities** (*in progress*, see above).
+   - *Done:* split `union thing` into `Creature` (monster or player) and `Item`.
    - Item kinds become an `enum class` with a separate glyph mapping, and creature/object flags become `rogue::Flags`.
    - Replace the intrusive `l_next`/`l_prev` lists (`list.cpp`) with standard containers of `std::unique_ptr` and stable IDs.
-   - Replace the `#define t_pos _t._t_pos` accessor macros with members.
+   - *Done:* replace the `#define t_pos _t._t_pos` accessor macros with members.
 7. **Domain modules.**
    - Move behaviour into the target directories: item effects become per-kind handlers, `fight` becomes `Combat`, `chase` becomes `MonsterAI`, and the level generation files become `LevelGenerator`.
    - Scheduler: replace `daemon.cpp` with typed events or `std::function` rather than function-pointer slots.

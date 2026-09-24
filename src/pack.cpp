@@ -7,10 +7,10 @@
  */
 
 static
-THING *
+Item *
 pack_obj(byte ch, byte *chp)
 {
-	THING *obj;
+	Item *obj;
 	byte och;
 
 	for (obj = pack, och = 'a'; obj != NULL; obj = next(obj), och++)
@@ -27,9 +27,10 @@ pack_obj(byte ch, byte *chp)
  *	it off the ground.
  */
 void
-add_pack(THING *obj, bool silent)
+add_pack(Item *obj, bool silent)
 {
-	THING *op, *lp = NULL;
+	Item *op, *lp = NULL;
+	Creature *mp;
 	bool exact, from_floor;
 	byte floor;
 
@@ -191,7 +192,7 @@ picked_up:
 	 * If this was the object of something's desire, that monster will
 	 * get mad and run at the hero
 	 */
-	for (op = game().level.monsters; op != NULL; op = next(op))
+	for (mp = game().level.monsters; mp != NULL; mp = next(mp))
 	{
 		/*
 		 *  compiler bug: jll : 2-7-83
@@ -199,7 +200,7 @@ picked_up:
 		 *		this may be true since there is no structure assignments,
 		 *		but still it should let you have the address??!!
 		 *
-		if (&obj->_o._o_pos == op->t_dest)
+		if (&obj->_o._o_pos == mp->t_dest)
 		 *
 		 *  the following should do the same
 		 */
@@ -208,9 +209,9 @@ picked_up:
 		 * be not chasing (sleeping, another room, Ice Monster, etc), so a
 		 * destination could possibly have never been assigned.
 		 */
-		if (op->t_dest != NULL &&
-		   (op->t_dest->x == obj->o_pos.x) && (op->t_dest->y == obj->o_pos.y))
-			op->t_dest = &hero;
+		if (mp->t_dest != NULL &&
+		   (mp->t_dest->x == obj->o_pos.x) && (mp->t_dest->y == obj->o_pos.y))
+			mp->t_dest = &hero;
 	}
 
 	if (obj->o_type == AMULET)
@@ -231,7 +232,7 @@ picked_up:
  *	List what is in the pack
  */
 byte
-inventory(THING *list, int type, const char *lstr)
+inventory(Item *list, int type, const char *lstr)
 {
 	byte ch;
 	int n_objs;
@@ -272,7 +273,7 @@ inventory(THING *list, int type, const char *lstr)
 void
 pick_up(byte ch)
 {
-	THING *obj;
+	Item *obj;
 
 	switch (ch)
 	{
@@ -302,14 +303,14 @@ pick_up(byte ch)
  * get_item:
  *	Pick something out of a pack for a purpose
  */
-THING *
+Item *
 get_item(const char *purpose, int type)
 {
-	THING *obj;
+	Item *obj;
 	byte ch;
 	byte och;
 	static byte lch;
-	static THING *wasthing = NULL;
+	static Item *wasthing = NULL;
 	byte gi_state;	/* get item sub state */
 	int once_only = FALSE;
 
@@ -388,9 +389,9 @@ get_item(const char *purpose, int type)
  *	Return which character would address a pack object
  */
 byte
-pack_char(THING *obj)
+pack_char(Item *obj)
 {
-	THING *item;
+	Item *item;
 	byte c;
 
 	c = 'a';

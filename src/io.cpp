@@ -228,7 +228,7 @@ status(void)
 	 */
 	ac = player.armor != NULL ? player.armor->o_ac : pstats.s_arm;
 
-	st.level = level;
+	st.level = game().level.depth;
 	st.hp = pstats.s_hpt;
 	st.hp_max = max_hp;
 	st.str = pstats.s_str;

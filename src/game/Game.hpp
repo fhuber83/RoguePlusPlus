@@ -99,9 +99,38 @@ struct Player {
 	struct room *old_room = nullptr;	/* oldrp: roomin(&old_pos) */
 };
 
+/*
+ * The level the rogue is on: its map, rooms, passages, and what lies and
+ * lives on it.
+ */
+struct Level {
+	int depth = 1;					/* level: what level rogue is on */
+	int ntraps = 0;					/* Number of traps on this level */
+	int no_food = 0;				/* Number of levels without food */
+	struct room rooms[MAXROOMS] = {};	/* One for each room -- A level */
+	struct room passages[MAXPASS] = {};	/* One for each passage */
+	/*@
+	 * What is at each square, and its F_* flags. Both were allocated in
+	 * init_ds(). Index them with INDEX(y, x), or use chat()/flat().
+	 */
+	byte map[(MAXLINES-3)*MAXCOLS] = {};	/* _level */
+	byte flags[(MAXLINES-3)*MAXCOLS] = {};	/* _flags */
+	THING *objects = nullptr;		/* lvl_obj: list of objects on this level */
+	THING *monsters = nullptr;		/* mlist: list of monsters on the level */
+
+	//@ Passages are dark rooms that are gone. The original table left the
+	//@ 13th one lit by mistake.
+	Level()
+	{
+		for (auto &p : passages)
+			p.r_flags = RoomFlag::Gone | RoomFlag::Dark;
+	}
+};
+
 struct Game {
 	Options options;
 	Player player;
+	Level level;
 	MessageLine message;
 	Turn turn;
 	bool playing = true;			/* True until he quits */

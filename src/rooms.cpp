@@ -19,6 +19,7 @@ void
 do_rooms(void)
 {
 	int i, rm;
+	rogue::Level &level = game().level;
 	struct room *rp;
 	THING *tp;
 	int left_out;
@@ -37,7 +38,7 @@ do_rooms(void)
 	/*
 	 * Clear things for a new level
 	 */
-	for (rp = rooms; rp < &rooms[MAXROOMS]; rp++)
+	for (rp = level.rooms; rp < &level.rooms[MAXROOMS]; rp++)
 	{
 		rp->r_goldval = rp->r_nexits = 0;
 		rp->r_flags.reset();
@@ -48,16 +49,16 @@ do_rooms(void)
 	left_out = rnd(4);
 	for (i = 0; i < left_out; i++) {
 		do
-			rp = &rooms[(rm = rnd_room())];
+			rp = &level.rooms[(rm = rnd_room())];
 		while (rp->r_flags.test(RoomFlag::Maze));
 		rp->r_flags.set(RoomFlag::Gone);
-		if (rm > 2 && level > 10 && rnd(20) < level - 9)
+		if (rm > 2 && level.depth > 10 && rnd(20) < level.depth - 9)
 			rp->r_flags.set(RoomFlag::Maze);
 	}
 	/*
 	 * dig and populate all the rooms on the level
 	 */
-	for (i = 0, rp = rooms; i < MAXROOMS; rp++, i++) {
+	for (i = 0, rp = level.rooms; i < MAXROOMS; rp++, i++) {
 		/*
 		 * Find upper left corner of box that this room goes in
 		 */
@@ -86,7 +87,7 @@ do_rooms(void)
 			}
 			continue;
 		}
-		if (rnd(10) < (level - 1))
+		if (rnd(10) < (level.depth - 1))
 			rp->r_flags.set(RoomFlag::Dark);
 		/*
 		 * Find a place and size for a random room
@@ -101,7 +102,7 @@ do_rooms(void)
 		/*
 		 * Put the gold in
 		 */
-		if ((rnd(2) == 0) && (!game().player.saw_amulet || (level >= game().player.max_level))) {
+		if ((rnd(2) == 0) && (!game().player.saw_amulet || (level.depth >= game().player.max_level))) {
 			THING *gold;
 
 			if ((gold = new_item()) != NULL) {
@@ -118,7 +119,7 @@ do_rooms(void)
 				gold->o_flags = ISMANY;
 				gold->o_group = GOLDGRP;
 				gold->o_type = GOLD;
-				attach(lvl_obj, gold);
+				attach(level.objects, gold);
 				chat(rp->r_gold.y, rp->r_gold.x) = GOLD;
 			}
 		}
@@ -257,7 +258,7 @@ leave_room(coord *cp)
 	byte ch;
 
 	rp = proom;
-	proom = &passages[flat(cp->y, cp->x) & F_PNUM];
+	proom = &game().level.passages[flat(cp->y, cp->x) & F_PNUM];
 	floor = (rp->r_flags.test(RoomFlag::Dark) && !on(game().player.body, ISBLIND)) ? ' ' : FLOOR;
 	if (rp->r_flags.test(RoomFlag::Maze))
 		floor = PASSAGE;

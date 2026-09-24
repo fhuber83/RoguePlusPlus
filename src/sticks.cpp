@@ -46,6 +46,7 @@ do_zap()
 	const char *name;
 	int which_one;
 	rogue::Turn &turn = game().turn;
+	rogue::Player &player = game().player;
 
 	if ((obj = get_item("zap with", STICK)) == NULL)
 		return;
@@ -72,7 +73,7 @@ do_zap()
 		/*
 		 * Reddy Kilowat wand.  Light up the room
 		 */
-		if (on(game().player.body,ISBLIND))
+		if (on(player.body,ISBLIND))
 			msg("you feel a warm glow around you");
 		else
 		{
@@ -126,7 +127,7 @@ do_zap()
 
 			omonst = monster = tp->t_type;
 			if (monster == 'F')
-				game().player.body.t_flags &= ~ISHELD;
+				player.body.t_flags &= ~ISHELD;
 			if (which_one == MAXSTICKS)
 			{
 				if (monster == obj->o_enemy)
@@ -143,7 +144,7 @@ do_zap()
 				THING *pp;
 
 				pp = tp->t_pack;
-				detach(mlist, tp);
+				detach(game().level.monsters, tp);
 				if (see_monst(tp))
 					display().draw_tile({x, y}, chat(y, x));
 				oldch = tp->t_oldch;
@@ -173,12 +174,12 @@ do_zap()
 					{
 						rm = rnd_room();
 						new_yx = tp->t_pos;
-						rnd_pos(&rooms[rm], &new_yx);
+						rnd_pos(&game().level.rooms[rm], &new_yx);
 					}  while (!(isfloor(winat(new_yx.y, new_yx.x))));
 					tp->t_pos = new_yx;
 					if (see_monst(tp))
 						display().draw_tile(tp->t_pos, tp->t_disguise);
-					else if (on(game().player.body, SEEMONST))
+					else if (on(player.body, SEEMONST))
 						display().draw_tile(tp->t_pos, tp->t_disguise, TileStyle::Inverse);
 				}
 				else /* it MUST BE at WS_TELTO */
@@ -187,7 +188,7 @@ do_zap()
 					tp->t_pos.x = hero.x + turn.delta.x;
 				}
 				if (tp->t_type == 'F')
-					game().player.body.t_flags &= ~ISHELD;
+					player.body.t_flags &= ~ISHELD;
 				if (tp->t_pos.y != y || tp->t_pos.x != x)
 					tp->t_oldch = display().tile_at(tp->t_pos);
 			}
@@ -205,8 +206,8 @@ do_zap()
 		bolt.o_hplus = 1000;
 		bolt.o_dplus = 1;
 		bolt.o_flags = ISMISL;
-		if (game().player.weapon != NULL)
-			bolt.o_launch = game().player.weapon->o_which;
+		if (player.weapon != NULL)
+			bolt.o_launch = player.weapon->o_which;
 		do_motion(&bolt, turn.delta.y, turn.delta.x);
 		if ((tp = moat(bolt.o_pos.y, bolt.o_pos.x)) != NULL && !save_throw(VS_MAGIC, tp))
 			hit_monster(unc(bolt.o_pos), &bolt);
@@ -300,15 +301,15 @@ drain()
 	 */
 	cnt = 0;
 	if (chat(hero.y, hero.x) == DOOR)
-		corp = &passages[flat(hero.y, hero.x) & F_PNUM];
+		corp = &game().level.passages[flat(hero.y, hero.x) & F_PNUM];
 	else
 		corp = NULL;
 	inpass = proom->r_flags.test(RoomFlag::Gone);
 	dp = drainee;
-	for (mp = mlist; mp != NULL; mp = next(mp))
+	for (mp = game().level.monsters; mp != NULL; mp = next(mp))
 		if (mp->t_room == proom || mp->t_room == corp ||
 			(inpass && chat(mp->t_pos.y, mp->t_pos.x) == DOOR &&
-			&passages[flat(mp->t_pos.y, mp->t_pos.x) & F_PNUM] == proom))
+			&game().level.passages[flat(mp->t_pos.y, mp->t_pos.x) & F_PNUM] == proom))
 			*dp++ = mp;
 	if ((cnt = dp - drainee) == 0)
 	{

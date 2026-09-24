@@ -233,8 +233,8 @@ be_trapped(coord *tc)
 
 	game().turn.count = game().turn.running = FALSE;
 	index = INDEX(tc->y, tc->x);
-	_level[index] = TRAP;
-	tr = _flags[index] & F_TMASK;
+	game().level.map[index] = TRAP;
+	tr = game().level.flags[index] & F_TMASK;
 	player.was_trapped = TRUE;
 	switch (tr) {
 	when T_DOOR:
@@ -302,7 +302,7 @@ be_trapped(coord *tc)
 void
 descend(const char *mesg)
 {
-	level++;
+	game().level.depth++;
 	if (*mesg == 0)
 		msg(" ");
 	new_level();
@@ -343,7 +343,7 @@ rndmove(THING *who, coord *newmv)
 		if (!step_ok(ch))
 			goto bad;
 		if (ch == SCROLL) {
-			for (obj = lvl_obj; obj != NULL; obj = next(obj))
+			for (obj = game().level.objects; obj != NULL; obj = next(obj))
 				if (y == obj->o_pos.y && x == obj->o_pos.x)
 					break;
 			if (obj != NULL && obj->o_which == S_SCARE)

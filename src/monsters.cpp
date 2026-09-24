@@ -44,7 +44,7 @@ randmonster(bool wander)
 	do {
 		int r10 = rnd(5) + rnd(6);
 
-		d = level + (r10 - 5);
+		d = game().level.depth + (r10 - 5);
 		if (d < 1)
 			d = rnd(5) + 1;
 		if (d > 26)
@@ -63,9 +63,9 @@ new_monster(THING *tp, byte type, coord *cp)
 	struct monster *mp;
 	int lev_add;
 
-	if ((lev_add = level - AMULETLEVEL) < 0)
+	if ((lev_add = game().level.depth - AMULETLEVEL) < 0)
 		lev_add = 0;
-	attach(mlist, tp);
+	attach(game().level.monsters, tp);
 	tp->t_type = type;
 	tp->t_disguise = type;
 	bcopy(tp->t_pos,*cp);
@@ -87,7 +87,7 @@ new_monster(THING *tp, byte type, coord *cp)
 		tp->t_stats.s_dmg = f_damage;
 	if (type == 'X')
 	{
-		switch (rnd(level > 25 ? 9 : 8))
+		switch (rnd(game().level.depth > 25 ? 9 : 8))
 		{
 		when 0: tp->t_disguise = GOLD;
 		when 1: tp->t_disguise = POTION;
@@ -155,7 +155,7 @@ wanderer(void)
 		return;
 	do {
 		i = rnd_room();
-		if ((rp = &rooms[i]) == proom)
+		if ((rp = &game().level.rooms[i]) == proom)
 			continue;
 		rnd_pos(rp, &cp);
 	} while (!(rp != proom && step_ok(winat(cp.y, cp.x))));
@@ -266,7 +266,7 @@ moat(int my, int mx)
 {
 	THING *tp;
 
-	for (tp = mlist ; tp != NULL ; tp = next(tp))
+	for (tp = game().level.monsters ; tp != NULL ; tp = next(tp))
 		if (tp->t_pos.x == mx  && tp->t_pos.y == my)
 			return(tp);
 	return(NULL);

@@ -27,11 +27,8 @@ void
 setup()
 {
 	game().options.terse = FALSE;
-	maxrow = 23;
-	if (COLS == 40) {
-		maxrow = 22;
+	if (COLS == 40)
 		game().options.terse = TRUE;
-	}
 	game().options.expert = game().options.terse;
 }
 

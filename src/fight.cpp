@@ -15,6 +15,7 @@ fight(coord *mp, char mn, THING *weap, bool thrown)
 {
 	THING *tp;
 	const char *mname;
+	rogue::Player &player = game().player;
 
 	/*
 	 * Find the monster we want to fight
@@ -25,21 +26,21 @@ fight(coord *mp, char mn, THING *weap, bool thrown)
 	 * Since we are fighting, things are not quiet so no healing takes
 	 * place.  Cancel any command counts so player can recover.
 	 */
-	game().turn.count = game().player.quiet = 0;
+	game().turn.count = player.quiet = 0;
 	start_run(mp);
 	/*
 	 * Let him know it was really a mimic (if it was one).
 	 */
-	if (tp->t_type == 'X' && tp->t_disguise != 'X' && !on(game().player.body, ISBLIND)) {
+	if (tp->t_type == 'X' && tp->t_disguise != 'X' && !on(player.body, ISBLIND)) {
 		mn = tp->t_disguise = 'X';
 		if (thrown)
 			return FALSE;
 		msg("wait! That's a Xeroc!");
 	}
 	mname = monsters[mn-'A'].m_name;
-	if (on(game().player.body, ISBLIND))
+	if (on(player.body, ISBLIND))
 		mname = it;
-	if (roll_em(&game().player.body, tp, weap, thrown)||(weap && weap->o_type == POTION)) {
+	if (roll_em(&player.body, tp, weap, thrown)||(weap && weap->o_type == POTION)) {
 		bool did_huh = FALSE;
 
 		if (thrown)
@@ -56,18 +57,18 @@ fight(coord *mp, char mn, THING *weap, bool thrown)
 					detach(pack, weap);
 					discard(weap);
 				}
-				game().player.weapon = NULL;
+				player.weapon = NULL;
 			}
 		}
-		if (on(game().player.body, CANHUH)) {
+		if (on(player.body, CANHUH)) {
 			did_huh = TRUE;
 			tp->t_flags |= ISHUH;
-			game().player.body.t_flags &= ~CANHUH;
+			player.body.t_flags &= ~CANHUH;
 			msg("your hands stop glowing red");
 		}
 		if (tp->t_stats.s_hpt <= 0)
 			killed(tp, TRUE);
-		else if (did_huh && !on(game().player.body, ISBLIND))
+		else if (did_huh && !on(player.body, ISBLIND))
 			msg("the %s appears confused", mname);
 		return TRUE;
 	}
@@ -599,12 +600,12 @@ remove_monster(coord *mp, THING *tp, bool waskill)
 		else
 			discard(obj);
 	}
-	style = (_level[INDEX(mp->y,mp->x)] == PASSAGE) ? TileStyle::Inverse : TileStyle::Normal;
+	style = (game().level.map[INDEX(mp->y,mp->x)] == PASSAGE) ? TileStyle::Inverse : TileStyle::Normal;
 	if (tp->t_oldch == FLOOR && !cansee(mp->y, mp->x))
 		display().draw_tile(*mp, ' ', style);
 	else if (tp->t_oldch != '@')
 		display().draw_tile(*mp, tp->t_oldch, style);
-	detach(mlist, tp);
+	detach(game().level.monsters, tp);
 	discard(tp);
 }
 

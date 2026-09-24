@@ -25,6 +25,8 @@
  */
 const int LINES = MAXLINES;
 const int COLS = MAXCOLS;
+//@ Last line used for the map. Was a global, set in setup()
+const int maxrow = MAXLINES - 2;
 
 
 /*
@@ -98,12 +100,12 @@ const int COLS = MAXCOLS;
 #define free_list(a)	list_free(&a)
 #define max(a,b)	((a) > (b) ? (a) : (b))
 #define on(thing,flag)	(((thing).t_flags & (flag)) != 0)
-#define GOLDCALC	(rnd(50 + 10 * level) + 2)
+#define GOLDCALC	(rnd(50 + 10 * game().level.depth) + 2)
 #define ISRING(h,r)	(game().player.rings[h] != NULL && game().player.rings[h]->o_which == r)
 #define ISWEARING(r)	(ISRING(LEFT, r) || ISRING(RIGHT, r))
 #define ISMULT(type) 	(type==POTION || type==SCROLL || type==FOOD || type==GOLD)
-#define chat(y,x)	(_level[INDEX(y,x)])
-#define flat(y,x)	(_flags[INDEX(y,x)])
+#define chat(y,x)	(game().level.map[INDEX(y,x)])
+#define flat(y,x)	(game().level.flags[INDEX(y,x)])
 #define unc(cp)		(cp).y, (cp).x
 #define isfloor(c)	((c) == FLOOR || (c) == PASSAGE)
 #define isgone(rp)	((rp)->r_flags.test(RoomFlag::Gone) && !(rp)->r_flags.test(RoomFlag::Maze))
@@ -466,7 +468,6 @@ struct monster {
  * External variables
  * @ all in extern.c unless noted (init.c, env.c, croot.c, main.c, protect.c)
  */
-extern int maxrow;
 extern int is_me;
 extern int iguess;
 
@@ -489,13 +490,11 @@ extern const char *a_names[], *flashmsg, *he_man[], *intense, *p_colors[],
 
 extern struct h_list helpcoms[], helpobjs[];
 
-extern int	a_chances[], a_class[], group, level, no_food, ntraps, total;
+extern int	a_chances[], a_class[], group, total;
 
 
 
-extern THING *lvl_obj, *mlist;
 
-extern struct room	passages[], rooms[];
 
 extern struct monster	monsters[];
 
@@ -523,7 +522,6 @@ extern struct array s_names[], _guesses[];
 
 //@ init.c
 extern char *tbuf, *prbuf;
-extern byte *_level, *_flags;
 extern long *e_levels;
 extern THING *_things;
 extern int   *_t_alloc;

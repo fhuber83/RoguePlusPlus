@@ -70,7 +70,7 @@ add_pack(THING *obj, bool silent)
 				op->o_count += obj->o_count;
 				if (from_floor)
 				{
-					detach(lvl_obj, obj);
+					detach(game().level.objects, obj);
 					display().draw_tile(hero, floor);
 					chat(hero.y, hero.x) = floor;
 				}
@@ -95,7 +95,7 @@ add_pack(THING *obj, bool silent)
 	{
 		if (obj->o_flags & ISFOUND)
 		{
-			detach(lvl_obj, obj);
+			detach(game().level.objects, obj);
 			display().draw_tile(hero, floor);
 			chat(hero.y, hero.x) = floor;
 			msg("the scroll turns to dust%s.", noterse(" as you pick it up"));
@@ -108,7 +108,7 @@ add_pack(THING *obj, bool silent)
 	game().player.in_pack++;
 	if (from_floor)
 	{
-		detach(lvl_obj, obj);
+		detach(game().level.objects, obj);
 		display().draw_tile(hero, floor);
 		chat(hero.y, hero.x) = floor;
 	}
@@ -191,7 +191,7 @@ picked_up:
 	 * If this was the object of something's desire, that monster will
 	 * get mad and run at the hero
 	 */
-	for (op = mlist; op != NULL; op = next(op))
+	for (op = game().level.monsters; op != NULL; op = next(op))
 	{
 		/*
 		 *  compiler bug: jll : 2-7-83
@@ -280,7 +280,7 @@ pick_up(byte ch)
 		if ((obj = find_obj(hero.y, hero.x)) == NULL)
 		return;
 		money(obj->o_goldval);
-		detach(lvl_obj, obj);
+		detach(game().level.objects, obj);
 		discard(obj);
 		proom->r_goldval = 0;
 		break;

@@ -32,14 +32,14 @@ conn(int r1, int r2)
 		else
 			direc = 'd';
 	}
-	rpf = &rooms[rm];
+	rpf = &game().level.rooms[rm];
 	/*
 	 * Set up the movement variables, in two cases:
 	 * first drawing one down.
 	 */
 	if (direc == 'd') {
 		rmt = rm + 3;				/* room # of dest */
-		rpt = &rooms[rmt];			/* room pointer of dest */
+		rpt = &game().level.rooms[rmt];			/* room pointer of dest */
 		del.x = 0;				/* direction of move */
 		del.y = 1;
 		/*
@@ -68,7 +68,7 @@ conn(int r1, int r2)
 		turn_distance = abs(spos.x - epos.x);	/* how far to turn */
 	} else if (direc == 'r') {			/* setup for moving right */
 		rmt = rm + 1;
-		rpt = &rooms[rmt];
+		rpt = &game().level.rooms[rmt];
 		del.x = 1;
 		del.y = 0;
 		if (!rpf->r_flags.test(RoomFlag::Gone) || rpf->r_flags.test(RoomFlag::Maze)) {
@@ -269,13 +269,13 @@ door(struct room *rm, coord *cp)
 	int index, xit;
 
 	index = INDEX(cp->y, cp->x);
-	if (rnd(10) + 1 < level && rnd(5) == 0)
+	if (rnd(10) + 1 < game().level.depth && rnd(5) == 0)
 	{
-		_level[index] = (cp->y == rm->r_pos.y || cp->y == rm->r_pos.y + rm->r_max.y - 1) ? HWALL : VWALL;
-		_flags[index] &= ~F_REAL;
+		game().level.map[index] = (cp->y == rm->r_pos.y || cp->y == rm->r_pos.y + rm->r_max.y - 1) ? HWALL : VWALL;
+		game().level.flags[index] &= ~F_REAL;
 	}
 	else
-		_level[index] = DOOR;
+		game().level.map[index] = DOOR;
 	xit = rm->r_nexits++;
 	rm->r_exit[xit].y = cp->y;
 	rm->r_exit[xit].x = cp->x;
@@ -314,9 +314,9 @@ passnum()
 
 	pnum = 0;
 	newpnum = FALSE;
-	for (rp = passages; rp < &passages[MAXPASS]; rp++)
+	for (rp = game().level.passages; rp < &game().level.passages[MAXPASS]; rp++)
 		rp->r_nexits = 0;
-	for (rp = rooms; rp < &rooms[MAXROOMS]; rp++)
+	for (rp = game().level.rooms; rp < &game().level.rooms[MAXROOMS]; rp++)
 		for (i = 0; i < rp->r_nexits; i++)
 		{
 			newpnum++;
@@ -348,7 +348,7 @@ numpass(int y, int x)
 	 * or a numerable type of place
 	 */
 	if ((ch = chat(y, x)) == DOOR || (!(*fp & F_REAL) && ch != FLOOR)) {
-		rp = &passages[pnum];
+		rp = &game().level.passages[pnum];
 		rp->r_exit[rp->r_nexits].y = y;
 		rp->r_exit[rp->r_nexits++].x = x;
 	} else if (!(*fp & F_PASS))
@@ -368,6 +368,6 @@ psplat(shint y, shint x)
 {
 	int idx;
 
-	_level[idx = INDEX(y, x)] = PASSAGE;
-	_flags[idx] |= F_PASS;
+	game().level.map[idx = INDEX(y, x)] = PASSAGE;
+	game().level.flags[idx] |= F_PASS;
 }

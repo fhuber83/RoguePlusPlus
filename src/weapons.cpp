@@ -158,7 +158,7 @@ fall(THING *obj, bool pr)
 	{
 	case 1:
 		index = INDEX(fpos.y, fpos.x);
-		_level[index] = obj->o_type;
+		game().level.map[index] = obj->o_type;
 		bcopy(obj->o_pos,fpos);
 		if (cansee(fpos.y, fpos.x))
 		{
@@ -169,7 +169,7 @@ fall(THING *obj, bool pr)
 			if (moat(fpos.y,fpos.x) != NULL)
 				moat(fpos.y,fpos.x)->t_oldch = obj->o_type;
 		}
-		attach(lvl_obj, obj);
+		attach(game().level.objects, obj);
 		return;
 	case 2:
 		pr = 0;

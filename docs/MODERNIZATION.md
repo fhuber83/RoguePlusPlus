@@ -99,6 +99,10 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - `game().player` (`rogue::Player`) holds the rogue: `body` (the THING that was `player`, so `hero`, `pstats`, `pack`, `proom` and `max_hp` now expand to `game().player.body...`), `max_stats`, `purse`, `in_pack`, `armor`/`weapon`/`rings[2]` (were `cur_armor`, `cur_weapon`, `cur_ring`), food and hunger, `has_amulet` (was `amulet`), `saw_amulet`, `max_level`, `no_command`, `no_move`, `quiet`, `fung_hit`, `was_trapped`, and `look()`'s `old_pos`/`old_room` (were `oldpos`/`oldrp`).
      - `e_levels` stays a fixed table in `init.cpp`, since it is the same in every game.
      - Verified with the A/B replay: identical.
+   - **5.4 The level.**
+     - `game().level` (`rogue::Level`) holds `depth` (was `level`), `ntraps`, `no_food`, `rooms`, `passages`, the `map` and `flags` grids (were the allocated `_level`/`_flags`; `chat()`/`flat()` index them), and the `objects` and `monsters` lists (were `lvl_obj`/`mlist`). Its constructor makes every passage a dark, gone room, which replaces the 13-entry initializer.
+     - `maxrow` is a constant next to `LINES`/`COLS`. It was always 23, and `setup()` no longer sets it.
+     - Verified with the A/B replay, plus a descending replay on scratch builds of both trees patched so that `>` works anywhere. Three seeds went 6 to 24 levels deep, with mazes, traps and deaths along the way. Identical.
 
 ## Target architecture
 
@@ -133,7 +137,7 @@ Each phase is a series of small commits that each build and play.
    1. *Done:* options (see above).
    2. *Done:* messages and command state (see above).
    3. *Done:* the player (see above).
-   4. The level: `level`, `rooms`, `passages`, the map and flag grids, floor items and monsters, traps.
+   4. *Done:* the level (see above).
    5. Items: the known-item and guess tables, per-game names, colours, stones and materials, the probability tables that `init_*()` accumulates, and the item pool.
    6. The scheduler (`daemon.cpp` slots) and the RNG.
    Algorithm scratch state (`maze.cpp`, `passages.cpp`, `ch_ret`, ...) and fixed tables stay where they are until phase 7.

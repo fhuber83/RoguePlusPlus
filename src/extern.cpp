@@ -287,44 +287,16 @@ struct array _guesses[MAXSCROLLS+MAXPOTIONS+MAXRINGS+MAXSTICKS];
 int iguess = 0;
 const char *ws_type[MAXSTICKS];		/* Is it a wand or a staff */
 
-int maxrow;			/* Last Line used for map  */
-int ntraps;				/* Number of traps on this level */
-int level = 1;				/* What level rogue is on */
 int total = 0;				/* Total dynamic memory bytes */
-int no_food = 0;			/* Number of levels without food */
 int group = 2;				/* Current group number */
 
 /* WINDOW *hw;				 Used as a scratch window */
 
 
 
-struct room rooms[MAXROOMS];		/* One for each room -- A level */
-
-#define XX  {0, 0}
-#define ___ {XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX} //@ 12 exits
-struct room passages[MAXPASS] =		/* One for each passage */
-{
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	//@ 13th entry was missing in the original, leaving that passage lit
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ }
-};
-#undef ___
-#undef XX
 
 
-THING *lvl_obj = NULL;			/* List of objects on this level */
-THING *mlist = NULL;			/* List of monsters on the level */
+
 
 /*@
  * Original code did not define a value for s_maxhp member of stats struct.

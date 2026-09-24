@@ -424,8 +424,6 @@ char *ring_buf;		/* Buffer used by ring code */
 /*
  *  Declarations for data space that must be saved and restored exaxtly
  */
-byte *_level;
-byte *_flags;
 
 /*
  * init_ds()
@@ -439,14 +437,12 @@ init_ds(void)
 	/*@
 	 * Do not change the relation between the allocated pointer and its
 	 * associated size constant! If the sizes need to be changed, do so by
-	 * altering the value in the #define'd constant. For example, msgbuf is
-	 * expected to have a BUFSIZE size, but BUFSIZE can be re-#define'd to
+	 * altering the value in the #define'd constant. For example, prbuf is
+	 * expected to have a MAXSTR size, but MAXSTR can be re-#define'd to
 	 * another value. Also, for safety, never decrease its value.
 	 */
 
 	//@ data that is saved to and restored from saved game files:
-	_flags = (byte *) newmem((MAXLINES-3)*MAXCOLS);
-	_level = (byte *) newmem((MAXLINES-3)*MAXCOLS);
 	_things = (THING *)newmem(sizeof(THING) * MAXITEMS);
 	_t_alloc = (int *)newmem(MAXITEMS*sizeof(int));
 
@@ -464,8 +460,6 @@ init_ds(void)
 void
 free_ds()
 {
-	free(_flags);
-	free(_level);
 	free(_things);
 	free(_t_alloc);
 	free(tbuf);

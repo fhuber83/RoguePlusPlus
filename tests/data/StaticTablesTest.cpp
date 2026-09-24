@@ -16,8 +16,8 @@ TEST(StaticTables, AllMonsterAttacksParse)
 TEST(StaticTables, AllPassagesAreGoneAndDark)
 {
 	for (int i = 0; i < MAXPASS; i++) {
-		EXPECT_TRUE(passages[i].r_flags.test(RoomFlag::Gone));
-		EXPECT_TRUE(passages[i].r_flags.test(RoomFlag::Dark));
-		EXPECT_FALSE(passages[i].r_flags.test(RoomFlag::Maze));
+		EXPECT_TRUE(game().level.passages[i].r_flags.test(RoomFlag::Gone));
+		EXPECT_TRUE(game().level.passages[i].r_flags.test(RoomFlag::Dark));
+		EXPECT_FALSE(game().level.passages[i].r_flags.test(RoomFlag::Maze));
 	}
 }

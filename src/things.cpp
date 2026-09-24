@@ -206,7 +206,7 @@ drop(void)
 	/*
 	 * Link it into the level object list
 	 */
-	attach(lvl_obj, op);
+	attach(game().level.objects, op);
 	chat(hero.y, hero.x) = op->o_type;
 	bcopy(op->o_pos,hero);
 	if (op->o_type == AMULET)
@@ -283,7 +283,7 @@ new_thing(void)
 	 * Decide what kind of object it will be
 	 * If we haven't had food for a while, let it be food.
 	 */
-	switch (no_food > 3 ? 2 : pick_one(things, NUMTHINGS))
+	switch (game().level.no_food > 3 ? 2 : pick_one(things, NUMTHINGS))
 	{
 	when 0:
 		cur->o_type = POTION;
@@ -292,7 +292,7 @@ new_thing(void)
 		cur->o_type = SCROLL;
 		cur->o_which = pick_one(s_magic, MAXSCROLLS);
 	when 2:
-		no_food = 0;
+		game().level.no_food = 0;
 		cur->o_type = FOOD;
 		if (rnd(10) != 0)
 			cur->o_which = 0;

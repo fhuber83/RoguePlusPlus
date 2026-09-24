@@ -22,6 +22,7 @@ read_scroll()
 	int index;
 	bool discardit = FALSE;
 	rogue::Player &player = game().player;
+	rogue::Level &level = game().level;
 
 	obj = get_item("read", SCROLL);
 	if (obj == NULL)
@@ -102,7 +103,7 @@ read_scroll()
 		for (y = 1; y < maxrow; y++)
 			for (x = 0; x < COLS; x++) {
 				index = INDEX(y, x);
-				switch (ch = _level[index])
+				switch (ch = level.map[index])
 				{
 				case VWALL:
 				case HWALL:
@@ -110,9 +111,9 @@ read_scroll()
 				case URWALL:
 				case LLWALL:
 				case LRWALL:
-					if (!(_flags[index] & F_REAL)) {
-						ch = _level[index] = DOOR;
-						_flags[index] &= ~F_REAL;
+					if (!(level.flags[index] & F_REAL)) {
+						ch = level.map[index] = DOOR;
+						level.flags[index] &= ~F_REAL;
 					}
 					/* fallthrough */
 				case DOOR:
@@ -135,7 +136,7 @@ read_scroll()
 		 * Scroll of food detection
 		 */
 		ch = FALSE;
-		for (op = lvl_obj; op != NULL; op = next(op)) {
+		for (op = level.objects; op != NULL; op = next(op)) {
 			if (op->o_type == FOOD) {
 				ch = TRUE;
 				display().draw_tile(op->o_pos, FOOD, TileStyle::Inverse);

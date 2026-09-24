@@ -22,6 +22,7 @@ new_level(void)
 	int index;
 	coord stairs;
 	rogue::Player &player = game().player;
+	rogue::Level &level = game().level;
 
 	player.body.t_flags &= ~ISHELD;	/* unhold when you go down just in case */
 	/*
@@ -29,19 +30,19 @@ new_level(void)
 	 * so start a level by having the poor guy rest
 	 * God forbid he lands next to a monster!
 	 */
-	if (level > player.max_level)
-		player.max_level = level;
+	if (level.depth > player.max_level)
+		player.max_level = level.depth;
 	/*
 	 * Clean things off from last level
 	 */
-	setmem(_level, ((MAXLINES-3)*MAXCOLS),' ');
-	setmem(_flags, (MAXLINES-3)*MAXCOLS, F_REAL);
+	setmem(level.map, ((MAXLINES-3)*MAXCOLS),' ');
+	setmem(level.flags, (MAXLINES-3)*MAXCOLS, F_REAL);
 	/*
 	 * Free up the monsters on the last level
 	 */
-	for (tp = mlist; tp != NULL; tp = next(tp))
+	for (tp = level.monsters; tp != NULL; tp = next(tp))
 		free_list(tp->t_pack);
-	free_list(mlist);
+	free_list(level.monsters);
 	/*
 	 * just in case we left some flytraps behind
 	 */
@@ -49,7 +50,7 @@ new_level(void)
 	/*
 	 * Throw away stuff left on the previous level (if anything)
 	 */
-	free_list(lvl_obj);
+	free_list(level.objects);
 	do_rooms();				/* Draw rooms */
 	if (player.max_level > 1)
 	{
@@ -57,7 +58,7 @@ new_level(void)
 	}
 	status();
 	do_passages();			/* Draw passages */
-	no_food++;
+	level.no_food++;
 	put_things();			/* Place objects (if any) */
 	/*
 	 * Place the staircase down.
@@ -65,34 +66,34 @@ new_level(void)
 	i = 0;
 	do {
 		rm = rnd_room();
-	rnd_pos(&rooms[rm], &stairs);
+	rnd_pos(&level.rooms[rm], &stairs);
 	index = INDEX(stairs.y, stairs.x);
-	} while (!isfloor(_level[index]));
-	_level[index] = STAIRS;
+	} while (!isfloor(level.map[index]));
+	level.map[index] = STAIRS;
 	/*
 	 * Place the traps
 	 */
-	if (rnd(10) < level) {
-		ntraps = rnd(level / 4) + 1;
-		if (ntraps > MAXTRAPS)
-			ntraps = MAXTRAPS;
-		i = ntraps;
+	if (rnd(10) < level.depth) {
+		level.ntraps = rnd(level.depth / 4) + 1;
+		if (level.ntraps > MAXTRAPS)
+			level.ntraps = MAXTRAPS;
+		i = level.ntraps;
 		while (i--) {
 			do {
 				rm = rnd_room();
-				rnd_pos(&rooms[rm], &stairs);
+				rnd_pos(&level.rooms[rm], &stairs);
 				index = INDEX(stairs.y, stairs.x);
-			} while (!isfloor(_level[index]));
-			fp = &_flags[index];
+			} while (!isfloor(level.map[index]));
+			fp = &level.flags[index];
 			*fp &= ~F_REAL;
 			*fp |= rnd(NTRAPS);
 		}
 	}
 	do {
 		rm = rnd_room();
-		rnd_pos(&rooms[rm], &hero);
+		rnd_pos(&level.rooms[rm], &hero);
 		index = INDEX(hero.y, hero.x);
-	} while (!(isfloor(_level[index]) && (_flags[index] & F_REAL)
+	} while (!(isfloor(level.map[index]) && (level.flags[index] & F_REAL)
 				&& moat(hero.y, hero.x) == NULL));
 
 	game().message.end = 0;
@@ -115,7 +116,7 @@ rnd_room(void)
 
 	do
 	rm = rnd(MAXROOMS);
-	while (!(!rooms[rm].r_flags.test(RoomFlag::Gone)||rooms[rm].r_flags.test(RoomFlag::Maze)));
+	while (!(!game().level.rooms[rm].r_flags.test(RoomFlag::Gone)||game().level.rooms[rm].r_flags.test(RoomFlag::Maze)));
 	return rm;
 }
 
@@ -130,6 +131,7 @@ put_things(void)
 	THING *cur;
 	int rm;
 	coord tp;
+	rogue::Level &level = game().level;
 
 	/*
 	 * Once you have found the amulet, the only way to get new stuff is
@@ -137,7 +139,7 @@ put_things(void)
 	 * This is real unfair - I'm going to allow one thing, that way
 	 * the poor guy will get some food.
 	 */
-	if (game().player.saw_amulet && level < game().player.max_level)
+	if (game().player.saw_amulet && level.depth < game().player.max_level)
 		i = MAXOBJ - 1;
 	else {
 		/*
@@ -146,9 +148,9 @@ put_things(void)
 		 * Check this first so if we are out of memory the guy has a
 		 * hope of getting the amulet
 		 */
-		if (level >= AMULETLEVEL && !game().player.saw_amulet) {
+		if (level.depth >= AMULETLEVEL && !game().player.saw_amulet) {
 			if ((cur = new_item()) != NULL) {
-				attach(lvl_obj, cur);
+				attach(level.objects, cur);
 				cur->o_hplus = cur->o_dplus = 0;
 				cur->o_damage = cur->o_hurldmg = "0d0";
 				cur->o_ac = 11;
@@ -158,7 +160,7 @@ put_things(void)
 				 */
 				do {
 					rm = rnd_room();
-					rnd_pos(&rooms[rm], &tp);
+					rnd_pos(&level.rooms[rm], &tp);
 				} while (!isfloor(winat(tp.y, tp.x)));
 				chat(tp.y, tp.x) = AMULET;
 				bcopy(cur->o_pos,tp);
@@ -179,13 +181,13 @@ put_things(void)
 			 * Pick a new object and link it in the list
 			 */
 			cur = new_thing();
-			attach(lvl_obj, cur);
+			attach(level.objects, cur);
 			/*
 			 * Put it somewhere
 			 */
 			do {
 				rm = rnd_room();
-				rnd_pos(&rooms[rm], &tp);
+				rnd_pos(&level.rooms[rm], &tp);
 			} while (!isfloor(chat(tp.y, tp.x)));
 			chat(tp.y, tp.x) = cur->o_type;
 			bcopy(cur->o_pos,tp);
@@ -204,11 +206,12 @@ treas_room(void)
 {
 	int nm, index;
 	THING *tp;
+	rogue::Level &level = game().level;
 	struct room *rp;
 	int spots, num_monst;
 	coord mp;
 
-	rp = &rooms[rnd_room()];
+	rp = &level.rooms[rnd_room()];
 	spots = (rp->r_max.y - 2) * (rp->r_max.x - 2) - MINTREAS;
 	if (spots > (MAXTREAS - MINTREAS))
 		spots = (MAXTREAS - MINTREAS);
@@ -219,11 +222,11 @@ treas_room(void)
 		{
 			rnd_pos(rp, &mp);
 			index = INDEX(mp.y, mp.x);
-		} while (!isfloor(_level[index]));
+		} while (!isfloor(level.map[index]));
 		tp = new_thing();
 		bcopy(tp->o_pos,mp);
-		attach(lvl_obj, tp);
-		_level[index] = tp->o_type;
+		attach(level.objects, tp);
+		level.map[index] = tp->o_type;
 	}
 
 	/*
@@ -235,14 +238,14 @@ treas_room(void)
 	spots = (rp->r_max.y - 2) * (rp->r_max.x - 2);
 	if (nm > spots)
 		nm = spots;
-	level++;
+	level.depth++;
 	while (nm--)
 	{
 		for (spots = 0; spots < MAXTRIES; spots++)
 		{
 			rnd_pos(rp, &mp);
 			index = INDEX(mp.y, mp.x);
-			if (isfloor(_level[index]) && moat(mp.y, mp.x) == NULL)
+			if (isfloor(level.map[index]) && moat(mp.y, mp.x) == NULL)
 				break;
 		}
 		if (spots != MAXTRIES)
@@ -255,5 +258,5 @@ treas_room(void)
 			}
 		}
 	}
-	level--;
+	level.depth--;
 }

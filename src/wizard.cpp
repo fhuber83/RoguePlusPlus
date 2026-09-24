@@ -168,9 +168,9 @@ teleport(void)
 	do
 	{
 		rm = rnd_room();
-		rnd_pos(&rooms[rm], &c);
+		rnd_pos(&game().level.rooms[rm], &c);
 	} while (!(step_ok(winat(c.y, c.x))));
-	if (&rooms[rm] != proom)
+	if (&game().level.rooms[rm] != proom)
 	{
 		leave_room(&hero);
 		bcopy(hero,c);

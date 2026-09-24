@@ -45,6 +45,7 @@ look(bool wakeup)
 	THING *tp;
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
+	rogue::Level &level = game().level;
 	struct room *rp;
 	int ey, ex;
 	int passcount = 0;
@@ -53,8 +54,8 @@ look(bool wakeup)
 
 	rp = proom;
 	index = INDEX(hero.y, hero.x);
-	pfl = _flags[index];
-	pch = _level[index];
+	pfl = level.flags[index];
+	pch = level.map[index];
 	/*
 	 * if the hero has moved
 	 */
@@ -69,7 +70,7 @@ look(bool wakeup)
 						if (player.old_room->r_flags.test(RoomFlag::Dark) && !player.old_room->r_flags.test(RoomFlag::Gone))
 							display().draw_tile({x, y}, ' ');
 					} else {
-						fp = &_flags[INDEX(y,x)];
+						fp = &level.flags[INDEX(y,x)];
 						/*
 						 * if the maze or passage (that the hero is in!!)
 						 * needs to be redrawn (passages once draw always
@@ -108,8 +109,8 @@ look(bool wakeup)
 			 * THIS REPLICATES THE moat() MACRO.  IF MOAT IS CHANGED,
 			 * THIS MUST BE CHANGED ALSO ?? What does this really mean ??
 			 */
-			fp = &_flags[index];
-			ch = _level[index];
+			fp = &level.flags[index];
+			ch = level.map[index];
 			/*
 			 * No Doors
 			 */
@@ -141,7 +142,7 @@ look(bool wakeup)
 						wake_monster(y, x);
 					if (tp->t_oldch != ' ' ||
 						(!rp->r_flags.test(RoomFlag::Dark) && !on(player.body, ISBLIND)))
-							tp->t_oldch = _level[index];
+							tp->t_oldch = level.map[index];
 					if (see_monst(tp))
 						ch = tp->t_disguise;
 				}
@@ -238,7 +239,7 @@ find_obj(int y, int x)
 {
 	THING *op;
 
-	for (op = lvl_obj; op != NULL; op = next(op))
+	for (op = game().level.objects; op != NULL; op = next(op))
 		if (op->o_pos.y == y && op->o_pos.x == x)
 			return op;
 #ifdef DEBUG
@@ -367,7 +368,7 @@ aggravate()
 {
 	THING *mi;
 
-	for (mi = mlist; mi != NULL; mi = next(mi))
+	for (mi = game().level.monsters; mi != NULL; mi = next(mi))
 		start_run(&mi->t_pos);
 }
 
@@ -730,7 +731,7 @@ d_level()
 	if (chat(hero.y, hero.x) != STAIRS)
 		msg("I see no way down");
 	else {
-		level++;
+		game().level.depth++;
 		new_level();
 	}
 }
@@ -744,8 +745,8 @@ u_level()
 {
 	if (chat(hero.y, hero.x) == STAIRS)
 		if (game().player.has_amulet) {
-			level--;
-			if (level == 0)
+			game().level.depth--;
+			if (game().level.depth == 0)
 				total_winner();
 			new_level();
 			msg("you feel a wrenching sensation in your gut");

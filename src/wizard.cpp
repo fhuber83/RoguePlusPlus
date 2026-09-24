@@ -226,19 +226,16 @@ show_map(void)
 {
 	int y, x, real;
 
-	wdump();
-	clear();
+	display().open_page();
+	display().clear_page();
 	for (y = 1; y < maxrow; y++)
 	for (x = 0; x < COLS; x++)
 	{
-		if (!(real = flat(y, x) & F_REAL))
-		standout();
-		mvaddch(y, x, chat(y, x));
-		if (!real)
-		standend();
+		real = flat(y, x) & F_REAL;
+		display().draw_tile({x, y}, chat(y, x), real ? TileStyle::Normal : TileStyle::Inverse);
 	}
 	show_win("---More (level map)---");
-	wrestor();
+	display().close_page();
 }
 
 static

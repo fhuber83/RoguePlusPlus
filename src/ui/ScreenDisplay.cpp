@@ -20,6 +20,25 @@ constexpr int StatusRow = 23;
 constexpr int HungerRow = 24;
 constexpr int ClockCol = 75;
 
+/// set_attr() index for each Ink
+int ink_index(Ink ink)
+{
+	switch (ink) {
+	case Ink::Normal: return 0;
+	case Ink::Green: return 1;
+	case Ink::Red: return 3;
+	case Ink::Brown: return 5;
+	case Ink::LightMagenta: return 10;
+	case Ink::Yellow: return 11;
+	case Ink::Underline: return 12;
+	case Ink::Blue: return 13;
+	case Ink::Reverse: return 14;
+	case Ink::Bright: return 15;
+	case Ink::Bold: return 16;
+	}
+	return 0;
+}
+
 constexpr const char *hunger_names[] = {"      ", "Hungry", "Weak", "Faint", "?"};
 
 } // namespace
@@ -202,7 +221,60 @@ void ScreenDisplay::draw_count(int count)
 	text_at(StatusRow, Screen::Cols - 4, buf);
 }
 
+// Pages
+
+void ScreenDisplay::open_page()
+{
+	game_view_ = screen_.snapshot();
+	page_open_ = true;
+}
+
+void ScreenDisplay::close_page()
+{
+	screen_.restore(game_view_);
+	screen_.refresh();
+	page_open_ = false;
+}
+
+void ScreenDisplay::clear_page()
+{
+	screen_.erase();
+}
+
+// Text
+
+Coord ScreenDisplay::write_at(int row, int col, std::string_view s, Ink ink)
+{
+	screen_.set_cursor(row, col);
+	return write(s, ink);
+}
+
+Coord ScreenDisplay::write(std::string_view s, Ink ink)
+{
+	std::uint8_t old = screen_.attr();
+	screen_.set_attr(dos_attr(ink_index(ink)));
+	text(s);
+	screen_.set_attr(old);
+	return Coord{screen_.col(), screen_.row()};
+}
+
+void ScreenDisplay::clear_line(int row, int col)
+{
+	screen_.set_cursor(row, col);
+	screen_.erase_to_eol();
+}
+
+bool ScreenDisplay::show_cursor(bool visible)
+{
+	return screen_.show_cursor(visible);
+}
+
 // Output
+
+void ScreenDisplay::wipe()
+{
+	implode();
+}
 
 void ScreenDisplay::flush()
 {

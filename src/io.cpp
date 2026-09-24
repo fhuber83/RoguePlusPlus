@@ -268,20 +268,17 @@ wait_for(byte ch)
 void
 wait_msg(const char *msg)
 {
-	standend();
-	move(LINES-1,0);
-	cursor(TRUE);
+	char prompt[MAXSTR];
+
+	display().show_cursor(TRUE);
 	if (*msg)
-	{
-		printw("[Press Enter to %s]", msg);
-	}
+		snprintf(prompt, sizeof prompt, "[Press Enter to %s]", msg);
 	else
-	{
-		printw("[Press Enter]");
-	}
+		strcpy(prompt, "[Press Enter]");
+	display().write_at(LINES-1, 0, prompt);
 	flush_type();
 	wait_for('\n');
-	move(LINES-1,0);
+	display().write_at(LINES-1, 0, "");
 }
 
 /*
@@ -292,8 +289,8 @@ wait_msg(const char *msg)
 void
 show_win(char *message)
 {
-	mvaddstr(0,0,message);
-	move(hero.y, hero.x);
+	display().write_at(0, 0, message);
+	display().write_at(hero.y, hero.x, "");
 	wait_for(' ');
 }
 
@@ -322,12 +319,12 @@ str_attr(const char *str)
 {
 	while (*str)
 	{
+		rogue::ui::Ink ink = rogue::ui::Ink::Normal;
 		if (*str == '%') {
 			str++;
-			standout();
+			ink = rogue::ui::Ink::Reverse;
 		}
-		addch(*str++);
-		standend();
+		display().write(std::string_view(str++, 1), ink);
 	}
 }
 
@@ -351,7 +348,7 @@ SIG2(void)
 	 * (when the user is in a non-game screen like inventory or discoveries)
 	 * Or if the screen is not yet initialized.
 	 */
-	if (is_saved || scr_type < 0)
+	if (is_saved || display().page_open() || scr_type < 0)
 		return;
 	if (new_time - cur_time >= 60)
 	{

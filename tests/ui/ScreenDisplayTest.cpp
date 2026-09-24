@@ -217,3 +217,52 @@ TEST(ScreenDisplay, CountShowsAndClears)
 	d.draw_count(0);
 	EXPECT_EQ(row_text(s, 23, 76, 4), "    ");
 }
+
+TEST(ScreenDisplay, WriteReturnsWhereTextEnded)
+{
+	Screen s;
+	ScreenDisplay d(s);
+	rogue::Coord end = d.write_at(3, 75, "abcdefgh");
+	EXPECT_EQ(row_text(s, 3, 75, 5), "abcde");
+	EXPECT_EQ(row_text(s, 4, 0, 3), "fgh");
+	EXPECT_EQ(end, (rogue::Coord{3, 4}));
+	end = d.write("!");
+	EXPECT_EQ(s.at(4, 3).ch, '!');
+	EXPECT_EQ(end, (rogue::Coord{4, 4}));
+}
+
+TEST(ScreenDisplay, WriteUsesInkAndRestoresTheAttribute)
+{
+	namespace dos = rogue::ui::dos;
+	using rogue::ui::Ink;
+	Screen s;
+	ScreenDisplay d(s);
+	d.write_at(0, 0, "Y", Ink::Reverse);
+	d.write("es", Ink::Normal);
+	EXPECT_EQ(s.at(0, 0).attr, dos::Standout);
+	EXPECT_EQ(s.at(0, 1).attr, dos::Normal);
+	EXPECT_EQ(s.attr(), dos::Normal);
+}
+
+TEST(ScreenDisplay, ClearLineBlanksToTheRightEdge)
+{
+	Screen s;
+	ScreenDisplay d(s);
+	d.write_at(7, 0, "keep this part");
+	d.clear_line(7, 5);
+	EXPECT_EQ(row_text(s, 7, 0, 14), "keep          ");
+}
+
+TEST(ScreenDisplay, ClosingAPageBringsTheGameViewBack)
+{
+	Screen s;
+	ScreenDisplay d(s);
+	d.draw_tile({10, 10}, '@');
+	d.open_page();
+	d.clear_page();
+	d.write_at(0, 0, "a) Some food");
+	EXPECT_EQ(d.tile_at({10, 10}), ' ');
+	d.close_page();
+	EXPECT_EQ(d.tile_at({10, 10}), '@');
+	EXPECT_EQ(row_text(s, 0, 0, 4), "    ");
+}

@@ -504,38 +504,41 @@ set_order(short *order, int numthings)
 byte
 add_line(const char *use, const char *fmt, const char *arg)
 {
-	int x, y;
+	char buf[132];  //@ as printw() had
 	byte retchar = ' ';
 	if (line_cnt == 0)
 	{
-		wdump();
-		clear();
+		display().open_page();
+		display().clear_page();
 	}
 	if (line_cnt >= LINES - 1 || fmt == NULL)
 	{
-		move(LINES-1, 0);
 		if (*use)
-			printw("-Select item to %s. Esc to cancel-", use);
+		{
+			snprintf(buf, sizeof buf, "-Select item to %s. Esc to cancel-", use);
+			display().write_at(LINES-1, 0, buf);
+		}
 		else
-			addstr("-Press space to continue-");
+			display().write_at(LINES-1, 0, "-Press space to continue-");
 		do
 			retchar = readchar();
 		while (retchar != ESCAPE && retchar != ' ' && (!is_lower(retchar)));
-		clear();
+		display().clear_page();
 		newpage = TRUE;
 		line_cnt = 0;
 	}
 	if (fmt != NULL && !(line_cnt == 0 && *fmt == '\0'))
 	{
-		move(line_cnt, 0);
-		printw(fmt, arg);
-		getxy(&x,&y);
+		coord end;
+
+		snprintf(buf, sizeof buf, fmt, arg);
+		end = display().write_at(line_cnt, 0, buf);
 		/*
 		 * if the line wrapped but nothing was printed on this
 		 * line you might as well use it for the next item
 		 */
-		if (y!=0)
-			line_cnt = x + 1;
+		if (end.x != 0)
+			line_cnt = end.y + 1;
 		lastfmt = fmt;
 		lastarg = arg;
 	}
@@ -552,7 +555,7 @@ end_line(const char *use)
 	int retchar;
 
 	retchar = add_line(use, NULL, "");
-	wrestor();
+	display().close_page();
 	line_cnt = 0;
 	newpage = FALSE;
 	return(retchar);

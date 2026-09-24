@@ -15,6 +15,22 @@ enum class TileStyle : std::uint8_t {
 	FrostBolt, ///< a bolt of frost in flight
 };
 
+/// Text styles for pages and prompts. They are the original's colour
+/// macros by name (monochrome screens map most of them to Normal).
+enum class Ink : std::uint8_t {
+	Normal,
+	Reverse,
+	Bold,
+	Bright,
+	Underline,
+	Red,
+	Green,
+	Brown,
+	Yellow,
+	Blue,
+	LightMagenta,
+};
+
 /// What the status lines at the bottom of the screen show.
 struct Status {
 	int level = 0;
@@ -68,7 +84,33 @@ public:
 	/// Shows the repeat count typed before a command, or blanks it for 0.
 	virtual void draw_count(int count) = 0;
 
+	// Pages: full-screen text over the game view (help, inventory, ...)
+
+	/// Keeps the game view to bring back later.
+	virtual void open_page() = 0;
+	/// Brings the game view back.
+	virtual void close_page() = 0;
+	/// Whether a page is open (the clock is not drawn meanwhile).
+	virtual bool page_open() const = 0;
+	/// Blanks the whole screen.
+	virtual void clear_page() = 0;
+
+	// Text
+
+	/// Writes `text` at (row, col), wrapping at the right edge; '\n' ends a
+	/// line. Returns where the text ended. An empty text only moves there.
+	virtual Coord write_at(int row, int col, std::string_view text, Ink ink = Ink::Normal) = 0;
+	/// Writes where the last text ended.
+	virtual Coord write(std::string_view text, Ink ink = Ink::Normal) = 0;
+	/// Blanks a line from `col` to the right edge.
+	virtual void clear_line(int row, int col = 0) = 0;
+	/// Shows or hides the text cursor and returns whether it was shown.
+	virtual bool show_cursor(bool visible) = 0;
+
 	// Output
+
+	/// Clears the screen with the shrinking-boxes effect (new level).
+	virtual void wipe() = 0;
 
 	/// Makes everything drawn so far visible, for animations.
 	virtual void flush() = 0;

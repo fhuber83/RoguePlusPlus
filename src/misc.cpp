@@ -589,12 +589,12 @@ help(struct h_list *helpscr)
 	int isfull;
 	byte answer = 0;
 
-	wdump();
+	display().open_page();
 	while (*helpscr->h_desc && answer != ESCAPE)
 	{
 		isfull = FALSE;
 		if ((hcount % (terse?23:46)) == 0)
-			clear();
+			display().clear_page();
 		/*
 		 * determine row and column
 		 */
@@ -614,10 +614,8 @@ help(struct h_list *helpscr)
 				 isfull = TRUE;
 		}
 
-		move (hrow,hcol);
-
-		addstr((char *)helpscr->h_chstr);
-		addstr(helpscr->h_desc);
+		display().write_at(hrow, hcol, (const char *)helpscr->h_chstr);
+		display().write(helpscr->h_desc);
 		helpscr++;
 
 		/*
@@ -626,18 +624,18 @@ help(struct h_list *helpscr)
 		if ( (*helpscr->h_desc == 0) || isfull)
 		{
 			if (*helpscr->h_desc == 0)
-				mvaddstr (24,0,"--press space to continue--");
+				display().write_at(24, 0, "--press space to continue--");
 			else if (terse)
-				mvaddstr (24,0,"--Space for more, Esc to continue--");
+				display().write_at(24, 0, "--Space for more, Esc to continue--");
 			else
-				mvaddstr (24,0,"--Press space for more, Esc to continue--");
+				display().write_at(24, 0, "--Press space for more, Esc to continue--");
 			do
 				answer = readchar();
 			while (answer != ' ' && answer != ESCAPE) ;
 		}
 		hcount++;
 	}
-	wrestor();
+	display().close_page();
 }
 
 

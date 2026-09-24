@@ -53,7 +53,7 @@ new_level(void)
 	do_rooms();				/* Draw rooms */
 	if (max_level > 1)
 	{
-		implode();
+		display().wipe();
 	}
 	status();
 	do_passages();			/* Draw passages */

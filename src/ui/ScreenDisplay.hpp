@@ -27,6 +27,15 @@ public:
 	void draw_status(const Status &status) override;
 	void draw_clock(int hour, int minute) override;
 	void draw_count(int count) override;
+	void open_page() override;
+	void close_page() override;
+	bool page_open() const override { return page_open_; }
+	void clear_page() override;
+	Coord write_at(int row, int col, std::string_view text, Ink ink = Ink::Normal) override;
+	Coord write(std::string_view text, Ink ink = Ink::Normal) override;
+	void clear_line(int row, int col = 0) override;
+	bool show_cursor(bool visible) override;
+	void wipe() override;
 	void flush() override;
 	void bell() override;
 
@@ -37,6 +46,10 @@ private:
 	void draw_covered();
 
 	Screen &screen_;
+
+	// Game view kept while a page is open
+	Screen::Snapshot game_view_{};
+	bool page_open_ = false;
 
 	// More prompt
 	std::string prompt_;

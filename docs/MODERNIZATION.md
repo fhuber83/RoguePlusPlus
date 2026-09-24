@@ -58,6 +58,10 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - The repeat count, animation refreshes and the trap bell go through `draw_count`, `flush` and `bell`. `rogue.h` includes `ui/Display.hpp` and brings `display` and `TileStyle` into scope.
      - Domain files no longer call `mvaddch`, `mvinch`, `standout` or the colour macros. The exceptions are the full-screen views in `misc.cpp` (help), `things.cpp` (inventory) and `wizard.cpp` (`show_map`), plus `implode()` in `new_leve.cpp`, which all belong to 4.4.
      - Verification: the A/B replay, a fuzz replay over six seeds, and scripted item scenarios on `WIZARD` builds (`C` creates items). All captures were identical. Frame-by-frame captures of zapped wands showed the same red bolt in both builds. `WIZARD` builds do not compile as is, so both trees were patched in scratch copies for this (see the notes below).
+   - **4.4a In-game pages and prompts.**
+     - `Display` gained a page API. `open_page`/`close_page` keep and restore the game view, `page_open()` pauses the clock and `clear_page` blanks the screen. Text goes through `write_at`/`write` with a named `ui::Ink` style (the old colour macros by name) and `clear_line`, plus `show_cursor` and `wipe` (the `implode` effect).
+     - Converted: help (`misc.cpp`), inventory and discoveries (`add_line`/`end_line` in `things.cpp`), the wizard map, `show_win`, `str_attr`, `wait_msg`, the quit prompt and `leave()` (`playit.cpp`), and the new-level wipe.
+     - Verified with the A/B, fuzz and quit/page replays: identical apart from one capture taken in the middle of a curtain animation.
 
 ## Target architecture
 
@@ -85,7 +89,7 @@ Each phase is a series of small commits that each build and play.
    1. *Done:* `ui::Screen` grid plus `ui::Terminal` backend (see above).
    2. *Done:* message and status lines behind `ui::Display` (see above).
    3. *Done:* the map goes through `Display` (see above).
-   4. **Full-screen views.** Inventory, discoveries, help, tombstone and scores, and credits become `Display` calls, along with the prompts `wait_msg`, `show_win` and `str_attr`.
+   4. **Full-screen views.** *Done (4.4a):* in-game pages and prompts. *Next (4.4b):* credits, tombstone, Hall of Fame, the winner screen, the curtains, the `save.cpp` prompts, and starting and stopping the terminal (`winit`/`cur_endwin` in `main.cpp`, `fatal`, `md_exit`).
    5. **Input.** `readchar`/`getinfo` go behind `ui::Input`.
    6. **Drop the DOS emulation.** Cells hold a `Glyph` and a style instead of CP437 codes and DOS attributes. `CursesTerminal` maps `Glyph → cchar_t`, and `curses_dos.h`, the CCODE tables and the attribute tables go away.
 5. **Game state.** Gather the ~90 globals from `extern.cpp`/`init.cpp` into a `Game` context (player, level, monster list, floor items, RNG, scheduler, known-item tables, options). Free functions take or reach it explicitly, and globals are removed one group at a time.

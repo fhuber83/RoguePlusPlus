@@ -8,101 +8,74 @@
 
 #include "rogue.h"
 
-static void	*talloc(void);
-
-/*
- * detach:
- *	Takes an item out of whatever linked list it might be in
+/*@
+ * The list functions are templates in rogue.h now, for both Creature and
+ * Item lists.
  */
-void
-list_detach(THING **list, THING *item)
-{
-	if (*list == item)
-		*list = next(item);
-	if (prev(item) != NULL) item->l_prev->l_next = next(item);
-	if (next(item) != NULL) item->l_next->l_prev = prev(item);
-	item->l_next = NULL;
-	item->l_prev = NULL;
-}
 
-/*
- * _attach:
- *	add an item to the head of a list
+/*@
+ * talloc: take a free slot of a pool. The two pools share one count, like
+ * the single pool of the original (see rogue::Pool).
  */
-void
-list_attach(THING **list, THING *item)
+template <class T>
+static T *
+talloc(T *slots, bool *used)
 {
-	if (*list != NULL)
-	{
-		item->l_next = *list;
-		(*list)->l_prev = item;
-		item->l_prev = NULL;
-	}
-	else
-	{
-		item->l_next = NULL;
-		item->l_prev = NULL;
-	}
-	*list = item;
-}
+	int i;
+	rogue::Pool &pool = game().pool;
 
-/*
- * _free_list:
- *	Throw the whole blamed thing away
- */
-void
-list_free(THING **ptr)
-{
-	THING *item;
-
-	while (*ptr != NULL)
+	if (pool.total >= MAXITEMS)
+		return NULL;
+	for (i=0;i<MAXITEMS;i++)
 	{
-	item = *ptr;
-	*ptr = next(item);
-	discard(item);
+		if (!used[i])
+		{
+			++pool.total;
+			used[i] = true;
+			slots[i] = T{};
+			return &slots[i];
+		}
 	}
+	return NULL;
 }
 
 /*
  * new_item
  *	Get a new item with a specified size
+ *	@ items and creatures come from separate pools now
  */
-THING *
+Item *
 new_item()
 {
-	THING *item;
-#ifdef DEBUG
-	if ((item = (THING *) talloc()) == NULL)
-		if (me())msg("no more things!");
-	else
-#else
-	if ((item = (THING *) talloc()) != NULL)
-#endif //DEBUG
-			 item->l_next = item->l_prev = NULL;
-	return item;
+	return talloc(game().pool.items, game().pool.item_used);
 }
 
-/*
- * talloc: simple allocation of a THING
+//@ new_item() for monsters
+Creature *
+new_creature()
+{
+	return talloc(game().pool.creatures, game().pool.creature_used);
+}
+
+/*@
+ * discard: give a slot back to its pool
  */
-static
-void *  //@ maybe should be THING*, as this is a specialized malloc()
-talloc()
+template <class T>
+static int
+discard_from(T *item, T *slots, bool *used)
 {
 	int i;
-	rogue::Items &items = game().items;
 
 	for (i=0;i<MAXITEMS;i++)
 	{
-		if (items.pool_used[i] == 0)
+		if (item == &slots[i])
 		{
-			++items.total;
-			items.pool_used[i]++;
-			setmem(&items.pool[i],sizeof(THING),0);
-			return &items.pool[i];
+			--game().pool.total;
+			used[i] = false;
+			return 1;
 		}
 	}
-	return NULL;
+	return 0;
 }
 
 /*
@@ -110,18 +83,13 @@ talloc()
  *	Free up an item
  */
 int
-discard(THING *item)
+discard(Item *item)
 {
-	int i;
+	return discard_from(item, game().pool.items, game().pool.item_used);
+}
 
-	for (i=0;i<MAXITEMS;i++)
-	{
-		if (item == &game().items.pool[i])
-		{
-			--game().items.total;
-			game().items.pool_used[i] = 0;
-			return 1;
-		}
-	}
-	return 0;
+int
+discard(Creature *item)
+{
+	return discard_from(item, game().pool.creatures, game().pool.creature_used);
 }

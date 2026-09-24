@@ -11,9 +11,9 @@
  *	The player attacks the monster.
  */
 bool
-fight(coord *mp, char mn, THING *weap, bool thrown)
+fight(coord *mp, char mn, Item *weap, bool thrown)
 {
-	THING *tp;
+	Creature *tp;
 	const char *mname;
 	rogue::Player &player = game().player;
 
@@ -40,7 +40,7 @@ fight(coord *mp, char mn, THING *weap, bool thrown)
 	mname = monsters[mn-'A'].m_name;
 	if (on(player.body, ISBLIND))
 		mname = it;
-	if (roll_em(&player.body, tp, weap, thrown)||(weap && weap->o_type == POTION)) {
+	if (roll_em(&player.body, tp, weap, thrown)||(weap && weap->o_type == ItemKind::Potion)) {
 		bool did_huh = FALSE;
 
 		if (thrown)
@@ -48,7 +48,7 @@ fight(coord *mp, char mn, THING *weap, bool thrown)
 		else
 			hit(NULL, mname);
 		//@ original missed NULL check for weap
-		if (weap && weap->o_type == POTION) {
+		if (weap && weap->o_type == ItemKind::Potion) {
 			th_effect(weap, tp);
 			if (!thrown) {
 				if (weap->o_count > 1)
@@ -62,8 +62,8 @@ fight(coord *mp, char mn, THING *weap, bool thrown)
 		}
 		if (on(player.body, CANHUH)) {
 			did_huh = TRUE;
-			tp->t_flags |= ISHUH;
-			player.body.t_flags &= ~CANHUH;
+			tp->t_flags.set(ISHUH);
+			player.body.t_flags.unset(CANHUH);
 			msg("your hands stop glowing red");
 		}
 		if (tp->t_stats.s_hpt <= 0)
@@ -86,7 +86,7 @@ fight(coord *mp, char mn, THING *weap, bool thrown)
  *	The monster attacks the player
  */
 void
-attack(THING *mp)
+attack(Creature *mp)
 {
 	const char *mname;
 	rogue::Player &player = game().player;
@@ -184,7 +184,7 @@ attack(THING *mp)
 			/*
 			 * Violet fungi stops the poor guy from moving
 			 */
-			player.body.t_flags |= ISHELD;
+			player.body.t_flags.set(ISHELD);
 			sprintf(game().player.flytrap_damage,"%dd1",++player.fung_hit);
 		when 'L':
 		{
@@ -205,7 +205,7 @@ attack(THING *mp)
 		}
 		when 'N':
 		{
-			THING *obj, *steal;
+			Item *obj, *steal;
 			int nobj;
 			const char *she_stole = "she stole %s!";
 
@@ -214,7 +214,7 @@ attack(THING *mp)
 			 * and pick out one we like.
 			 */
 			steal = NULL;
-			for (nobj = 0, obj = pack; obj != NULL; obj = next(obj))
+			for (nobj = 0, obj = pack.first(); obj != NULL; obj = pack.after(obj))
 			if (obj != player.armor && obj != player.weapon
 				&& obj != player.rings[LEFT] && obj != player.rings[RIGHT]
 				&& is_magic(obj) && rnd(++nobj) == 0)
@@ -302,7 +302,7 @@ check_level(void)
  *	Roll several attacks
  */
 bool
-roll_em(THING *thatt, THING *thdef, THING *weap, bool hurl)
+roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 {
 	rogue::Player &player = game().player;
 	struct stats *att, *def;
@@ -344,7 +344,7 @@ roll_em(THING *thatt, THING *thdef, THING *weap, bool hurl)
 				hplus += player.rings[RIGHT]->o_ac;
 		}
 		cp = weap->o_damage;
-		if (hurl && (weap->o_flags&ISMISL) && player.weapon != NULL &&
+		if (hurl && weap->o_flags.test(ISMISL) && player.weapon != NULL &&
 			  player.weapon->o_which == weap->o_launch)
 		{
 			cp = weap->o_hurldmg;
@@ -354,7 +354,7 @@ roll_em(THING *thatt, THING *thdef, THING *weap, bool hurl)
 		/*
 		 * Drain a staff of striking
 		 */
-		if (weap->o_type == STICK && weap->o_which == WS_HIT
+		if (weap->o_type == ItemKind::Stick && weap->o_which == WS_HIT
 			&& --weap->o_charges < 0)
 		{
 			cp = weap->o_damage = "0d0";
@@ -476,7 +476,7 @@ miss(const char *er, const char *ee)
  *	See if a creature save against something
  */
 bool
-save_throw(int which, THING *tp)
+save_throw(int which, Creature *tp)
 {
 	int need;
 
@@ -564,9 +564,9 @@ raise_level(void)
  *	A missile hit or missed a monster
  */
 void
-thunk(THING *weap, const char *mname, const char *does, const char *did)
+thunk(Item *weap, const char *mname, const char *does, const char *did)
 {
-	if (weap->o_type == WEAPON)
+	if (weap->o_type == ItemKind::Weapon)
 		addmsg("the %s %s ", w_names[weap->o_which], does);
 	else
 		addmsg("you %s ", did);
@@ -582,17 +582,17 @@ thunk(THING *weap, const char *mname, const char *does, const char *did)
  *	Remove a monster from the screen
  */
 void
-remove_monster(coord *mp, THING *tp, bool waskill)
+remove_monster(coord *mp, Creature *tp, bool waskill)
 {
-	THING *obj, *nexti;
+	Item *obj, *nexti;
 	TileStyle style;
 
 	if (tp == NULL)
 		return;
 
-	for (obj = tp->t_pack; obj != NULL; obj = nexti)
+	for (obj = tp->t_pack.first(); obj != NULL; obj = nexti)
 	{
-		nexti = next(obj);
+		nexti = tp->t_pack.after(obj);
 		bcopy(obj->o_pos,tp->t_pos);
 		detach(tp->t_pack, obj);
 		if (waskill)
@@ -614,20 +614,22 @@ remove_monster(coord *mp, THING *tp, bool waskill)
  *	Returns true if an object radiates magic
  */
 bool
-is_magic(THING *obj)
+is_magic(Item *obj)
 {
 	switch (obj->o_type)
 	{
-	case ARMOR:
+	case ItemKind::Armor:
 		return obj->o_ac != a_class[obj->o_which];
-	case WEAPON:
+	case ItemKind::Weapon:
 		return obj->o_hplus != 0 || obj->o_dplus != 0;
-	case POTION:
-	case SCROLL:
-	case STICK:
-	case RING:
-	case AMULET:
+	case ItemKind::Potion:
+	case ItemKind::Scroll:
+	case ItemKind::Stick:
+	case ItemKind::Ring:
+	case ItemKind::Amulet:
 		return TRUE;
+	otherwise:	//@ the other kinds of item: nothing
+		break;
 	}
 	return FALSE;
 }
@@ -637,7 +639,7 @@ is_magic(THING *obj)
  *	Called to put a monster to death
  */
 void
-killed(THING *tp, bool pr)
+killed(Creature *tp, bool pr)
 {
 	pstats.s_exp += tp->t_stats.s_exp;
 	/*
@@ -646,14 +648,14 @@ killed(THING *tp, bool pr)
 	switch (tp->t_type)
 	{
 	when 'F':
-		game().player.body.t_flags &= ~ISHELD;
+		game().player.body.t_flags.unset(ISHELD);
 		f_restor();
 	when 'L':;
-		THING *gold;
+		Item *gold;
 
 		if ((gold = new_item()) == NULL)
 			return;
-		gold->o_type = GOLD;
+		gold->o_type = ItemKind::Gold;
 		gold->o_goldval = GOLDCALC;
 		if (save(VS_MAGIC))
 			gold->o_goldval += GOLDCALC + GOLDCALC + GOLDCALC + GOLDCALC;

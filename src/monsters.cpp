@@ -6,7 +6,7 @@
 
 #include "rogue.h"
 
-static int	exp_add(THING *tp);
+static int	exp_add(Creature *tp);
 
 /*
  * List of monsters in rough order of vorpalness
@@ -58,7 +58,7 @@ randmonster(bool wander)
  *	Pick a new monster and add it to the list
  */
 void
-new_monster(THING *tp, byte type, coord *cp)
+new_monster(Creature *tp, byte type, coord *cp)
 {
 	struct monster *mp;
 	int lev_add;
@@ -80,7 +80,7 @@ new_monster(THING *tp, byte type, coord *cp)
 	tp->t_stats.s_exp = mp->m_stats.s_exp + lev_add * 10 + exp_add(tp);
 	tp->t_flags = mp->m_flags;
 	tp->t_turn = TRUE;
-	tp->t_pack = NULL;
+	tp->t_pack.clear();
 	if (ISWEARING(R_AGGR))
 		start_run(cp);
 	if (type == 'F')
@@ -121,7 +121,7 @@ f_restor(void)
  */
 static
 int
-exp_add(THING *tp)
+exp_add(Creature *tp)
 {
 	int mod;
 
@@ -145,13 +145,13 @@ wanderer(void)
 {
 	int i;
 	struct room *rp;
-	THING *tp;
+	Creature *tp;
 	coord cp;
 
 	/*
 	 * can we allocate a new monster
 	 */
-	if ((tp = new_item()) == NULL)
+	if ((tp = new_creature()) == NULL)
 		return;
 	do {
 		i = rnd_room();
@@ -171,10 +171,10 @@ wanderer(void)
  * wake_monster:
  *	What to do when the hero steps next to a monster
  */
-THING *
+Creature *
 wake_monster(int y, int x)
 {
-	THING *tp;
+	Creature *tp;
 	struct room *rp;
 	byte ch;
 	int dst;
@@ -189,7 +189,7 @@ wake_monster(int y, int x)
 		&& !ISWEARING(R_STEALTH))
 	{
 		tp->t_dest = &hero;
-		tp->t_flags |= ISRUN;
+		tp->t_flags.set(ISRUN);
 	}
 	if (ch == 'M' && !on(game().player.body, ISBLIND) && !on(*tp, ISFOUND)
 		&& !on(*tp, ISCANC) && on(*tp, ISRUN))
@@ -197,13 +197,13 @@ wake_monster(int y, int x)
 		rp = proom;
 		dst = DISTANCE(y, x, hero.y, hero.x);
 		if ((rp != NULL && !rp->r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
-			tp->t_flags |= ISFOUND;
+			tp->t_flags.set(ISFOUND);
 			if (!save(VS_MAGIC)) {
 				if (on(game().player.body, ISHUH))
 					lengthen(unconfuse, rnd(20) + HUHDURATION);
 				else
 					fuse(unconfuse, rnd(20) + HUHDURATION);
-				game().player.body.t_flags |= ISHUH;
+				game().player.body.t_flags.set(ISHUH);
 				msg("the medusa's gaze has confused you");
 			}
 		}
@@ -212,7 +212,7 @@ wake_monster(int y, int x)
 	 * Let greedy ones guard gold
 	 */
 	if (on(*tp, ISGREED) && !on(*tp, ISRUN)) {
-		tp->t_flags = tp->t_flags | ISRUN;
+		tp->t_flags.set(ISRUN);
 		if (proom->r_goldval)
 			tp->t_dest = &proom->r_gold;
 		else
@@ -226,12 +226,12 @@ wake_monster(int y, int x)
  *	Give a pack to a monster if it deserves one
  */
 void
-give_pack(THING *tp)
+give_pack(Creature *tp)
 {
 	/*
 	 * check if we can allocate a new item
 	 */
-	if (game().items.total < MAXITEMS && rnd(100) < monsters[tp->t_type-'A'].m_carry)
+	if (game().pool.total < MAXITEMS && rnd(100) < monsters[tp->t_type-'A'].m_carry)
 		attach(tp->t_pack, new_thing());
 }
 
@@ -261,12 +261,12 @@ pick_mons(void)
  *	  if no monster there return NULL
  */
 
-THING *
+Creature *
 moat(int my, int mx)
 {
-	THING *tp;
+	Creature *tp;
 
-	for (tp = game().level.monsters ; tp != NULL ; tp = next(tp))
+	for (tp = game().level.monsters.first(); tp != NULL; tp = game().level.monsters.after(tp))
 		if (tp->t_pos.x == mx  && tp->t_pos.y == my)
 			return(tp);
 	return(NULL);

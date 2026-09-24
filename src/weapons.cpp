@@ -12,22 +12,22 @@ static struct init_weps {
 	const char *iw_dam;	/* Damage when wielded */
 	const char *iw_hrl;	/* Damage when thrown */
 	char iw_launch;	/* Launching weapon */
-	int iw_flags;	/* Miscellaneous flags */
+	ItemFlags iw_flags;	/* Miscellaneous flags */
 } init_dam[MAXWEAPONS] = {
-	{"2d4",	"1d3",	NONE,     0},            	/* Mace */
-	{"3d4",	"1d2",	NONE,     0},            	/* Long sword */
-	{"1d1",	"1d1",	NONE,     0},            	/* Bow */
+	{"2d4",	"1d3",	NONE,     {}},            	/* Mace */
+	{"3d4",	"1d2",	NONE,     {}},            	/* Long sword */
+	{"1d1",	"1d1",	NONE,     {}},            	/* Bow */
 	{"1d1",	"2d3",	BOW,      ISMANY|ISMISL},	/* Arrow */
 	{"1d6",	"1d4",	NONE,     ISMISL},       	/* Dagger */
-	{"4d4",	"1d2",	NONE,     0},            	/* 2h sword */
+	{"4d4",	"1d2",	NONE,     {}},            	/* 2h sword */
 	{"1d1",	"1d3",	NONE,     ISMANY|ISMISL},	/* Dart */
-	{"1d1",	"1d1",	NONE,     0},            	/* Crossbow */
+	{"1d1",	"1d1",	NONE,     {}},            	/* Crossbow */
 	{"1d2",	"2d5",	CROSSBOW, ISMANY|ISMISL},	/* Crossbow bolt */
 	{"2d3",	"1d6",	NONE,     ISMISL}        	/* Spear */
 };
 
-static int	fallpos(THING *obj, coord *newpos);
-static const char	*short_name(THING *obj);
+static int	fallpos(Item *obj, coord *newpos);
+static const char	*short_name(Item *obj);
 
 /*
  * missile:
@@ -36,12 +36,12 @@ static const char	*short_name(THING *obj);
 void
 missile(int ydelta, int xdelta)
 {
-	THING *obj, *nitem;
+	Item *obj, *nitem;
 
 	/*
 	 * Get which thing we are hurling
 	 */
-	if ((obj = get_item("throw", WEAPON)) == NULL)
+	if ((obj = get_item("throw", ItemKind::Weapon)) == NULL)
 		return;
 	if (!can_drop(obj) || is_current(obj))
 		return;
@@ -86,7 +86,7 @@ missile(int ydelta, int xdelta)
  *	across the room
  */
 void
-do_motion(THING *obj, int ydelta, int xdelta)
+do_motion(Item *obj, int ydelta, int xdelta)
 {
 	byte under = '@';
 
@@ -115,7 +115,7 @@ do_motion(THING *obj, int ydelta, int xdelta)
 			 */
 			if (cansee(unc(obj->o_pos))) {
 				under = chat(obj->o_pos.y, obj->o_pos.x);
-				display().draw_tile(obj->o_pos, obj->o_type);
+				display().draw_tile(obj->o_pos, glyph_of(obj->o_type));
 				tick_pause();
 			} else
 				under = '@';
@@ -127,17 +127,17 @@ do_motion(THING *obj, int ydelta, int xdelta)
 
 static
 const char *
-short_name(THING *obj)
+short_name(Item *obj)
 {
 	switch (obj->o_type) {
-		case WEAPON: return w_names[obj->o_which];
-		case ARMOR: return a_names[obj->o_which];
-		case FOOD: return "food";
-		case POTION:
-		case SCROLL:
-		case AMULET:
-		case STICK:
-		case RING:
+		case ItemKind::Weapon: return w_names[obj->o_which];
+		case ItemKind::Armor: return a_names[obj->o_which];
+		case ItemKind::Food: return "food";
+		case ItemKind::Potion:
+		case ItemKind::Scroll:
+		case ItemKind::Amulet:
+		case ItemKind::Stick:
+		case ItemKind::Ring:
 			return strchr(inv_name(obj, TRUE), ' ') + 1;
 		default:
 			return "bizzare thing";
@@ -149,7 +149,7 @@ short_name(THING *obj)
  *	Drop an item someplace around here.
  */
 void
-fall(THING *obj, bool pr)
+fall(Item *obj, bool pr)
 {
 	static coord fpos;
 	int index;
@@ -158,16 +158,16 @@ fall(THING *obj, bool pr)
 	{
 	case 1:
 		index = INDEX(fpos.y, fpos.x);
-		game().level.map[index] = obj->o_type;
+		game().level.map[index] = glyph_of(obj->o_type);
 		bcopy(obj->o_pos,fpos);
 		if (cansee(fpos.y, fpos.x))
 		{
-			display().draw_tile(fpos, obj->o_type,
+			display().draw_tile(fpos, glyph_of(obj->o_type),
 					((flat(obj->o_pos.y, obj->o_pos.x) & F_PASS) ||
 					 (flat(obj->o_pos.y, obj->o_pos.x) & F_MAZE))
 						? TileStyle::Inverse : TileStyle::Normal);
 			if (moat(fpos.y,fpos.x) != NULL)
-				moat(fpos.y,fpos.x)->t_oldch = obj->o_type;
+				moat(fpos.y,fpos.x)->t_oldch = glyph_of(obj->o_type);
 		}
 		attach(game().level.objects, obj);
 		return;
@@ -186,7 +186,7 @@ fall(THING *obj, bool pr)
  *	Set up the initial goodies for a weapon
  */
 void
-init_weapon(THING *weap, byte type)
+init_weapon(Item *weap, byte type)
 {
 	struct init_weps *iwp;
 
@@ -195,7 +195,7 @@ init_weapon(THING *weap, byte type)
 	weap->o_hurldmg = iwp->iw_hrl;
 	weap->o_launch = iwp->iw_launch;
 	weap->o_flags = iwp->iw_flags;
-	if (weap->o_flags & ISMANY)
+	if (weap->o_flags.test(ISMANY))
 	{
 		weap->o_count = rnd(8) + 8;
 		weap->o_group = game().items.group++;
@@ -209,10 +209,10 @@ init_weapon(THING *weap, byte type)
  *	Does the missile hit the monster?
  */
 bool
-hit_monster(int y, int x, THING *obj)
+hit_monster(int y, int x, Item *obj)
 {
 	static coord mp;
-	THING *mo = moat(y, x);
+	Creature *mo = moat(y, x);
 
 	if (mo) {
 		mp.y = y;
@@ -244,7 +244,7 @@ num(int n1, int n2, char type)
 void
 wield(void)
 {
-	THING *obj, *oweapon;
+	Item *obj, *oweapon;
 	char *sp;
 	rogue::Player &player = game().player;
 
@@ -255,14 +255,14 @@ wield(void)
 		return;
 	}
 	player.weapon = oweapon;
-	if ((obj = get_item("wield", WEAPON)) == NULL)
+	if ((obj = get_item("wield", ItemKind::Weapon)) == NULL)
 	{
 bad:
 		game().turn.after = FALSE;
 		return;
 	}
 
-	if (obj->o_type == ARMOR)
+	if (obj->o_type == ItemKind::Armor)
 	{
 		msg("you can't wield armor");
 		goto bad;
@@ -282,10 +282,10 @@ bad:
  */
 static
 int
-fallpos(THING *obj, coord *newpos)
+fallpos(Item *obj, coord *newpos)
 {
 	int y, x, cnt = 0, ch;
-	THING *onfloor;
+	Item *onfloor;
 
 	for (y = obj->o_pos.y - 1; y <= obj->o_pos.y + 1; y++) {
 		for (x = obj->o_pos.x - 1; x <= obj->o_pos.x + 1; x++) {

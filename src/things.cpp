@@ -8,10 +8,10 @@
 #include "rogue.h"
 
 static void	chopmsg(char *s, const char *shmsg, const char *lnmsg, ...);
-static void	print_disc(byte type);
+static void	print_disc(ItemKind type);
 static void	set_order(short *order, int numthings);
 static int	pick_one(struct magic_item *magic, int nitems);
-static char	*nothing(byte type);
+static char	*nothing(ItemKind type);
 
 /*
  * inv_name:
@@ -19,7 +19,7 @@ static char	*nothing(byte type);
  *	inventory.
  */
 char *
-inv_name(THING *obj, bool drop)
+inv_name(Item *obj, bool drop)
 {
 	int which = obj->o_which;
 	char *pb;
@@ -28,7 +28,7 @@ inv_name(THING *obj, bool drop)
 	pb = prbuf;
 	switch (obj->o_type)
 	{
-	when SCROLL:
+	when ItemKind::Scroll:
 		if (obj->o_count == 1) {
 			strcpy(pb, "A scroll ");
 			pb = &prbuf[9];
@@ -42,7 +42,7 @@ inv_name(THING *obj, bool drop)
 			sprintf(pb, "called %s", items.s_guess[which]);
 		else
 			chopmsg(pb, "titled '%.17s'","titled '%s'", &items.s_names[which]);
-	when POTION:
+	when ItemKind::Potion:
 		if (obj->o_count == 1)
 		{
 			strcpy(pb, "A potion ");
@@ -66,7 +66,7 @@ inv_name(THING *obj, bool drop)
 				items.p_colors[which]);
 		else
 			sprintf(prbuf, "%d %s potions", obj->o_count, items.p_colors[which]);
-	when FOOD:
+	when ItemKind::Food:
 		if (which == 1)
 			if (obj->o_count == 1)
 				sprintf(pb, "A%s %s", vowelstr(game().options.fruit), game().options.fruit);
@@ -77,35 +77,35 @@ inv_name(THING *obj, bool drop)
 				strcpy(pb, "Some food");
 			else
 				sprintf(pb, "%d rations of food", obj->o_count);
-	when WEAPON:
+	when ItemKind::Weapon:
 		if (obj->o_count > 1)
 			sprintf(pb, "%d ", obj->o_count);
 		else
 			sprintf(pb, "A%s ", vowelstr(w_names[which]));
 		pb = &prbuf[strlen(prbuf)];
-		if (obj->o_flags & ISKNOW)
+		if (obj->o_flags.test(ISKNOW))
 			sprintf(pb, "%s %s", num(obj->o_hplus, obj->o_dplus, WEAPON),
 				w_names[which]);
 		else
 			sprintf(pb, "%s", w_names[which]);
 		if (obj->o_count > 1)
 			strcat(pb, "s");
-		if (obj->o_enemy && (obj->o_flags & ISREVEAL))
+		if (obj->o_enemy && obj->o_flags.test(ISREVEAL))
 		{
 			strcat(pb, " of ");
 			strcat(pb, monsters[obj->o_enemy-'A'].m_name);
 			strcat(pb, " slaying");
 		}
-	when ARMOR:
-		if (obj->o_flags & ISKNOW)
+	when ItemKind::Armor:
+		if (obj->o_flags.test(ISKNOW))
 			chopmsg(pb, "%s %s","%s %s [armor class %d]",
 				num(a_class[which] - obj->o_ac, 0, ARMOR),
 				a_names[which], -(obj->o_ac-11));
 		else
 			sprintf(pb, "%s", a_names[which]);
-	when AMULET:
+	when ItemKind::Amulet:
 		strcpy(pb, "The Amulet of Yendor");
-	when STICK:
+	when ItemKind::Stick:
 		sprintf(pb, "A%s %s ", vowelstr(items.ws_type[which]),
 		items.ws_type[which]);
 		pb = &prbuf[strlen(prbuf)];
@@ -118,7 +118,7 @@ inv_name(THING *obj, bool drop)
 				items.ws_made[which]);
 		else
 			sprintf(pb = &prbuf[2], "%s %s", items.ws_made[which], items.ws_type[which]);
-	when RING:
+	when ItemKind::Ring:
 		if (items.r_know[which])
 			chopmsg(pb, "A%s ring of %s", "A%s ring of %s(%s)", ring_num(obj),
 				items.r_magic[which].mi_name, items.r_stones[which]);
@@ -129,11 +129,14 @@ inv_name(THING *obj, bool drop)
 			sprintf(pb, "A%s %s ring", vowelstr(items.r_stones[which]),
 				items.r_stones[which]);
 #ifdef DEBUG
-	when GOLD:
+	when ItemKind::Gold:
 		sprintf(pb, "Gold at %d,%d", obj->o_pos.y, obj->o_pos.x);
 	otherwise:
-		debug("Picked up someting bizzare %s", io_unctrl(obj->o_type));
-		sprintf(pb, "Something bizarre %c(%d)", obj->o_type, obj->o_type);
+		debug("Picked up someting bizzare %s", io_unctrl(glyph_of(obj->o_type)));
+		sprintf(pb, "Something bizarre %c(%d)", glyph_of(obj->o_type),
+			static_cast<int>(obj->o_type));
+#else
+	otherwise:	//@ the other kinds of item: nothing
 #endif
 		break;
 	}
@@ -171,7 +174,7 @@ void
 drop(void)
 {
 	byte ch;
-	THING *nobj, *op;
+	Item *nobj, *op;
 
 	ch = chat(hero.y, hero.x);
 	if (ch != FLOOR && ch != PASSAGE)
@@ -179,14 +182,14 @@ drop(void)
 		msg("there is something there already");
 		return;
 	}
-	if ((op = get_item("drop", 0)) == NULL)
+	if ((op = get_item("drop", ItemFilter::all())) == NULL)
 		return;
 	if (!can_drop(op))
 		return;
 	/*
 	 * Take it out of the pack
 	 */
-	if (op->o_count >= 2 && op->o_type != WEAPON)
+	if (op->o_count >= 2 && op->o_type != ItemKind::Weapon)
 	{
 		if ((nobj = new_item()) == NULL)
 		{
@@ -208,9 +211,9 @@ drop(void)
 	 * Link it into the level object list
 	 */
 	attach(game().level.objects, op);
-	chat(hero.y, hero.x) = op->o_type;
+	chat(hero.y, hero.x) = glyph_of(op->o_type);
 	bcopy(op->o_pos,hero);
-	if (op->o_type == AMULET)
+	if (op->o_type == ItemKind::Amulet)
 		game().player.has_amulet = FALSE;
 	msg("dropped %s", inv_name(op, TRUE));
 }
@@ -220,7 +223,7 @@ drop(void)
  *	Do special checks for dropping or unweilding|unwearing|unringing
  */
 bool
-can_drop(THING *op)
+can_drop(Item *op)
 {
 	rogue::Player &player = game().player;
 	if (op == NULL)
@@ -228,7 +231,7 @@ can_drop(THING *op)
 	if (op != player.armor && op != player.weapon
 		&& op != player.rings[LEFT] && op != player.rings[RIGHT])
 		return TRUE;
-	if (op->o_flags & ISCURSED) {
+	if (op->o_flags.test(ISCURSED)) {
 		msg("you can't.  It appears to be cursed");
 		return FALSE;
 	}
@@ -265,10 +268,10 @@ can_drop(THING *op)
  * new_thing:
  *	Return a new thing
  */
-THING *
+Item *
 new_thing(void)
 {
-	THING *cur;
+	Item *cur;
 	int j, k;
 	rogue::Items &items = game().items;
 
@@ -279,7 +282,7 @@ new_thing(void)
 	cur->o_ac = 11;
 	cur->o_count = 1;
 	cur->o_group = 0;
-	cur->o_flags = 0;
+	cur->o_flags.reset();
 	cur->o_enemy = 0;
 	/*
 	 * Decide what kind of object it will be
@@ -288,31 +291,31 @@ new_thing(void)
 	switch (game().level.no_food > 3 ? 2 : pick_one(items.things, NUMTHINGS))
 	{
 	when 0:
-		cur->o_type = POTION;
+		cur->o_type = ItemKind::Potion;
 		cur->o_which = pick_one(items.p_magic, MAXPOTIONS);
 	when 1:
-		cur->o_type = SCROLL;
+		cur->o_type = ItemKind::Scroll;
 		cur->o_which = pick_one(items.s_magic, MAXSCROLLS);
 	when 2:
 		game().level.no_food = 0;
-		cur->o_type = FOOD;
+		cur->o_type = ItemKind::Food;
 		if (rnd(10) != 0)
 			cur->o_which = 0;
 		else
 			cur->o_which = 1;
 	when 3:
-		cur->o_type = WEAPON;
+		cur->o_type = ItemKind::Weapon;
 		cur->o_which = rnd(MAXWEAPONS);
 		init_weapon(cur, cur->o_which);
 		if ((k = rnd(100)) < 10)
 		{
-			cur->o_flags |= ISCURSED;
+			cur->o_flags.set(ISCURSED);
 			cur->o_hplus -= rnd(3) + 1;
 		}
 		else if (k < 15)
 			cur->o_hplus += rnd(3) + 1;
 	when 4:
-		cur->o_type = ARMOR;
+		cur->o_type = ItemKind::Armor;
 		for (j = 0, k = rnd(100); j < MAXARMORS; j++)
 			if (k < a_chances[j])
 				break;
@@ -327,13 +330,13 @@ new_thing(void)
 		cur->o_ac = a_class[j];
 		if ((k = rnd(100)) < 20)
 		{
-			cur->o_flags |= ISCURSED;
+			cur->o_flags.set(ISCURSED);
 			cur->o_ac += rnd(3) + 1;
 		}
 		else if (k < 28)
 			cur->o_ac -= rnd(3) + 1;
 	when 5:
-		cur->o_type = RING;
+		cur->o_type = ItemKind::Ring;
 		cur->o_which = pick_one(items.r_magic, MAXRINGS);
 		switch (cur->o_which)
 		{
@@ -344,15 +347,15 @@ new_thing(void)
 			if ((cur->o_ac = rnd(3)) == 0)
 			{
 				cur->o_ac = -1;
-				cur->o_flags |= ISCURSED;
+				cur->o_flags.set(ISCURSED);
 			}
 		when R_AGGR:
 		case R_TELEPORT:
-			cur->o_flags |= ISCURSED;
+			cur->o_flags.set(ISCURSED);
 			break;
 		}
 	when 6:
-		cur->o_type = STICK;
+		cur->o_type = ItemKind::Stick;
 		cur->o_which = pick_one(items.ws_magic, MAXSTICKS);
 		fix_stick(cur);
 #ifdef DEBUG
@@ -409,13 +412,13 @@ static const char *lastfmt, *lastarg;
 void
 discovered(void)
 {
-	print_disc(POTION);
+	print_disc(ItemKind::Potion);
 	add_line(nullstr, " ", "");
-	print_disc(SCROLL);
+	print_disc(ItemKind::Scroll);
 	add_line(nullstr, " ", "");
-	print_disc(RING);
+	print_disc(ItemKind::Ring);
 	add_line(nullstr, " ", "");
-	print_disc(STICK);
+	print_disc(ItemKind::Stick);
 	end_line(nullstr);
 }
 
@@ -428,41 +431,43 @@ discovered(void)
 
 static
 void
-print_disc(byte type)
+print_disc(ItemKind type)
 {
 	bool *know = NULL;
 	char **guess = NULL;
 	int i, maxnum = 0, num_found;
-	static THING obj;
+	static Item obj;
 	static short order[MAX(MAXSCROLLS, MAXPOTIONS, MAXRINGS, MAXSTICKS)];
 	rogue::Items &items = game().items;
 
 	switch (type)
 	{
-	case SCROLL:
+	case ItemKind::Scroll:
 		maxnum = MAXSCROLLS;
 		know = items.s_know;
 		guess = items.s_guess;
 		break;
-	case POTION:
+	case ItemKind::Potion:
 		maxnum = MAXPOTIONS;
 		know = items.p_know;
 		guess = items.p_guess;
 		break;
-	case RING:
+	case ItemKind::Ring:
 		maxnum = MAXRINGS;
 		know = items.r_know;
 		guess = items.r_guess;
 		break;
-	case STICK:
+	case ItemKind::Stick:
 		maxnum = MAXSTICKS;
 		know = items.ws_know;
 		guess = items.ws_guess;
 		break;
+	otherwise:	//@ the other kinds of item: nothing
+		break;
 	}
 	set_order(order, maxnum);
 	obj.o_count = 1;
-	obj.o_flags = 0;
+	obj.o_flags.reset();
 	num_found = 0;
 	for (i = 0; i < maxnum; i++)
 		if (know[order[i]] || *guess[order[i]])
@@ -570,7 +575,7 @@ end_line(const char *use)
  */
 static
 char *
-nothing(byte type)
+nothing(ItemKind type)
 {
 	char *sp;
 	const char *tystr;
@@ -581,10 +586,10 @@ nothing(byte type)
 	sp = &prbuf[strlen(prbuf)];
 	switch (type)
 	{
-		when POTION: tystr = "potion";
-		when SCROLL: tystr = "scroll";
-		when RING: tystr = "ring";
-		when STICK: tystr = "stick";
+		when ItemKind::Potion: tystr = "potion";
+		when ItemKind::Scroll: tystr = "scroll";
+		when ItemKind::Ring: tystr = "ring";
+		when ItemKind::Stick: tystr = "stick";
 		//@ not in original, avoid possibly uninitialized use of tystr
 		otherwise: tystr = "item";
 	}

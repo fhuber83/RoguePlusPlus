@@ -45,7 +45,6 @@
 #define AMULET		(0x0c)
 #define RING		(0x09)
 #define WEAPON		(0x18)
-#define CALLABLE	-1
 
 #define VWALL	(0xba)
 #define HWALL	(0xcd)

@@ -21,7 +21,7 @@ do_rooms(void)
 	int i, rm;
 	rogue::Level &level = game().level;
 	struct room *rp;
-	THING *tp;
+	Creature *tp;
 	int left_out;
 	coord top;
 	coord bsze;
@@ -103,7 +103,7 @@ do_rooms(void)
 		 * Put the gold in
 		 */
 		if ((rnd(2) == 0) && (!game().player.saw_amulet || (level.depth >= game().player.max_level))) {
-			THING *gold;
+			Item *gold;
 
 			if ((gold = new_item()) != NULL) {
 				gold->o_goldval = rp->r_goldval = GOLDCALC;
@@ -118,7 +118,7 @@ do_rooms(void)
 				bcopy(gold->o_pos,rp->r_gold);
 				gold->o_flags = ISMANY;
 				gold->o_group = GOLDGRP;
-				gold->o_type = GOLD;
+				gold->o_type = ItemKind::Gold;
 				attach(level.objects, gold);
 				chat(rp->r_gold.y, rp->r_gold.x) = GOLD;
 			}
@@ -127,7 +127,7 @@ do_rooms(void)
 		 * Put the monster in
 		 */
 		if (rnd(100) < (rp->r_goldval > 0 ? 80 : 25)) {
-			if ((tp = new_item()) != NULL) {
+			if ((tp = new_creature()) != NULL) {
 				byte mch;
 
 				do {
@@ -217,7 +217,7 @@ enter_room(coord *cp)
 {
 	struct room *rp;
 	int y, x;
-	THING *tp;
+	Creature *tp;
 
 	rp = proom = roomin(cp);
 	if (game().turn.bailout || (rp->r_flags.test(RoomFlag::Gone) && !rp->r_flags.test(RoomFlag::Maze))) {

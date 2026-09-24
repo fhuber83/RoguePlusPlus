@@ -15,20 +15,21 @@ const char *in_dist = " in the distance";
 void
 read_scroll()
 {
-	THING *obj;
+	Item *obj;
 	int y, x;
 	byte ch;
-	THING *op;
+	Item *op;
+	Creature *mo;
 	int index;
 	bool discardit = FALSE;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 	rogue::Items &items = game().items;
 
-	obj = get_item("read", SCROLL);
+	obj = get_item("read", ItemKind::Scroll);
 	if (obj == NULL)
 		return;
-	if (obj->o_type != SCROLL){
+	if (obj->o_type != ItemKind::Scroll){
 		msg("there is nothing on it to read");
 		return;
 	}
@@ -43,12 +44,12 @@ read_scroll()
 		/*
 		 * Scroll of monster confusion.  Give him that power.
 		 */
-		player.body.t_flags |= CANHUH;
+		player.body.t_flags.set(CANHUH);
 		msg("your hands begin to glow red");
 	when S_ARMOR:
 		if (player.armor != NULL) {
 			player.armor->o_ac--;
-			player.armor->o_flags &= ~ISCURSED;
+			player.armor->o_flags.unset(ISCURSED);
 			ifterse0("your armor glows faintly",
 				"your armor glows faintly for a moment");
 		}
@@ -61,9 +62,9 @@ read_scroll()
 		for (x = hero.x - 3; x <= hero.x + 3; x++)
 			if (x >= 0 && x < COLS)
 				for (y = hero.y - 3; y <= hero.y + 3; y++)
-					if ((y > 0 && y < maxrow) && ((op=moat(y, x)) != NULL)) {
-						op->t_flags &= ~ISRUN;
-						op->t_flags |= ISHELD;
+					if ((y > 0 && y < maxrow) && ((mo=moat(y, x)) != NULL)) {
+						mo->t_flags.unset(ISRUN);
+						mo->t_flags.set(ISHELD);
 					}
 	when S_SLEEP:
 		/*
@@ -71,14 +72,14 @@ read_scroll()
 		 */
 		items.s_know[S_SLEEP] = TRUE;
 		player.no_command += rnd(SLEEPTIME) + 4;
-		player.body.t_flags &= ~ISRUN;
+		player.body.t_flags.unset(ISRUN);
 		msg("you fall asleep");
 	when S_CREATE:
 		{
 		coord mp;
 
-		if (plop_monster(hero.y, hero.x, &mp) && (op=new_item()) != NULL)
-			new_monster(op, randmonster(FALSE), &mp);
+		if (plop_monster(hero.y, hero.x, &mp) && (mo=new_creature()) != NULL)
+			new_monster(mo, randmonster(FALSE), &mp);
 		else
 			ifterse0("you hear a faint cry of anguish",
 				"you hear a faint cry of anguish in the distance");
@@ -120,9 +121,9 @@ read_scroll()
 				case DOOR:
 				case PASSAGE:
 				case STAIRS:
-					if ((op = moat(y, x)) != NULL)
-						if (op->t_oldch == ' ')
-							op->t_oldch = ch;
+					if ((mo = moat(y, x)) != NULL)
+						if (mo->t_oldch == ' ')
+							mo->t_oldch = ch;
 					break;
 				default:
 					ch = ' ';
@@ -137,12 +138,12 @@ read_scroll()
 		 * Scroll of food detection
 		 */
 		ch = FALSE;
-		for (op = level.objects; op != NULL; op = next(op)) {
-			if (op->o_type == FOOD) {
+		for (op = level.objects.first(); op != NULL; op = level.objects.after(op)) {
+			if (op->o_type == ItemKind::Food) {
 				ch = TRUE;
 				display().draw_tile(op->o_pos, FOOD, TileStyle::Inverse);
 			} else /* as a bonus this will detect amulets as well */
-			if (op->o_type == AMULET) {
+			if (op->o_type == ItemKind::Amulet) {
 				ch = TRUE;
 				display().draw_tile(op->o_pos, AMULET, TileStyle::Inverse);
 			}
@@ -166,11 +167,11 @@ read_scroll()
 			items.s_know[S_TELEP] = TRUE;
 		}
 	when S_ENCH:
-		if (player.weapon == NULL || player.weapon->o_type != WEAPON)
+		if (player.weapon == NULL || player.weapon->o_type != ItemKind::Weapon)
 		msg("you feel a strange sense of loss");
 		else
 		{
-		player.weapon->o_flags &= ~ISCURSED;
+		player.weapon->o_flags.unset(ISCURSED);
 		if (rnd(2) == 0)
 			player.weapon->o_hplus++;
 		else
@@ -185,13 +186,13 @@ read_scroll()
 			msg(laugh, game().options.brief() ? "" : in_dist);
 	when S_REMOVE:
 		if (player.armor != NULL)
-			player.armor->o_flags &= ~ISCURSED;
+			player.armor->o_flags.unset(ISCURSED);
 		if (player.weapon != NULL)
-			player.weapon->o_flags &= ~ISCURSED;
+			player.weapon->o_flags.unset(ISCURSED);
 		if (player.rings[LEFT] != NULL)
-			player.rings[LEFT]->o_flags &= ~ISCURSED;
+			player.rings[LEFT]->o_flags.unset(ISCURSED);
 		if (player.rings[RIGHT] != NULL)
-			player.rings[RIGHT]->o_flags &= ~ISCURSED;
+			player.rings[RIGHT]->o_flags.unset(ISCURSED);
 		ifterse0("somebody is watching over you","you feel as if somebody is watching over you");
 	when S_AGGR:
 		/*
@@ -218,7 +219,7 @@ read_scroll()
 		 *
 		 * If he doesn't have a weapon I get to chortle again!
 		 */
-		if (player.weapon == NULL || player.weapon->o_type != WEAPON)
+		if (player.weapon == NULL || player.weapon->o_type != ItemKind::Weapon)
 			msg(laugh, game().options.brief() ? "" : in_dist);
 		else {
 			/*
@@ -241,9 +242,9 @@ read_scroll()
 				/*
 				 * Sometimes this is a mixed blessing ...
 					if (rnd(20) == 0) {
-						cur_weapon->o_flags |= ISCURSED;
+						cur_weapon->o_flags.set(ISCURSED);
 						if (!save(VS_MAGIC)) {
-							cur_weapon->o_flags |= ISEGO|ISREVEAL;
+							cur_weapon->o_flags.set(ISEGO|ISREVEAL);
 							s_know[S_VORPAL] = TRUE;
 							msg("you feel a sudden desire to kill %ss.",
 							monsters[cur_weapon->o_enemy-'A'].m_name);

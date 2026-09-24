@@ -13,14 +13,14 @@
 
 static coord slimy;
 
-static bool	new_slime(THING *tp);
+static bool	new_slime(Creature *tp);
 
 void
-slime_split(THING *tp)
+slime_split(Creature *tp)
 {
-	THING *nslime;
+	Creature *nslime;
 
-	if (!new_slime(tp) || (nslime = new_item()) == NULL)
+	if (!new_slime(tp) || (nslime = new_creature()) == NULL)
 		return;
 	msg("The slime divides.  Ick!");
 	new_monster(nslime, 'S', &slimy);
@@ -33,15 +33,15 @@ slime_split(THING *tp)
 
 static
 bool
-new_slime(THING *tp)
+new_slime(Creature *tp)
 {
 	int y, x, ty, tx;
 	bool ret;
-	THING *ntp;
+	Creature *ntp;
 	coord sp;
 
 	ret = FALSE;
-	tp->t_flags |= ISFLY;
+	tp->t_flags.set(ISFLY);
 	if (!plop_monster((ty = tp->t_pos.y), (tx = tp->t_pos.x), &sp)) {
 		/*
 		 * There were no open spaces next to this slime, look for other
@@ -50,7 +50,7 @@ new_slime(THING *tp)
 		for (y = ty -1; y <= ty+1; y++)
 			for (x = tx-1; x <= tx+1; x++)
 				if (winat(y, x) == 'S' && (ntp = moat(y, x))) {
-					if (ntp->t_flags & ISFLY)
+					if (ntp->t_flags.test(ISFLY))
 						continue;				/* Already done this one */
 					if (new_slime(ntp)) {
 						y = ty+2;
@@ -61,7 +61,7 @@ new_slime(THING *tp)
 		ret = TRUE;
 		slimy = sp;
 	}
-	tp->t_flags &= ~ISFLY;
+	tp->t_flags.unset(ISFLY);
 	return ret;
 }
 

@@ -7,13 +7,13 @@
  */
 
 static
-THING *
+Item *
 pack_obj(byte ch, byte *chp)
 {
-	THING *obj;
+	Item *obj;
 	byte och;
 
-	for (obj = pack, och = 'a'; obj != NULL; obj = next(obj), och++)
+	for (obj = pack.first(), och = 'a'; obj != NULL; obj = pack.after(obj), och++)
 		if (ch == och)
 			return obj;
 	*chp = och;
@@ -27,9 +27,10 @@ pack_obj(byte ch, byte *chp)
  *	it off the ground.
  */
 void
-add_pack(THING *obj, bool silent)
+add_pack(Item *obj, bool silent)
 {
-	THING *op, *lp = NULL;
+	Item *op, *lp = NULL;
+	Creature *mp;
 	bool exact, from_floor;
 	byte floor;
 
@@ -60,7 +61,7 @@ add_pack(THING *obj, bool silent)
 	floor = (proom != NULL && proom->r_flags.test(RoomFlag::Gone)) ? PASSAGE : FLOOR;
 	if (obj->o_group)
 	{
-		for (op = pack; op != NULL; op = next(op))
+		for (op = pack.first(); op != NULL; op = pack.after(op))
 		{
 			if (op->o_group == obj->o_group)
 			{
@@ -91,9 +92,9 @@ add_pack(THING *obj, bool silent)
 	/*
 	 * Check for and deal with scare monster scrolls
 	 */
-	if (obj->o_type == SCROLL && obj->o_which == S_SCARE)
+	if (obj->o_type == ItemKind::Scroll && obj->o_which == S_SCARE)
 	{
-		if (obj->o_flags & ISFOUND)
+		if (obj->o_flags.test(rogue::ItemFlag::Found))
 		{
 			detach(game().level.objects, obj);
 			display().draw_tile(hero, floor);
@@ -102,7 +103,7 @@ add_pack(THING *obj, bool silent)
 			return;
 		}
 		else
-			obj->o_flags |= ISFOUND;
+			obj->o_flags.set(rogue::ItemFlag::Found);
 	}
 
 	game().player.in_pack++;
@@ -116,7 +117,7 @@ add_pack(THING *obj, bool silent)
 	 * Search for an object of the same type
 	 */
 	exact = FALSE;
-	for (op = pack; op != NULL; op = next(op))
+	for (op = pack.first(); op != NULL; op = pack.after(op))
 		if (obj->o_type == op->o_type)
 			break;
 	if (op == NULL)
@@ -124,9 +125,9 @@ add_pack(THING *obj, bool silent)
 		/*
 		 * Put it at the end of the pack since it is a new type
 		 */
-		for (op = pack; op != NULL; op = next(op))
+		for (op = pack.first(); op != NULL; op = pack.after(op))
 		{
-			if (op->o_type != FOOD)
+			if (op->o_type != ItemKind::Food)
 				break;
 			lp = op;
 		}
@@ -144,7 +145,7 @@ add_pack(THING *obj, bool silent)
 				break;
 			}
 			lp = op;
-			if ((op = next(op)) == NULL)
+			if ((op = pack.after(op)) == NULL)
 				break;
 		}
 	}
@@ -153,14 +154,7 @@ add_pack(THING *obj, bool silent)
 		/*
 		 * Didn't find an exact match, just stick it here
 		 */
-		if (pack == NULL)
-			pack = obj;
-		else
-		{
-			lp->l_next = obj;
-			obj->l_prev = lp;
-			obj->l_next = NULL;
-		}
+		pack.insert_after(lp, obj);	//@ lp is NULL only when the pack is empty
 	}
 	else
 	{
@@ -175,23 +169,14 @@ add_pack(THING *obj, bool silent)
 			obj = op;
 			goto picked_up;
 		}
-		if ((obj->l_prev = prev(op)) != NULL)
-		{
-			obj->l_prev->l_next = obj;
-		}
-		else
-		{
-			pack = obj;
-		}
-		obj->l_next = op;
-		op->l_prev = obj;
+		pack.insert_before(op, obj);
 	}
 picked_up:
 	/*
 	 * If this was the object of something's desire, that monster will
 	 * get mad and run at the hero
 	 */
-	for (op = game().level.monsters; op != NULL; op = next(op))
+	for (mp = game().level.monsters.first(); mp != NULL; mp = game().level.monsters.after(mp))
 	{
 		/*
 		 *  compiler bug: jll : 2-7-83
@@ -199,7 +184,7 @@ picked_up:
 		 *		this may be true since there is no structure assignments,
 		 *		but still it should let you have the address??!!
 		 *
-		if (&obj->_o._o_pos == op->t_dest)
+		if (&obj->_o._o_pos == mp->t_dest)
 		 *
 		 *  the following should do the same
 		 */
@@ -208,12 +193,12 @@ picked_up:
 		 * be not chasing (sleeping, another room, Ice Monster, etc), so a
 		 * destination could possibly have never been assigned.
 		 */
-		if (op->t_dest != NULL &&
-		   (op->t_dest->x == obj->o_pos.x) && (op->t_dest->y == obj->o_pos.y))
-			op->t_dest = &hero;
+		if (mp->t_dest != NULL &&
+		   (mp->t_dest->x == obj->o_pos.x) && (mp->t_dest->y == obj->o_pos.y))
+			mp->t_dest = &hero;
 	}
 
-	if (obj->o_type == AMULET)
+	if (obj->o_type == ItemKind::Amulet)
 	{
 		game().player.has_amulet = TRUE;
 		game().player.saw_amulet = TRUE;
@@ -231,14 +216,15 @@ picked_up:
  *	List what is in the pack
  */
 byte
-inventory(THING *list, int type, const char *lstr)
+inventory(const List<Item> &list, ItemFilter type, const char *lstr)
 {
 	byte ch;
+	Item *obj;
 	int n_objs;
 	char inv_temp[MAXSTR];
 
 	n_objs = 0;
-	for (ch = 'a'; list != NULL; ch++, list = next(list))
+	for (ch = 'a', obj = list.first(); obj != NULL; ch++, obj = list.after(obj))
 	{
 		/*
 		 * Don't print this one if:
@@ -246,19 +232,19 @@ inventory(THING *list, int type, const char *lstr)
 		 *	it isn't a callable type AND
 		 *	it isn't a zappable weapon
 		 */
-		if (type && type != list->o_type && !(type == CALLABLE &&
-		  (list->o_type == SCROLL || list->o_type == POTION ||
-		  list->o_type == RING || list->o_type == STICK)) &&
-		  !(type == WEAPON && list->o_type == POTION) &&
-		  !(type == STICK && list->o_enemy && list->o_charges))
+		if (!type.is_all() && !type.is(obj->o_type) && !(type.is_callable() &&
+		  (obj->o_type == ItemKind::Scroll || obj->o_type == ItemKind::Potion ||
+		  obj->o_type == ItemKind::Ring || obj->o_type == ItemKind::Stick)) &&
+		  !(type.is(ItemKind::Weapon) && obj->o_type == ItemKind::Potion) &&
+		  !(type.is(ItemKind::Stick) && obj->o_enemy && obj->o_charges))
 			continue;
 		n_objs++;
 		sprintf(inv_temp, "%c) %%s", ch);
-		add_line(lstr, inv_temp, inv_name(list, FALSE));
+		add_line(lstr, inv_temp, inv_name(obj, FALSE));
 	}
 	if (n_objs == 0)
 	{
-		msg(type == 0 ? "you are empty handed" :
+		msg(type.is_all() ? "you are empty handed" :
 					"you don't have anything appropriate");
 		return 0;
 	}
@@ -272,7 +258,7 @@ inventory(THING *list, int type, const char *lstr)
 void
 pick_up(byte ch)
 {
-	THING *obj;
+	Item *obj;
 
 	switch (ch)
 	{
@@ -302,14 +288,14 @@ pick_up(byte ch)
  * get_item:
  *	Pick something out of a pack for a purpose
  */
-THING *
-get_item(const char *purpose, int type)
+Item *
+get_item(const char *purpose, ItemFilter type)
 {
-	THING *obj;
+	Item *obj;
 	byte ch;
 	byte och;
 	static byte lch;
-	static THING *wasthing = NULL;
+	static Item *wasthing = NULL;
 	byte gi_state;	/* get item sub state */
 	int once_only = FALSE;
 
@@ -318,7 +304,7 @@ get_item(const char *purpose, int type)
 		once_only = TRUE;
 
 	gi_state = game().turn.again;
-	if (pack == NULL)
+	if (pack.empty())
 		msg("you aren't carrying anything");
 	else {
 		ch = lch;
@@ -388,13 +374,13 @@ get_item(const char *purpose, int type)
  *	Return which character would address a pack object
  */
 byte
-pack_char(THING *obj)
+pack_char(Item *obj)
 {
-	THING *item;
+	Item *item;
 	byte c;
 
 	c = 'a';
-	for (item = pack; item != NULL; item = next(item))
+	for (item = pack.first(); item != NULL; item = pack.after(item))
 		if (item == obj)
 			return c;
 		else

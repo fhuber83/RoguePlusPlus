@@ -6,12 +6,15 @@
 
 /*@
  * Modern headers first: extern.h and this file define macros such as max(),
- * next(), pack and when that would break standard library headers.
+ * pack and when that would break standard library headers.
  */
+#include <optional>
+
 #include "core/Coord.hpp"
 #include "core/Dice.hpp"
 #include "core/Flags.hpp"
 #include "core/Random.hpp"
+#include "entities/List.hpp"
 #include "ui/Display.hpp"
 #include "ui/Input.hpp"
 
@@ -88,22 +91,20 @@ const int maxrow = MAXLINES - 2;
 #define when		break;case
 #define otherwise	break;default
 #define until(expr)	while(!(expr))
-#define next(ptr)	(*ptr).l_next
-#define prev(ptr)	(*ptr).l_prev
 #define hero		game().player.body.t_pos
 #define pstats		game().player.body.t_stats
 #define pack		game().player.body.t_pack
 #define proom		game().player.body.t_room
 #define max_hp		game().player.body.t_stats.s_maxhp
-#define attach(a,b)	list_attach(&a,b)
-#define detach(a,b)	list_detach(&a,b)
-#define free_list(a)	list_free(&a)
+#define attach(a,b)	(a).push_front(b)
+#define detach(a,b)	(a).remove(b)
+#define free_list(a)	list_free(a)
 #define max(a,b)	((a) > (b) ? (a) : (b))
-#define on(thing,flag)	(((thing).t_flags & (flag)) != 0)
+#define on(thing,flag)	((thing).t_flags.test(flag))
 #define GOLDCALC	(rnd(50 + 10 * game().level.depth) + 2)
 #define ISRING(h,r)	(game().player.rings[h] != NULL && game().player.rings[h]->o_which == r)
 #define ISWEARING(r)	(ISRING(LEFT, r) || ISRING(RIGHT, r))
-#define ISMULT(type) 	(type==POTION || type==SCROLL || type==FOOD || type==GOLD)
+#define ISMULT(type) 	(type==ItemKind::Potion || type==ItemKind::Scroll || type==ItemKind::Food || type==ItemKind::Gold)
 #define chat(y,x)	(game().level.map[INDEX(y,x)])
 #define flat(y,x)	(game().level.flags[INDEX(y,x)])
 #define unc(cp)		(cp).y, (cp).x
@@ -146,35 +147,6 @@ const int maxrow = MAXLINES - 2;
 #define VS_BREATH	02
 #define VS_MAGIC	03
 
-/*
- * Various flag bits
- */
-/* flags for objects */
-#define ISCURSED 0x0001		/* object is cursed */
-#define ISKNOW	 0x0002		/* player knows details about the object */
-#define DIDFLASH 0x0004		/* has the vorpal weapon flashed */
-#define ISEGO	 0x0008		/* weapon has control of player @ unused */
-#define ISMISL	 0x0010		/* object is a missile type */
-#define ISMANY	 0x0020		/* object comes in groups */
-#define ISREVEAL 0x0040		/* Do you know who the enemy of the object is */
-
-/* flags for creatures */
-#define ISBLIND	 0x0001		/* creature is blind */
-#define SEEMONST 0x0002		/* hero can detect unseen monsters */
-#define ISRUN	 0x0004		/* creature is running at the player */
-#define ISFOUND	 0x0008		/* creature has been seen (used for objects) */
-#define ISINVIS	 0x0010		/* creature is invisible */
-#define ISMEAN	 0x0020		/* creature can wake when player enters room */
-#define ISGREED	 0x0040		/* creature runs to protect gold */
-#define ISHELD	 0x0080		/* creature has been held */
-#define ISHUH	 0x0100		/* creature is confused */
-#define ISREGEN	 0x0200		/* creature can regenerate */
-#define CANHUH	 0x0400		/* creature can confuse */
-#define CANSEE	 0x0800		/* creature can see invisible creatures */
-#define ISCANC	 0x1000		/* creature has special qualities cancelled */
-#define ISSLOW	 0x2000		/* creature has been slowed */
-#define ISHASTE	 0x4000		/* creature has been hastened */
-#define ISFLY	 0x8000		/* creature is of the flying type */
 
 /*
  * Flags for level map
@@ -385,72 +357,53 @@ struct stats {
 	shint s_maxhp;			/* Max hit points */
 };
 
-/*
- * Structure for monsters and player
+/*@
+ * The legacy union thing is split into a creature (monster or player) and an
+ * item. o_charges and o_goldval are other names for o_ac.
  */
-union thing {
-	struct {
-	union thing *_l_next, *_l_prev;	/* Next pointer in link */
-	coord _t_pos;			/* Position */
-	char _t_turn;			/* If slowed, is it a turn to move */
-	char _t_type;			/* What it is */
-	byte _t_disguise;		/* What mimic looks like */
-	byte _t_oldch;			/* Character that was where it was */
-	coord *_t_dest;			/* Where it is running to */
-	short _t_flags;			/* State word */
-	struct stats _t_stats;		/* Physical description */
-	struct room *_t_room;		/* Current room for thing */
-	union thing *_t_pack;		/* What the thing is carrying */
-	} _t;
-	struct {
-	union thing *_l_next, *_l_prev;	/* Next pointer in link */
-	shint _o_type;			/* What kind of object it is */
-	coord _o_pos;			/* Where it lives on the screen */
-	char *_o_text;			/* What it says if you read it */
-	char _o_launch;			/* What you need to launch it */
-	const char *_o_damage;		/* Damage if used like sword */
-	const char *_o_hurldmg;		/* Damage if thrown */
-	shint _o_count;			/* Count for plural objects */
-	shint _o_which;			/* Which object of a type it is */
-	shint _o_hplus;			/* Plusses to hit */
-	shint _o_dplus;			/* Plusses to damage */
-	short _o_ac;			/* Armor class */
-	short _o_flags;			/* Information about objects */
-	char _o_enemy;			/* If it is enchanted, who it hates */
-	shint _o_group;			/* Group number for this object */
-	} _o;
-};
+#include "entities/Item.hpp"
+#include "entities/Creature.hpp"
 
-typedef union thing THING;
+using rogue::Creature;
+using rogue::Item;
+using rogue::List;
+using rogue::ItemKind;
+using rogue::ItemFilter;
+using rogue::glyph_of;
+using rogue::kind_of_glyph;
+using rogue::CreatureFlags;
+using rogue::ItemFlags;
 
-#define l_next		_t._l_next
-#define l_prev		_t._l_prev
-#define t_pos		_t._t_pos
-#define t_turn		_t._t_turn
-#define t_type		_t._t_type
-#define t_disguise	_t._t_disguise
-#define t_oldch		_t._t_oldch
-#define t_dest		_t._t_dest
-#define t_flags		_t._t_flags
-#define t_stats		_t._t_stats
-#define t_pack		_t._t_pack
-#define t_room		_t._t_room
-#define o_type		_o._o_type
-#define o_pos		_o._o_pos
-#define o_text		_o._o_text
-#define o_launch	_o._o_launch
-#define o_damage	_o._o_damage
-#define o_hurldmg	_o._o_hurldmg
-#define o_count		_o._o_count
-#define o_which		_o._o_which
-#define o_hplus		_o._o_hplus
-#define o_dplus		_o._o_dplus
-#define o_ac		_o._o_ac
+/*
+ * Various flag bits
+ * @ typed now: rogue::ItemFlag and rogue::CreatureFlag, in Flags sets
+ */
+inline constexpr rogue::ItemFlag ISCURSED = rogue::ItemFlag::Cursed;
+inline constexpr rogue::ItemFlag ISKNOW = rogue::ItemFlag::Known;
+inline constexpr rogue::ItemFlag DIDFLASH = rogue::ItemFlag::DidFlash;
+inline constexpr rogue::ItemFlag ISEGO = rogue::ItemFlag::Ego;
+inline constexpr rogue::ItemFlag ISMISL = rogue::ItemFlag::Missile;
+inline constexpr rogue::ItemFlag ISMANY = rogue::ItemFlag::Many;
+inline constexpr rogue::ItemFlag ISREVEAL = rogue::ItemFlag::Revealed;
+inline constexpr rogue::CreatureFlag ISBLIND = rogue::CreatureFlag::Blind;
+inline constexpr rogue::CreatureFlag SEEMONST = rogue::CreatureFlag::SeeMonst;
+inline constexpr rogue::CreatureFlag ISRUN = rogue::CreatureFlag::Running;
+inline constexpr rogue::CreatureFlag ISFOUND = rogue::CreatureFlag::Found;
+inline constexpr rogue::CreatureFlag ISINVIS = rogue::CreatureFlag::Invisible;
+inline constexpr rogue::CreatureFlag ISMEAN = rogue::CreatureFlag::Mean;
+inline constexpr rogue::CreatureFlag ISGREED = rogue::CreatureFlag::Greedy;
+inline constexpr rogue::CreatureFlag ISHELD = rogue::CreatureFlag::Held;
+inline constexpr rogue::CreatureFlag ISHUH = rogue::CreatureFlag::Confused;
+inline constexpr rogue::CreatureFlag ISREGEN = rogue::CreatureFlag::Regen;
+inline constexpr rogue::CreatureFlag CANHUH = rogue::CreatureFlag::CanConfuse;
+inline constexpr rogue::CreatureFlag CANSEE = rogue::CreatureFlag::SeeInvisible;
+inline constexpr rogue::CreatureFlag ISCANC = rogue::CreatureFlag::Cancelled;
+inline constexpr rogue::CreatureFlag ISSLOW = rogue::CreatureFlag::Slow;
+inline constexpr rogue::CreatureFlag ISHASTE = rogue::CreatureFlag::Hasted;
+inline constexpr rogue::CreatureFlag ISFLY = rogue::CreatureFlag::Flying;
+
 #define o_charges	o_ac
 #define o_goldval	o_ac
-#define o_flags		_o._o_flags
-#define o_group		_o._o_group
-#define o_enemy		_o._o_enemy
 
 /*
  * Array containing information on all the various types of monsters
@@ -458,7 +411,7 @@ typedef union thing THING;
 struct monster {
 	const char *m_name;			/* What to call the monster */
 	shint m_carry;			/* Probability of carrying something */
-	unsigned short m_flags;			/* Things about the monster */
+	CreatureFlags m_flags;		/* Things about the monster */
 	struct stats m_stats;		/* Initial stats */
 };
 
@@ -522,14 +475,14 @@ void	waste_time(void);
 
 //@ chase.c
 void	runners(void);
-void	do_chase(THING *th);
-void	chase(THING *tp, coord *ee);
+void	do_chase(Creature *th);
+void	chase(Creature *tp, coord *ee);
 void	start_run(coord *runner);
-bool	see_monst(THING *mp);
+bool	see_monst(Creature *mp);
 bool	diag_ok(coord *sp, coord *ep);
 bool	cansee(int y, int x);
 struct room	*roomin(coord *cp);
-coord	*find_dest(THING *tp);
+coord	*find_dest(Creature *tp);
 
 //@ command.c
 void	command(void);
@@ -558,20 +511,20 @@ void	stomach(void);
 bool	setenv_from_file(const char *envfile);
 
 //@ fight.c
-bool	fight(coord *mp, char mn, THING *weap, bool thrown);
+bool	fight(coord *mp, char mn, Item *weap, bool thrown);
 bool	swing(int at_lvl, int op_arm, int wplus);
-bool	roll_em(THING *thatt, THING *thdef, THING *weap, bool hurl);
-bool	save_throw(int which, THING *tp);
+bool	roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl);
+bool	save_throw(int which, Creature *tp);
 bool	save(int which);
-bool	is_magic(THING *obj);
-void	attack(THING *mp);
+bool	is_magic(Item *obj);
+void	attack(Creature *mp);
 void	check_level(void);
 void	hit(const char *er, const char *ee);
 void	miss(const char *er, const char *ee);
 void	raise_level(void);
-void	thunk(THING *weap, const char *mname, const char *does, const char *did);
-void	remove_monster(coord *mp, THING *tp, bool waskill);
-void	killed(THING *tp, bool pr);
+void	thunk(Item *weap, const char *mname, const char *does, const char *did);
+void	remove_monster(coord *mp, Creature *tp, bool waskill);
+void	killed(Creature *tp, bool pr);
 int	str_plus(str_t str);
 int	add_dam(str_t str);
 
@@ -606,13 +559,27 @@ char	*io_unctrl(byte ch);
 const char	*noterse(const char *str);
 
 //@ list.c
-THING	*new_item(void);
-void	list_detach(THING **list, THING *item);
-void	list_attach(THING **list, THING *item);
-void	list_free(THING **ptr);
-int	discard(THING *item);
+Item	*new_item(void);
+Creature	*new_creature(void);
+int	discard(Item *item);
+int	discard(Creature *item);
 
+/*@
+ * Empties a list of creatures or items and gives them back to the pool
+ * (was _free_list)
+ */
+template <class T>
+void
+list_free(rogue::List<T> &list)
+{
+	T *item;
 
+	while ((item = list.first()) != NULL)
+	{
+	detach(list, item);
+	discard(item);
+	}
+}
 
 //@ main.c
 void	endit(void);
@@ -645,16 +612,16 @@ void	d_level(void);
 void	u_level(void);
 void	call(void);
 void	do_macro(char *buf, int sz);
-THING	*find_obj(int y, int x);
+Item	*find_obj(int y, int x);
 bool	add_haste(bool potion);
-bool	is_current(THING *obj);
+bool	is_current(Item *obj);
 bool	get_dir(void);
 bool	find_dir(byte ch, coord *cp);
 bool	step_ok(byte ch);
 bool	offmap(int y, int x);
 const char	*tr_name(byte type);
 const char	*vowelstr(const char *str);
-char	goodch(THING *obj);
+char	goodch(Item *obj);
 shint	sign(int nm);
 byte	winat(int y, int x);
 int	spread(int nm);
@@ -664,19 +631,19 @@ int	INDEX(int y, int x);
 //@ monsters.c
 char	randmonster(bool wander);
 char	pick_mons(void);
-void	new_monster(THING *tp, byte type, coord *cp);
+void	new_monster(Creature *tp, byte type, coord *cp);
 void	f_restor(void);
 void	wanderer(void);
-void	give_pack(THING *tp);
-THING	*wake_monster(int y, int x);
-THING	*moat(int my, int mx);
+void	give_pack(Creature *tp);
+Creature	*wake_monster(int y, int x);
+Creature	*moat(int my, int mx);
 
 //@ move.c
 void	do_run(byte ch);
 void	do_move(int dy, int dx);
 void	door_open(struct room *rp);
 void	descend(const char *mesg);
-void	rndmove(THING *who, coord *newmv);
+void	rndmove(Creature *who, coord *newmv);
 
 //@ new_leve.c
 void	new_level(void);
@@ -684,12 +651,12 @@ void	put_things(void);
 int	rnd_room(void);
 
 //@ pack.c
-THING	*get_item(const char *purpose, int type);
-void	add_pack(THING *obj, bool silent);
+Item	*get_item(const char *purpose, ItemFilter type);
+void	add_pack(Item *obj, bool silent);
 void	pick_up(byte ch);
 void	money(int value);
-byte	inventory(THING *list, int type, const char *lstr);
-byte	pack_char(THING *obj);
+byte	inventory(const List<Item> &list, ItemFilter type, const char *lstr);
+byte	pack_char(Item *obj);
 
 //@ passages.c
 void	conn(int r1, int r2);
@@ -702,13 +669,13 @@ void	psplat(shint y, shint x);
 //@ potions.c
 void	quaff(void);
 void	invis_on(void);
-void	th_effect(THING *obj, THING *tp);
+void	th_effect(Item *obj, Creature *tp);
 bool	turn_see(bool turn_off);
 
 //@ rings.c
 void	ring_on(void);
 void	ring_off(void);
-const char	*ring_num(THING *obj);
+const char	*ring_num(Item *obj);
 int	ring_eat(int hand);
 
 //@ rip.c
@@ -732,15 +699,15 @@ void	restore(char *savefile);
 void read_scroll(void);
 
 //@ slime.c
-void	slime_split(THING *tp);
+void	slime_split(Creature *tp);
 bool	plop_monster(int r, int c, coord *cp);
 
 //@ sticks.c
-void	fix_stick(THING *cur);
+void	fix_stick(Item *cur);
 void	do_zap(void);
 void	drain(void);
 void	fire_bolt(coord *start, coord *dir, const char *name);
-char	*charge_str(THING *obj);
+char	*charge_str(Item *obj);
 
 //@ strings.c
 bool	is_alpha(char ch);
@@ -755,23 +722,23 @@ char	*endblk(char *str);
 void	lcase(char *str);
 
 //@ things.c
-char	*inv_name(THING *obj, bool drop);
+char	*inv_name(Item *obj, bool drop);
 void	drop(void);
 void	discovered(void);
-bool	can_drop(THING *op);
-THING	*new_thing(void);
+bool	can_drop(Item *op);
+Item	*new_thing(void);
 byte	add_line(const char *use, const char *fmt, const char *arg);
 byte	end_line(const char *use);
 
 //@ weapons.c
 void	missile(int ydelta, int xdelta);
-void	do_motion(THING *obj, int ydelta, int xdelta);
-void	fall(THING *obj, bool pr);
-void	init_weapon(THING *weap, byte type);
+void	do_motion(Item *obj, int ydelta, int xdelta);
+void	fall(Item *obj, bool pr);
+void	init_weapon(Item *weap, byte type);
 void	wield(void);
 void	tick_pause(void);
 char	*num(int n1, int n2, char type);
-bool	hit_monster(int y, int x, THING *obj);
+bool	hit_monster(int y, int x, Item *obj);
 
 //@ wizard.c
 void	whatis(void);

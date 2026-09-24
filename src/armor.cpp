@@ -13,7 +13,7 @@
 void
 wear()
 {
-	THING *obj;
+	Item *obj;
 	char *sp;
 
 	if (game().player.armor != NULL) {
@@ -22,14 +22,14 @@ wear()
 		game().turn.after = FALSE;
 		return;
 	}
-	if ((obj = get_item("wear",ARMOR)) == NULL)
+	if ((obj = get_item("wear", ItemKind::Armor)) == NULL)
 		return;
-	if (obj->o_type != ARMOR) {
+	if (obj->o_type != ItemKind::Armor) {
 		msg("you can't wear that");
 		return;
 	}
 	waste_time();
-	obj->o_flags |= ISKNOW ;
+	obj->o_flags.set(ISKNOW);
 	sp = inv_name(obj, TRUE);
 	game().player.armor = obj;
 	msg("you are now wearing %s", sp);
@@ -42,7 +42,7 @@ wear()
 void
 take_off()
 {
-	THING *obj;
+	Item *obj;
 
 	if ((obj = game().player.armor) == NULL) {
 		game().turn.after = FALSE;

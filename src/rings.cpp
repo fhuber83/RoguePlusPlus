@@ -15,16 +15,16 @@ static int	gethand(void);
 void
 ring_on()
 {
-	THING *obj;
+	Item *obj;
 	int ring = -1;
 	rogue::Player &player = game().player;
 
-	if ((obj = get_item("put on", RING)) == NULL)
+	if ((obj = get_item("put on", ItemKind::Ring)) == NULL)
 		goto no_ring;
 	/*
 	 * Make certain that it is somethings that we want to wear
 	 */
-	if (obj->o_type != RING) {
+	if (obj->o_type != ItemKind::Ring) {
 		msg("you can't put that on your finger");
 		goto no_ring;
 	}
@@ -80,7 +80,7 @@ void
 ring_off(void)
 {
 	int ring;
-	THING *obj;
+	Item *obj;
 	char packchar;
 	rogue::Player &player = game().player;
 
@@ -170,9 +170,9 @@ ring_eat(int hand)
  *	Print ring bonuses
  */
 const char *
-ring_num(THING *obj)
+ring_num(Item *obj)
 {
-	if (!(obj->o_flags & ISKNOW))
+	if (!obj->o_flags.test(ISKNOW))
 		return "";
 	switch (obj->o_which) {
 	when R_PROTECT:

@@ -17,10 +17,10 @@ coord ch_ret;			/* Where chasing takes	you */
 void
 runners()
 {
-	THING *tp;
+	Creature *tp;
 	int dist;
 
-	for	(tp = game().level.monsters; tp	!= NULL; tp = next(tp)) {
+	for (tp = game().level.monsters.first(); tp != NULL; tp = game().level.monsters.after(tp)) {
 		if (!on(*tp, ISHELD) && on(*tp, ISRUN)) {
 			dist = DISTANCE(hero.y, hero.x, tp->t_pos.y, tp->t_pos.x);
 			if	(!(on(*tp, ISSLOW) || (tp->t_type == 'S' && dist > 3)) || tp->t_turn)
@@ -40,11 +40,11 @@ runners()
  *	Make one thing chase another.
  */
 void
-do_chase(THING *th)
+do_chase(Creature *th)
 {
 	int	mindist	= 32767, i, dist;
 	bool door;
-	THING *obj;
+	Item *obj;
 	struct room	*oroom;
 	struct room	*rer, *ree;	/* room of chaser, room of chasee */
 	coord target;				/* Temporary	destination for	chaser */
@@ -114,7 +114,7 @@ over:
 		attack(th);
 		return;
 	} else if (ch_ret == *th->t_dest) {
-		for (obj = game().level.objects; obj != NULL; obj =	next(obj))
+		for (obj = game().level.objects.first(); obj != NULL; obj = game().level.objects.after(obj))
 			if	(th->t_dest == &obj->o_pos) {
 				byte oldchar;
 
@@ -177,7 +177,7 @@ over:
  *	Return TRUE if the hero can see the monster
  */
 bool
-see_monst(THING *mp)
+see_monst(Creature *mp)
 {
 	rogue::Player &player = game().player;
 	if (on(player.body, ISBLIND))
@@ -193,9 +193,9 @@ see_monst(THING *mp)
 	 * time, give the player a hint as to what that weapon is good for.
 	 */
 	if (player.weapon != NULL && mp->t_type == player.weapon->o_enemy
-	  && ((player.weapon->o_flags & DIDFLASH) == 0))
+	  && !player.weapon->o_flags.test(DIDFLASH))
 	{
-		player.weapon->o_flags |=	DIDFLASH;
+		player.weapon->o_flags.set(DIDFLASH);
 		msg(flashmsg, w_names[player.weapon->o_which], game().options.brief() ? "" : intense);
 	}
 	return TRUE;
@@ -209,7 +209,7 @@ see_monst(THING *mp)
 void
 start_run(coord *runner)
 {
-	THING *tp;
+	Creature *tp;
 
 	/*
 	 * If we couldn't find him,	something is funny
@@ -219,8 +219,8 @@ start_run(coord *runner)
 		/*
 		 *	Start the beastie running
 		 */
-		tp->t_flags |= ISRUN;
-		tp->t_flags &= ~ISHELD;
+		tp->t_flags.set(ISRUN);
+		tp->t_flags.unset(ISHELD);
 		tp->t_dest	= find_dest(tp);
 	}
 #ifdef DEBUG
@@ -238,11 +238,11 @@ start_run(coord *runner)
  *	@@ Wrong documentation: function is actually a void, there is no return
  */
 void
-chase(THING *tp, coord *ee)
+chase(Creature *tp, coord *ee)
 {
 	int	x, y;
 	int	dist, thisdist;
-	THING *obj;
+	Item *obj;
 	coord *er;
 	byte ch;
 	int	plcnt =	1;
@@ -265,7 +265,7 @@ chase(THING *tp, coord *ee)
 		 * Small chance that it will become un-confused
 		 */
 		if (rnd(30) ==	17)
-			tp->t_flags &= ~ISHUH;
+			tp->t_flags.unset(ISHUH);
 	}
 	/*
 	 * Otherwise, find the empty spot next to the chaser that is
@@ -302,7 +302,7 @@ chase(THING *tp, coord *ee)
 					 */
 					if (ch ==	SCROLL)
 					{
-						for (obj = game().level.objects; obj != NULL; obj	= next(obj))
+						for (obj = game().level.objects.first(); obj != NULL; obj = game().level.objects.after(obj))
 						{
 							if (y ==	obj->o_pos.y &&	x == obj->o_pos.x)
 								break;
@@ -398,9 +398,9 @@ cansee(int y, int x)
  *	find	the proper destination for the monster
  */
 coord *
-find_dest(THING *tp)
+find_dest(Creature *tp)
 {
-	THING *obj;
+	Item *obj;
 	int prob;
 	struct room *rp;
 
@@ -408,13 +408,13 @@ find_dest(THING *tp)
 	|| see_monst(tp))
 		return &hero;
 	rp = tp->t_room;
-	for	(obj = game().level.objects;	obj != NULL; obj = next(obj))
+	for (obj = game().level.objects.first(); obj != NULL; obj = game().level.objects.after(obj))
 	{
-	if (obj->o_type == SCROLL && obj->o_which == S_SCARE)
+	if (obj->o_type == ItemKind::Scroll && obj->o_which == S_SCARE)
 		continue;
 	if (roomin(&obj->o_pos) == rp && rnd(100) < prob)
 	{
-		for (tp = game().level.monsters; tp != NULL; tp = next(tp))
+		for (tp = game().level.monsters.first(); tp != NULL; tp = game().level.monsters.after(tp))
 		if (tp->t_dest == &obj->o_pos)
 			break;
 		if	(tp == NULL)

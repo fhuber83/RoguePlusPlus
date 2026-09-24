@@ -232,7 +232,7 @@ death(char monst)
 void
 total_winner(void)
 {
-	THING *obj;
+	Item *obj;
 	int worth = 0;
 	byte c;
 	int oldpurse;
@@ -244,13 +244,13 @@ total_winner(void)
 	display().clear_page();
 	display().write_at(0, 0, "   Worth  Item");
 	oldpurse = game().player.purse;
-	for (c = 'a', obj = pack; obj != NULL; c++, obj = next(obj))
+	for (c = 'a', obj = pack.first(); obj != NULL; c++, obj = pack.after(obj))
 	{
 	switch (obj->o_type)
 	{
-		when FOOD:
+		when ItemKind::Food:
 			worth = 2 * obj->o_count;
-		when WEAPON:
+		when ItemKind::Weapon:
 			switch (obj->o_which)
 			{
 				when MACE: worth = 8;
@@ -266,8 +266,8 @@ total_winner(void)
 				break;
 			}
 			worth *= 3 * (obj->o_hplus + obj->o_dplus) + obj->o_count;
-			obj->o_flags |= ISKNOW;
-		when ARMOR:
+			obj->o_flags.set(ISKNOW);
+		when ItemKind::Armor:
 			switch (obj->o_which)
 			{
 				when LEATHER: worth = 20;
@@ -282,20 +282,20 @@ total_winner(void)
 			}
 			worth += (9 - obj->o_ac) * 100;
 			worth += (10 * (a_class[obj->o_which] - obj->o_ac));
-			obj->o_flags |= ISKNOW;
-		when SCROLL:
+			obj->o_flags.set(ISKNOW);
+		when ItemKind::Scroll:
 			worth = items.s_magic[obj->o_which].mi_worth;
 			worth *= obj->o_count;
 			if (!items.s_know[obj->o_which])
 				worth /= 2;
 			items.s_know[obj->o_which] = TRUE;
-		when POTION:
+		when ItemKind::Potion:
 			worth = items.p_magic[obj->o_which].mi_worth;
 			worth *= obj->o_count;
 			if (!items.p_know[obj->o_which])
 				worth /= 2;
 			items.p_know[obj->o_which] = TRUE;
-		when RING:
+		when ItemKind::Ring:
 			worth = items.r_magic[obj->o_which].mi_worth;
 			if (obj->o_which == R_ADDSTR || obj->o_which == R_ADDDAM ||
 				obj->o_which == R_PROTECT || obj->o_which == R_ADDHIT)
@@ -305,20 +305,22 @@ total_winner(void)
 				else
 					worth = 10;
 			}
-			if (!(obj->o_flags & ISKNOW))
+			if (!obj->o_flags.test(ISKNOW))
 				worth /= 2;
-			obj->o_flags |= ISKNOW;
+			obj->o_flags.set(ISKNOW);
 			items.r_know[obj->o_which] = TRUE;
-		when STICK:
+		when ItemKind::Stick:
 			worth = items.ws_magic[obj->o_which].mi_worth;
 			worth += 20 * obj->o_charges;
-			if (!(obj->o_flags & ISKNOW))
+			if (!obj->o_flags.test(ISKNOW))
 				worth /= 2;
-			obj->o_flags |= ISKNOW;
+			obj->o_flags.set(ISKNOW);
 			items.ws_know[obj->o_which] = TRUE;
-			when AMULET:
+			when ItemKind::Amulet:
 			worth = 1000;
 			break;
+	otherwise:	//@ the other kinds of item: nothing
+		break;
 	}
 	if (worth < 0)
 		worth = 0;

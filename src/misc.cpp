@@ -42,7 +42,7 @@ look(bool wakeup)
 	int x, y;
 	byte ch, pch;
 	int index;
-	THING *tp;
+	Creature *tp;
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
@@ -234,12 +234,12 @@ look(bool wakeup)
  * find_obj:
  *	Find the unclaimed object at y, x
  */
-THING *
+Item *
 find_obj(int y, int x)
 {
-	THING *op;
+	Item *op;
 
-	for (op = game().level.objects; op != NULL; op = next(op))
+	for (op = game().level.objects.first(); op != NULL; op = game().level.objects.after(op))
 		if (op->o_pos.y == y && op->o_pos.x == x)
 			return op;
 #ifdef DEBUG
@@ -258,12 +258,12 @@ find_obj(int y, int x)
 void
 eat()
 {
-	THING *obj;
+	Item *obj;
 	rogue::Player &player = game().player;
 
-	if ((obj = get_item("eat", FOOD)) == NULL)
+	if ((obj = get_item("eat", ItemKind::Food)) == NULL)
 		return;
-	if (obj->o_type != FOOD)
+	if (obj->o_type != ItemKind::Food)
 	{
 		msg("ugh, you would get ill if you ate that");
 		return;
@@ -344,15 +344,15 @@ add_haste(bool potion)
 	if (on(player.body, ISHASTE))
 	{
 		player.no_command += rnd(8);
-		player.body.t_flags &= ~ISRUN;
+		player.body.t_flags.unset(ISRUN);
 		extinguish(nohaste);
-		player.body.t_flags &= ~ISHASTE;
+		player.body.t_flags.unset(ISHASTE);
 		msg("you faint from exhaustion");
 		return FALSE;
 	}
 	else
 	{
-		player.body.t_flags |= ISHASTE;
+		player.body.t_flags.set(ISHASTE);
 		if (potion)
 			fuse(nohaste, rnd(4)+10);
 		return TRUE;
@@ -366,9 +366,9 @@ add_haste(bool potion)
 void
 aggravate()
 {
-	THING *mi;
+	Creature *mi;
 
-	for (mi = game().level.monsters; mi != NULL; mi = next(mi))
+	for (mi = game().level.monsters.first(); mi != NULL; mi = game().level.monsters.after(mi))
 		start_run(&mi->t_pos);
 }
 
@@ -398,7 +398,7 @@ vowelstr(const char *str)
  *	See if the object is one of the currently used items
  */
 bool
-is_current(THING *obj)
+is_current(Item *obj)
 {
 	if (obj == NULL)
 		return FALSE;
@@ -528,20 +528,20 @@ step_ok(byte ch)
  * printing.
  */
 char
-goodch(THING *obj)
+goodch(Item *obj)
 {
 	char ch = MAGIC;
 
-	if (obj->o_flags & ISCURSED)
+	if (obj->o_flags.test(ISCURSED))
 		ch = BMAGIC;
 	switch (obj->o_type) {
-	when ARMOR:
+	when ItemKind::Armor:
 		if (obj->o_ac > a_class[obj->o_which])
 			ch = BMAGIC;
-	when WEAPON:
+	when ItemKind::Weapon:
 		if (obj->o_hplus < 0 || obj->o_dplus < 0)
 			ch = BMAGIC;
-	when SCROLL:
+	when ItemKind::Scroll:
 		switch (obj->o_which) {
 		when S_SLEEP:
 		case S_CREATE:
@@ -549,7 +549,7 @@ goodch(THING *obj)
 			ch = BMAGIC;
 			break;
 		}
-	when POTION:
+	when ItemKind::Potion:
 		switch (obj->o_which) {
 		when P_CONFUSE:
 		case P_PARALYZE:
@@ -558,14 +558,14 @@ goodch(THING *obj)
 			ch = BMAGIC;
 			break;
 		}
-	when STICK:
+	when ItemKind::Stick:
 		switch (obj->o_which) {
 		when WS_HASTE_M:
 		case WS_TELTO:
 			ch = BMAGIC;
 			break;
 		}
-	when RING:
+	when ItemKind::Ring:
 		switch (obj->o_which) {
 		when R_PROTECT:
 		case R_ADDSTR:
@@ -578,6 +578,8 @@ goodch(THING *obj)
 			ch = BMAGIC;
 			break;
 		}
+		break;
+	otherwise:	//@ the other kinds of item: nothing
 		break;
 	}
 	return ch;
@@ -764,13 +766,13 @@ u_level()
 void
 call()
 {
-	THING *obj;
+	Item *obj;
 	char **guess;
 	const char *elsewise;
 	bool *know;
 	rogue::Items &items = game().items;
 
-	obj = get_item("call", CALLABLE);
+	obj = get_item("call", ItemFilter::callable());
 	/*
 	 * Make certain that it is somethings that we want to wear
 	 */
@@ -778,22 +780,22 @@ call()
 		return;
 	switch (obj->o_type)
 	{
-	when RING:
+	when ItemKind::Ring:
 		guess = (char **)items.r_guess;
 		know = items.r_know;
 		elsewise = (*guess[obj->o_which] != '\0' ?
 			guess[obj->o_which] : items.r_stones[obj->o_which]);
-	when POTION:
+	when ItemKind::Potion:
 		guess = (char **)items.p_guess;
 		know = items.p_know;
 		elsewise = (*guess[obj->o_which] != '\0' ?
 			guess[obj->o_which] : items.p_colors[obj->o_which]);
-	when SCROLL:
+	when ItemKind::Scroll:
 		guess = (char **)items.s_guess;
 		know = items.s_know;
 		elsewise = (*guess[obj->o_which] != '\0' ?
 			guess[obj->o_which] : items.s_names[obj->o_which].storage);
-	when STICK:
+	when ItemKind::Stick:
 		guess = (char **)items.ws_guess;
 		know = items.ws_know;
 		elsewise = (*guess[obj->o_which] != '\0' ?

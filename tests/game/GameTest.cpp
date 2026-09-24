@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <vector>
 
 #include "rogue.h"
 
@@ -95,4 +96,26 @@ TEST(Level, PassagesAreGoneAndDark)
 		EXPECT_FALSE(p.r_flags.test(RoomFlag::Maze));
 	}
 	EXPECT_EQ(level.depth, 1);
+}
+
+// Creatures and items come from separate pools that share one count, like
+// the single pool of the original.
+TEST(Pool, CreaturesAndItemsShareTheLimit)
+{
+	game().pool = rogue::Pool();
+	std::vector<Item *> items;
+	for (int i = 0; i < MAXITEMS - 1; i++)
+		items.push_back(new_item());
+	Creature *c = new_creature();
+	ASSERT_NE(c, nullptr);
+	EXPECT_EQ(new_item(), nullptr);
+	EXPECT_EQ(new_creature(), nullptr);
+
+	EXPECT_EQ(discard(c), 1);
+	EXPECT_NE(new_item(), nullptr);
+	EXPECT_EQ(game().pool.total, MAXITEMS);
+
+	Creature outside{};
+	EXPECT_EQ(discard(&outside), 0);
+	game().pool = rogue::Pool();
 }

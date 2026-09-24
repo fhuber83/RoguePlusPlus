@@ -17,14 +17,14 @@ void
 new_level(void)
 {
 	int rm, i;
-	THING *tp;
+	Creature *tp;
 	byte *fp;
 	int index;
 	coord stairs;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 
-	player.body.t_flags &= ~ISHELD;	/* unhold when you go down just in case */
+	player.body.t_flags.unset(ISHELD);	/* unhold when you go down just in case */
 	/*
 	 * Monsters only get displayed when you move
 	 * so start a level by having the poor guy rest
@@ -40,7 +40,7 @@ new_level(void)
 	/*
 	 * Free up the monsters on the last level
 	 */
-	for (tp = level.monsters; tp != NULL; tp = next(tp))
+	for (tp = level.monsters.first(); tp != NULL; tp = level.monsters.after(tp))
 		free_list(tp->t_pack);
 	free_list(level.monsters);
 	/*
@@ -128,7 +128,7 @@ void
 put_things(void)
 {
 	int i = 0;
-	THING *cur;
+	Item *cur;
 	int rm;
 	coord tp;
 	rogue::Level &level = game().level;
@@ -154,7 +154,7 @@ put_things(void)
 				cur->o_hplus = cur->o_dplus = 0;
 				cur->o_damage = cur->o_hurldmg = "0d0";
 				cur->o_ac = 11;
-				cur->o_type = AMULET;
+				cur->o_type = ItemKind::Amulet;
 				/*
 				 * Put it somewhere
 				 */
@@ -176,7 +176,7 @@ put_things(void)
 	 * Do MAXOBJ attempts to put things on a level
 	 */
 	for (;i < MAXOBJ; i++)
-		if (game().items.total < MAXITEMS && rnd(100) < 35) {
+		if (game().pool.total < MAXITEMS && rnd(100) < 35) {
 			/*
 			 * Pick a new object and link it in the list
 			 */
@@ -189,7 +189,7 @@ put_things(void)
 				rm = rnd_room();
 				rnd_pos(&level.rooms[rm], &tp);
 			} while (!isfloor(chat(tp.y, tp.x)));
-			chat(tp.y, tp.x) = cur->o_type;
+			chat(tp.y, tp.x) = glyph_of(cur->o_type);
 			bcopy(cur->o_pos,tp);
 		}
 }
@@ -205,7 +205,8 @@ void
 treas_room(void)
 {
 	int nm, index;
-	THING *tp;
+	Creature *tp;
+	Item *obj;
 	rogue::Level &level = game().level;
 	struct room *rp;
 	int spots, num_monst;
@@ -216,17 +217,17 @@ treas_room(void)
 	if (spots > (MAXTREAS - MINTREAS))
 		spots = (MAXTREAS - MINTREAS);
 	num_monst = nm = rnd(spots) + MINTREAS;
-	while (nm-- && game().items.total < MAXITEMS)
+	while (nm-- && game().pool.total < MAXITEMS)
 	{
 		do
 		{
 			rnd_pos(rp, &mp);
 			index = INDEX(mp.y, mp.x);
 		} while (!isfloor(level.map[index]));
-		tp = new_thing();
-		bcopy(tp->o_pos,mp);
-		attach(level.objects, tp);
-		level.map[index] = tp->o_type;
+		obj = new_thing();
+		bcopy(obj->o_pos,mp);
+		attach(level.objects, obj);
+		level.map[index] = glyph_of(obj->o_type);
 	}
 
 	/*
@@ -250,10 +251,10 @@ treas_room(void)
 		}
 		if (spots != MAXTRIES)
 		{
-			if ((tp = new_item()) != NULL)
+			if ((tp = new_creature()) != NULL)
 			{
 				new_monster(tp, randmonster(FALSE), &mp);
-				tp->t_flags |= ISMEAN;	/* no sloughers in THIS room */
+				tp->t_flags.set(ISMEAN);	/* no sloughers in THIS room */
 				give_pack(tp);
 			}
 		}

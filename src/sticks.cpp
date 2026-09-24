@@ -12,7 +12,7 @@
  *	Set up a new stick
  */
 void
-fix_stick(THING *cur)
+fix_stick(Item *cur)
 {
 	if (strcmp(game().items.ws_type[cur->o_which], "staff") == 0)
 		cur->o_damage = "2d3";
@@ -40,18 +40,18 @@ fix_stick(THING *cur)
 void
 do_zap()
 {
-	THING *obj;
-	THING *tp;
+	Item *obj;
+	Creature *tp;
 	int y, x;
 	const char *name;
 	int which_one;
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
 
-	if ((obj = get_item("zap with", STICK)) == NULL)
+	if ((obj = get_item("zap with", ItemKind::Stick)) == NULL)
 		return;
 	which_one = obj->o_which;
-	if (obj->o_type != STICK)
+	if (obj->o_type != ItemKind::Stick)
 	{
 		if (obj->o_enemy && obj->o_charges)
 			which_one = MAXSTICKS;
@@ -127,7 +127,7 @@ do_zap()
 
 			omonst = monster = tp->t_type;
 			if (monster == 'F')
-				player.body.t_flags &= ~ISHELD;
+				player.body.t_flags.unset(ISHELD);
 			if (which_one == MAXSTICKS)
 			{
 				if (monster == obj->o_enemy)
@@ -141,9 +141,9 @@ do_zap()
 			}
 			else if (which_one == WS_POLYMORPH)
 			{
-				THING *pp;
+				List<Item> pp;
 
-				pp = tp->t_pack;
+				pp = std::move(tp->t_pack);
 				detach(game().level.monsters, tp);
 				if (see_monst(tp))
 					display().draw_tile({x, y}, chat(y, x));
@@ -154,13 +154,13 @@ do_zap()
 				if (see_monst(tp))
 					display().draw_tile({x, y}, monster);
 				tp->t_oldch = oldch;
-				tp->t_pack = pp;
+				tp->t_pack = std::move(pp);
 				game().items.ws_know[WS_POLYMORPH] |= (monster != omonst);
 			}
 			else if (which_one == WS_CANCEL)
 			{
-				tp->t_flags |= ISCANC;
-				tp->t_flags &= ~(ISINVIS|CANHUH);
+				tp->t_flags.set(ISCANC);
+				tp->t_flags.unset(ISINVIS|CANHUH);
 				tp->t_disguise = tp->t_type;
 			}
 			else
@@ -188,20 +188,20 @@ do_zap()
 					tp->t_pos.x = hero.x + turn.delta.x;
 				}
 				if (tp->t_type == 'F')
-					player.body.t_flags &= ~ISHELD;
+					player.body.t_flags.unset(ISHELD);
 				if (tp->t_pos.y != y || tp->t_pos.x != x)
 					tp->t_oldch = display().tile_at(tp->t_pos);
 			}
 			tp->t_dest = &hero;
-			tp->t_flags |= ISRUN;
+			tp->t_flags.set(ISRUN);
 		}
 	}
 	when WS_MISSILE:
 	{
-		THING bolt;
+		Item bolt;
 
 		game().items.ws_know[WS_MISSILE] = TRUE;
-		bolt.o_type = '*';
+		bolt.o_type = ItemKind::Missile;
 		bolt.o_hurldmg = "1d8";
 		bolt.o_hplus = 1000;
 		bolt.o_dplus = 1;
@@ -245,16 +245,16 @@ do_zap()
 			if (which_one == WS_HASTE_M)
 			{
 				if (on(*tp, ISSLOW))
-					tp->t_flags &= ~ISSLOW;
+					tp->t_flags.unset(ISSLOW);
 				else
-					tp->t_flags |= ISHASTE;
+					tp->t_flags.set(ISHASTE);
 			}
 			else
 			{
 				if (on(*tp, ISHASTE))
-					tp->t_flags &= ~ISHASTE;
+					tp->t_flags.unset(ISHASTE);
 				else
-					tp->t_flags |= ISSLOW;
+					tp->t_flags.set(ISSLOW);
 				tp->t_turn = TRUE;
 			}
 			turn.delta.y = y;
@@ -289,12 +289,12 @@ do_zap()
 void
 drain()
 {
-	THING *mp;
+	Creature *mp;
 	int cnt;
 	struct room *corp;
-	THING **dp;
+	Creature **dp;
 	bool inpass;
-	THING *drainee[40];
+	Creature *drainee[40];
 
 	/*
 	 * First cnt how many things we need to spread the hit points among
@@ -306,7 +306,7 @@ drain()
 		corp = NULL;
 	inpass = proom->r_flags.test(RoomFlag::Gone);
 	dp = drainee;
-	for (mp = game().level.monsters; mp != NULL; mp = next(mp))
+	for (mp = game().level.monsters.first(); mp != NULL; mp = game().level.monsters.after(mp))
 		if (mp->t_room == proom || mp->t_room == corp ||
 			(inpass && chat(mp->t_pos.y, mp->t_pos.x) == DOOR &&
 			&game().level.passages[flat(mp->t_pos.y, mp->t_pos.x) & F_PNUM] == proom))
@@ -340,7 +340,7 @@ void
 fire_bolt(coord *start, coord *dir, const char *name)
 {
 	byte dirch = 0, ch;
-	THING *tp;
+	Creature *tp;
 	bool hit_hero, used, changed;
 	int i, j;
 	coord pos;
@@ -348,11 +348,11 @@ fire_bolt(coord *start, coord *dir, const char *name)
 		coord s_pos;
 		byte s_under;
 	} spotpos[BOLT_LENGTH*2];
-	THING bolt;
+	Item bolt;
 	bool is_frost;
 
 	is_frost = (strcmp(name, "frost") == 0);
-	bolt.o_type = WEAPON;
+	bolt.o_type = ItemKind::Weapon;
 	bolt.o_which = FLAME;
 	bolt.o_damage = bolt.o_hurldmg = "6d6";
 	bolt.o_hplus = 30;
@@ -452,11 +452,11 @@ fire_bolt(coord *start, coord *dir, const char *name)
  *	Return an appropriate string for a wand charge
  */
 char *
-charge_str(THING *obj)
+charge_str(Item *obj)
 {
 	static char buf[20];
 
-	if (!(obj->o_flags & ISKNOW))
+	if (!obj->o_flags.test(ISKNOW))
 		buf[0] = '\0';
 	else
 		sprintf(buf, " [%d charges]", obj->o_charges);

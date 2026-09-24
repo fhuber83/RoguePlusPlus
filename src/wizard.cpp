@@ -20,16 +20,16 @@ static int	get_num(int *place);
 void
 whatis(void)
 {
-	THING *obj;
+	Item *obj;
 	rogue::Items &items = game().items;
 
-	if (pack == NULL) {
+	if (pack.empty()) {
 		msg("You don't have anything in your pack to identify");
 		return;
 	}
 
 	for (;;) {
-		if ((obj = get_item("identify", 0)) == NULL) {
+		if ((obj = get_item("identify", ItemFilter::all())) == NULL) {
 			msg("You must identify something");
 			msg(" ");
 			game().message.end = 0;
@@ -38,23 +38,25 @@ whatis(void)
 	}
 
 	switch (obj->o_type) {
-	when SCROLL:
+	when ItemKind::Scroll:
 		items.s_know[obj->o_which] = TRUE;
 		*items.s_guess[obj->o_which] = '\0';
-	when POTION:
+	when ItemKind::Potion:
 		items.p_know[obj->o_which] = TRUE;
 		*items.p_guess[obj->o_which] = '\0';
-	when STICK:
+	when ItemKind::Stick:
 		items.ws_know[obj->o_which] = TRUE;
-		obj->o_flags |= ISKNOW;
+		obj->o_flags.set(ISKNOW);
 		*items.ws_guess[obj->o_which] = '\0';
-	when WEAPON:
-	case ARMOR:
-		obj->o_flags |= ISKNOW;
-	when RING:
+	when ItemKind::Weapon:
+	case ItemKind::Armor:
+		obj->o_flags.set(ISKNOW);
+	when ItemKind::Ring:
 		items.r_know[obj->o_which] = TRUE;
-		obj->o_flags |= ISKNOW;
+		obj->o_flags.set(ISKNOW);
 		*items.r_guess[obj->o_which] = '\0';
+		break;
+	otherwise:	//@ the other kinds of item: nothing
 		break;
 	}
 	/*
@@ -62,7 +64,7 @@ whatis(void)
 	 * vorpally enchanted against
 	 */
 	if (obj->o_enemy)
-		obj->o_flags |= ISREVEAL;
+		obj->o_flags.set(ISREVEAL);
 	msg(inv_name(obj, FALSE));
 }
 
@@ -74,7 +76,7 @@ whatis(void)
 void
 create_obj(void)
 {
-	THING *obj;
+	Item *obj;
 	byte ch, bless;
 
 	if ((obj = new_item()) == NULL)
@@ -84,31 +86,31 @@ create_obj(void)
 	}
 	msg("type of item: ");
 	switch (readchar()) {
-		when '!': obj->o_type = POTION;
-		when '?': obj->o_type = SCROLL;
-		when '/': obj->o_type = STICK;
-		when '=': obj->o_type = RING;
-		when ')': obj->o_type = WEAPON;
-		when ']': obj->o_type = ARMOR;
-		when ',': obj->o_type = AMULET;
+		when '!': obj->o_type = ItemKind::Potion;
+		when '?': obj->o_type = ItemKind::Scroll;
+		when '/': obj->o_type = ItemKind::Stick;
+		when '=': obj->o_type = ItemKind::Ring;
+		when ')': obj->o_type = ItemKind::Weapon;
+		when ']': obj->o_type = ItemKind::Armor;
+		when ',': obj->o_type = ItemKind::Amulet;
 		otherwise:
-			obj->o_type = FOOD;
+			obj->o_type = ItemKind::Food;
 	}
 	game().message.end = 0;
-	msg("which %c do you want? (0-f)", obj->o_type);
+	msg("which %c do you want? (0-f)", glyph_of(obj->o_type));
 	obj->o_which = (is_digit((ch = readchar())) ? ch - '0' : ch - 'a' + 10);
 	obj->o_group = 0;
 	obj->o_count = 1;
 	obj->o_damage = obj->o_hurldmg = "0d0";
 	game().message.end = 0;
-	if (obj->o_type == WEAPON || obj->o_type == ARMOR)
+	if (obj->o_type == ItemKind::Weapon || obj->o_type == ItemKind::Armor)
 	{
 		msg("blessing? (+,-,n)");
 		bless = readchar();
 		game().message.end = 0;
 		if (bless == '-')
-			obj->o_flags |= ISCURSED;
-		if (obj->o_type == WEAPON)
+			obj->o_flags.set(ISCURSED);
+		if (obj->o_type == ItemKind::Weapon)
 		{
 			init_weapon(obj, obj->o_which);
 			if (bless == '-')
@@ -125,7 +127,7 @@ create_obj(void)
 				obj->o_ac -= rnd(3)+1;
 		}
 	}
-	else if (obj->o_type == RING)
+	else if (obj->o_type == ItemKind::Ring)
 		switch (obj->o_which)
 		{
 		case R_PROTECT:
@@ -136,16 +138,16 @@ create_obj(void)
 			bless = readchar();
 			game().message.end = 0;
 			if (bless == '-')
-				obj->o_flags |= ISCURSED;
+				obj->o_flags.set(ISCURSED);
 			obj->o_ac = (bless == '-' ? -1 : rnd(2) + 1);
 		when R_AGGR:
 		case R_TELEPORT:
-			obj->o_flags |= ISCURSED;
+			obj->o_flags.set(ISCURSED);
 			/* fallthrough */
 		}
-	else if (obj->o_type == STICK)
+	else if (obj->o_type == ItemKind::Stick)
 		fix_stick(obj);
-	else if (obj->o_type == GOLD)
+	else if (obj->o_type == ItemKind::Gold)
 	{
 		msg("how much?");
 		get_num(&obj->o_goldval, stdscr);
@@ -188,7 +190,7 @@ teleport(void)
 	 * a Fungi
 	 */
 	if (on(player.body, ISHELD)) {
-		player.body.t_flags &= ~ISHELD;
+		player.body.t_flags.unset(ISHELD);
 		f_restor();
 	}
 	player.no_move = 0;
@@ -207,7 +209,7 @@ teleport(void)
 		lengthen(unconfuse, rnd(4)+2);
 	else
 		fuse(unconfuse, rnd(4)+2);
-	player.body.t_flags |= ISHUH;
+	player.body.t_flags.set(ISHUH);
 #ifdef WIZARD
 	}
 #endif //WIZARD

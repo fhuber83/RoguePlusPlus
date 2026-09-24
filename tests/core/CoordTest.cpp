@@ -6,8 +6,8 @@
 
 using rogue::Coord;
 
-static_assert(std::is_trivially_default_constructible_v<Coord>,
-	"Coord lives inside union thing and must stay trivial");
+static_assert(std::is_trivially_copyable_v<Coord>,
+	"Coord is copied with memmove inside creatures and items");
 
 TEST(Coord, EqualityComparesBothAxes)
 {

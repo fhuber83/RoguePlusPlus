@@ -151,6 +151,10 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
   - Verified: same seed gives an identical opening frame; a manual playthrough exercised `inventory` (`i`), `drop`, `discoveries` (`D`) with real item names, and picking up gold (which also exercises the 6.5 `t_dest` redirect). `rogue_tests` passes.
 - **7.1c Inventory.** All of `pack.cpp` (`add_pack()`, `inventory()`, `pick_up()`, `get_item()`, `pack_char()`, `money()`, and the private `pack_obj()`) plus `drop()`/`can_drop()` from `things.cpp` move to `src/items/Inventory.{hpp,cpp}`, same treatment as 7.1a/b. `pack.cpp` and `things.cpp` are now empty and deleted; every function that lived in either was item-catalog, naming or pack code, so nothing was left behind for a 7.1d.
   - Verified: same seed gives an identical opening frame; a manual playthrough exercised picking up gold, `inventory` (`i`) and `drop` (`d`, with the select-from-list prompt). `rogue_tests` passes.
+- **7.1d Potions.** `potions.cpp` (`quaff()`, `invis_on()`, `turn_see()`, `th_effect()`, and the private fuse wrapper `turn_see_off()`) moves to `src/items/effects/Potion.{hpp,cpp}`, `namespace rogue::items::effects`, same treatment as the rest of 7.1. `potions.cpp` is deleted.
+  - Verified: same seed gives an identical opening frame; `rogue_tests` passes. Not exercised live (this seed's level 1 has no potion in reach); the move is line-for-line unchanged apart from the namespace, same as 7.1a-c.
+
+## Target architecture
 
 ```
 src/
@@ -199,7 +203,7 @@ Each phase is a series of small commits that each build and play.
       1. *Done:* Catalog (`new_thing()`, `pick_one()`) becomes `items::ItemCatalog` (7.1a).
       2. *Done:* Identification/display (`inv_name()`, `discovered()`, `add_line()`/`end_line()`, `print_disc()`, `set_order()`, `nothing()`, `chopmsg()`) becomes `items::Identification` (7.1b).
       3. *Done:* Inventory (all of `pack.cpp`, plus `drop()`/`can_drop()` from `things.cpp`) becomes `items::Inventory` (7.1c). `pack.cpp` and `things.cpp` are gone.
-      4. Effects, one commit per kind, `items::effects::*`: potions, scrolls, sticks (wands), rings, armor and weapons.
+      4. Effects, one commit per kind, `items::effects::*`: *done:* potions (7.1d). Remaining: scrolls, sticks (wands), rings, armor and weapons.
    2. Scheduler (`daemon.cpp`, `daemons.cpp`) becomes `rules::Scheduler`; the function-pointer slots become typed events. Self-contained.
    3. Commands (`command.cpp`) becomes `game::CommandDispatcher` over a `Command` enum. Only touches the dispatch layer and the key table in `mach_dep.cpp`.
    4. Combat (`fight.cpp`) becomes `rules::Combat`. After items, since it reads their internals and calls `th_effect()`.

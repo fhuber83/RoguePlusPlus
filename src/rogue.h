@@ -423,6 +423,7 @@ extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
 #include "items/ItemCatalog.hpp"
 #include "items/Identification.hpp"
 #include "items/Inventory.hpp"
+#include "items/effects/Potion.hpp"
 
 using rogue::items::new_thing;
 using rogue::items::inv_name;
@@ -437,6 +438,10 @@ using rogue::items::pack_char;
 using rogue::items::money;
 using rogue::items::drop;
 using rogue::items::can_drop;
+using rogue::items::effects::quaff;
+using rogue::items::effects::invis_on;
+using rogue::items::effects::turn_see;
+using rogue::items::effects::th_effect;
 
 /*
  * External variables
@@ -674,12 +679,6 @@ void	door(struct room *rm, coord *cp);
 void	passnum(void);
 void	numpass(int y, int x);
 void	psplat(shint y, shint x);
-
-//@ potions.c
-void	quaff(void);
-void	invis_on(void);
-void	th_effect(Item *obj, Creature *tp);
-bool	turn_see(bool turn_off);
 
 //@ rings.c
 void	ring_on(void);

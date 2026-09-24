@@ -1,11 +1,6 @@
-/*
- * Function(s) for dealing with potions
- *
- * potions.c	1.4 (AI Design)		2/12/84
- */
-
 #include "rogue.h"
 
+namespace rogue::items::effects {
 
 //@ turn_see() wrapper to use as a fuse
 static
@@ -291,3 +286,5 @@ th_effect(Item *obj, Creature *tp)
 	}
 	msg("the flask shatters.");
 }
+
+}  // namespace rogue::items::effects

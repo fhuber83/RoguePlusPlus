@@ -1,5 +1,3 @@
-#include "items/ItemCatalog.hpp"
-
 #include "rogue.h"
 
 namespace rogue::items {

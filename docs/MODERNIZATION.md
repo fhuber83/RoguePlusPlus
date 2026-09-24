@@ -146,6 +146,9 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
 
 - **7.1a Catalog.** `new_thing()` and its private `pick_one()` helper move from `things.cpp` to `src/items/ItemCatalog.{hpp,cpp}`, `namespace rogue::items`, unchanged apart from the namespace. `rogue.h` includes the header after `game/Game.hpp` and brings `new_thing` into the global namespace with `using rogue::items::new_thing;`, so every existing caller (`monsters.cpp`, `new_leve.cpp`, `rooms.cpp`) is unaffected.
   - Verified: same seed (`-d 4242`) gives an identical opening frame before and after, so the RNG call order through `new_thing()` is unchanged. `rogue_tests` passes.
+- **7.1b Identification/display.** `inv_name()`, `discovered()`, `add_line()`/`end_line()` (the paging used by both the discoveries screen and `pack.cpp`'s `inventory()`), and their private helpers `chopmsg()`, `print_disc()`, `set_order()`, `nothing()` move from `things.cpp` to `src/items/Identification.{hpp,cpp}`, same `using`-into-global-namespace treatment as 7.1a. New module `.cpp` files follow `game/Game.cpp`'s convention: they include only `rogue.h` (which pulls in their own header at the right point), not their own header directly, since these headers rely on legacy typedefs (`byte`) already being in scope. `things.cpp` is now just `drop()`/`can_drop()`, moving in 7.1c.
+  - Dropped three write-only statics (`newpage`, `lastfmt`, `lastarg` in `add_line()`/`end_line()`): grepped every read site across `src/`, found none. Dead since at least the 4.4a page-API conversion, when whatever re-read them for scrollback was replaced.
+  - Verified: same seed gives an identical opening frame; a manual playthrough exercised `inventory` (`i`), `drop`, `discoveries` (`D`) with real item names, and picking up gold (which also exercises the 6.5 `t_dest` redirect). `rogue_tests` passes.
 
 ## Target architecture
 

@@ -421,8 +421,13 @@ extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
 
 #include "game/Game.hpp"
 #include "items/ItemCatalog.hpp"
+#include "items/Identification.hpp"
 
 using rogue::items::new_thing;
+using rogue::items::inv_name;
+using rogue::items::discovered;
+using rogue::items::add_line;
+using rogue::items::end_line;
 
 /*
  * External variables
@@ -725,12 +730,8 @@ char	*endblk(char *str);
 void	lcase(char *str);
 
 //@ things.c
-char	*inv_name(Item *obj, bool drop);
 void	drop(void);
-void	discovered(void);
 bool	can_drop(Item *op);
-byte	add_line(const char *use, const char *fmt, const char *arg);
-byte	end_line(const char *use);
 
 //@ weapons.c
 void	missile(int ydelta, int xdelta);

@@ -13,7 +13,6 @@
  * msg:
  *	Display a message at the top of the screen.
  */
-static int newpos = 0;
 
 static void more_at(const char *msg, int col);
 
@@ -25,7 +24,7 @@ ifterse(const char *tfmt, const char *fmt, ...)
 	va_list argp;
 	va_start(argp, fmt);
 
-	if (expert)
+	if (game().options.expert)
 		vmsg(tfmt, argp);
 	else
 		vmsg(fmt, argp);
@@ -43,7 +42,7 @@ vmsg(const char *fmt, va_list argp)
 	if (*fmt == '\0')
 	{
 		rogue::ui::display().clear_message();
-		mpos = 0;
+		game().message.end = 0;
 		return;
 	}
 	/*
@@ -90,21 +89,22 @@ addmsg(const char *fmt, ...)
 void
 endmsg(void)
 {
-	if (save_msg)
-		strcpy(huh, msgbuf);
-	if (mpos) {
+	rogue::MessageLine &message = game().message;
+	if (message.remember)
+		strcpy(message.last, message.text);
+	if (message.end) {
 		look(FALSE);
-		more_at(" More ", mpos);
+		more_at(" More ", message.end);
 	}
 	/*
 	 * All messages should start with uppercase, except ones that
 	 * start with a pack addressing character
 	 */
-	if (is_lower(msgbuf[0]) && msgbuf[1] != ')')
-		msgbuf[0] = toupper(msgbuf[0]);
-	putmsg(msgbuf);
-	mpos = newpos;
-	newpos = 0;
+	if (is_lower(message.text[0]) && message.text[1] != ')')
+		message.text[0] = toupper(message.text[0]);
+	putmsg(message.text);
+	message.end = message.next_end;
+	message.next_end = 0;
 }
 
 
@@ -115,7 +115,7 @@ endmsg(void)
 void
 more(const char *msg)
 {
-	more_at(msg, mpos);
+	more_at(msg, game().message.end);
 }
 
 //@ more() for a message line text that ends in column col
@@ -143,9 +143,10 @@ more_at(const char *msg, int col)
 void
 doadd(const char *fmt, va_list argp)
 {
+	rogue::MessageLine &message = game().message;
 
-	vsnprintf(&msgbuf[newpos], BUFSIZE - newpos, fmt, argp);
-	newpos = strlen(msgbuf);
+	vsnprintf(&message.text[message.next_end], BUFSIZE - message.next_end, fmt, argp);
+	message.next_end = strlen(message.text);
 }
 
 /*
@@ -162,7 +163,7 @@ putmsg(char *msg)
 	curmsg = msg;
 	do {
 		rogue::ui::display().draw_message(curmsg);
-		newpos = curlen = strlen(curmsg);
+		game().message.next_end = curlen = strlen(curmsg);
 		if (curlen > COLS) {
 			more_at(" Cont ", curlen);
 			lastmsg = curmsg;
@@ -218,23 +219,24 @@ status(void)
 {
 	rogue::ui::Status st;
 	int ac;
+	rogue::Player &player = game().player;
 
 	SIG2();
 
 	/*@
 	 * The armor class shown ignores rings of protection, as it always did
 	 */
-	ac = cur_armor != NULL ? cur_armor->o_ac : pstats.s_arm;
+	ac = player.armor != NULL ? player.armor->o_ac : pstats.s_arm;
 
-	st.level = level;
+	st.level = game().level.depth;
 	st.hp = pstats.s_hpt;
 	st.hp_max = max_hp;
 	st.str = pstats.s_str;
-	st.str_max = max_stats.s_str;
-	st.gold = purse;
+	st.str_max = player.max_stats.s_str;
+	st.gold = player.purse;
 	st.armor = AC(ac);
 	st.rank = he_man[pstats.s_lvl-1];
-	st.hunger = hungry_state;
+	st.hunger = player.hungry_state;
 	rogue::ui::display().draw_status(st);
 }
 
@@ -356,12 +358,6 @@ SIG2(void)
 		showtime = TRUE;
 	}
 
-	if (reinit)
-	{
-		reinit = FALSE;
-		showtime = TRUE;
-	}
-
 	if (showtime)
 		rogue::ui::display().draw_clock(bighand ? bighand : 12, littlehand);
 }
@@ -369,5 +365,5 @@ SIG2(void)
 const char *
 noterse(const char *str)
 {
-	return( terse || expert ? nullstr : str);
+	return( game().options.brief() ? nullstr : str);
 }

@@ -7,13 +7,6 @@
 #include "rogue.h"
 
 /*
- * revno: current revision level
- * verno: current version of a particular rev
- */
-int revno = REV;
-int verno = VER;
-
-/*
  * All this should be low as possible in memory so that
  * we can save the min
  */
@@ -62,7 +55,12 @@ int a_class[MAXARMORS] = {		/* Armor class for each armor type */
 	3
 };
 
-struct magic_item s_magic[MAXSCROLLS] = {
+/*@
+ * The odds and worth of each kind of item. Each game works on a copy in
+ * game().items, since init_*() accumulate the odds and add the stone value
+ * to the worth of rings.
+ */
+const struct magic_item s_magic_base[MAXSCROLLS] = {
 	{ "monster confusion",	 8, 140 },
 	{ "magic mapping",		 5, 150 },
 	{ "hold monster",		 3, 180 },
@@ -80,7 +78,7 @@ struct magic_item s_magic[MAXSCROLLS] = {
 	{ "vorpalize weapon",	 1, 300 }
 };
 
-struct magic_item p_magic[MAXPOTIONS] = {
+const struct magic_item p_magic_base[MAXPOTIONS] = {
 	{ "confusion",		 8,   5 },
 	{ "paralysis",		10,   5 },
 	{ "poison",			 8,   5 },
@@ -97,7 +95,7 @@ struct magic_item p_magic[MAXPOTIONS] = {
 	{ "thirst quenching",	 1,   5 }
 };
 
-struct magic_item r_magic[MAXRINGS] = {
+const struct magic_item r_magic_base[MAXRINGS] = {
 	{ "protection",		 9, 400 },
 	{ "add strength",		 9, 400 },
 	{ "sustain strength",	 5, 280 },
@@ -114,7 +112,7 @@ struct magic_item r_magic[MAXRINGS] = {
 	{ "maintain armor",		 5, 380 }
 };
 
-struct magic_item ws_magic[MAXSTICKS] = {
+const struct magic_item ws_magic_base[MAXSTICKS] = {
 	{ "light",			12, 250 },
 	{ "striking",		 9,  75 },
 	{ "lightning",		 3, 330 },
@@ -267,125 +265,17 @@ const char *he_man[] = {
 	"Bug Chaser"
 };
 
-/*
- * Lattice C compiler funnies
- */
-int maxitems = 0;
-int reinit = FALSE;
-
-bool after;				/* True if we want after daemons */
-bool noscore;				/* Was a wizard sometime */
-bool again;			/* The last command is repeated */
-bool s_know[MAXSCROLLS];		/* Does he know what a scroll does */
-bool p_know[MAXPOTIONS];		/* Does he know what a potion does */
-bool r_know[MAXRINGS];			/* Does he know what a ring does */
-bool ws_know[MAXSTICKS];		/* Does he know what a stick does */
-bool amulet = FALSE;			/* He has the amulet */
-bool saw_amulet = FALSE;	    /* He has seen the amulet */
 /* bool askme = TRUE; */			/* Ask about unidentified things */
-bool door_stop = FALSE;			/* Stop running when we pass a door */
-bool fastmode = FALSE;			/* Run until you see something */
-bool faststate = FALSE;			/* Toggle for find (see above) */
 /* bool fight_flush = TRUE;	*/	/* True if toilet input */
-bool firstmove = FALSE;			/* First move after setting door_stop */
 /* bool jump = FALSE;	*/		/* Show running as series of jumps */
 /* bool passgo = TRUE;	*/		/* Follow passages */
-bool playing = TRUE;			/* True until he quits */
-bool running = FALSE;			/* True if player is running */
-bool save_msg = TRUE;			/* Remember last msg */
 /* bool slow_invent = FALSE; */		/* Inventory one line at a time */
-bool terse = FALSE;
-bool expert = FALSE;
-/*@
- * `was_trapped` was originally a bool, which in original code was typedef'd as
- * unsigned char. As it is used in ++ increment and > test, I've reverted it
- * to its original (real) type. See be_trapped() in move.c and look() in misc.c
- */
-unsigned char was_trapped = FALSE;		/* Was a trap sprung */
 #ifdef WIZARD
 bool wizard = FALSE;			/* True if allows wizard commands */
 #endif
-bool bailout = FALSE;
-char take;				/* Thing the rogue is taking */
-char runch;				/* Direction player is running */
-/* now names are associated with fixed pointers */
-struct array s_names[MAXSCROLLS];			/* Names of the scrolls */
-const char *p_colors[MAXPOTIONS];		/* Colors of the potions */
-const char *r_stones[MAXRINGS];		/* Stone settings of the rings */
-const char *ws_made[MAXSTICKS];		/* What sticks are made of */
 /* char *release;	*/			/* Release number of rogue */
-char huh[BUFSIZE];				/* The last message printed */
-char *s_guess[MAXSCROLLS];		/* Players guess at what scroll is */
-char *p_guess[MAXPOTIONS];		/* Players guess at what potion is */
-char *r_guess[MAXRINGS];		/* Players guess at what ring is */
-char *ws_guess[MAXSTICKS];		/* Players guess at what wand is */
-/* storage array for guesses */
-struct array _guesses[MAXSCROLLS+MAXPOTIONS+MAXRINGS+MAXSTICKS];
-int iguess = 0;
-const char *ws_type[MAXSTICKS];		/* Is it a wand or a staff */
-
-int maxrow;			/* Last Line used for map  */
-int max_level;				/* Deepest player has gone */
-int ntraps;				/* Number of traps on this level */
-int level = 1;				/* What level rogue is on */
-int purse = 0;				/* How much gold the rogue has */
-int mpos = 0;				/* Where cursor is on top line */
-int no_move = 0;			/* Number of turns held in place */
-int no_command = 0;			/* Number of turns asleep */
-int inpack = 0;				/* Number of things in pack */
-int total = 0;				/* Total dynamic memory bytes */
-int no_food = 0;			/* Number of levels without food */
-int count = 0;				/* Number of times to repeat command */
-int fung_hit = 0;			/* Number of time fungi has hit */
-int quiet = 0;				/* Number of quiet turns */
-int food_left;				/* Amount of food in hero's stomach */
-int group = 2;				/* Current group number */
-int hungry_state = 0;			/* How hungry is he */
-
-char *_whoami;
-
 /* WINDOW *hw;				 Used as a scratch window */
-
-coord oldpos;				/* Position before last look() call */
-coord delta;				/* Change indicated to get_dir() */
-
-THING *cur_armor;			/* What a well dresssed rogue wears */
-THING *cur_ring[2];			/* Which rings are being worn */
-THING *cur_weapon;			/* Which weapon he is weilding */
-
-struct room *oldrp;			/* Roomin(&oldpos) */
-struct room rooms[MAXROOMS];		/* One for each room -- A level */
-
-#define XX  {0, 0}
-#define ___ {XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX} //@ 12 exits
-struct room passages[MAXPASS] =		/* One for each passage */
-{
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ },
-	//@ 13th entry was missing in the original, leaving that passage lit
-	{ {0, 0}, {0, 0}, {0, 0}, 0, RoomFlag::Gone|RoomFlag::Dark, 0, ___ }
-};
-#undef ___
-#undef XX
-
-
-#define INIT_STATS { 16, 0, 1, 10, 12, "1d4", 12 }
-
-struct stats max_stats = INIT_STATS;	/* The maximum for the player */
-
-THING player;				/* The rogue */
-THING *lvl_obj = NULL;			/* List of objects on this level */
-THING *mlist = NULL;			/* List of monsters on the level */
+//@ the game's variables that were here are in game() (game/Game.hpp)
 
 /*@
  * Original code did not define a value for s_maxhp member of stats struct.
@@ -428,7 +318,6 @@ struct monster monsters[26] =
 	{ "yeti",	 30,	0,	{ XX, 50,   4,   6, ___, "1d6/1d6", ___ } },
 	{ "zombie",	 0,	ISMEAN,	{ XX,  6,   2,   8, ___, "1d8", ___ } }
 };
-char f_damage[10];
 #undef ___
 #undef XX
 
@@ -440,7 +329,7 @@ char f_damage[10];
  * original code convention.
  */
 #define ___ 1
-struct magic_item things[NUMTHINGS] = {
+const struct magic_item things_base[NUMTHINGS] = {
 	{ 0,			27, ___ },	/* potion */
 	{ 0,			30, ___ },	/* scroll */
 	{ 0,			17, ___ },	/* food */
@@ -455,7 +344,6 @@ struct magic_item things[NUMTHINGS] = {
  * Common strings
  */
 char nullstr[] = "";
-char *typebuf = nullstr;
 
 const char *intense = " of intense white light";
 const char *flashmsg = "your %s gives off a flash%s";

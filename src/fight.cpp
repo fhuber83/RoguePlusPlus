@@ -15,6 +15,7 @@ fight(coord *mp, char mn, THING *weap, bool thrown)
 {
 	THING *tp;
 	const char *mname;
+	rogue::Player &player = game().player;
 
 	/*
 	 * Find the monster we want to fight
@@ -25,21 +26,21 @@ fight(coord *mp, char mn, THING *weap, bool thrown)
 	 * Since we are fighting, things are not quiet so no healing takes
 	 * place.  Cancel any command counts so player can recover.
 	 */
-	count = quiet = 0;
+	game().turn.count = player.quiet = 0;
 	start_run(mp);
 	/*
 	 * Let him know it was really a mimic (if it was one).
 	 */
-	if (tp->t_type == 'X' && tp->t_disguise != 'X' && !on(player, ISBLIND)) {
+	if (tp->t_type == 'X' && tp->t_disguise != 'X' && !on(player.body, ISBLIND)) {
 		mn = tp->t_disguise = 'X';
 		if (thrown)
 			return FALSE;
 		msg("wait! That's a Xeroc!");
 	}
 	mname = monsters[mn-'A'].m_name;
-	if (on(player, ISBLIND))
+	if (on(player.body, ISBLIND))
 		mname = it;
-	if (roll_em(&player, tp, weap, thrown)||(weap && weap->o_type == POTION)) {
+	if (roll_em(&player.body, tp, weap, thrown)||(weap && weap->o_type == POTION)) {
 		bool did_huh = FALSE;
 
 		if (thrown)
@@ -56,18 +57,18 @@ fight(coord *mp, char mn, THING *weap, bool thrown)
 					detach(pack, weap);
 					discard(weap);
 				}
-				cur_weapon = NULL;
+				player.weapon = NULL;
 			}
 		}
-		if (on(player, CANHUH)) {
+		if (on(player.body, CANHUH)) {
 			did_huh = TRUE;
 			tp->t_flags |= ISHUH;
-			player.t_flags &= ~CANHUH;
+			player.body.t_flags &= ~CANHUH;
 			msg("your hands stop glowing red");
 		}
 		if (tp->t_stats.s_hpt <= 0)
 			killed(tp, TRUE);
-		else if (did_huh && !on(player, ISBLIND))
+		else if (did_huh && !on(player.body, ISBLIND))
 			msg("the %s appears confused", mname);
 		return TRUE;
 	}
@@ -88,19 +89,20 @@ void
 attack(THING *mp)
 {
 	const char *mname;
+	rogue::Player &player = game().player;
 
 	/*
 	 * Since this is an attack, stop running and any healing that was
 	 * going on at the time.
 	 */
-	running = FALSE;
-	count = quiet = 0;
-	if (mp->t_type == 'X' && !on(player, ISBLIND))
+	game().turn.running = FALSE;
+	game().turn.count = player.quiet = 0;
+	if (mp->t_type == 'X' && !on(player.body, ISBLIND))
 		mp->t_disguise = 'X';
 	mname = monsters[mp->t_type-'A'].m_name;
-	if (on(player, ISBLIND))
+	if (on(player.body, ISBLIND))
 		mname = it;
-	if (roll_em(mp, &player, NULL, FALSE)) {
+	if (roll_em(mp, &player.body, NULL, FALSE)) {
 		hit(mname, NULL);
 		if (pstats.s_hpt <= 0)
 			death(mp->t_type);	/* Bye bye life ... */
@@ -112,23 +114,23 @@ attack(THING *mp)
 			 * If a rust monster hits, you lose armor, unless
 			 * that armor is leather or there is a magic ring
 			 */
-			if (cur_armor != NULL && cur_armor->o_ac < 9
-			  && cur_armor->o_which != LEATHER)
+			if (player.armor != NULL && player.armor->o_ac < 9
+			  && player.armor->o_which != LEATHER)
 			{
 				if (ISWEARING(R_SUSTARM))
 					msg("the rust vanishes instantly");
 				else
 				{
 					msg("your armor weakens, oh my!");
-					cur_armor->o_ac++;
+					player.armor->o_ac++;
 				}
 			}
 		when 'I':
 			/*
 			 * When an Ice Monster hits you, you get unfrozen faster
 			 */
-			if (no_command > 1)
-				no_command--;
+			if (player.no_command > 1)
+				player.no_command--;
 			break;
 		when 'R':
 			/*
@@ -182,8 +184,8 @@ attack(THING *mp)
 			/*
 			 * Violet fungi stops the poor guy from moving
 			 */
-			player.t_flags |= ISHELD;
-			sprintf(f_damage,"%dd1",++fung_hit);
+			player.body.t_flags |= ISHELD;
+			sprintf(game().player.flytrap_damage,"%dd1",++player.fung_hit);
 		when 'L':
 		{
 			/*
@@ -191,14 +193,14 @@ attack(THING *mp)
 			 */
 			long lastpurse;
 
-			lastpurse = purse;
-			purse -= GOLDCALC;
+			lastpurse = player.purse;
+			player.purse -= GOLDCALC;
 			if (!save(VS_MAGIC))
-			purse -= GOLDCALC + GOLDCALC + GOLDCALC + GOLDCALC;
-			if (purse < 0)
-			purse = 0;
+			player.purse -= GOLDCALC + GOLDCALC + GOLDCALC + GOLDCALC;
+			if (player.purse < 0)
+			player.purse = 0;
 			remove_monster(&mp->t_pos, mp, FALSE);
-			if (purse != lastpurse)
+			if (player.purse != lastpurse)
 			msg("your purse feels lighter");
 		}
 		when 'N':
@@ -213,14 +215,14 @@ attack(THING *mp)
 			 */
 			steal = NULL;
 			for (nobj = 0, obj = pack; obj != NULL; obj = next(obj))
-			if (obj != cur_armor && obj != cur_weapon
-				&& obj != cur_ring[LEFT] && obj != cur_ring[RIGHT]
+			if (obj != player.armor && obj != player.weapon
+				&& obj != player.rings[LEFT] && obj != player.rings[RIGHT]
 				&& is_magic(obj) && rnd(++nobj) == 0)
 				steal = obj;
 			if (steal != NULL)
 			{
 				remove_monster(&mp->t_pos, mp, FALSE);
-				inpack--;
+				player.in_pack--;
 				if (steal->o_count > 1 && steal->o_group == 0)
 				{
 					int oc;
@@ -246,14 +248,14 @@ attack(THING *mp)
 	{
 	if (mp->t_type == 'F')
 	{
-		pstats.s_hpt -= fung_hit;
+		pstats.s_hpt -= player.fung_hit;
 		if (pstats.s_hpt <= 0)
 		death(mp->t_type);	/* Bye bye life ... */
 	}
 	miss(mname, NULL);
 	}
 	flush_type();
-	count = 0;
+	game().turn.count = 0;
 	status();
 }
 
@@ -302,6 +304,7 @@ check_level(void)
 bool
 roll_em(THING *thatt, THING *thdef, THING *weap, bool hurl)
 {
+	rogue::Player &player = game().player;
 	struct stats *att, *def;
 	const char *cp;
 	int def_arm;
@@ -329,24 +332,24 @@ roll_em(THING *thatt, THING *thdef, THING *weap, bool hurl)
 			hplus += 4;
 			dplus += 4;
 		}
-		if (weap == cur_weapon)
+		if (weap == player.weapon)
 		{
 			if (ISRING(LEFT, R_ADDDAM))
-				dplus += cur_ring[LEFT]->o_ac;
+				dplus += player.rings[LEFT]->o_ac;
 			else if (ISRING(LEFT, R_ADDHIT))
-				hplus += cur_ring[LEFT]->o_ac;
+				hplus += player.rings[LEFT]->o_ac;
 			if (ISRING(RIGHT, R_ADDDAM))
-				dplus += cur_ring[RIGHT]->o_ac;
+				dplus += player.rings[RIGHT]->o_ac;
 			else if (ISRING(RIGHT, R_ADDHIT))
-				hplus += cur_ring[RIGHT]->o_ac;
+				hplus += player.rings[RIGHT]->o_ac;
 		}
 		cp = weap->o_damage;
-		if (hurl && (weap->o_flags&ISMISL) && cur_weapon != NULL &&
-			  cur_weapon->o_which == weap->o_launch)
+		if (hurl && (weap->o_flags&ISMISL) && player.weapon != NULL &&
+			  player.weapon->o_which == weap->o_launch)
 		{
 			cp = weap->o_hurldmg;
-			hplus += cur_weapon->o_hplus;
-			dplus += cur_weapon->o_dplus;
+			hplus += player.weapon->o_hplus;
+			dplus += player.weapon->o_dplus;
 		}
 		/*
 		 * Drain a staff of striking
@@ -375,12 +378,12 @@ roll_em(THING *thatt, THING *thdef, THING *weap, bool hurl)
 	def_arm = def->s_arm;
 	if (def == &pstats)
 	{
-		if (cur_armor != NULL)
-			def_arm = cur_armor->o_ac;
+		if (player.armor != NULL)
+			def_arm = player.armor->o_ac;
 		if (ISRING(LEFT, R_PROTECT))
-			def_arm -= cur_ring[LEFT]->o_ac;
+			def_arm -= player.rings[LEFT]->o_ac;
 		if (ISRING(RIGHT, R_PROTECT))
-			def_arm -= cur_ring[RIGHT]->o_ac;
+			def_arm -= player.rings[RIGHT]->o_ac;
 	}
 	for (const rogue::Dice &attack : rogue::parse_attacks(cp))
 	{
@@ -390,7 +393,7 @@ roll_em(THING *thatt, THING *thdef, THING *weap, bool hurl)
 			/*
 			 * special goodies for the commercial version of rogue
 			 */
-				if (thdef == &player && max_level == 1)
+				if (thdef == &player.body && player.max_level == 1)
 				 /*
 				  * make it easier on level one
 				  */
@@ -413,7 +416,7 @@ prname(const char *who, bool upper)
 	*tbuf = '\0';
 	if (who == 0)
 		strcpy(tbuf, you);
-	else if (on(player, ISBLIND))
+	else if (on(game().player.body, ISBLIND))
 		strcpy(tbuf, it);
 	else
 	{
@@ -435,7 +438,7 @@ hit(const char *er, const char *ee)
 	const char *s = "";
 
 	addmsg(prname(er, TRUE));
-	switch ((terse || expert) ? 1 : rnd(4))
+	switch (game().options.brief() ? 1 : rnd(4))
 	{
 		when 0: s = " scored an excellent hit on ";
 		when 1: s = " hit ";
@@ -457,7 +460,7 @@ miss(const char *er, const char *ee)
 
 
 	addmsg(prname(er, TRUE));
-	switch ((terse || expert) ? 1 : rnd(4))
+	switch (game().options.brief() ? 1 : rnd(4))
 	{
 		when 0: s = (er == 0 ? " swing and miss" : " swings and misses");
 		when 1: s = (er == 0 ? " miss" : " misses");
@@ -490,11 +493,11 @@ save(int which)
 {
 	if (which == VS_MAGIC) {
 		if (ISRING(LEFT, R_PROTECT))
-			which -= cur_ring[LEFT]->o_ac;
+			which -= game().player.rings[LEFT]->o_ac;
 		if (ISRING(RIGHT, R_PROTECT))
-			which -= cur_ring[RIGHT]->o_ac;
+			which -= game().player.rings[RIGHT]->o_ac;
 	}
-	return save_throw(which, &player);
+	return save_throw(which, &game().player.body);
 }
 
 /*
@@ -567,7 +570,7 @@ thunk(THING *weap, const char *mname, const char *does, const char *did)
 		addmsg("the %s %s ", w_names[weap->o_which], does);
 	else
 		addmsg("you %s ", did);
-	if (on(player, ISBLIND))
+	if (on(game().player.body, ISBLIND))
 		msg(it);
 	else
 		msg("the %s", mname);
@@ -597,12 +600,12 @@ remove_monster(coord *mp, THING *tp, bool waskill)
 		else
 			discard(obj);
 	}
-	style = (_level[INDEX(mp->y,mp->x)] == PASSAGE) ? TileStyle::Inverse : TileStyle::Normal;
+	style = (game().level.map[INDEX(mp->y,mp->x)] == PASSAGE) ? TileStyle::Inverse : TileStyle::Normal;
 	if (tp->t_oldch == FLOOR && !cansee(mp->y, mp->x))
 		display().draw_tile(*mp, ' ', style);
 	else if (tp->t_oldch != '@')
 		display().draw_tile(*mp, tp->t_oldch, style);
-	detach(mlist, tp);
+	detach(game().level.monsters, tp);
 	discard(tp);
 }
 
@@ -643,7 +646,7 @@ killed(THING *tp, bool pr)
 	switch (tp->t_type)
 	{
 	when 'F':
-		player.t_flags &= ~ISHELD;
+		game().player.body.t_flags &= ~ISHELD;
 		f_restor();
 	when 'L':;
 		THING *gold;
@@ -664,7 +667,7 @@ killed(THING *tp, bool pr)
 	if (pr)
 	{
 	addmsg("you have defeated ");
-	if (on(player, ISBLIND))
+	if (on(game().player.body, ISBLIND))
 		msg(it);
 	else
 		msg("the %s", monsters[tp->t_type-'A'].m_name);

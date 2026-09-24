@@ -35,8 +35,4 @@ private:
 	std::mt19937 engine_;
 };
 
-// The generator used by the game.
-// @TODO: global until game state moves into a Game context (roadmap phase 5).
-Random &rng();
-
 }  // namespace rogue

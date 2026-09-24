@@ -25,6 +25,8 @@
  */
 const int LINES = MAXLINES;
 const int COLS = MAXCOLS;
+//@ Last line used for the map. Was a global, set in setup()
+const int maxrow = MAXLINES - 2;
 
 
 /*
@@ -88,22 +90,22 @@ const int COLS = MAXCOLS;
 #define until(expr)	while(!(expr))
 #define next(ptr)	(*ptr).l_next
 #define prev(ptr)	(*ptr).l_prev
-#define hero		player.t_pos
-#define pstats		player.t_stats
-#define pack		player.t_pack
-#define proom		player.t_room
-#define max_hp		player.t_stats.s_maxhp
+#define hero		game().player.body.t_pos
+#define pstats		game().player.body.t_stats
+#define pack		game().player.body.t_pack
+#define proom		game().player.body.t_room
+#define max_hp		game().player.body.t_stats.s_maxhp
 #define attach(a,b)	list_attach(&a,b)
 #define detach(a,b)	list_detach(&a,b)
 #define free_list(a)	list_free(&a)
 #define max(a,b)	((a) > (b) ? (a) : (b))
 #define on(thing,flag)	(((thing).t_flags & (flag)) != 0)
-#define GOLDCALC	(rnd(50 + 10 * level) + 2)
-#define ISRING(h,r)	(cur_ring[h] != NULL && cur_ring[h]->o_which == r)
+#define GOLDCALC	(rnd(50 + 10 * game().level.depth) + 2)
+#define ISRING(h,r)	(game().player.rings[h] != NULL && game().player.rings[h]->o_which == r)
 #define ISWEARING(r)	(ISRING(LEFT, r) || ISRING(RIGHT, r))
 #define ISMULT(type) 	(type==POTION || type==SCROLL || type==FOOD || type==GOLD)
-#define chat(y,x)	(_level[INDEX(y,x)])
-#define flat(y,x)	(_flags[INDEX(y,x)])
+#define chat(y,x)	(game().level.map[INDEX(y,x)])
+#define flat(y,x)	(game().level.flags[INDEX(y,x)])
 #define unc(cp)		(cp).y, (cp).x
 #define isfloor(c)	((c) == FLOOR || (c) == PASSAGE)
 #define isgone(rp)	((rp)->r_flags.test(RoomFlag::Gone) && !(rp)->r_flags.test(RoomFlag::Maze))
@@ -460,66 +462,30 @@ struct monster {
 	struct stats m_stats;		/* Initial stats */
 };
 
+//@ The tables each game copies into game().items (extern.cpp)
+extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
+				ws_magic_base[], things_base[];
+
+#include "game/Game.hpp"
+
 /*
  * External variables
- * @ all in extern.c unless noted (init.c, env.c, croot.c, main.c, protect.c)
+ * @ The state of a game is in game() (game/Game.hpp). What is left here are
+ * @ fixed tables and strings (extern.cpp) and scratch buffers (init.cpp).
  */
-extern int maxitems;
-extern int maxrow;
-extern int reinit;
-extern int revno, verno;
-extern int is_me;
-extern int iguess;
-extern bool bailout;
 
 //@ nullstr should probably be used in misc and wizard instead of (size_t)NULL
 extern char nullstr[];
 extern const char *it, *you, *no_mem;
 
-extern char *s_guess[], *p_guess[], *r_guess[], *ws_guess[];
-extern char f_damage[];
-
-extern bool amulet, after, again, door_stop, expert, fastmode, faststate,
-			firstmove, noscore, playing, running, save_msg, saw_amulet, terse;
-
-//@ originally a bool. See extern.c, move.c, misc.c
-extern unsigned char was_trapped;
 #ifdef WIZARD
 bool wizard;
 #endif
 
-extern bool p_know[], r_know[], s_know[], ws_know[];
-
-extern const char *a_names[], *flashmsg, *he_man[], *intense, *p_colors[],
-		*r_stones[], *w_names[], *ws_made[], *ws_type[];
-extern char huh[], runch, *typebuf, take;
-
+extern const char *a_names[], *flashmsg, *he_man[], *intense, *w_names[];
 extern struct h_list helpcoms[], helpobjs[];
-
-extern int	a_chances[], a_class[], count, food_left,
-		fung_hit, group, hungry_state, inpack,
-		level, max_level, mpos, no_command, no_food, no_move,
-		ntraps, purse, quiet, total;
-
-
-extern char *_whoami;  //@ defined (no value set) but seems unused
-
-extern THING *cur_armor, *cur_ring[], *cur_weapon,
-		*lvl_obj, *mlist, player;
-
-extern coord	delta, oldpos;
-
-extern struct room	*oldrp, passages[], rooms[];
-
-extern struct stats	max_stats;
-
+extern int	a_chances[], a_class[];
 extern struct monster	monsters[];
-
-extern struct magic_item	p_magic[], r_magic[], s_magic[],
-				things[], ws_magic[];
-
-extern struct array s_names[], _guesses[];
-
 
 /*@
  * Definition commented out:
@@ -529,33 +495,18 @@ extern struct array s_names[], _guesses[];
  * Not found:
  * extern bool in_shell;
  * extern char file_name[], home[], outbuf[];
- * extern int lastscore;
+ * extern int lastscore, is_me;
  */
 
-
-//@ env.c
-extern char s_menu[], s_fruit[], s_score[], s_save[], s_macro[];
-extern char s_drive[], s_screen[];
-extern char fruit[], macro[], whoami[];
-//@ extern char s_name[];  //@ not found. Perhaps old name for whoami[]?
-
-
-//@ init.c
+//@ init.c: scratch buffers and the experience level table
 extern char *tbuf, *prbuf;
-extern byte *_level, *_flags;
 extern long *e_levels;
-extern char *msgbuf;
-extern THING *_things;
-extern int   *_t_alloc;
 extern char *ring_buf;
 //@ extern char *_top, *_base;  //@ not found
 /*@
  * Deprecated:
  * extern char *end_mem;
  */
-
-
-
 
 /*
  * Function types

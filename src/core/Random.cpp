@@ -43,11 +43,4 @@ Random::from_clock()
 	return static_cast<Seed>(ticks ^ (ticks >> 32));
 }
 
-Random &
-rng()
-{
-	static Random instance{Random::from_clock()};
-	return instance;
-}
-
 }  // namespace rogue

@@ -18,9 +18,6 @@
 
 #include "rogue.h"
 
-//@ both derived from `screen` in env file and used in curses.c
-int bwflag = FALSE;
-
 /*
  * endit:
  *	Exit the program abnormally.
@@ -44,11 +41,11 @@ playit(char *sname)
 		setup();
 		display().show_cursor(FALSE);
 	} else {
-		oldpos.x = hero.x;
-		oldpos.y = hero.y;
-		oldrp = roomin(&hero);
+		game().player.old_pos.x = hero.x;
+		game().player.old_pos.y = hero.y;
+		game().player.old_room = roomin(&hero);
 	}
-	while (playing)
+	while (game().playing)
 		command();			/* Command execution */
 	endit();
 }
@@ -71,26 +68,26 @@ quit()
 	if (qstate == TRUE)
 		leave();
 	qstate = TRUE;
-	mpos = 0;
+	game().message.end = 0;
 	here = display().write("");  //@ where the cursor was
 	display().clear_line(0);
-	if (!terse)
+	if (!game().options.terse)
 		display().write_at(0, 0, "Do you wish to ");
 	str_attr("end your quest now (%Yes/%No) ?");
 	look(FALSE);
 	answer = readchar();
 	if (answer == 'y' || answer == 'Y') {
 		display().clear_page();
-		sprintf(prbuf, "You quit with %u gold pieces\n", purse);
+		sprintf(prbuf, "You quit with %u gold pieces\n", game().player.purse);
 		display().write_at(0, 0, prbuf);
-		score(purse, 1, 0);
+		score(game().player.purse, 1, 0);
 		fatal("");
 	} else {
 		display().clear_line(0);
 		status();
 		display().write_at(here.y, here.x, "");
-		mpos = 0;
-		count = 0;
+		game().message.end = 0;
+		game().turn.count = 0;
 	}
 	qstate = FALSE;
 }

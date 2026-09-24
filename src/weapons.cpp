@@ -53,7 +53,7 @@ missile(int ydelta, int xdelta)
 	hack:
 	if (obj->o_count < 2) {
 		detach(pack, obj);
-		inpack--;
+		game().player.in_pack--;
 	} else {
 		/*
 		 * here is a quick hack to check if we can get a new item
@@ -65,7 +65,7 @@ missile(int ydelta, int xdelta)
 		}
 		obj->o_count--;
 		if (obj->o_group == 0)
-			inpack--;
+			game().player.in_pack--;
 		bcopy(*nitem,*obj);
 		nitem->o_count = 1;
 		obj = nitem;
@@ -158,7 +158,7 @@ fall(THING *obj, bool pr)
 	{
 	case 1:
 		index = INDEX(fpos.y, fpos.x);
-		_level[index] = obj->o_type;
+		game().level.map[index] = obj->o_type;
 		bcopy(obj->o_pos,fpos);
 		if (cansee(fpos.y, fpos.x))
 		{
@@ -169,7 +169,7 @@ fall(THING *obj, bool pr)
 			if (moat(fpos.y,fpos.x) != NULL)
 				moat(fpos.y,fpos.x)->t_oldch = obj->o_type;
 		}
-		attach(lvl_obj, obj);
+		attach(game().level.objects, obj);
 		return;
 	case 2:
 		pr = 0;
@@ -198,7 +198,7 @@ init_weapon(THING *weap, byte type)
 	if (weap->o_flags & ISMANY)
 	{
 		weap->o_count = rnd(8) + 8;
-		weap->o_group = group++;
+		weap->o_group = game().items.group++;
 	}
 	else
 		weap->o_count = 1;
@@ -246,18 +246,19 @@ wield(void)
 {
 	THING *obj, *oweapon;
 	char *sp;
+	rogue::Player &player = game().player;
 
-	oweapon = cur_weapon;
-	if (!can_drop(cur_weapon))
+	oweapon = player.weapon;
+	if (!can_drop(player.weapon))
 	{
-		cur_weapon = oweapon;
+		player.weapon = oweapon;
 		return;
 	}
-	cur_weapon = oweapon;
+	player.weapon = oweapon;
 	if ((obj = get_item("wield", WEAPON)) == NULL)
 	{
 bad:
-		after = FALSE;
+		game().turn.after = FALSE;
 		return;
 	}
 
@@ -270,7 +271,7 @@ bad:
 		goto bad;
 
 	sp = inv_name(obj, TRUE);
-	cur_weapon = obj;
+	player.weapon = obj;
 	ifterse2("now wielding %s (%c)", "you are now wielding %s (%c)",
 		sp, pack_char(obj));
 }

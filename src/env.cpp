@@ -25,32 +25,6 @@ static char l_drive[] = "drive";
 static char l_menu [] = "menu";
 static char l_screen[]   = "screen";
 
-//@ public extern'ed vars
-char whoami[] = "Rodney\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-char s_score[]  =  "rogue.scr\0\0\0\0\0";
-char s_save[]   =   "rogue.sav\0\0\0\0\0";
-char macro[]    =   "v\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-char fruit[]    =  "Slime Mold\0\0\0\0\0\0\0\0\0\0\0\0\0";
-char s_drive[]  =  "?";
-char s_menu[]   =  "on\0";
-char s_screen[]    =  "\0w fast";
-
-static
-struct environment {
-	char *e_label;
-	char *e_string;
-	int  strlen;
-} element[MAXEP] = {
-	{l_name,	whoami,		23},
-	{l_score,	s_score,	14},
-	{l_save,	s_save,		14},
-	{l_macro,	macro,		40},
-	{l_fruit,	fruit,		23},
-	{l_drive,	s_drive,	 1},
-	{l_menu,	s_menu,		 3},
-	{l_screen,	s_screen,	 7},
-};
-
 static byte	peekc(void);
 static void	putenv_struct(char *label, char *string);
 
@@ -146,8 +120,8 @@ setenv_from_file(const char *envfile)
 	 * for all environment strings that have to be in lowercase ....
 	 * @ this will never be reached, there is no `break` in previous `while`
 	 */
-	lcase(s_menu);
-	lcase(s_screen);
+	lcase(game().options.menu);
+	lcase(game().options.screen);
 	return TRUE;
 }
 
@@ -205,6 +179,25 @@ void
 putenv_struct(char *label, char *string)
 {
 	int i;
+	/*@
+	 * The table was static and pointed at global buffers, which now live in
+	 * game().options.
+	 */
+	rogue::Options &o = game().options;
+	struct environment {
+		const char *e_label;
+		char *e_string;
+		int  strlen;
+	} element[MAXEP] = {
+		{l_name,	o.name,		23},
+		{l_score,	o.score_file,	14},
+		{l_save,	o.save_file,	14},
+		{l_macro,	o.macro,	40},
+		{l_fruit,	o.fruit,	23},
+		{l_drive,	o.drive,	 1},
+		{l_menu,	o.menu,		 3},
+		{l_screen,	o.screen,	 7},
+	};
 
 	for (i=0 ; i<MAXEP ; i++)
 	{

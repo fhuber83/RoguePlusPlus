@@ -148,10 +148,4 @@ void	fatal(const char *msg, ...);
 //@ moved from croot.c
 void	md_exit(int status);
 
-
-/*@
- * Global vars
- */
-extern int bwflag;  //@ from main.c, originally declared in rogue.h
-
 #endif //EXTERN_H

@@ -83,6 +83,38 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - Glyph codes stay CP437 bytes, because game logic compares them and they double as item kinds. Separating them is phase 6.
      - Verified with the A/B, quit, fuzz, name-editing, Hall of Fame and monochrome (`SCREEN=bw`) replays: identical apart from mid-curtain frames.
 
+5. **Game state.** Globals moved into `rogue::Game` (`game/Game.hpp`), reached through `rogue::game()` the way `display()` is. `rogue.h` includes it after the legacy types it holds, so game files keep including only `rogue.h`. Each group of globals is deleted and the compiler finds every use, which leaves locals that shadow a global alone.
+   - **5.1 Options.**
+     - `game().options` (`rogue::Options`) holds what `rogue.opt`, the name prompt and the in-game toggles set: `name` (was `whoami`), `fruit`, `macro`, `score_file`, `save_file`, `drive`, `menu`, `screen`, `monochrome` (was `bwflag`), `terse` and `expert`. The buffers keep their original sizes. `brief()` replaces the repeated `terse || expert`.
+     - `env.cpp` builds its label table per call, since it now points into the game.
+     - Deleted dead globals: `revno`/`verno` (the `v` command prints `REV`/`VER`), `maxitems` (written, never read), `reinit` (never set) and `_whoami`.
+     - Verified with the A/B replay over four seeds plus two seeds with a `rogue.opt` that sets every option (name, fruit, macro, `menu=sel`, `screen=bw`, score file). The replays now end on the score screen with a pre-created score file, and the score files are compared too. All identical apart from one mid-curtain frame. `tests/game/GameTest.cpp` covers the defaults and reading `rogue.opt`.
+   - **5.2 Messages and command state.**
+     - `game().message` (`rogue::MessageLine`) holds the message being built (`text`, was the allocated `msgbuf`), the last one for ^R (`last`, was `huh`), where the shown and the next message end (`end`/`next_end`, were `mpos` and `io.cpp`'s `newpos`) and `remember` (was `save_msg`).
+     - `game().turn` (`rogue::Turn`) holds the state of the command being carried out: `after`, `again`, `count`, `take`, `running`, `run_dir` (was `runch`), `door_stop`, `first_move`, `fast_mode`, `fast_state`, `delta`, `typeahead` (was `typebuf`), `bailout`, and the repeat memory that were `command.cpp` statics (`last_count`, `last_ch`, `last_take`, `do_take`).
+     - `game().playing` and `game().noscore`.
+     - Functions that use a group often bind a local reference (`rogue::Turn &turn = game().turn;`).
+     - The A/B replay now also covers repeat counts, `a`, `g` and `f` prefixes, and defining and running the F9 macro. Identical.
+   - **5.3 The player.**
+     - `game().player` (`rogue::Player`) holds the rogue: `body` (the THING that was `player`, so `hero`, `pstats`, `pack`, `proom` and `max_hp` now expand to `game().player.body...`), `max_stats`, `purse`, `in_pack`, `armor`/`weapon`/`rings[2]` (were `cur_armor`, `cur_weapon`, `cur_ring`), food and hunger, `has_amulet` (was `amulet`), `saw_amulet`, `max_level`, `no_command`, `no_move`, `quiet`, `fung_hit`, `was_trapped`, and `look()`'s `old_pos`/`old_room` (were `oldpos`/`oldrp`).
+     - `e_levels` stays a fixed table in `init.cpp`, since it is the same in every game.
+     - Verified with the A/B replay: identical.
+   - **5.4 The level.**
+     - `game().level` (`rogue::Level`) holds `depth` (was `level`), `ntraps`, `no_food`, `rooms`, `passages`, the `map` and `flags` grids (were the allocated `_level`/`_flags`; `chat()`/`flat()` index them), and the `objects` and `monsters` lists (were `lvl_obj`/`mlist`). Its constructor makes every passage a dark, gone room, which replaces the 13-entry initializer.
+     - `maxrow` is a constant next to `LINES`/`COLS`. It was always 23, and `setup()` no longer sets it.
+     - Verified with the A/B replay, plus a descending replay on scratch builds of both trees patched so that `>` works anywhere. Three seeds went 6 to 24 levels deep, with mazes, traps and deaths along the way. Identical.
+   - **5.5 Items.**
+     - `game().items` (`rogue::Items`) holds what there is to find in this game and what the rogue knows about it. That covers the odds tables `s_magic`, `p_magic`, `r_magic`, `ws_magic` and `things`, the per-game looks (`s_names`, `p_colors`, `r_stones`, `ws_made`, `ws_type`), the `*_know` and `*_guess` tables with their storage (`guesses`, was `_guesses`) and `iguess`, the item `pool`/`pool_used` (were the allocated `_things`/`_t_alloc`) with `total`, and the weapon `group` counter. These keep their original names, since the prefixes are systematic.
+     - The odds tables in `extern.cpp` are now `const` (`s_magic_base`, ..., `things_base`). `Items()` copies them, because `init_*()` accumulate the odds and add the stone value to the worth of rings. Before this change a second game in the same process would have accumulated the odds twice.
+     - `f_damage` became `game().player.flytrap_damage`, next to `fung_hit`, which it grows with.
+     - Verified with the A/B and descending replays: identical. `tests/game/GameTest.cpp` checks that the odds are copied per game and that the passages start dark and gone (moved from `StaticTablesTest`).
+   - **5.6 Scheduler and RNG.**
+     - `game().scheduler` holds the daemon and fuse slots that were `daemon.cpp`'s static `d_list`.
+     - `game().random` is the game's `Random`, and `rogue::rng()` (now in `game/Game.hpp`) returns it, so `core/` no longer holds a global generator.
+     - The `extern` section of `rogue.h` now lists only fixed tables, common strings and scratch buffers. Deleted the declared-but-undefined `is_me`.
+     - Verified with the A/B and descending replays: identical.
+   - **What stays outside `Game`, deliberately:** fixed tables (`monsters`, `w_names`, `a_names`, `a_class`, `a_chances`, `he_man`, help, the `*_base` odds, `e_levels`), common strings (`nullstr`, `it`, `you`, ...), scratch buffers (`prbuf`, `tbuf`, `ring_buf`, phase 9), per-algorithm file statics (`maze.cpp`, `passages.cpp`, `ch_ret`, `nh`, `slimy`, `things.cpp`'s paging, `env.cpp`'s parser, `rip.cpp`'s `file`, phase 7), and the clock state in `SIG2()`. `w_names[FLAME]` is still overwritten while a bolt flies (`sticks.cpp`).
+
 ## Target architecture
 
 ```
@@ -112,7 +144,14 @@ Each phase is a series of small commits that each build and play.
    4. *Done:* full-screen views, in-game pages and prompts (4.4a), title and ending screens (4.4b).
    5. *Done:* input behind `ui::Input`, and no game file includes the DOS screen API.
    6. *Done:* the DOS emulation is gone (see above).
-5. **Game state.** Gather the ~90 globals from `extern.cpp`/`init.cpp` into a `Game` context (player, level, monster list, floor items, RNG, scheduler, known-item tables, options). Free functions take or reach it explicitly, and globals are removed one group at a time.
+5. **Game state** (*done*, see above). Gather the ~90 globals from `extern.cpp`/`init.cpp` into a `Game` context (player, level, monster list, floor items, RNG, scheduler, known-item tables, options). Free functions take or reach it explicitly, and globals are removed one group at a time. Steps:
+   1. *Done:* options (see above).
+   2. *Done:* messages and command state (see above).
+   3. *Done:* the player (see above).
+   4. *Done:* the level (see above).
+   5. *Done:* items (see above).
+   6. *Done:* the scheduler (`daemon.cpp` slots) and the RNG.
+   Algorithm scratch state (`maze.cpp`, `passages.cpp`, `ch_ret`, ...) and fixed tables stay where they are until phase 7.
 6. **Entities.**
    - Split `union thing` into `Monster` and `Item`.
    - Item kinds become an `enum class` with a separate glyph mapping, and creature/object flags become `rogue::Flags`.
@@ -132,6 +171,8 @@ Each phase is a series of small commits that each build and play.
    - Remove the `//@` port annotations once the code they describe is gone.
 
 ## Notes for whoever continues
+
+- `score()` writes `sc_name[38]` to `rogue.scr` with uninitialized bytes after the name. Harmless, but compare score files by the name up to its NUL. Phase 8 replaces the format.
 
 - `faststate` ("Fast Play") used to be toggled by Scroll Lock and is now always `FALSE`. Reintroduce it as a real option or key if wanted.
 - `save_game()` prints "saving games is disabled" and `restore()` exits with a message. Phase 8 brings real saving.

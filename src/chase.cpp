@@ -20,7 +20,7 @@ runners()
 	THING *tp;
 	int dist;
 
-	for	(tp = mlist; tp	!= NULL; tp = next(tp)) {
+	for	(tp = game().level.monsters; tp	!= NULL; tp = next(tp)) {
 		if (!on(*tp, ISHELD) && on(*tp, ISRUN)) {
 			dist = DISTANCE(hero.y, hero.x, tp->t_pos.y, tp->t_pos.x);
 			if	(!(on(*tp, ISSLOW) || (tp->t_type == 'S' && dist > 3)) || tp->t_turn)
@@ -79,7 +79,7 @@ over:
 			}
 		}
 		if (door) {
-			rer = &passages[flat(th->t_pos.y, th->t_pos.x) & F_PNUM];
+			rer = &game().level.passages[flat(th->t_pos.y, th->t_pos.x) & F_PNUM];
 			door = FALSE;
 			goto over;
 		}
@@ -97,10 +97,10 @@ over:
 			 && dist <= BOLT_LENGTH	* BOLT_LENGTH)
 			&&	!on(*th, ISCANC) && rnd(DRAGONSHOT) == 0)
 		{
-			running = FALSE;
-			delta.y = sign(hero.y - th->t_pos.y);
-			delta.x = sign(hero.x - th->t_pos.x);
-			fire_bolt(&th->t_pos,&delta,th->t_type == 'D' ? "flame" : "frost");
+			game().turn.running = FALSE;
+			game().turn.delta.y = sign(hero.y - th->t_pos.y);
+			game().turn.delta.x = sign(hero.x - th->t_pos.x);
+			fire_bolt(&th->t_pos,&game().turn.delta,th->t_type == 'D' ? "flame" : "frost");
 			return;
 		}
 	}
@@ -114,11 +114,11 @@ over:
 		attack(th);
 		return;
 	} else if (ch_ret == *th->t_dest) {
-		for (obj = lvl_obj; obj != NULL; obj =	next(obj))
+		for (obj = game().level.objects; obj != NULL; obj =	next(obj))
 			if	(th->t_dest == &obj->o_pos) {
 				byte oldchar;
 
-				detach(lvl_obj, obj);
+				detach(game().level.objects, obj);
 				attach(th->t_pack, obj);
 				oldchar = chat(obj->o_pos.y, obj->o_pos.x) =
 				th->t_room->r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
@@ -135,10 +135,10 @@ over:
 	 */
 	if (th->t_oldch != '@') {
 		if	(th->t_oldch ==	' ' && cansee(th->t_pos.y, th->t_pos.x)
-			   && _level[INDEX(th->t_pos.y,th->t_pos.x)] == FLOOR)
+			   && game().level.map[INDEX(th->t_pos.y,th->t_pos.x)] == FLOOR)
 			display().draw_tile(th->t_pos, FLOOR);
 		else if (th->t_oldch == FLOOR && !cansee(th->t_pos.y, th->t_pos.x)
-				&& !on(player, SEEMONST))
+				&& !on(game().player.body, SEEMONST))
 			display().draw_tile(th->t_pos, ' ');
 		else
 			display().draw_tile(th->t_pos, th->t_oldch);
@@ -160,7 +160,7 @@ over:
 		display().draw_tile(ch_ret, th->t_disguise,
 				(flat(ch_ret.y,ch_ret.x) & F_PASS) ? TileStyle::Inverse : TileStyle::Normal);
 	}
-	else if (on(player,	SEEMONST))
+	else if (on(game().player.body,	SEEMONST))
 	{
 		th->t_oldch = display().tile_at(ch_ret);
 		display().draw_tile(ch_ret, th->t_type, TileStyle::Inverse);
@@ -179,9 +179,10 @@ over:
 bool
 see_monst(THING *mp)
 {
-	if (on(player, ISBLIND))
+	rogue::Player &player = game().player;
+	if (on(player.body, ISBLIND))
 		return	FALSE;
-	if (on(*mp,	ISINVIS) && !on(player,	CANSEE))
+	if (on(*mp,	ISINVIS) && !on(player.body,	CANSEE))
 		return	FALSE;
 	if (DISTANCE(mp->t_pos.y, mp->t_pos.x, hero.y, hero.x) >= LAMPDIST &&
 	  ((mp->t_room != proom || mp->t_room->r_flags.test(RoomFlag::Dark) ||
@@ -191,11 +192,11 @@ see_monst(THING *mp)
 	 * If we are seeing	the enemy of a vorpally	enchanted weapon for the first
 	 * time, give the player a hint as to what that weapon is good for.
 	 */
-	if (cur_weapon != NULL && mp->t_type == cur_weapon->o_enemy
-	  && ((cur_weapon->o_flags & DIDFLASH) == 0))
+	if (player.weapon != NULL && mp->t_type == player.weapon->o_enemy
+	  && ((player.weapon->o_flags & DIDFLASH) == 0))
 	{
-		cur_weapon->o_flags |=	DIDFLASH;
-		msg(flashmsg, w_names[cur_weapon->o_which], terse	|| expert ? "" : intense);
+		player.weapon->o_flags |=	DIDFLASH;
+		msg(flashmsg, w_names[player.weapon->o_which], game().options.brief() ? "" : intense);
 	}
 	return TRUE;
 }
@@ -301,7 +302,7 @@ chase(THING *tp, coord *ee)
 					 */
 					if (ch ==	SCROLL)
 					{
-						for (obj = lvl_obj; obj != NULL; obj	= next(obj))
+						for (obj = game().level.objects; obj != NULL; obj	= next(obj))
 						{
 							if (y ==	obj->o_pos.y &&	x == obj->o_pos.x)
 								break;
@@ -342,17 +343,17 @@ roomin(coord *cp)
 	struct room *rp;
 	byte *fp;
 
-	for	(rp = rooms; rp	<= &rooms[MAXROOMS-1]; rp++)
+	for	(rp = game().level.rooms; rp	<= &game().level.rooms[MAXROOMS-1]; rp++)
 		if (cp->x < rp->r_pos.x + rp->r_max.x && rp->r_pos.x <= cp->x
 		 && cp->y < rp->r_pos.y + rp->r_max.y && rp->r_pos.y <= cp->y)
 			return rp;
 	fp = &flat(cp->y, cp->x);
 	if (*fp & F_PASS)
-		return	&passages[*fp &	F_PNUM];
+		return	&game().level.passages[*fp &	F_PNUM];
 #ifdef DEBUG
 	debug("in some bizarre place (%d, %d)", unc(*cp));
 #endif //DEBUG
-	bailout = TRUE;
+	game().turn.bailout = TRUE;
 	return NULL;
 }
 
@@ -378,7 +379,7 @@ cansee(int y, int x)
 	struct room *rer;
 	coord tp;
 
-	if (on(player, ISBLIND))
+	if (on(game().player.body, ISBLIND))
 		return	FALSE;
 	if (DISTANCE(y, x, hero.y, hero.x) < LAMPDIST)
 		return	TRUE;
@@ -407,13 +408,13 @@ find_dest(THING *tp)
 	|| see_monst(tp))
 		return &hero;
 	rp = tp->t_room;
-	for	(obj = lvl_obj;	obj != NULL; obj = next(obj))
+	for	(obj = game().level.objects;	obj != NULL; obj = next(obj))
 	{
 	if (obj->o_type == SCROLL && obj->o_which == S_SCARE)
 		continue;
 	if (roomin(&obj->o_pos) == rp && rnd(100) < prob)
 	{
-		for (tp = mlist; tp != NULL; tp = next(tp))
+		for (tp = game().level.monsters; tp != NULL; tp = next(tp))
 		if (tp->t_dest == &obj->o_pos)
 			break;
 		if	(tp == NULL)

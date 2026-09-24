@@ -24,6 +24,8 @@ quaff(void)
 {
 	THING *obj, *th;
 	bool discardit = FALSE;
+	rogue::Player &player = game().player;
+	rogue::Items &items = game().items;
 
 	if ((obj = get_item("quaff", POTION)) == NULL)
 		return;
@@ -35,8 +37,8 @@ quaff(void)
 		msg("yuk! Why would you want to drink that?");
 		return;
 	}
-	if (obj == cur_weapon)
-		cur_weapon = NULL;
+	if (obj == player.weapon)
+		player.weapon = NULL;
 
 	/*
 	 * Calculate the effect it has on the poor guy.
@@ -44,21 +46,21 @@ quaff(void)
 	switch (obj->o_which)
 	{
 	when P_CONFUSE:
-		p_know[P_CONFUSE] = TRUE;
-		if (!on(player, ISHUH))
+		items.p_know[P_CONFUSE] = TRUE;
+		if (!on(player.body, ISHUH))
 			{
-			if (on(player, ISHUH))
+			if (on(player.body, ISHUH))
 				lengthen(unconfuse, rnd(8)+HUHDURATION);
 			else
 				fuse(unconfuse, rnd(8)+HUHDURATION);
-			player.t_flags |= ISHUH;
+			player.body.t_flags |= ISHUH;
 			msg("wait, what's going on? Huh? What? Who?");
 		}
 	when P_POISON:
 		{
 		const char *sick = "you feel %s sick.";
 
-		p_know[P_POISON] = TRUE;
+		items.p_know[P_POISON] = TRUE;
 		if (!ISWEARING(R_SUSTSTR))
 		{
 			chg_str(-(rnd(3)+1));
@@ -68,25 +70,25 @@ quaff(void)
 			msg(sick, "momentarily");
 		}
 	when P_HEALING:
-		p_know[P_HEALING] = TRUE;
+		items.p_know[P_HEALING] = TRUE;
 		if ((pstats.s_hpt += roll(pstats.s_lvl, 4)) > max_hp)
 			pstats.s_hpt = ++max_hp;
 		sight();
 		msg("you begin to feel better");
 	when P_STRENGTH:
-		p_know[P_STRENGTH] = TRUE;
+		items.p_know[P_STRENGTH] = TRUE;
 		chg_str(1);
 		msg("you feel stronger. What bulging muscles!");
 	when P_MFIND:
 		fuse(turn_see_off, HUHDURATION);
-		if (mlist == NULL)
+		if (game().level.monsters == NULL)
 			msg("you have a strange feeling%s.",
 				noterse(" for a moment"));
 		else
 		{
 			if (turn_see(FALSE))
 			{
-				p_know[P_MFIND] = TRUE;
+				items.p_know[P_MFIND] = TRUE;
 			}
 			msg("");
 		}
@@ -96,22 +98,22 @@ quaff(void)
 		 * the level and show him where they are.  Also give hints as
 		 * to whether he would want to use the object.
 		 */
-		if (lvl_obj != NULL)
+		if (game().level.objects != NULL)
 		{
 			THING *tp;
 			bool show;
 
 			show = FALSE;
-			for (tp = lvl_obj; tp != NULL; tp = next(tp))
+			for (tp = game().level.objects; tp != NULL; tp = next(tp))
 			{
 				if (is_magic(tp))
 				{
 					show = TRUE;
 					display().draw_tile(tp->o_pos, goodch(tp));
-					p_know[P_TFIND] = TRUE;
+					items.p_know[P_TFIND] = TRUE;
 				}
 			}
-			for (th = mlist; th != NULL; th = next(th))
+			for (th = game().level.monsters; th != NULL; th = next(th))
 			{
 				for (tp = th->t_pack; tp != NULL; tp = next(tp))
 				{
@@ -119,7 +121,7 @@ quaff(void)
 					{
 						show = TRUE;
 						display().draw_tile(th->t_pos, MAGIC);
-						p_know[P_TFIND] = TRUE;
+						items.p_know[P_TFIND] = TRUE;
 					}
 				}
 			}
@@ -132,24 +134,24 @@ quaff(void)
 		msg("you have a strange feeling for a moment%s.",
 				noterse(", then it passes"));
 	when P_PARALYZE:
-		p_know[P_PARALYZE] = TRUE;
-		no_command = HOLDTIME;
-		player.t_flags &= ~ISRUN;
+		items.p_know[P_PARALYZE] = TRUE;
+		player.no_command = HOLDTIME;
+		player.body.t_flags &= ~ISRUN;
 		msg("you can't move");
 	when P_SEEINVIS:
-		if (!on(player, CANSEE)) {
+		if (!on(player.body, CANSEE)) {
 			fuse(unsee, SEEDURATION);
 			look(FALSE);
 			invis_on();
 		}
 		sight();
-		msg("this potion tastes like %s juice", fruit);
+		msg("this potion tastes like %s juice", game().options.fruit);
 	when P_RAISE:
-		p_know[P_RAISE] = TRUE;
+		items.p_know[P_RAISE] = TRUE;
 		msg("you suddenly feel much more skillful");
 		raise_level();
 	when P_XHEAL:
-		p_know[P_XHEAL] = TRUE;
+		items.p_know[P_XHEAL] = TRUE;
 		if ((pstats.s_hpt += roll(pstats.s_lvl, 8)) > max_hp)
 		{
 			if (pstats.s_hpt > max_hp + pstats.s_lvl + 1)
@@ -159,27 +161,27 @@ quaff(void)
 		sight();
 		msg("you begin to feel much better");
 	when P_HASTE:
-		p_know[P_HASTE] = TRUE;
+		items.p_know[P_HASTE] = TRUE;
 		if (add_haste(TRUE))
 			msg("you feel yourself moving much faster");
 	when P_RESTORE:
 		if (ISRING(LEFT, R_ADDSTR))
-			add_str(&pstats.s_str, -cur_ring[LEFT]->o_ac);
+			add_str(&pstats.s_str, -player.rings[LEFT]->o_ac);
 		if (ISRING(RIGHT, R_ADDSTR))
-			add_str(&pstats.s_str, -cur_ring[RIGHT]->o_ac);
-		if (pstats.s_str < max_stats.s_str)
-			pstats.s_str = max_stats.s_str;
+			add_str(&pstats.s_str, -player.rings[RIGHT]->o_ac);
+		if (pstats.s_str < player.max_stats.s_str)
+			pstats.s_str = player.max_stats.s_str;
 		if (ISRING(LEFT, R_ADDSTR))
-			add_str(&pstats.s_str, cur_ring[LEFT]->o_ac);
+			add_str(&pstats.s_str, player.rings[LEFT]->o_ac);
 		if (ISRING(RIGHT, R_ADDSTR))
-			add_str(&pstats.s_str, cur_ring[RIGHT]->o_ac);
+			add_str(&pstats.s_str, player.rings[RIGHT]->o_ac);
 		msg("%syou feel warm all over",
 			noterse("hey, this tastes great.  It makes "));
 	when P_BLIND:
-		p_know[P_BLIND] = TRUE;
-		if (!on(player, ISBLIND))
+		items.p_know[P_BLIND] = TRUE;
+		if (!on(player.body, ISBLIND))
 		{
-			player.t_flags |= ISBLIND;
+			player.body.t_flags |= ISBLIND;
 			fuse(sight, SEEDURATION);
 			look(FALSE);
 		}
@@ -194,7 +196,7 @@ quaff(void)
 	/*
 	 * Throw the item away
 	 */
-	inpack--;
+	player.in_pack--;
 	if (obj->o_count > 1)
 		obj->o_count--;
 	else
@@ -203,7 +205,7 @@ quaff(void)
 		discardit = TRUE;
 	}
 
-	call_it(p_know[obj->o_which], &p_guess[obj->o_which]);
+	call_it(items.p_know[obj->o_which], &items.p_guess[obj->o_which]);
 
 	if (discardit)
 		discard(obj);
@@ -218,8 +220,8 @@ invis_on(void)
 {
 	THING *th;
 
-	player.t_flags |= CANSEE;
-	for (th = mlist; th != NULL; th = next(th))
+	game().player.body.t_flags |= CANSEE;
+	for (th = game().level.monsters; th != NULL; th = next(th))
 	if (on(*th, ISINVIS) && see_monst(th))
 	{
 		display().draw_tile(th->t_pos, th->t_disguise);
@@ -238,7 +240,7 @@ turn_see(bool turn_off)
 	byte was_there = ' ';
 
 	add_new = FALSE;
-	for (mp = mlist; mp != NULL; mp = next(mp)) {
+	for (mp = game().level.monsters; mp != NULL; mp = next(mp)) {
 		can_see = (see_monst(mp) || (was_there = display().tile_at(mp->t_pos)) == mp->t_type);
 		if (turn_off) {
 			if (!see_monst(mp) && mp->t_oldch != '@')
@@ -252,9 +254,9 @@ turn_see(bool turn_off)
 					can_see ? TileStyle::Normal : TileStyle::Inverse);
 		}
 	}
-	player.t_flags |= SEEMONST;
+	game().player.body.t_flags |= SEEMONST;
 	if (turn_off)
-		player.t_flags &= ~SEEMONST;
+		game().player.body.t_flags &= ~SEEMONST;
 	return add_new;
 }
 

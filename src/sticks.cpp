@@ -14,7 +14,7 @@
 void
 fix_stick(THING *cur)
 {
-	if (strcmp(ws_type[cur->o_which], "staff") == 0)
+	if (strcmp(game().items.ws_type[cur->o_which], "staff") == 0)
 		cur->o_damage = "2d3";
 	else
 		cur->o_damage = "1d1";
@@ -45,6 +45,8 @@ do_zap()
 	int y, x;
 	const char *name;
 	int which_one;
+	rogue::Turn &turn = game().turn;
+	rogue::Player &player = game().player;
 
 	if ((obj = get_item("zap with", STICK)) == NULL)
 		return;
@@ -56,7 +58,7 @@ do_zap()
 		else
 		{
 			msg("you can't zap with that!");
-			after = FALSE;
+			turn.after = FALSE;
 			return;
 		}
 	}
@@ -71,11 +73,11 @@ do_zap()
 		/*
 		 * Reddy Kilowat wand.  Light up the room
 		 */
-		if (on(player,ISBLIND))
+		if (on(player.body,ISBLIND))
 			msg("you feel a warm glow around you");
 		else
 		{
-			ws_know[WS_LIGHT] = TRUE;
+			game().items.ws_know[WS_LIGHT] = TRUE;
 			if (proom->r_flags.test(RoomFlag::Gone))
 				msg("the corridor glows and then fades");
 			else
@@ -116,8 +118,8 @@ do_zap()
 		x = hero.x;
 		while (step_ok(winat(y, x)))
 		{
-			y += delta.y;
-			x += delta.x;
+			y += turn.delta.y;
+			x += turn.delta.x;
 		}
 		if ((tp = moat(y, x)) != NULL)
 		{
@@ -125,7 +127,7 @@ do_zap()
 
 			omonst = monster = tp->t_type;
 			if (monster == 'F')
-				player.t_flags &= ~ISHELD;
+				player.body.t_flags &= ~ISHELD;
 			if (which_one == MAXSTICKS)
 			{
 				if (monster == obj->o_enemy)
@@ -142,18 +144,18 @@ do_zap()
 				THING *pp;
 
 				pp = tp->t_pack;
-				detach(mlist, tp);
+				detach(game().level.monsters, tp);
 				if (see_monst(tp))
 					display().draw_tile({x, y}, chat(y, x));
 				oldch = tp->t_oldch;
-				delta.y = y;
-				delta.x = x;
-				new_monster(tp, monster = rnd(26) + 'A', &delta);
+				turn.delta.y = y;
+				turn.delta.x = x;
+				new_monster(tp, monster = rnd(26) + 'A', &turn.delta);
 				if (see_monst(tp))
 					display().draw_tile({x, y}, monster);
 				tp->t_oldch = oldch;
 				tp->t_pack = pp;
-				ws_know[WS_POLYMORPH] |= (monster != omonst);
+				game().items.ws_know[WS_POLYMORPH] |= (monster != omonst);
 			}
 			else if (which_one == WS_CANCEL)
 			{
@@ -172,21 +174,21 @@ do_zap()
 					{
 						rm = rnd_room();
 						new_yx = tp->t_pos;
-						rnd_pos(&rooms[rm], &new_yx);
+						rnd_pos(&game().level.rooms[rm], &new_yx);
 					}  while (!(isfloor(winat(new_yx.y, new_yx.x))));
 					tp->t_pos = new_yx;
 					if (see_monst(tp))
 						display().draw_tile(tp->t_pos, tp->t_disguise);
-					else if (on(player, SEEMONST))
+					else if (on(player.body, SEEMONST))
 						display().draw_tile(tp->t_pos, tp->t_disguise, TileStyle::Inverse);
 				}
 				else /* it MUST BE at WS_TELTO */
 				{
-					tp->t_pos.y = hero.y + delta.y;
-					tp->t_pos.x = hero.x + delta.x;
+					tp->t_pos.y = hero.y + turn.delta.y;
+					tp->t_pos.x = hero.x + turn.delta.x;
 				}
 				if (tp->t_type == 'F')
-					player.t_flags &= ~ISHELD;
+					player.body.t_flags &= ~ISHELD;
 				if (tp->t_pos.y != y || tp->t_pos.x != x)
 					tp->t_oldch = display().tile_at(tp->t_pos);
 			}
@@ -198,24 +200,24 @@ do_zap()
 	{
 		THING bolt;
 
-		ws_know[WS_MISSILE] = TRUE;
+		game().items.ws_know[WS_MISSILE] = TRUE;
 		bolt.o_type = '*';
 		bolt.o_hurldmg = "1d8";
 		bolt.o_hplus = 1000;
 		bolt.o_dplus = 1;
 		bolt.o_flags = ISMISL;
-		if (cur_weapon != NULL)
-			bolt.o_launch = cur_weapon->o_which;
-		do_motion(&bolt, delta.y, delta.x);
+		if (player.weapon != NULL)
+			bolt.o_launch = player.weapon->o_which;
+		do_motion(&bolt, turn.delta.y, turn.delta.x);
 		if ((tp = moat(bolt.o_pos.y, bolt.o_pos.x)) != NULL && !save_throw(VS_MAGIC, tp))
 			hit_monster(unc(bolt.o_pos), &bolt);
 		else
 		msg("the missle vanishes with a puff of smoke");
 	}
 	when WS_HIT:
-		delta.y += hero.y;
-		delta.x += hero.x;
-		if ((tp = moat(delta.y, delta.x)) != NULL)
+		turn.delta.y += hero.y;
+		turn.delta.x += hero.x;
+		if ((tp = moat(turn.delta.y, turn.delta.x)) != NULL)
 		{
 			if (rnd(20) == 0)
 			{
@@ -227,7 +229,7 @@ do_zap()
 				obj->o_damage = "2d8";
 				obj->o_dplus = 4;
 			}
-			fight(&delta, tp->t_type, obj, FALSE);
+			fight(&turn.delta, tp->t_type, obj, FALSE);
 		}
 	when WS_HASTE_M:
 	case WS_SLOW_M:
@@ -235,8 +237,8 @@ do_zap()
 		x = hero.x;
 		while (step_ok(winat(y, x)))
 		{
-			y += delta.y;
-			x += delta.x;
+			y += turn.delta.y;
+			x += turn.delta.x;
 		}
 		if ((tp = moat(y, x)) != NULL)
 		{
@@ -255,9 +257,9 @@ do_zap()
 					tp->t_flags |= ISSLOW;
 				tp->t_turn = TRUE;
 			}
-			delta.y = y;
-			delta.x = x;
-			start_run(&delta);
+			turn.delta.y = y;
+			turn.delta.x = x;
+			start_run(&turn.delta);
 		}
 	when WS_ELECT:
 	case WS_FIRE:
@@ -268,8 +270,8 @@ do_zap()
 			name = "flame";
 		else
 			name = "ice";
-		fire_bolt(&hero, &delta, name);
-		ws_know[which_one] = TRUE;
+		fire_bolt(&hero, &turn.delta, name);
+		game().items.ws_know[which_one] = TRUE;
 #ifdef DEBUG
 	otherwise:
 		msg("what a bizarre schtick!");
@@ -299,15 +301,15 @@ drain()
 	 */
 	cnt = 0;
 	if (chat(hero.y, hero.x) == DOOR)
-		corp = &passages[flat(hero.y, hero.x) & F_PNUM];
+		corp = &game().level.passages[flat(hero.y, hero.x) & F_PNUM];
 	else
 		corp = NULL;
 	inpass = proom->r_flags.test(RoomFlag::Gone);
 	dp = drainee;
-	for (mp = mlist; mp != NULL; mp = next(mp))
+	for (mp = game().level.monsters; mp != NULL; mp = next(mp))
 		if (mp->t_room == proom || mp->t_room == corp ||
 			(inpass && chat(mp->t_pos.y, mp->t_pos.x) == DOOR &&
-			&passages[flat(mp->t_pos.y, mp->t_pos.x) & F_PNUM] == proom))
+			&game().level.passages[flat(mp->t_pos.y, mp->t_pos.x) & F_PNUM] == proom))
 			*dp++ = mp;
 	if ((cnt = dp - drainee) == 0)
 	{
@@ -419,8 +421,8 @@ fire_bolt(coord *start, coord *dir, const char *name)
 					if (is_frost) {
 						msg("You are frozen by a blast of frost%s.",
 							noterse(" from the Ice Monster"));
-						if (no_command < 20)
-							no_command += spread(7);
+						if (game().player.no_command < 20)
+							game().player.no_command += spread(7);
 					} else if ((pstats.s_hpt -= roll(6, 6)) <= 0) {
 						if (start == &hero)
 							death('b');

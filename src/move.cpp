@@ -20,9 +20,9 @@ static byte	be_trapped(coord *tc);
 void
 do_run(byte ch)
 {
-	running = TRUE;
-	after = FALSE;
-	runch = ch;
+	game().turn.running = TRUE;
+	game().turn.after = FALSE;
+	game().turn.run_dir = ch;
 }
 
 /*
@@ -35,24 +35,26 @@ do_move(int dy, int dx)
 {
 	byte ch;
 	int fl;
+	rogue::Turn &turn = game().turn;
+	rogue::Player &player = game().player;
 
-	firstmove = FALSE;
-	if (bailout) {
-		bailout = FALSE;
+	turn.first_move = FALSE;
+	if (turn.bailout) {
+		turn.bailout = FALSE;
 		msg("the crack widens ... ");
 		descend("");
 		return ;
 	}
-	if (no_move) {
-		no_move--;
+	if (player.no_move) {
+		player.no_move--;
 		msg("you are still stuck in the bear trap");
 		return;
 	}
 	/*
 	 * Do a confused move (maybe)
 	 */
-	if (on(player, ISHUH) && rnd(5) != 0)
-		rndmove(&player,&nh);
+	if (on(player.body, ISHUH) && rnd(5) != 0)
+		rndmove(&player.body,&nh);
 	else {
 over:
 		nh.y = hero.y + dy;
@@ -67,16 +69,16 @@ over:
 	if (offmap(nh.y, nh.x))
 		goto hit_bound;
 	if (!diag_ok(&hero, &nh)) {
-		after = FALSE;
-		running = FALSE;
+		turn.after = FALSE;
+		turn.running = FALSE;
 		return;
 	}
 	/*
 	 * If you are running and the move does
 	 * not get you anywhere stop running
 	 */
-	if (running && (hero == nh))
-		after = running = FALSE;
+	if (turn.running && (hero == nh))
+		turn.after = turn.running = FALSE;
 	fl = flat(nh.y, nh.x);
 	ch = winat(nh.y, nh.x);
 	/*
@@ -84,12 +86,12 @@ over:
 	 * to run until he enters the room all the way
 	 */
 	if ((chat(hero.y,hero.x) == DOOR) && (ch == FLOOR))
-		running = FALSE;
+		turn.running = FALSE;
 	if (!(fl & F_REAL) && ch == FLOOR) {
 		chat(nh.y, nh.x) = ch = TRAP;
 		flat(nh.y, nh.x) |= F_REAL;
 	}
-	else if (on(player, ISHELD) && ch != 'F') {
+	else if (on(player.body, ISHELD) && ch != 'F') {
 		msg("you are being held");
 		return;
 	}
@@ -102,10 +104,10 @@ over:
 	case LLWALL:
 	case LRWALL:
 hit_bound:
-		if (running && isgone(proom) && !on(player, ISBLIND)) {
+		if (turn.running && isgone(proom) && !on(player.body, ISBLIND)) {
 			bool	b1, b2;
 
-			switch (runch)
+			switch (turn.run_dir)
 			{
 			case 'h':
 			case 'l':
@@ -118,10 +120,10 @@ hit_bound:
 				if (!(b1 ^ b2))
 					break;
 				if (b1) {
-					runch = 'k';
+					turn.run_dir = 'k';
 					dy = -1;
 				} else {
-					runch = 'j';
+					turn.run_dir = 'j';
 					dy = 1;
 				}
 				dx = 0;
@@ -137,20 +139,20 @@ hit_bound:
 				if (!(b1 ^ b2))
 					break;
 				if (b1) {
-					runch = 'h';
+					turn.run_dir = 'h';
 					dx = -1;
 				} else {
-					runch = 'l';
+					turn.run_dir = 'l';
 					dx = 1;
 				}
 				dy = 0;
 				goto over;
 			}
 		}
-		after = running = FALSE;
+		turn.after = turn.running = FALSE;
 		break;
 	case DOOR:
-		running = FALSE;
+		turn.running = FALSE;
 		if (flat(hero.y, hero.x) & F_PASS)
 			enter_room(&nh);
 		goto move_stuff;
@@ -166,19 +168,19 @@ hit_bound:
 			be_trapped(&hero);
 		goto move_stuff;
 	default:
-		running = FALSE;
+		turn.running = FALSE;
 		if (ismonster(ch) || moat(nh.y, nh.x))
-			fight(&nh, ch, cur_weapon, FALSE);
+			fight(&nh, ch, player.weapon, FALSE);
 		else {
-			running = FALSE;
+			turn.running = FALSE;
 			if (ch != STAIRS)
-				take = ch;
+				turn.take = ch;
 move_stuff:
 			display().draw_tile(hero, chat(hero.y, hero.x));
-			if ((fl & F_PASS) && (chat(oldpos.y, oldpos.x) == DOOR
-					|| (flat(oldpos.y, oldpos.x) & F_MAZE)))
+			if ((fl & F_PASS) && (chat(player.old_pos.y, player.old_pos.x) == DOOR
+					|| (flat(player.old_pos.y, player.old_pos.x) & F_MAZE)))
 				leave_room(&nh);
-			if ((fl & F_MAZE) && (flat(oldpos.y, oldpos.x) & F_MAZE) == 0)
+			if ((fl & F_MAZE) && (flat(player.old_pos.y, player.old_pos.x) & F_MAZE) == 0)
 				enter_room(&nh);
 			bcopy(hero,nh);
 		}
@@ -198,7 +200,7 @@ door_open(struct room *rp)
 	byte ch;
 	THING *item;
 
-	if (!rp->r_flags.test(RoomFlag::Gone) && !on(player, ISBLIND))
+	if (!rp->r_flags.test(RoomFlag::Gone) && !on(game().player.body, ISBLIND))
 		for (j = rp->r_pos.y; j < rp->r_pos.y + rp->r_max.y; j++)
 			for (k = rp->r_pos.x; k < rp->r_pos.x + rp->r_max.x; k++) {
 				ch = winat(j, k);
@@ -211,7 +213,7 @@ door_open(struct room *rp)
 						continue;
 					}
 					if (item->t_oldch == ' ' && !rp->r_flags.test(RoomFlag::Dark)
-						&& !on(player, ISBLIND))
+						&& !on(game().player.body, ISBLIND))
 							item->t_oldch = chat(j, k);
 				}
 			}
@@ -227,21 +229,22 @@ be_trapped(coord *tc)
 {
 	byte tr;
 	int index;
+	rogue::Player &player = game().player;
 
-	count = running = FALSE;
+	game().turn.count = game().turn.running = FALSE;
 	index = INDEX(tc->y, tc->x);
-	_level[index] = TRAP;
-	tr = _flags[index] & F_TMASK;
-	was_trapped = TRUE;
+	game().level.map[index] = TRAP;
+	tr = game().level.flags[index] & F_TMASK;
+	player.was_trapped = TRUE;
 	switch (tr) {
 	when T_DOOR:
 		descend("you fell into a trap!");
 	when T_BEAR:
-		no_move += BEARTIME;
+		player.no_move += BEARTIME;
 		msg("you are caught in a bear trap");
 	when T_SLEEP:
-		no_command += SLEEPTIME;
-		player.t_flags &= ~ISRUN;
+		player.no_command += SLEEPTIME;
+		player.body.t_flags &= ~ISRUN;
 		msg("a %smist envelops you and you fall asleep",
 			noterse("strange white "));
 	when T_ARROW:
@@ -277,7 +280,7 @@ be_trapped(coord *tc)
 		 * real type that bool was typdef'd to in original code: unsigned char.
 		 * Either this or refactor the original detection for teleport traps.
 		 */
-		was_trapped++;
+		player.was_trapped++;
 	when T_DART:
 		if (swing(pstats.s_lvl+1, pstats.s_arm, 1)) {
 			pstats.s_hpt -= roll(1, 4);
@@ -299,7 +302,7 @@ be_trapped(coord *tc)
 void
 descend(const char *mesg)
 {
-	level++;
+	game().level.depth++;
 	if (*mesg == 0)
 		msg(" ");
 	new_level();
@@ -340,7 +343,7 @@ rndmove(THING *who, coord *newmv)
 		if (!step_ok(ch))
 			goto bad;
 		if (ch == SCROLL) {
-			for (obj = lvl_obj; obj != NULL; obj = next(obj))
+			for (obj = game().level.objects; obj != NULL; obj = next(obj))
 				if (y == obj->o_pos.y && x == obj->o_pos.x)
 					break;
 			if (obj != NULL && obj->o_which == S_SCARE)

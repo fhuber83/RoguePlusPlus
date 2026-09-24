@@ -44,10 +44,10 @@ score(int amount, int flags, char monst)
 	{
 		wait_msg("see rankings");
 	}
-	while ((file = fopen(s_score, "r")) == NULL)
+	while ((file = fopen(game().options.score_file, "r")) == NULL)
 	{
 		display().write("\n");
-		if (noscore || (amount == 0))
+		if (game().noscore || (amount == 0))
 			return;
 		str_attr("No scorefile: %Create %Retry %Abort");
 reread:
@@ -55,7 +55,7 @@ reread:
 		{
 		case 'c':
 		case 'C':
-			fclose(fopen(s_score, "w"));
+			fclose(fopen(game().options.score_file, "w"));
 			break;
 		case 'r':
 		case 'R':
@@ -70,18 +70,18 @@ reread:
 	display().write("\n");
 	get_scores(top_ten);
 
-	if (noscore != TRUE)
+	if (game().noscore != TRUE)
 	{
-		strcpy(his_score.sc_name,whoami);
+		strcpy(his_score.sc_name,game().options.name);
 		his_score.sc_gold = amount;
 		his_score.sc_fate = flags ? flags : monst;
-		his_score.sc_level = max_level;
+		his_score.sc_level = game().player.max_level;
 		his_score.sc_rank  = pstats.s_lvl;
 		rank = add_scores(&his_score, top_ten);
 	}
 	fclose(file);
 	if (rank > 0) {
-		if ((file = fopen(s_score, "w")) != NULL) {
+		if ((file = fopen(game().options.score_file, "w")) != NULL) {
 			put_scores(top_ten);
 			fclose(file);
 		}
@@ -212,16 +212,16 @@ death(char monst)
 {
 	int year;
 
-	purse -= purse / 10;
+	game().player.purse -= game().player.purse / 10;
 
 	display().curtain_down();
 	//@ killname() leaves the death reason in prbuf
 	killname(monst, TRUE);
 	year = md_localtime()->year;
-	display().draw_tombstone(whoami, prbuf, purse, year);
+	display().draw_tombstone(game().options.name, prbuf, game().player.purse, year);
 	display().curtain_up();
 	display().write_at(LINES-1, 0, "");
-	score(purse, 0, monst);
+	score(game().player.purse, 0, monst);
 	md_exit(EXIT_SUCCESS);
 }
 
@@ -237,12 +237,13 @@ total_winner(void)
 	byte c;
 	int oldpurse;
 	char buf[132];  //@ as printw() had
+	rogue::Items &items = game().items;
 
-	display().draw_winner(terse);
+	display().draw_winner(game().options.terse);
 	wait_for(' ');
 	display().clear_page();
 	display().write_at(0, 0, "   Worth  Item");
-	oldpurse = purse;
+	oldpurse = game().player.purse;
 	for (c = 'a', obj = pack; obj != NULL; c++, obj = next(obj))
 	{
 	switch (obj->o_type)
@@ -283,19 +284,19 @@ total_winner(void)
 			worth += (10 * (a_class[obj->o_which] - obj->o_ac));
 			obj->o_flags |= ISKNOW;
 		when SCROLL:
-			worth = s_magic[obj->o_which].mi_worth;
+			worth = items.s_magic[obj->o_which].mi_worth;
 			worth *= obj->o_count;
-			if (!s_know[obj->o_which])
+			if (!items.s_know[obj->o_which])
 				worth /= 2;
-			s_know[obj->o_which] = TRUE;
+			items.s_know[obj->o_which] = TRUE;
 		when POTION:
-			worth = p_magic[obj->o_which].mi_worth;
+			worth = items.p_magic[obj->o_which].mi_worth;
 			worth *= obj->o_count;
-			if (!p_know[obj->o_which])
+			if (!items.p_know[obj->o_which])
 				worth /= 2;
-			p_know[obj->o_which] = TRUE;
+			items.p_know[obj->o_which] = TRUE;
 		when RING:
-			worth = r_magic[obj->o_which].mi_worth;
+			worth = items.r_magic[obj->o_which].mi_worth;
 			if (obj->o_which == R_ADDSTR || obj->o_which == R_ADDDAM ||
 				obj->o_which == R_PROTECT || obj->o_which == R_ADDHIT)
 			{
@@ -307,14 +308,14 @@ total_winner(void)
 			if (!(obj->o_flags & ISKNOW))
 				worth /= 2;
 			obj->o_flags |= ISKNOW;
-			r_know[obj->o_which] = TRUE;
+			items.r_know[obj->o_which] = TRUE;
 		when STICK:
-			worth = ws_magic[obj->o_which].mi_worth;
+			worth = items.ws_magic[obj->o_which].mi_worth;
 			worth += 20 * obj->o_charges;
 			if (!(obj->o_flags & ISKNOW))
 				worth /= 2;
 			obj->o_flags |= ISKNOW;
-			ws_know[obj->o_which] = TRUE;
+			items.ws_know[obj->o_which] = TRUE;
 			when AMULET:
 			worth = 1000;
 			break;
@@ -323,11 +324,11 @@ total_winner(void)
 		worth = 0;
 	snprintf(buf, sizeof buf, "%c) %5d  %s", c, worth, inv_name(obj, FALSE));
 	display().write_at(c - 'a' + 1, 0, buf);
-	purse += worth;
+	game().player.purse += worth;
 	}
 	snprintf(buf, sizeof buf, "   %5u  Gold Pieces          ", oldpurse);
 	display().write_at(c - 'a' + 1, 0, buf);
-	score(purse, 2, 0);
+	score(game().player.purse, 2, 0);
 	md_exit(EXIT_SUCCESS);
 }
 

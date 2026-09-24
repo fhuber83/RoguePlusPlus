@@ -70,7 +70,7 @@ add_pack(THING *obj, bool silent)
 				op->o_count += obj->o_count;
 				if (from_floor)
 				{
-					detach(lvl_obj, obj);
+					detach(game().level.objects, obj);
 					display().draw_tile(hero, floor);
 					chat(hero.y, hero.x) = floor;
 				}
@@ -83,7 +83,7 @@ add_pack(THING *obj, bool silent)
 	/*
 	 * Check if there is room
 	 */
-	if (inpack >= MAXPACK-1)
+	if (game().player.in_pack >= MAXPACK-1)
 	{
 		msg("you can't carry anything else");
 		return;
@@ -95,7 +95,7 @@ add_pack(THING *obj, bool silent)
 	{
 		if (obj->o_flags & ISFOUND)
 		{
-			detach(lvl_obj, obj);
+			detach(game().level.objects, obj);
 			display().draw_tile(hero, floor);
 			chat(hero.y, hero.x) = floor;
 			msg("the scroll turns to dust%s.", noterse(" as you pick it up"));
@@ -105,10 +105,10 @@ add_pack(THING *obj, bool silent)
 			obj->o_flags |= ISFOUND;
 	}
 
-	inpack++;
+	game().player.in_pack++;
 	if (from_floor)
 	{
-		detach(lvl_obj, obj);
+		detach(game().level.objects, obj);
 		display().draw_tile(hero, floor);
 		chat(hero.y, hero.x) = floor;
 	}
@@ -191,7 +191,7 @@ picked_up:
 	 * If this was the object of something's desire, that monster will
 	 * get mad and run at the hero
 	 */
-	for (op = mlist; op != NULL; op = next(op))
+	for (op = game().level.monsters; op != NULL; op = next(op))
 	{
 		/*
 		 *  compiler bug: jll : 2-7-83
@@ -215,8 +215,8 @@ picked_up:
 
 	if (obj->o_type == AMULET)
 	{
-		amulet = TRUE;
-		saw_amulet = TRUE;
+		game().player.has_amulet = TRUE;
+		game().player.saw_amulet = TRUE;
 	}
 	/*
 	 * Notify the user
@@ -280,7 +280,7 @@ pick_up(byte ch)
 		if ((obj = find_obj(hero.y, hero.x)) == NULL)
 		return;
 		money(obj->o_goldval);
-		detach(lvl_obj, obj);
+		detach(game().level.objects, obj);
 		discard(obj);
 		proom->r_goldval = 0;
 		break;
@@ -313,11 +313,11 @@ get_item(const char *purpose, int type)
 	byte gi_state;	/* get item sub state */
 	int once_only = FALSE;
 
-	if (((!strncmp(s_menu,"sel",3) && strcmp(purpose,"eat")
-	  && strcmp(purpose,"drop"))) || !strcmp(s_menu,"on"))
+	if (((!strncmp(game().options.menu,"sel",3) && strcmp(purpose,"eat")
+	  && strcmp(purpose,"drop"))) || !strcmp(game().options.menu,"on"))
 		once_only = TRUE;
 
-	gi_state = again;
+	gi_state = game().turn.again;
 	if (pack == NULL)
 		msg("you aren't carrying anything");
 	else {
@@ -334,7 +334,7 @@ get_item(const char *purpose, int type)
 				ch = '*';
 				goto skip;
 			}
-			if (!terse && !expert)
+			if (!game().options.brief())
 				addmsg("which object do you want to ");
 			msg("%s? (* for list): ",purpose);
 			/*
@@ -342,12 +342,12 @@ get_item(const char *purpose, int type)
 			 */
 			ch = readchar();
 			skip:
-			mpos = 0;
+			game().message.end = 0;
 			gi_state = FALSE;
 			once_only = FALSE;
 			if (ch == '*') {
 				if ((ch = inventory(pack, type, purpose)) == 0) {
-					after = FALSE;
+					game().turn.after = FALSE;
 					return NULL;
 				}
 				if (ch == ' ')
@@ -358,7 +358,7 @@ get_item(const char *purpose, int type)
 			 * Give the poor player a chance to abort the command
 			 */
 			if (ch == ESCAPE) {
-				after = FALSE;
+				game().turn.after = FALSE;
 				msg("");
 				return NULL;
 			}
@@ -412,7 +412,7 @@ money(int value)
 	byte floor;
 
 	floor = proom->r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
-	purse += value;
+	game().player.purse += value;
 	display().draw_tile(hero, floor);
 	chat(hero.y, hero.x) = floor;
 	if (value > 0)

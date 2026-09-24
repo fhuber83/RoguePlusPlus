@@ -6,8 +6,6 @@
 
 #include "rogue.h"
 
-THING *_things;
-int   *_t_alloc;
 
 /*
  * init_player:
@@ -17,13 +15,13 @@ void
 init_player()
 {
 	THING *obj;
-	bcopy(pstats,max_stats);
-	food_left = HUNGERTIME;
+	bcopy(pstats,game().player.max_stats);
+	game().player.food_left = HUNGERTIME;
 	/*
 	 * initialize things
 	 */
-	setmem(_things,MAXITEMS*sizeof(THING),0);
-	setmem(_t_alloc,MAXITEMS*sizeof(int),0);
+	setmem(game().items.pool,MAXITEMS*sizeof(THING),0);
+	setmem(game().items.pool_used,MAXITEMS*sizeof(int),0);
 	/*
 	 * Give the rogue his weaponry.  First a mace.
 	 */
@@ -37,7 +35,7 @@ init_player()
 	obj->o_count = 1;
 	obj->o_group = 0;
 	add_pack(obj, TRUE);
-	cur_weapon = obj;
+	game().player.weapon = obj;
 	/*
 	 * Now a +1 bow
 	 */
@@ -72,7 +70,7 @@ init_player()
 	obj->o_flags |= ISKNOW;
 	obj->o_count = 1;
 	obj->o_group = 0;
-	cur_armor = obj;
+	game().player.armor = obj;
 	add_pack(obj, TRUE);
 	/*
 	 * Give him some food too
@@ -235,7 +233,7 @@ init_things()
 {
 	struct magic_item *mp;
 
-	for (mp = &things[1]; mp <= &things[NUMTHINGS-1]; mp++)
+	for (mp = &game().items.things[1]; mp <= &game().items.things[NUMTHINGS-1]; mp++)
 		mp->mi_prob += (mp-1)->mi_prob;
 }
 
@@ -248,6 +246,7 @@ init_colors()
 {
 	unsigned int i, j;
 	bool used[NCOLORS];
+	rogue::Items &items = game().items;
 
 	for (i = 0; i < NCOLORS; i++)
 		used[i] = FALSE;
@@ -257,11 +256,11 @@ init_colors()
 			j = rnd(NCOLORS);
 		while (used[j]);
 		used[j] = TRUE;
-		p_colors[i] = rainbow[j];
-		p_know[i] = FALSE;
-		p_guess[i] = (char *)&_guesses[iguess++];
+		items.p_colors[i] = rainbow[j];
+		items.p_know[i] = FALSE;
+		items.p_guess[i] = (char *)&items.guesses[items.iguess++];
 		if (i > 0)
-			p_magic[i].mi_prob += p_magic[i-1].mi_prob;
+			items.p_magic[i].mi_prob += items.p_magic[i-1].mi_prob;
 	}
 }
 
@@ -272,6 +271,7 @@ init_colors()
 void
 init_names()
 {
+	rogue::Items &items = game().items;
 	 int nsyl;
 	 char *cp, *sp;
 	 int i, nwords;
@@ -279,7 +279,7 @@ init_names()
 	for (i = 0; i < MAXSCROLLS; i++)
 	{
 	cp = prbuf;
-	nwords = rnd(terse?3:4) + 2;
+	nwords = rnd(game().options.terse?3:4) + 2;
 	while (nwords--)
 	{
 		nsyl = rnd(2) + 1;
@@ -301,11 +301,11 @@ init_names()
 	 * I'm tired of thinking about this one so just in case .....
 	 */
 	prbuf[MAXNAME] = 0;
-	s_know[i] = FALSE;
-	s_guess[i] = (char *)&_guesses[iguess++];
-	strcpy((char *)(&s_names[i]), prbuf);
+	items.s_know[i] = FALSE;
+	items.s_guess[i] = (char *)&items.guesses[items.iguess++];
+	strcpy((char *)(&items.s_names[i]), prbuf);
 	if (i > 0)
-		s_magic[i].mi_prob += s_magic[i-1].mi_prob;
+		items.s_magic[i].mi_prob += items.s_magic[i-1].mi_prob;
 	}
 }
 
@@ -344,6 +344,7 @@ init_stones()
 {
 	unsigned int i, j;
 	bool used[NSTONES];
+	rogue::Items &items = game().items;
 
 	for (i = 0; i < NSTONES; i++)
 		used[i] = FALSE;
@@ -353,12 +354,12 @@ init_stones()
 			j = rnd(NSTONES);
 		while (used[j]);
 		used[j] = TRUE;
-		r_stones[i] = stones[j].st_name;
-		r_know[i] = FALSE;
-		r_guess[i] = (char *)&_guesses[iguess++];
+		items.r_stones[i] = stones[j].st_name;
+		items.r_know[i] = FALSE;
+		items.r_guess[i] = (char *)&items.guesses[items.iguess++];
 		if (i > 0)
-			r_magic[i].mi_prob += r_magic[i-1].mi_prob;
-		r_magic[i].mi_worth += stones[j].st_value;
+			items.r_magic[i].mi_prob += items.r_magic[i-1].mi_prob;
+		items.r_magic[i].mi_worth += stones[j].st_value;
 	}
 }
 
@@ -372,6 +373,7 @@ init_materials()
 	unsigned int i, j;
 	const char *str;
 	bool metused[NMETAL], woodused[NWOOD];
+	rogue::Items &items = game().items;
 
 	for (i = 0; i < NWOOD; i++)
 		woodused[i] = FALSE;
@@ -385,7 +387,7 @@ init_materials()
 				j = rnd(NMETAL);
 				if (!metused[j])
 				{
-					ws_type[i] = "wand";
+					items.ws_type[i] = "wand";
 					str = metal[j];
 					metused[j] = TRUE;
 					break;
@@ -396,17 +398,17 @@ init_materials()
 				j = rnd(NWOOD);
 				if (!woodused[j])
 				{
-					ws_type[i] = "staff";
+					items.ws_type[i] = "staff";
 					str = wood[j];
 					woodused[j] = TRUE;
 					break;
 				}
 			}
-		ws_made[i] = str;
-		ws_know[i] = FALSE;
-		ws_guess[i] = (char *)&_guesses[iguess++];
+		items.ws_made[i] = str;
+		items.ws_know[i] = FALSE;
+		items.ws_guess[i] = (char *)&items.guesses[items.iguess++];
 		if (i > 0)
-			ws_magic[i].mi_prob += ws_magic[i-1].mi_prob;
+			items.ws_magic[i].mi_prob += items.ws_magic[i-1].mi_prob;
 	}
 }
 
@@ -415,7 +417,6 @@ init_materials()
  */
 long *e_levels;		/* Pointer to array of experience level */
 char *tbuf;			/* Temp buffer used in fighting */
-char *msgbuf;		/* Message buffer for msg() */
 char *prbuf;		/* Printing buffer used everywhere */
 char *ring_buf;		/* Buffer used by ring code */
 //@ Deprecated:
@@ -425,8 +426,6 @@ char *ring_buf;		/* Buffer used by ring code */
 /*
  *  Declarations for data space that must be saved and restored exaxtly
  */
-byte *_level;
-byte *_flags;
 
 /*
  * init_ds()
@@ -440,20 +439,15 @@ init_ds(void)
 	/*@
 	 * Do not change the relation between the allocated pointer and its
 	 * associated size constant! If the sizes need to be changed, do so by
-	 * altering the value in the #define'd constant. For example, msgbuf is
-	 * expected to have a BUFSIZE size, but BUFSIZE can be re-#define'd to
+	 * altering the value in the #define'd constant. For example, prbuf is
+	 * expected to have a MAXSTR size, but MAXSTR can be re-#define'd to
 	 * another value. Also, for safety, never decrease its value.
 	 */
 
 	//@ data that is saved to and restored from saved game files:
-	_flags = (byte *) newmem((MAXLINES-3)*MAXCOLS);
-	_level = (byte *) newmem((MAXLINES-3)*MAXCOLS);
-	_things = (THING *)newmem(sizeof(THING) * MAXITEMS);
-	_t_alloc = (int *)newmem(MAXITEMS*sizeof(int));
 
 	//@ data discarded and re-created on new and restored games:
 	tbuf = newmem(MAXSTR);
-	msgbuf = newmem(BUFSIZE);
 	prbuf = newmem(MAXSTR);
 	ring_buf = newmem(6);
 	e_levels = (long *)newmem(20 * sizeof (long));
@@ -466,12 +460,7 @@ init_ds(void)
 void
 free_ds()
 {
-	free(_flags);
-	free(_level);
-	free(_things);
-	free(_t_alloc);
 	free(tbuf);
-	free(msgbuf);
 	free(prbuf);
 	free(ring_buf);
 	free(e_levels);

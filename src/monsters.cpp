@@ -44,7 +44,7 @@ randmonster(bool wander)
 	do {
 		int r10 = rnd(5) + rnd(6);
 
-		d = level + (r10 - 5);
+		d = game().level.depth + (r10 - 5);
 		if (d < 1)
 			d = rnd(5) + 1;
 		if (d > 26)
@@ -63,9 +63,9 @@ new_monster(THING *tp, byte type, coord *cp)
 	struct monster *mp;
 	int lev_add;
 
-	if ((lev_add = level - AMULETLEVEL) < 0)
+	if ((lev_add = game().level.depth - AMULETLEVEL) < 0)
 		lev_add = 0;
-	attach(mlist, tp);
+	attach(game().level.monsters, tp);
 	tp->t_type = type;
 	tp->t_disguise = type;
 	bcopy(tp->t_pos,*cp);
@@ -84,10 +84,10 @@ new_monster(THING *tp, byte type, coord *cp)
 	if (ISWEARING(R_AGGR))
 		start_run(cp);
 	if (type == 'F')
-		tp->t_stats.s_dmg = f_damage;
+		tp->t_stats.s_dmg = game().player.flytrap_damage;
 	if (type == 'X')
 	{
-		switch (rnd(level > 25 ? 9 : 8))
+		switch (rnd(game().level.depth > 25 ? 9 : 8))
 		{
 		when 0: tp->t_disguise = GOLD;
 		when 1: tp->t_disguise = POTION;
@@ -111,8 +111,8 @@ f_restor(void)
 {
 	struct monster *mp = &monsters['F'-'A'];
 
-	fung_hit = 0;
-	strcpy(f_damage, mp->m_stats.s_dmg);
+	game().player.fung_hit = 0;
+	strcpy(game().player.flytrap_damage, mp->m_stats.s_dmg);
 }
 
 /*
@@ -155,7 +155,7 @@ wanderer(void)
 		return;
 	do {
 		i = rnd_room();
-		if ((rp = &rooms[i]) == proom)
+		if ((rp = &game().level.rooms[i]) == proom)
 			continue;
 		rnd_pos(rp, &cp);
 	} while (!(rp != proom && step_ok(winat(cp.y, cp.x))));
@@ -191,7 +191,7 @@ wake_monster(int y, int x)
 		tp->t_dest = &hero;
 		tp->t_flags |= ISRUN;
 	}
-	if (ch == 'M' && !on(player, ISBLIND) && !on(*tp, ISFOUND)
+	if (ch == 'M' && !on(game().player.body, ISBLIND) && !on(*tp, ISFOUND)
 		&& !on(*tp, ISCANC) && on(*tp, ISRUN))
 	{
 		rp = proom;
@@ -199,11 +199,11 @@ wake_monster(int y, int x)
 		if ((rp != NULL && !rp->r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
 			tp->t_flags |= ISFOUND;
 			if (!save(VS_MAGIC)) {
-				if (on(player, ISHUH))
+				if (on(game().player.body, ISHUH))
 					lengthen(unconfuse, rnd(20) + HUHDURATION);
 				else
 					fuse(unconfuse, rnd(20) + HUHDURATION);
-				player.t_flags |= ISHUH;
+				game().player.body.t_flags |= ISHUH;
 				msg("the medusa's gaze has confused you");
 			}
 		}
@@ -231,7 +231,7 @@ give_pack(THING *tp)
 	/*
 	 * check if we can allocate a new item
 	 */
-	if (total < MAXITEMS && rnd(100) < monsters[tp->t_type-'A'].m_carry)
+	if (game().items.total < MAXITEMS && rnd(100) < monsters[tp->t_type-'A'].m_carry)
 		attach(tp->t_pack, new_thing());
 }
 
@@ -266,7 +266,7 @@ moat(int my, int mx)
 {
 	THING *tp;
 
-	for (tp = mlist ; tp != NULL ; tp = next(tp))
+	for (tp = game().level.monsters ; tp != NULL ; tp = next(tp))
 		if (tp->t_pos.x == mx  && tp->t_pos.y == my)
 			return(tp);
 	return(NULL);

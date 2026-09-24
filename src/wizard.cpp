@@ -21,6 +21,7 @@ void
 whatis(void)
 {
 	THING *obj;
+	rogue::Items &items = game().items;
 
 	if (pack == NULL) {
 		msg("You don't have anything in your pack to identify");
@@ -31,29 +32,29 @@ whatis(void)
 		if ((obj = get_item("identify", 0)) == NULL) {
 			msg("You must identify something");
 			msg(" ");
-			mpos = 0;
+			game().message.end = 0;
 		} else
 			break;
 	}
 
 	switch (obj->o_type) {
 	when SCROLL:
-		s_know[obj->o_which] = TRUE;
-		*s_guess[obj->o_which] = '\0';
+		items.s_know[obj->o_which] = TRUE;
+		*items.s_guess[obj->o_which] = '\0';
 	when POTION:
-		p_know[obj->o_which] = TRUE;
-		*p_guess[obj->o_which] = '\0';
+		items.p_know[obj->o_which] = TRUE;
+		*items.p_guess[obj->o_which] = '\0';
 	when STICK:
-		ws_know[obj->o_which] = TRUE;
+		items.ws_know[obj->o_which] = TRUE;
 		obj->o_flags |= ISKNOW;
-		*ws_guess[obj->o_which] = '\0';
+		*items.ws_guess[obj->o_which] = '\0';
 	when WEAPON:
 	case ARMOR:
 		obj->o_flags |= ISKNOW;
 	when RING:
-		r_know[obj->o_which] = TRUE;
+		items.r_know[obj->o_which] = TRUE;
 		obj->o_flags |= ISKNOW;
-		*r_guess[obj->o_which] = '\0';
+		*items.r_guess[obj->o_which] = '\0';
 		break;
 	}
 	/*
@@ -93,18 +94,18 @@ create_obj(void)
 		otherwise:
 			obj->o_type = FOOD;
 	}
-	mpos = 0;
+	game().message.end = 0;
 	msg("which %c do you want? (0-f)", obj->o_type);
 	obj->o_which = (is_digit((ch = readchar())) ? ch - '0' : ch - 'a' + 10);
 	obj->o_group = 0;
 	obj->o_count = 1;
 	obj->o_damage = obj->o_hurldmg = "0d0";
-	mpos = 0;
+	game().message.end = 0;
 	if (obj->o_type == WEAPON || obj->o_type == ARMOR)
 	{
 		msg("blessing? (+,-,n)");
 		bless = readchar();
-		mpos = 0;
+		game().message.end = 0;
 		if (bless == '-')
 			obj->o_flags |= ISCURSED;
 		if (obj->o_type == WEAPON)
@@ -133,7 +134,7 @@ create_obj(void)
 		case R_ADDDAM:
 			msg("blessing? (+,-,n)");
 			bless = readchar();
-			mpos = 0;
+			game().message.end = 0;
 			if (bless == '-')
 				obj->o_flags |= ISCURSED;
 			obj->o_ac = (bless == '-' ? -1 : rnd(2) + 1);
@@ -162,14 +163,15 @@ teleport(void)
 {
 	int rm;
 	coord c;
+	rogue::Player &player = game().player;
 
 	display().draw_tile(hero, chat(hero.y, hero.x));
 	do
 	{
 		rm = rnd_room();
-		rnd_pos(&rooms[rm], &c);
+		rnd_pos(&game().level.rooms[rm], &c);
 	} while (!(step_ok(winat(c.y, c.x))));
-	if (&rooms[rm] != proom)
+	if (&game().level.rooms[rm] != proom)
 	{
 		leave_room(&hero);
 		bcopy(hero,c);
@@ -185,13 +187,13 @@ teleport(void)
 	 * turn off ISHELD in case teleportation was done while fighting
 	 * a Fungi
 	 */
-	if (on(player, ISHELD)) {
-		player.t_flags &= ~ISHELD;
+	if (on(player.body, ISHELD)) {
+		player.body.t_flags &= ~ISHELD;
 		f_restor();
 	}
-	no_move = 0;
-	count = 0;
-	running = FALSE;
+	player.no_move = 0;
+	game().turn.count = 0;
+	game().turn.running = FALSE;
 	flush_type();
 	/*
 	 * Teleportation can be a confusing experience
@@ -201,11 +203,11 @@ teleport(void)
 	if (!wizard)
 	{
 #endif //WIZARD
-	if (on(player, ISHUH))
+	if (on(player.body, ISHUH))
 		lengthen(unconfuse, rnd(4)+2);
 	else
 		fuse(unconfuse, rnd(4)+2);
-	player.t_flags |= ISHUH;
+	player.body.t_flags |= ISHUH;
 #ifdef WIZARD
 	}
 #endif //WIZARD

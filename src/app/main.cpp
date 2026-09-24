@@ -16,7 +16,7 @@
 static void
 start_terminal()
 {
-	if (auto started = rogue::ui::start_terminal(bwflag); !started)
+	if (auto started = rogue::ui::start_terminal(game().options.monochrome); !started)
 		fatal("%s", started.error().c_str());
 }
 
@@ -36,8 +36,8 @@ main(int argc, char **argv)
 	 * Parse the screen environment variable.  if the string starts with
 	 * "bw", then we force black and white mode.
 	 */
-	if (strncmp(s_screen, "bw", 2) == 0)
-		bwflag = TRUE;
+	if (strncmp(game().options.screen, "bw", 2) == 0)
+		game().options.monochrome = TRUE;
 	while (--argc) {
 		curarg = *(++argv);
 		if (*curarg == '-' || *curarg == '/')
@@ -45,11 +45,11 @@ main(int argc, char **argv)
 			switch(curarg[1])
 			{
 				case 'R': case 'r':
-					 savfile = s_save;
+					 savfile = game().options.save_file;
 					 break;
 				case 's': case 'S':
 					start_terminal();
-					noscore = TRUE;
+					game().noscore = TRUE;
 					score(0,0,0);
 					fatal("");
 					break;
@@ -85,7 +85,7 @@ main(int argc, char **argv)
 		fuse(swander, WANDERTIME);
 		start_daemon(stomach);
 		start_daemon(runners);
-		msg("Hello %s%s.", whoami, noterse(".  Welcome to the Dungeons of Doom"));
+		msg("Hello %s%s.", game().options.name, noterse(".  Welcome to the Dungeons of Doom"));
 		display().curtain_up();
 	}
 	playit(savfile);

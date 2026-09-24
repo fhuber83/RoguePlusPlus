@@ -26,13 +26,10 @@ byte swap_bits(
 void
 setup()
 {
-	terse = FALSE;
-	maxrow = 23;
-	if (COLS == 40) {
-		maxrow = 22;
-		terse = TRUE;
-	}
-	expert = terse;
+	game().options.terse = FALSE;
+	if (COLS == 40)
+		game().options.terse = TRUE;
+	game().options.expert = game().options.terse;
 }
 
 
@@ -84,7 +81,7 @@ md_nanosleep(long nanoseconds)
 void
 flush_type()
 {
-	typebuf = nullstr;
+	game().turn.typeahead = nullstr;
 }
 
 /*@
@@ -100,7 +97,7 @@ credits()
 	display().draw_title();
 	input().read_line(tname,23);
 	if (*tname && *tname != ESCAPE)
-		strcpy(whoami, tname);
+		strcpy(game().options.name, tname);
 	display().end_title();
 }
 
@@ -161,10 +158,10 @@ readchar()
 	int xch;
 	byte ch;
 
-	if (*typebuf) {
+	if (*game().turn.typeahead) {
 		SIG2();
 		display().flush();  //@ macros
-		return(*typebuf++);
+		return(*game().turn.typeahead++);
 	}
 	/*
 	 * while there are no characters in the type ahead buffer
@@ -178,7 +175,7 @@ readchar()
 	while ((xch = input().read_key(250)) == rogue::ui::key::None);
 	ch = xlate_ch(xch);
 	if (ch == ESCAPE)
-		count = 0;
+		game().turn.count = 0;
 	return ch;
 }
 

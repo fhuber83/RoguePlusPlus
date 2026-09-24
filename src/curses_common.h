@@ -164,6 +164,8 @@ byte	cur_mvinch(int r, int c);
 void	cur_addch(byte chr);
 void	cur_addstr(const char *s);
 void	set_attr(int bute);
+byte	dos_attr(int bute);
+byte	glyph_attr(byte chr, byte ch_attr);
 void	winit(void);
 void	wdump(void);
 void	wrestor(void);

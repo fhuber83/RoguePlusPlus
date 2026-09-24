@@ -42,6 +42,16 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - The DOS screen API the game calls (`cur_*`, `set_attr`, `wdump`/`wrestor`, boxes, curtains, `getinfo`, key translation) moved to `ui/DosScreen.cpp` on top of `Screen`. The local `curses.h` macros are unchanged, so game files did not change.
      - `LINES`/`COLS` are now constants in the local `curses.h` instead of ncurses' globals. `ROGUE_COLUMNS` and the unused `keypad.h` are gone.
      - Verified by replaying four seeds with the same keystrokes on the old and new builds. All 360 tmux captures, colours included, were identical. `tests/ui/ScreenTest.cpp` covers the grid headlessly.
+   - **4.2 Message and status lines.**
+     - `ui::Display` (`ui/Display.hpp`) is the game-facing output interface. So far it covers the message line (`draw_message`, `clear_message`, and `show_more`/`blink_more`/`hide_more` for the More and Cont prompts), the status lines (`draw_status(ui::Status)`) and the clock (`draw_clock`).
+     - `ui::ScreenDisplay` implements it on a `Screen` with the original layout. `ui::display()` returns the game's instance.
+     - `io.cpp` keeps the logic: formatting, capitalisation, the `huh` history, `look()` before More, waiting for the space key, splitting long messages, and building `ui::Status` from game state. It no longer draws.
+     - Small fixes:
+       - Hits and Str now also redraw when only the maximum changes.
+       - The More prompt restores the exact cells it covered. The old code rewrote them as plain text and repeated column 78 in column 79.
+     - `scrlmsg()` is gone. Its sideways scroll was never refreshed, so only the last frame was ever visible. The 40-column status positions (`PT()`) are gone too.
+     - `wait_msg`, `show_win` and `str_attr` still draw directly. They move with the full-screen views in 4.4.
+     - The same A/B replay gave identical captures. `tests/ui/ScreenDisplayTest.cpp` covers the layout.
 
 ## Target architecture
 
@@ -67,9 +77,9 @@ Each phase is a series of small commits that each build and play.
 
 4. **UI seam.** Game logic stops touching the screen directly. Steps:
    1. *Done:* `ui::Screen` grid plus `ui::Terminal` backend (see above).
-   2. **Message and status lines.** Put `msg`/`addmsg`/`endmsg`/`more`, `status()` and the `SIG2` clock behind `ui::Display`, and move the drawing half of `io.cpp` into `ui/`.
+   2. *Done:* message and status lines behind `ui::Display` (see above).
    3. **Map.** Game code draws and reads tiles through `Display` (`draw_tile(Coord, …)`, `tile_at(Coord)`) instead of `mvaddch`/`mvinch`.
-   4. **Full-screen views.** Inventory, discoveries, help, tombstone and scores, and credits become `Display` calls.
+   4. **Full-screen views.** Inventory, discoveries, help, tombstone and scores, and credits become `Display` calls, along with the prompts `wait_msg`, `show_win` and `str_attr`.
    5. **Input.** `readchar`/`getinfo` go behind `ui::Input`.
    6. **Drop the DOS emulation.** Cells hold a `Glyph` and a style instead of CP437 codes and DOS attributes. `CursesTerminal` maps `Glyph → cchar_t`, and `curses_dos.h`, the CCODE tables and the attribute tables go away.
 5. **Game state.** Gather the ~90 globals from `extern.cpp`/`init.cpp` into a `Game` context (player, level, monster list, floor items, RNG, scheduler, known-item tables, options). Free functions take or reach it explicitly, and globals are removed one group at a time.

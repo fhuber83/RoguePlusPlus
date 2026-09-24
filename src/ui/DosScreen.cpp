@@ -282,15 +282,13 @@ cur_mvinch(int r, int c)
 }
 
 
-/*
- * put the character on the screen and update the
- * character position
+/*@
+ * The attribute cur_addch() gives glyph chr when the current attribute is
+ * ch_attr: in colour mode, map glyphs get their own colours
  */
-void
-cur_addch(byte chr)
+byte
+glyph_attr(byte chr, byte ch_attr)
 {
-	byte ch_attr = screen().attr();
-
 	if (at_table == color_attr)
 	{
 		/* if it is inside a room */
@@ -362,7 +360,17 @@ cur_addch(byte chr)
 			ch_attr = dos::Black | dos::background(dos::Green) | dos::Blink;
 	}
 
-	screen().put(chr, ch_attr);
+	return ch_attr;
+}
+
+/*
+ * put the character on the screen and update the
+ * character position
+ */
+void
+cur_addch(byte chr)
+{
+	screen().put(chr, glyph_attr(chr, screen().attr()));
 }
 
 
@@ -374,13 +382,19 @@ cur_addstr(const char *s)
 }
 
 
+/*@
+ * The DOS attribute for a set_attr() index (a raw attribute passes through)
+ */
+byte
+dos_attr(int bute)
+{
+	return bute < MAXATTR ? at_table[bute] : (byte)bute;
+}
+
 void
 set_attr(int bute)
 {
-	if (bute < MAXATTR)
-		screen().set_attr(at_table[bute]);
-	else
-		screen().set_attr((byte)bute);
+	screen().set_attr(dos_attr(bute));
 }
 
 

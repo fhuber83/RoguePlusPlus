@@ -4,16 +4,19 @@
  * io.c		1.4		(A.I. Design) 12/10/84
  */
 
+#include	"ui/Display.hpp"
+
 #include	"rogue.h"
 #include	"curses.h"
 
 #define AC(a) (-((a)-11))
-#define PT(i,j) ((COLS==40)?i:j)
 /*
  * msg:
  *	Display a message at the top of the screen.
  */
 static int newpos = 0;
+
+static void more_at(const char *msg, int col);
 
 /* VARARGS1 */
 /*@ nope, it was not vargars. But now it is */
@@ -40,8 +43,7 @@ vmsg(const char *fmt, va_list argp)
 	 */
 	if (*fmt == '\0')
 	{
-		move(0, 0);
-		clrtoeol();
+		rogue::ui::display().clear_message();
 		mpos = 0;
 		return;
 	}
@@ -93,8 +95,7 @@ endmsg(void)
 		strcpy(huh, msgbuf);
 	if (mpos) {
 		look(FALSE);
-		move(0,mpos);
-		more(" More ");
+		more_at(" More ", mpos);
 	}
 	/*
 	 * All messages should start with uppercase, except ones that
@@ -102,7 +103,7 @@ endmsg(void)
 	 */
 	if (is_lower(msgbuf[0]) && msgbuf[1] != ')')
 		msgbuf[0] = toupper(msgbuf[0]);
-	putmsg(0,msgbuf);
+	putmsg(msgbuf);
 	mpos = newpos;
 	newpos = 0;
 }
@@ -110,60 +111,24 @@ endmsg(void)
 
 /*
  *  More:  tag the end of a line and wait for a space
+ *  @ The prompt goes after the current message. Drawing is the display's
  */
 void
 more(const char *msg)
 {
-	int x, y;
-	int i, msz;
-	char mbuf[80];
-	int morethere = TRUE;
-	int covered = FALSE;
+	more_at(msg, mpos);
+}
 
-	msz = strlen(msg);
-	getxy(&x,&y);
-	/*
-	 * it is reasonable to assume that if the you are no longer
-	 * on line 0, you must have wrapped.
-	 */
-	if (x != 0) {
-		x=0;
-		y=COLS;
-	}
-	if ((y+msz)>COLS) {
-		move(x,y=COLS-msz);
-		covered = TRUE;
-	}
+//@ more() for a message line text that ends in column col
+static void
+more_at(const char *msg, int col)
+{
+	rogue::ui::Display &display = rogue::ui::display();
 
-	for(i=0;i<msz;i++) {
-		mbuf[i] = inch();
-		if ((i+y) < (COLS-2))
-			move(x,y+i+1);
-		mbuf[i+1] = 0;
-	}
-
-	move(x,y);
-	standout();
-	addstr(msg);
-	standend();
-
-	while (readchar() != ' ') {
-		if (covered && morethere) {
-			move(x,y);
-			addstr(mbuf);
-			morethere = FALSE;
-		}
-		else if (covered)
-		{
-			move(x,y);
-			standout();
-			addstr(msg);
-			standend();
-			morethere = TRUE;
-		}
-	}
-	move(x,y);
-	addstr(mbuf);
+	display.show_more(msg, col);
+	while (readchar() != ' ')
+		display.blink_more();
+	display.hide_more();
 }
 
 
@@ -190,17 +155,17 @@ doadd(const char *fmt, va_list argp)
  *  scroll msg sideways until he has read it all
  */
 void
-putmsg(int msgline, char *msg)
+putmsg(char *msg)
 {
 	char *curmsg, *lastmsg=0, *tmpmsg;
 	int curlen;
 
 	curmsg = msg;
 	do {
-		scrlmsg(msgline,lastmsg,curmsg);
+		rogue::ui::display().draw_message(curmsg);
 		newpos = curlen = strlen(curmsg);
 		if (curlen > COLS) {
-			more(" Cont ");
+			more_at(" Cont ", curlen);
 			lastmsg = curmsg;
 			do {
 				tmpmsg = strpbrk(curmsg," ");
@@ -219,35 +184,6 @@ putmsg(int msgline, char *msg)
 	} while (curlen > COLS);
 }
 
-/*
- * scrlmsg:  scroll a message accross the line
- * @ renamed to avoid conflict with <curses.h>.
- * @ Purpose is completely unrelated to curses
- */
-void
-scrlmsg(int msgline, char *str1, char *str2)
-{
-	const char *fmt;
-
-	if (COLS > 40)
-		fmt = "%.80s";
-	else
-		fmt = "%.40s";
-
-	if (str1 == 0) {
-		move(msgline,0);
-		if ((signed)strlen(str2) < COLS)
-			clrtoeol();
-		printw(fmt,str2);
-	}
-	else
-		while (str1 <= str2) {
-			move(msgline,0);
-			printw(fmt,str1++);
-			if ((signed)strlen(str1) < (COLS-1))
-				clrtoeol();
-		}
-}
 /*
  * io_unctrl:
  *	Print a readable version of a certain character
@@ -281,118 +217,26 @@ io_unctrl(byte ch)
 void
 status(void)
 {
-	int oy, ox;
-	static int s_hungry;
-	static int s_lvl, s_pur = -1, s_hp, s_ac = 0;
-	static str_t s_str;
-	static int s_elvl = 0;
-	static const char *state_name[] =
-	{
-		"      ", "Hungry", "Weak", "Faint","?"
-	};
+	rogue::ui::Status st;
+	int ac;
 
 	SIG2();
 
-	getyx(stdscr, oy, ox);
-	if (is_color)
-		yellow();
-
 	/*@
-	 * Rogue used a rudimentary custom sprintf() that didn't fully support
-	 * the (quite sophisticated) numeric formatting strings used on status.
-	 * As <stdio.h>'s sprintf() does, formatting was simplified so the output
-	 * matches the original.
+	 * The armor class shown ignores rings of protection, as it always did
 	 */
+	ac = cur_armor != NULL ? cur_armor->o_ac : pstats.s_arm;
 
-	/*
-	 * Level:
-	 */
-	if (s_lvl != level)
-	{
-		s_lvl = level;
-	move(PT(22,23),0);
-	printw("Level:%-4d", level);
-	}
-
-	/*
-	 * Hits:
-	 */
-	if (s_hp != pstats.s_hpt)
-	{
-		s_hp = pstats.s_hpt;
-		move(PT(22,23),12);
-		printw("Hits:%d(%d) ", pstats.s_hpt, max_hp);
-		/* just in case they get wraithed with 3 digit max hits */
-		if (pstats.s_hpt < 100)
-			addch(' ');
-	}
-
-	/*
-	 * Str:
-	 */
-	if (pstats.s_str != s_str)
-	{
-		s_str = pstats.s_str;
-		move(PT(22,23),26);
-		printw("Str:%d(%d) ", pstats.s_str, max_stats.s_str);
-	}
-
-	/*
-	 * Gold
-	 */
-	if(s_pur != purse)
-	{
-		s_pur = purse;
-		move(23, PT(0,40));
-		printw("Gold:%-5u",purse);
-	}
-
-	/*
-	 * Armor:
-	 */
-	if(s_ac != (cur_armor != NULL ? cur_armor->o_ac : pstats.s_arm))
-	{
-		s_ac = (cur_armor != NULL ? cur_armor->o_ac : pstats.s_arm);
-		if (ISRING(LEFT,R_PROTECT))
-			s_ac -= cur_ring[LEFT]->o_ac;
-		if (ISRING(RIGHT,R_PROTECT))
-			s_ac -= cur_ring[RIGHT]->o_ac;
-		move(23,PT(12,52));
-		printw("Armor:%-2d",
-		AC(cur_armor != NULL ? cur_armor->o_ac : pstats.s_arm));
-	}
-
-	/*
-	 * Exp:
-	 */
-	if (s_elvl != pstats.s_lvl)
-	{
-		s_elvl = pstats.s_lvl;
-		move(23, PT(22, 62));
-		printw("%-12s", he_man[s_elvl-1]);
-	}
-
-	/*
-	 * Hungry state
-	 */
-	if (s_hungry != hungry_state)
-	{
-		s_hungry = hungry_state;
-		move(24, PT(28,58));
-		addstr(state_name[0]);
-		move(24, PT(28,58));
-		if (hungry_state)
-		{
-			bold();
-			addstr(state_name[hungry_state]);
-			standend();
-		}
-	}
-
-	if (is_color)
-		standend();
-
-	move(oy, ox);
+	st.level = level;
+	st.hp = pstats.s_hpt;
+	st.hp_max = max_hp;
+	st.str = pstats.s_str;
+	st.str_max = max_stats.s_str;
+	st.gold = purse;
+	st.armor = AC(ac);
+	st.rank = he_man[pstats.s_lvl-1];
+	st.hunger = hungry_state;
+	rogue::ui::display().draw_status(st);
 }
 
 /*
@@ -497,12 +341,9 @@ str_attr(const char *str)
 void
 SIG2(void)
 {
-	static int key_init = TRUE;
-	static int tspot;
 	static int bighand, littlehand;
-	int showtime = FALSE, spare;
-	int x, y;
 	static long cur_time = 0;
+	int showtime = FALSE;
 	long new_time = md_time();
 
 	/*@
@@ -521,24 +362,14 @@ SIG2(void)
 		showtime = TRUE;
 	}
 
-	if (key_init || reinit)
+	if (reinit)
 	{
-		reinit = key_init = FALSE;
-		tspot = (COLS == 40) ? 35 : 75;
+		reinit = FALSE;
 		showtime = TRUE;
 	}
 
 	if (showtime)
-	{
-		getxy(&x, &y);
-		/* work around the compiler buggie boos */
-		spare = littlehand % 10;
-		move(24,tspot);
-		bold();
-		printw("%2d:%1d%1d",bighand?bighand:12,littlehand/10,spare);
-		standend();
-		move(x, y);
-	}
+		rogue::ui::display().draw_clock(bighand ? bighand : 12, littlehand);
 }
 
 const char *

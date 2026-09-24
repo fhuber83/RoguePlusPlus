@@ -13,8 +13,19 @@
 #include "core/Flags.hpp"
 #include "core/Random.hpp"
 #include "ui/Display.hpp"
+#include "ui/Input.hpp"
 
 #include "extern.h"
+#include "glyphs.h"
+
+/*@
+ * Screen size. Fixed at 80x25 (see rogue::ui::Screen); these used to be the
+ * ncurses globals of the same name. Only game files see these; the curses
+ * backend uses ncurses' own.
+ */
+const int LINES = MAXLINES;
+const int COLS = MAXCOLS;
+
 
 /*
  *  Options set for PC rogue
@@ -310,6 +321,7 @@ using coord = rogue::Coord;  //@ see core/Coord.hpp
 
 //@ Game output goes through the display, see ui/Display.hpp
 using rogue::ui::display;
+using rogue::ui::input;
 using rogue::ui::TileStyle;
 
 /*@

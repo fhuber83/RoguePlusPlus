@@ -7,7 +7,6 @@
 #include	"ui/Display.hpp"
 
 #include	"rogue.h"
-#include	"curses.h"
 
 #define AC(a) (-((a)-11))
 /*

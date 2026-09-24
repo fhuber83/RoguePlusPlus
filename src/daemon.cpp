@@ -6,7 +6,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 #define EMPTY	0
 #define FULL	1

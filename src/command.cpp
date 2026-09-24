@@ -5,7 +5,6 @@
  */
 
 #include	"rogue.h"
-#include	"curses.h"
 
 static int lastcount;
 static byte lastch, do_take, lasttake;

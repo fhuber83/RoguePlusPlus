@@ -28,8 +28,8 @@ At runtime the game reads `rogue.opt` (options) and writes `rogue.scr` (scores) 
 
 ## Conventions
 
-- New code goes in `namespace rogue`, in `.hpp`/`.cpp` files under a module directory (`src/core/`, …), and is included as `"core/Random.hpp"`. `src/` is on the include path only for quoted includes (`-iquote`), so that the local `curses.h` doesn't hide the system `<curses.h>`.
-- Legacy headers define many lowercase macros (`clear`, `move`, `on`, `next`, `prev`, `pack`, `hero`, `max`, `when`, …). Include standard and modern headers **before** `rogue.h`/`extern.h`, as `rogue.h` does for `core/`. Never name members after those macros. That's why `Flags` has `unset()` rather than `clear()`.
+- New code goes in `namespace rogue`, in `.hpp`/`.cpp` files under a module directory (`src/core/`, …), and is included as `"core/Random.hpp"`. `src/` is on the include path only for quoted includes (`-iquote`), so project headers never hide system headers.
+- Legacy headers define many lowercase macros (`on`, `next`, `prev`, `pack`, `hero`, `max`, `max_hp`, `attach`, `detach`, `when`, …). Include standard and modern headers **before** `rogue.h`/`extern.h`, as `rogue.h` does for `core/` and `ui/`. Never name members after those macros. That's why `Flags` has `unset()` rather than `clear()`.
 - All randomness goes through `rogue::rng()` (or the `rnd()`/`roll()` wrappers). Never use `rand()` or the clock, or seeds stop reproducing.
 - **`//@` and `/*@` comments** in legacy files mark changes made by the Linux port and this project. Everything else there is original 1980s code.
 - Keep string handling `const`-correct. Buffers the game really writes to (`prbuf`, `f_damage`, `s_names`, `_guesses`, …) are `char[]`. Everything else is `const char *`.
@@ -41,14 +41,14 @@ At runtime the game reads `rogue.opt` (options) and writes `rogue.scr` (scores) 
   - `extern.h`: libc includes, POSIX feature macros, and libc "overrides": `#define access(f) access(f, F_OK)`, `stpchr`, `setmem`/`bcopy`. Remember these when a libc call behaves unexpectedly.
   - `rogue.h`: game constants, structs, globals, prototypes, plus accessor macros like `#define t_pos _t._t_pos` over `union thing` (THING).
   - `extern.cpp`/`init.cpp`: define most of the globals.
-- **Screen layer** (`src/ui/`, phase 4 in progress):
-  - `ui::Screen` is the 80×25 cell grid (CP437 code + DOS attribute) the game draws on. Reads such as `mvinch` come from this grid, never from the terminal.
-  - `ui::Terminal` is the backend interface. `ui/curses/CursesTerminal.cpp` implements it and is the only file that includes the system `<curses.h>` (plus the private `ui/curses/curses_dos.h`).
-  - `ui/DosScreen.cpp` implements the original DOS screen API (`cur_*`, `set_attr`, `wdump`/`wrestor`, boxes, curtains, `getinfo`, key translation) on top of `Screen`.
-  - Game files include the local `"curses.h"`, whose macros map `move`, `clear`, `inch`, `standout`, etc. onto those `cur_*` functions. `LINES`/`COLS` there are constants (80×25). **Never include the system `<curses.h>` in game files, and never include the local `curses.h` in the terminal backend.**
+- **UI layer** (`src/ui/`): game code talks only to two interfaces, both reachable through `rogue.h`:
+  - `display()` (`ui/Display.hpp`): the message line, status and clock, map tiles (`draw_tile`/`tile_at` with a `TileStyle`), pages (`open_page`/`write_at` with an `Ink`), and the title, tombstone, score and winner screens.
+  - `input()` (`ui/Input.hpp`): `read_key` (characters or `ui::key` values) and `read_line`.
+  - Implementations: `ScreenDisplay` and `ScreenInput` draw on `ui::Screen`, an 80×25 grid of CP437 cells with DOS attributes. Reads such as `tile_at` come from this grid. `ui::Terminal` is the backend interface, implemented by `ui/curses/CursesTerminal.cpp`, the only file that includes the system `<curses.h>`. `ui/DosScreen.cpp` holds the DOS attribute tables, glyph colouring and terminal start/stop. `curses_common.h` is private to `ui/`.
+  - `glyphs.h` has the CP437 glyph codes, key constants and screen sizes shared by game and UI. **Game files must not draw or read the terminal any other way, and must never include `<curses.h>` or `curses_common.h`.**
 - **Machine layer**: `mach_dep.cpp` holds time, sleep, `readchar`, `newmem`, `fatal`/`md_exit`, and the credits screen.
 - **Game loop**: `app/main.cpp` parses arguments, seeds `rng()`, and sets up the game with `init_*()` → `new_level()`, then starts daemons and fuses (`daemon.cpp` is the scheduler with function-pointer slots, `daemons.cpp` holds the callbacks `doctor`/`stomach`/`runners`/…). `playit()` (in `playit.cpp`, formerly `main.c`) loops over `command()` in `command.cpp`. The domain files are `fight`, `chase` (monster AI), `monsters`/`slime`, `things`/`pack`/`list` (items and the intrusive linked lists), `potions`/`scrolls`/`sticks`/`rings`/`armor`/`weapons`, level generation in `new_leve`/`rooms`/`passages`/`maze`, and endings/scores in `rip`.
-- **Output from game logic** goes through `display()` (`ui/Display.hpp`, implemented by `ui/ScreenDisplay.cpp`): the message line, status and clock, map tiles (`draw_tile`/`tile_at` with a `TileStyle`), pages (`open_page`/`write_at` with an `Ink`), and the title, tombstone, score and winner screens. Game code must not draw with `mvaddch` and friends. Keyboard input (`readchar`, `getinfo`) still goes through the DOS layer until phase 4.5. `tests/ui/ScreenTest.cpp` shows how to drive a `Screen` headlessly with a fake `Terminal`.
+- **Testing the UI headlessly**: `tests/ui/` drives `Screen`, `ScreenDisplay` and `ScreenInput` with fake `Terminal`s.
 
 ## Compile-time macros
 

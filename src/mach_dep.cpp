@@ -5,7 +5,6 @@
  */
 
 #include	"rogue.h"
-#include	"curses.h"
 
 
 byte swap_bits(
@@ -99,12 +98,58 @@ credits()
 	char tname[25];
 
 	display().draw_title();
-	getinfo(tname,23);
+	input().read_line(tname,23);
 	if (*tname && *tname != ESCAPE)
 		strcpy(whoami, tname);
 	display().end_title();
 }
 
+
+/*
+ * Table for IBM extended key translation
+ * @ moved from mach_dep.c to curses.c and back: keys as rogue::ui::key values
+ */
+static const struct xlate {
+	int keycode;
+	byte keyis;
+} xtab[] = {
+	{rogue::ui::key::Enter,	'\n'}, //@ Keypad Enter
+	{rogue::ui::key::Home,	'y'},
+	{rogue::ui::key::Up,	'k'},
+	{rogue::ui::key::PageUp,	'u'},
+	{rogue::ui::key::Backspace, 'h'},
+	{rogue::ui::key::Left,	'h'},
+	{rogue::ui::key::Right,	'l'},
+	{rogue::ui::key::End,	'b'},
+	{rogue::ui::key::Down,	'j'},
+	{rogue::ui::key::PageDown,	'n'},
+	{rogue::ui::key::Insert,	'>'},
+	{rogue::ui::key::Delete,	's'},
+	{rogue::ui::key::function(1),	'?'},
+	{rogue::ui::key::function(2),	'/'},
+	{rogue::ui::key::function(3),	'a'},
+	{rogue::ui::key::function(4),	CTRL('R')},
+	{rogue::ui::key::function(5),	'c'},
+	{rogue::ui::key::function(6),	'D'},
+	{rogue::ui::key::function(7),	'i'},
+	{rogue::ui::key::function(8),	'^'},
+	{rogue::ui::key::function(9),	CTRL('F')},
+	{rogue::ui::key::AltF9,	'F'}  //@ ALT+F9
+};
+
+/*@
+ * Map a key to an 8-bit command character using the translation table
+ */
+static byte
+xlate_ch(int ch)
+{
+	for (const struct xlate *x = xtab; x < xtab + (sizeof xtab) / sizeof *xtab; x++)
+	{
+		if (ch == x->keycode)
+			return x->keyis;
+	}
+	return (byte)ch;
+}
 
 /*
  * readchar:
@@ -130,7 +175,7 @@ readchar()
 		SIG2();  /* Rogue spends a lot of time here @ you bet! */
 		display().flush();  //@ command input
 	}
-	while ((xch = getch_timeout(250)) == NOCHAR);
+	while ((xch = input().read_key(250)) == rogue::ui::key::None);
 	ch = xlate_ch(xch);
 	if (ch == ESCAPE)
 		count = 0;

@@ -2,7 +2,7 @@
 
 #include <cstdio>
 
-#include "curses.h"
+#include "curses_common.h"
 
 namespace rogue::ui {
 

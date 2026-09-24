@@ -7,7 +7,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 static void	*talloc(void);
 

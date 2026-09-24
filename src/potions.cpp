@@ -5,7 +5,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 
 //@ turn_see() wrapper to use as a fuse

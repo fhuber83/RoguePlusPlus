@@ -1,5 +1,4 @@
 #include "rogue.h"
-#include "curses.h"
 
 /*
  * Routines to deal with the pack

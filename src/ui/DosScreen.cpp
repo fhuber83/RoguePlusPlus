@@ -1,44 +1,27 @@
 /*@
- * The DOS screen API that PC Rogue was written against (cur_move, cur_addch,
- * set_attr, wdump, boxes, curtains, getinfo, ...), implemented on top of
- * rogue::ui::Screen. Game files reach it through the macros in the local
- * "curses.h".
- *
- * Moved here from curses.c, which is now only the terminal backend
- * (ui/curses/CursesTerminal.cpp). This file shrinks as the game moves to the
- * ui::Display interface.
+ * What remains of the DOS screen API PC Rogue was written against: the text
+ * attribute tables, the colours map glyphs get, and starting and stopping
+ * the terminal. The drawing functions (cur_move, cur_addch, boxes, curtains,
+ * getinfo, ...) were replaced by ui::Display and ui::Input in phase 4.
  */
 
-#include <cstdarg>
-#include <cstdio>
-#include <cstring>
-
+#include "ui/Display.hpp"
 #include "ui/Screen.hpp"
-#include "ui/Terminal.hpp"
 #include "ui/curses/CursesTerminal.hpp"
 
 #include "curses_common.h"
 
-using rogue::ui::Cell;
 using rogue::ui::Screen;
 using rogue::ui::screen;
 namespace dos = rogue::ui::dos;
-namespace key = rogue::ui::key;
 
 #ifndef ROGUE_SCR_TYPE
 #define ROGUE_SCR_TYPE 3  //@ 80x25 Color
 #endif
 
-/*
- *  Globals for curses
- *  (extern'ed in curses.h)
- */
-int is_saved = FALSE;  //@ in practice, TRUE disables status updates in SIG2()
 int scr_type = -1;
 
 static rogue::ui::CursesTerminal terminal;
-
-static Screen::Snapshot savewin;  //@ wdump()/wrestor() buffer
 
 /*@
  * Original used decimal literals for both tables
@@ -95,177 +78,6 @@ static const byte monoc_attr[] = {
 } ;
 
 static const byte *at_table = color_attr;
-
-/*
- * Table for IBM extended key translation
- * moved from march_dep.c
- */
-static const struct xlate {
-	int keycode;
-	byte keyis;
-} xtab[] = {
-	{key::Enter,	'\n'}, //@ Keypad Enter
-	{key::Home,	'y'},
-	{key::Up,	'k'},
-	{key::PageUp,	'u'},
-	{key::Backspace, 'h'},
-	{key::Left,	'h'},
-	{key::Right,	'l'},
-	{key::End,	'b'},
-	{key::Down,	'j'},
-	{key::PageDown,	'n'},
-	{key::Insert,	'>'},
-	{key::Delete,	's'},
-	{key::function(1),	'?'},
-	{key::function(2),	'/'},
-	{key::function(3),	'a'},
-	{key::function(4),	CTRL('R')},
-	{key::function(5),	'c'},
-	{key::function(6),	'D'},
-	{key::function(7),	'i'},
-	{key::function(8),	'^'},
-	{key::function(9),	CTRL('F')},
-	{key::AltF9,	'F'}  //@ ALT+F9
-};
-
-
-/*@
- * Beep a an audible beep, if possible
- *
- * Originally in dos.asm
- */
-void
-cur_beep(void)
-{
-	screen().bell();
-}
-
-
-/*@
- * Read a key, waiting at most msdelay milliseconds (forever if negative).
- * Return NOCHAR if none arrived. See rogue::ui::Terminal::read_key()
- */
-int
-cur_getch_timeout(int msdelay)
-{
-	return screen().read_key(msdelay);
-}
-
-
-/*@
- * Map a key to an 8-bit character using the game translation table.
- *
- * Moved from mach_dep.c as part of readchar()
- */
-byte
-xlate_ch(int ch)
-{
-	for (const struct xlate *x = xtab; x < xtab + (sizeof xtab) / sizeof *xtab; x++)
-	{
-		if (ch == x->keycode)
-			return x->keyis;
-	}
-	return (byte)ch;
-}
-
-
-/*@
- * Move the cursor to the given row and column
- *
- * Originally in zoom.asm
- *
- * Return 0, or -1 (leaving the cursor alone) when outside the screen
- */
-int
-cur_move(int row, int col)
-{
-	return screen().set_cursor(row, col) ? 0 : -1;
-}
-
-
-/*@
- * Return character (without any attributes) at current cursor position
- *
- * Originally in zoom.asm by the name curch(), which read it back from video
- * memory. The Screen grid plays that part again, so this is exact: the
- * curses port had to reverse-map terminal characters, which in ASCII mode
- * could not tell a corner from a wall.
- */
-byte
-cur_inch(void)
-{
-	return screen().at(screen().row(), screen().col()).ch;
-}
-
-
-/*
- * clear screen
- */
-void
-cur_clear(void)
-{
-	screen().erase();
-}
-
-
-/*
- *  Turn cursor on and off
- */
-bool
-cursor(bool ison)
-{
-	return screen().show_cursor(ison);
-}
-
-
-/*
- * get curent cursor position
- */
-void
-getrc(int *rp, int *cp)
-{
-	*rp = screen().row();
-	*cp = screen().col();
-}
-
-
-//@ Not in original
-void
-cur_refresh(void)
-{
-	screen().refresh();
-}
-
-/*
- *	clrtoeol
- */
-void
-cur_clrtoeol(void)
-{
-	screen().erase_to_eol();
-}
-
-void
-cur_mvaddstr(int r, int c, const char *s)
-{
-	cur_move(r, c);
-	cur_addstr(s);
-}
-
-void
-cur_mvaddch(int r, int c, byte chr)
-{
-	cur_move(r, c);
-	cur_addch(chr);
-}
-
-byte
-cur_mvinch(int r, int c)
-{
-	cur_move(r, c);
-	return cur_inch();
-}
-
 
 /*@
  * The attribute cur_addch() gives glyph chr when the current attribute is
@@ -348,25 +160,6 @@ glyph_attr(byte chr, byte ch_attr)
 	return ch_attr;
 }
 
-/*
- * put the character on the screen and update the
- * character position
- */
-void
-cur_addch(byte chr)
-{
-	screen().put(chr, glyph_attr(chr, screen().attr()));
-}
-
-
-void
-cur_addstr(const char *s)
-{
-	while(*s)
-		cur_addch(*s++);
-}
-
-
 /*@
  * The DOS attribute for a set_attr() index (a raw attribute passes through)
  */
@@ -375,13 +168,6 @@ dos_attr(int bute)
 {
 	return bute < MAXATTR ? at_table[bute] : (byte)bute;
 }
-
-void
-set_attr(int bute)
-{
-	screen().set_attr(dos_attr(bute));
-}
-
 
 /*
  *  winit(win_name):
@@ -415,27 +201,6 @@ winit(void)
 	screen().connect(&terminal);
 }
 
-/*@
- * Dump the screen to the savewin buffer
- */
-void
-wdump(void)
-{
-	savewin = screen().snapshot();
-	is_saved = TRUE;
-}
-
-/*@
- * Restore the screen from the savewin buffer
- */
-void
-wrestor(void)
-{
-	screen().restore(savewin);
-	screen().refresh();
-	is_saved = FALSE;
-}
-
 /*
  *   close the window file
  *   @renamed from wclose()
@@ -445,119 +210,6 @@ cur_endwin()
 {
 	screen().connect(nullptr);
 	terminal.close();
-}
-
-/*
- * printw(Ieeeee)
- */
-void
-cur_printw(const char *msg, ...)
-{
-	char pwbuf[132];
-	va_list argp;
-
-	va_start(argp, msg);
-	vsnprintf(pwbuf, sizeof(pwbuf), msg, argp);
-	va_end(argp);
-	cur_addstr(pwbuf);
-}
-
-
-/*
- * This routine reads information from the keyboard
- * It should do all the strange processing that is
- * needed to retrieve sensible data from the user
- *
- * @ "Strange processing" indeed:
- * - ESCAPE abort the input, set the first character of str to ESCAPE but leave
- *   all other typed characters there. It does *NOT* null-terminate str!!!
- *   Like in printw(), it couldn't care less about buffer exploits.
- *   Return ESCAPE.
- * - '\n' finishes input and null-terminate str. '\n' is not included in str.
- *   Return '\n'
- * - A non-ascii char (>127) also finishes input, but it *does* get included
- *   in str, probably unintentionally. srt is properly null-terminated.
- *   Return the non-ascii char.
- * - All other chars are accepted as normal input, including symbols (< 32).
- *
- * Original behavior is changed:
- * - Aborted input are null-terminated (ESCAPE + '\0')
- * - Only printable ASCII chars accepted (32 <= ch <= 126). This is universally
- *   compatible, until proper CP437 and UTF-8 support is implemented.
- *
- * In a sane, safe API this function would return a bool, FALSE if aborted
- * by ESCAPE and TRUE otherwise. In case of abortion, str could either
- * keep typed string or set first char to '\0', effectively blanking str.
- */
-int
-getinfo(char *str, int size)
-{
-	char *retstr;
-	int ch;
-	int readcnt = 0;
-	int wason, ret = 1;
-	retstr = str;
-	*str = 0;
-	wason = cursor(TRUE);
-	while(ret == 1)
-	{
-		//@ Blocking read is fine, as SIG2() is not called anyway
-		while ((ch = screen().read_key(-1)) == key::None);
-		switch(ch)
-		{
-			case ESCAPE:
-				while(str != retstr) {
-					backspace();
-					readcnt--;
-					str--;
-				}
-				//@ null-termination was not in original
-				ret = *str++ = ESCAPE;
-				*str = 0;
-				cursor(wason);
-				break;
-			case key::Backspace:
-			case '\b':
-				if (str != retstr) {
-					backspace();
-					readcnt--;
-					str--;
-				}
-				break;
-			default:
-				if ( readcnt >= size) {
-					cur_beep();
-					break;
-				}
-				if (ch > 0x7f || !isprint(ch))
-				{
-					break;
-				}
-				readcnt++;
-				cur_addch(ch);
-				*str++ = ch;
-				break;
-			case key::Enter:
-			case '\n':
-				*str = 0;
-				cursor(wason);
-				ret = ch;  //@ any value different than ESCAPE or 1 would do.
-				break;
-		}
-	}
-	return ret;
-}
-
-/*@
- * Step back and blank the character under the cursor
- */
-void
-backspace(void)
-{
-	Screen &s = screen();
-	if (s.col() > 0)
-		s.set_cursor(s.row(), s.col() - 1);
-	s.set(s.row(), s.col(), Cell{});
 }
 
 namespace rogue::ui {

@@ -6,7 +6,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 /*
  * fix_stick:

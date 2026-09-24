@@ -6,7 +6,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 //@ moved from rogue.h
 #define TOPSCORES	10

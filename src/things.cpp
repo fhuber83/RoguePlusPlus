@@ -6,7 +6,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 static void	chopmsg(char *s, const char *shmsg, const char *lnmsg, ...);
 static void	print_disc(byte type);

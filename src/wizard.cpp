@@ -7,7 +7,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 #ifdef WIZARD
 static int	get_num(int *place);
@@ -244,7 +243,7 @@ get_num(int *place)
 {
 	char numbuf[12];
 
-	getinfo(numbuf,10);
+	input().read_line(numbuf,10);
 	*place = atoi(numbuf);
 	return(*place);
 }

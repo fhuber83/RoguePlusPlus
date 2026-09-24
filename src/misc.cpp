@@ -5,7 +5,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 /*
  * tr_name:
@@ -488,7 +487,7 @@ call_it(bool know, char **guess)
 		**guess = '\0';
 	else if (!know && **guess == '\0') {
 		msg("%scall it? ",noterse("what do you want to "));
-		getinfo(prbuf,MAXNAME);
+		input().read_line(prbuf,MAXNAME);
 		if (*prbuf != ESCAPE)
 			strcpy(*guess, prbuf);
 		msg("");
@@ -803,7 +802,7 @@ call()
 	}
 	msg("Was called \"%s\"", elsewise);
 	msg("what do you want to call it? ");
-	getinfo(prbuf,MAXNAME);
+	input().read_line(prbuf,MAXNAME);
 	if (*prbuf && *prbuf != ESCAPE)
 		strcpy(guess[obj->o_which], prbuf);
 	msg("");
@@ -818,7 +817,7 @@ do_macro(char *buf, int sz)
 	char *cp = prbuf;
 
 	msg("F9 was %s, enter new macro: ",buf);
-	if (getinfo(prbuf,sz-1) != ESCAPE)
+	if (input().read_line(prbuf,sz-1) != ESCAPE)
 		do {
 			if (*cp != CTRL('F'))
 				*buf++ = *cp;

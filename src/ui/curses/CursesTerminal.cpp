@@ -34,7 +34,7 @@ namespace key = rogue::ui::key;
 
 // Terminal size we *want*, not necessarily what we will get
 static int cur_LINES = MAXLINES;
-static int cur_COLS  = min(ROGUE_COLUMNS, MAXCOLS);
+static int cur_COLS  = MAXCOLS;
 
 /* Charset used. Could be initially set via env file, but should not be changed
  * mid-game unless we create a function to re-draw the screen. The code should

@@ -5,7 +5,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 const char *laugh = "you hear maniacal laughter%s.";
 const char *in_dist = " in the distance";

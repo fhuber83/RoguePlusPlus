@@ -11,7 +11,6 @@
 #include <cstdlib>
 
 #include "rogue.h"
-#include "curses.h"
 
 int
 main(int argc, char **argv)

@@ -17,7 +17,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 //@ both derived from `screen` in env file and used in curses.c
 int bwflag = FALSE;

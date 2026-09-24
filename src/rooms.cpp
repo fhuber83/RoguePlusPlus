@@ -219,7 +219,7 @@ enter_room(coord *cp)
 	THING *tp;
 
 	rp = proom = roomin(cp);
-	if (bailout || (rp->r_flags.test(RoomFlag::Gone) && !rp->r_flags.test(RoomFlag::Maze))) {
+	if (game().turn.bailout || (rp->r_flags.test(RoomFlag::Gone) && !rp->r_flags.test(RoomFlag::Maze))) {
 #ifdef DEBUG
 		msg("in a gone room");
 #endif //DEBUG

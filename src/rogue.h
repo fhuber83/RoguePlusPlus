@@ -469,7 +469,6 @@ struct monster {
 extern int maxrow;
 extern int is_me;
 extern int iguess;
-extern bool bailout;
 
 //@ nullstr should probably be used in misc and wizard instead of (size_t)NULL
 extern char nullstr[];
@@ -478,8 +477,7 @@ extern const char *it, *you, *no_mem;
 extern char *s_guess[], *p_guess[], *r_guess[], *ws_guess[];
 extern char f_damage[];
 
-extern bool amulet, after, again, door_stop, fastmode, faststate,
-			firstmove, noscore, playing, running, save_msg, saw_amulet;
+extern bool amulet, saw_amulet;
 
 //@ originally a bool. See extern.c, move.c, misc.c
 extern unsigned char was_trapped;
@@ -491,13 +489,12 @@ extern bool p_know[], r_know[], s_know[], ws_know[];
 
 extern const char *a_names[], *flashmsg, *he_man[], *intense, *p_colors[],
 		*r_stones[], *w_names[], *ws_made[], *ws_type[];
-extern char huh[], runch, *typebuf, take;
 
 extern struct h_list helpcoms[], helpobjs[];
 
-extern int	a_chances[], a_class[], count, food_left,
+extern int	a_chances[], a_class[], food_left,
 		fung_hit, group, hungry_state, inpack,
-		level, max_level, mpos, no_command, no_food, no_move,
+		level, max_level, no_command, no_food, no_move,
 		ntraps, purse, quiet, total;
 
 
@@ -505,7 +502,7 @@ extern int	a_chances[], a_class[], count, food_left,
 extern THING *cur_armor, *cur_ring[], *cur_weapon,
 		*lvl_obj, *mlist, player;
 
-extern coord	delta, oldpos;
+extern coord	oldpos;
 
 extern struct room	*oldrp, passages[], rooms[];
 
@@ -539,7 +536,6 @@ extern struct array s_names[], _guesses[];
 extern char *tbuf, *prbuf;
 extern byte *_level, *_flags;
 extern long *e_levels;
-extern char *msgbuf;
 extern THING *_things;
 extern int   *_t_alloc;
 extern char *ring_buf;

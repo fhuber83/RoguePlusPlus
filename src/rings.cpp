@@ -67,7 +67,7 @@ ring_on()
 	return ;
 
 no_ring:
-	after = FALSE;
+	game().turn.after = FALSE;
 	return;
 }
 
@@ -84,7 +84,7 @@ ring_off(void)
 
 	if (cur_ring[LEFT] == NULL && cur_ring[RIGHT] == NULL) {
 		msg("you aren't wearing any rings");
-		after = FALSE;
+		game().turn.after = FALSE;
 		return;
 	} else if (cur_ring[LEFT] == NULL)
 		ring = RIGHT;
@@ -93,11 +93,11 @@ ring_off(void)
 	else
 		if ((ring = gethand()) < 0)
 			return;
-	mpos = 0;
+	game().message.end = 0;
 	obj = cur_ring[ring];
 	if (obj == NULL) {
 		msg("not wearing such a ring");
-		after = FALSE;
+		game().turn.after = FALSE;
 		return;
 	}
 	packchar = pack_char(obj);
@@ -118,10 +118,10 @@ gethand(void)
 	for (;;) {
 		msg("left hand or right hand? ");
 		if ((c = readchar()) == ESCAPE)  {
-			after = FALSE;
+			game().turn.after = FALSE;
 			return -1;
 		}
-		mpos = 0;
+		game().message.end = 0;
 		if (c == 'l' || c == 'L')
 			return LEFT;
 		else if (c == 'r' || c == 'R')

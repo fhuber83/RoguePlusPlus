@@ -84,7 +84,7 @@ md_nanosleep(long nanoseconds)
 void
 flush_type()
 {
-	typebuf = nullstr;
+	game().turn.typeahead = nullstr;
 }
 
 /*@
@@ -161,10 +161,10 @@ readchar()
 	int xch;
 	byte ch;
 
-	if (*typebuf) {
+	if (*game().turn.typeahead) {
 		SIG2();
 		display().flush();  //@ macros
-		return(*typebuf++);
+		return(*game().turn.typeahead++);
 	}
 	/*
 	 * while there are no characters in the type ahead buffer
@@ -178,7 +178,7 @@ readchar()
 	while ((xch = input().read_key(250)) == rogue::ui::key::None);
 	ch = xlate_ch(xch);
 	if (ch == ESCAPE)
-		count = 0;
+		game().turn.count = 0;
 	return ch;
 }
 

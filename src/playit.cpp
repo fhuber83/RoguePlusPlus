@@ -45,7 +45,7 @@ playit(char *sname)
 		oldpos.y = hero.y;
 		oldrp = roomin(&hero);
 	}
-	while (playing)
+	while (game().playing)
 		command();			/* Command execution */
 	endit();
 }
@@ -68,7 +68,7 @@ quit()
 	if (qstate == TRUE)
 		leave();
 	qstate = TRUE;
-	mpos = 0;
+	game().message.end = 0;
 	here = display().write("");  //@ where the cursor was
 	display().clear_line(0);
 	if (!game().options.terse)
@@ -86,8 +86,8 @@ quit()
 		display().clear_line(0);
 		status();
 		display().write_at(here.y, here.x, "");
-		mpos = 0;
-		count = 0;
+		game().message.end = 0;
+		game().turn.count = 0;
 	}
 	qstate = FALSE;
 }

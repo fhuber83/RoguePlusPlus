@@ -47,7 +47,7 @@ score(int amount, int flags, char monst)
 	while ((file = fopen(game().options.score_file, "r")) == NULL)
 	{
 		display().write("\n");
-		if (noscore || (amount == 0))
+		if (game().noscore || (amount == 0))
 			return;
 		str_attr("No scorefile: %Create %Retry %Abort");
 reread:
@@ -70,7 +70,7 @@ reread:
 	display().write("\n");
 	get_scores(top_ten);
 
-	if (noscore != TRUE)
+	if (game().noscore != TRUE)
 	{
 		strcpy(his_score.sc_name,game().options.name);
 		his_score.sc_gold = amount;

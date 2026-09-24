@@ -257,7 +257,7 @@ wield(void)
 	if ((obj = get_item("wield", WEAPON)) == NULL)
 	{
 bad:
-		after = FALSE;
+		game().turn.after = FALSE;
 		return;
 	}
 

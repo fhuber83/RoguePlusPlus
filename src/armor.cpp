@@ -19,7 +19,7 @@ wear()
 	if (cur_armor != NULL) {
 		msg("you are already wearing some%s.",
 			noterse(".  You'll have to take it off first"));
-		after = FALSE;
+		game().turn.after = FALSE;
 		return;
 	}
 	if ((obj = get_item("wear",ARMOR)) == NULL)
@@ -45,7 +45,7 @@ take_off()
 	THING *obj;
 
 	if ((obj = cur_armor) == NULL) {
-		after = FALSE;
+		game().turn.after = FALSE;
 		msg("you aren't wearing any armor");
 		return;
 	}

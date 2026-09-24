@@ -49,7 +49,7 @@ main(int argc, char **argv)
 					 break;
 				case 's': case 'S':
 					start_terminal();
-					noscore = TRUE;
+					game().noscore = TRUE;
 					score(0,0,0);
 					fatal("");
 					break;

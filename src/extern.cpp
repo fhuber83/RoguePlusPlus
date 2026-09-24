@@ -260,9 +260,6 @@ const char *he_man[] = {
 	"Bug Chaser"
 };
 
-bool after;				/* True if we want after daemons */
-bool noscore;				/* Was a wizard sometime */
-bool again;			/* The last command is repeated */
 bool s_know[MAXSCROLLS];		/* Does he know what a scroll does */
 bool p_know[MAXPOTIONS];		/* Does he know what a potion does */
 bool r_know[MAXRINGS];			/* Does he know what a ring does */
@@ -270,16 +267,9 @@ bool ws_know[MAXSTICKS];		/* Does he know what a stick does */
 bool amulet = FALSE;			/* He has the amulet */
 bool saw_amulet = FALSE;	    /* He has seen the amulet */
 /* bool askme = TRUE; */			/* Ask about unidentified things */
-bool door_stop = FALSE;			/* Stop running when we pass a door */
-bool fastmode = FALSE;			/* Run until you see something */
-bool faststate = FALSE;			/* Toggle for find (see above) */
 /* bool fight_flush = TRUE;	*/	/* True if toilet input */
-bool firstmove = FALSE;			/* First move after setting door_stop */
 /* bool jump = FALSE;	*/		/* Show running as series of jumps */
 /* bool passgo = TRUE;	*/		/* Follow passages */
-bool playing = TRUE;			/* True until he quits */
-bool running = FALSE;			/* True if player is running */
-bool save_msg = TRUE;			/* Remember last msg */
 /* bool slow_invent = FALSE; */		/* Inventory one line at a time */
 /*@
  * `was_trapped` was originally a bool, which in original code was typedef'd as
@@ -290,16 +280,12 @@ unsigned char was_trapped = FALSE;		/* Was a trap sprung */
 #ifdef WIZARD
 bool wizard = FALSE;			/* True if allows wizard commands */
 #endif
-bool bailout = FALSE;
-char take;				/* Thing the rogue is taking */
-char runch;				/* Direction player is running */
 /* now names are associated with fixed pointers */
 struct array s_names[MAXSCROLLS];			/* Names of the scrolls */
 const char *p_colors[MAXPOTIONS];		/* Colors of the potions */
 const char *r_stones[MAXRINGS];		/* Stone settings of the rings */
 const char *ws_made[MAXSTICKS];		/* What sticks are made of */
 /* char *release;	*/			/* Release number of rogue */
-char huh[BUFSIZE];				/* The last message printed */
 char *s_guess[MAXSCROLLS];		/* Players guess at what scroll is */
 char *p_guess[MAXPOTIONS];		/* Players guess at what potion is */
 char *r_guess[MAXRINGS];		/* Players guess at what ring is */
@@ -314,13 +300,11 @@ int max_level;				/* Deepest player has gone */
 int ntraps;				/* Number of traps on this level */
 int level = 1;				/* What level rogue is on */
 int purse = 0;				/* How much gold the rogue has */
-int mpos = 0;				/* Where cursor is on top line */
 int no_move = 0;			/* Number of turns held in place */
 int no_command = 0;			/* Number of turns asleep */
 int inpack = 0;				/* Number of things in pack */
 int total = 0;				/* Total dynamic memory bytes */
 int no_food = 0;			/* Number of levels without food */
-int count = 0;				/* Number of times to repeat command */
 int fung_hit = 0;			/* Number of time fungi has hit */
 int quiet = 0;				/* Number of quiet turns */
 int food_left;				/* Amount of food in hero's stomach */
@@ -330,7 +314,6 @@ int hungry_state = 0;			/* How hungry is he */
 /* WINDOW *hw;				 Used as a scratch window */
 
 coord oldpos;				/* Position before last look() call */
-coord delta;				/* Change indicated to get_dir() */
 
 THING *cur_armor;			/* What a well dresssed rogue wears */
 THING *cur_ring[2];			/* Which rings are being worn */
@@ -438,7 +421,6 @@ struct magic_item things[NUMTHINGS] = {
  * Common strings
  */
 char nullstr[] = "";
-char *typebuf = nullstr;
 
 const char *intense = " of intense white light";
 const char *flashmsg = "your %s gives off a flash%s";

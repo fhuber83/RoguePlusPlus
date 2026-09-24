@@ -25,7 +25,7 @@ fight(coord *mp, char mn, THING *weap, bool thrown)
 	 * Since we are fighting, things are not quiet so no healing takes
 	 * place.  Cancel any command counts so player can recover.
 	 */
-	count = quiet = 0;
+	game().turn.count = quiet = 0;
 	start_run(mp);
 	/*
 	 * Let him know it was really a mimic (if it was one).
@@ -93,8 +93,8 @@ attack(THING *mp)
 	 * Since this is an attack, stop running and any healing that was
 	 * going on at the time.
 	 */
-	running = FALSE;
-	count = quiet = 0;
+	game().turn.running = FALSE;
+	game().turn.count = quiet = 0;
 	if (mp->t_type == 'X' && !on(player, ISBLIND))
 		mp->t_disguise = 'X';
 	mname = monsters[mp->t_type-'A'].m_name;
@@ -253,7 +253,7 @@ attack(THING *mp)
 	miss(mname, NULL);
 	}
 	flush_type();
-	count = 0;
+	game().turn.count = 0;
 	status();
 }
 

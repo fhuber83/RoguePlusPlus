@@ -31,7 +31,7 @@ whatis(void)
 		if ((obj = get_item("identify", 0)) == NULL) {
 			msg("You must identify something");
 			msg(" ");
-			mpos = 0;
+			game().message.end = 0;
 		} else
 			break;
 	}
@@ -93,18 +93,18 @@ create_obj(void)
 		otherwise:
 			obj->o_type = FOOD;
 	}
-	mpos = 0;
+	game().message.end = 0;
 	msg("which %c do you want? (0-f)", obj->o_type);
 	obj->o_which = (is_digit((ch = readchar())) ? ch - '0' : ch - 'a' + 10);
 	obj->o_group = 0;
 	obj->o_count = 1;
 	obj->o_damage = obj->o_hurldmg = "0d0";
-	mpos = 0;
+	game().message.end = 0;
 	if (obj->o_type == WEAPON || obj->o_type == ARMOR)
 	{
 		msg("blessing? (+,-,n)");
 		bless = readchar();
-		mpos = 0;
+		game().message.end = 0;
 		if (bless == '-')
 			obj->o_flags |= ISCURSED;
 		if (obj->o_type == WEAPON)
@@ -133,7 +133,7 @@ create_obj(void)
 		case R_ADDDAM:
 			msg("blessing? (+,-,n)");
 			bless = readchar();
-			mpos = 0;
+			game().message.end = 0;
 			if (bless == '-')
 				obj->o_flags |= ISCURSED;
 			obj->o_ac = (bless == '-' ? -1 : rnd(2) + 1);
@@ -190,8 +190,8 @@ teleport(void)
 		f_restor();
 	}
 	no_move = 0;
-	count = 0;
-	running = FALSE;
+	game().turn.count = 0;
+	game().turn.running = FALSE;
 	flush_type();
 	/*
 	 * Teleportation can be a confusing experience

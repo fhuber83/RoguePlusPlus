@@ -89,6 +89,12 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - `env.cpp` builds its label table per call, since it now points into the game.
      - Deleted dead globals: `revno`/`verno` (the `v` command prints `REV`/`VER`), `maxitems` (written, never read), `reinit` (never set) and `_whoami`.
      - Verified with the A/B replay over four seeds plus two seeds with a `rogue.opt` that sets every option (name, fruit, macro, `menu=sel`, `screen=bw`, score file). The replays now end on the score screen with a pre-created score file, and the score files are compared too. All identical apart from one mid-curtain frame. `tests/game/GameTest.cpp` covers the defaults and reading `rogue.opt`.
+   - **5.2 Messages and command state.**
+     - `game().message` (`rogue::MessageLine`) holds the message being built (`text`, was the allocated `msgbuf`), the last one for ^R (`last`, was `huh`), where the shown and the next message end (`end`/`next_end`, were `mpos` and `io.cpp`'s `newpos`) and `remember` (was `save_msg`).
+     - `game().turn` (`rogue::Turn`) holds the state of the command being carried out: `after`, `again`, `count`, `take`, `running`, `run_dir` (was `runch`), `door_stop`, `first_move`, `fast_mode`, `fast_state`, `delta`, `typeahead` (was `typebuf`), `bailout`, and the repeat memory that were `command.cpp` statics (`last_count`, `last_ch`, `last_take`, `do_take`).
+     - `game().playing` and `game().noscore`.
+     - Functions that use a group often bind a local reference (`rogue::Turn &turn = game().turn;`).
+     - The A/B replay now also covers repeat counts, `a`, `g` and `f` prefixes, and defining and running the F9 macro. Identical.
 
 ## Target architecture
 
@@ -121,7 +127,7 @@ Each phase is a series of small commits that each build and play.
    6. *Done:* the DOS emulation is gone (see above).
 5. **Game state** (*in progress*, see above). Gather the ~90 globals from `extern.cpp`/`init.cpp` into a `Game` context (player, level, monster list, floor items, RNG, scheduler, known-item tables, options). Free functions take or reach it explicitly, and globals are removed one group at a time. Steps:
    1. *Done:* options (see above).
-   2. Messages and command state: `after`, `again`, `count`, `running`, `delta`, `huh`, `mpos`, the `command.cpp` and `io.cpp` statics, ...
+   2. *Done:* messages and command state (see above).
    3. The player: `player`, `max_stats`, `purse`, food and hunger, worn and wielded items, `amulet`, ...
    4. The level: `level`, `rooms`, `passages`, the map and flag grids, floor items and monsters, traps.
    5. Items: the known-item and guess tables, per-game names, colours, stones and materials, the probability tables that `init_*()` accumulates, and the item pool.

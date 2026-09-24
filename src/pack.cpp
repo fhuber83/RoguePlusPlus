@@ -317,7 +317,7 @@ get_item(const char *purpose, int type)
 	  && strcmp(purpose,"drop"))) || !strcmp(game().options.menu,"on"))
 		once_only = TRUE;
 
-	gi_state = again;
+	gi_state = game().turn.again;
 	if (pack == NULL)
 		msg("you aren't carrying anything");
 	else {
@@ -342,12 +342,12 @@ get_item(const char *purpose, int type)
 			 */
 			ch = readchar();
 			skip:
-			mpos = 0;
+			game().message.end = 0;
 			gi_state = FALSE;
 			once_only = FALSE;
 			if (ch == '*') {
 				if ((ch = inventory(pack, type, purpose)) == 0) {
-					after = FALSE;
+					game().turn.after = FALSE;
 					return NULL;
 				}
 				if (ch == ' ')
@@ -358,7 +358,7 @@ get_item(const char *purpose, int type)
 			 * Give the poor player a chance to abort the command
 			 */
 			if (ch == ESCAPE) {
-				after = FALSE;
+				game().turn.after = FALSE;
 				msg("");
 				return NULL;
 			}

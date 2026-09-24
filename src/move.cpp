@@ -20,9 +20,9 @@ static byte	be_trapped(coord *tc);
 void
 do_run(byte ch)
 {
-	running = TRUE;
-	after = FALSE;
-	runch = ch;
+	game().turn.running = TRUE;
+	game().turn.after = FALSE;
+	game().turn.run_dir = ch;
 }
 
 /*
@@ -35,10 +35,11 @@ do_move(int dy, int dx)
 {
 	byte ch;
 	int fl;
+	rogue::Turn &turn = game().turn;
 
-	firstmove = FALSE;
-	if (bailout) {
-		bailout = FALSE;
+	turn.first_move = FALSE;
+	if (turn.bailout) {
+		turn.bailout = FALSE;
 		msg("the crack widens ... ");
 		descend("");
 		return ;
@@ -67,16 +68,16 @@ over:
 	if (offmap(nh.y, nh.x))
 		goto hit_bound;
 	if (!diag_ok(&hero, &nh)) {
-		after = FALSE;
-		running = FALSE;
+		turn.after = FALSE;
+		turn.running = FALSE;
 		return;
 	}
 	/*
 	 * If you are running and the move does
 	 * not get you anywhere stop running
 	 */
-	if (running && (hero == nh))
-		after = running = FALSE;
+	if (turn.running && (hero == nh))
+		turn.after = turn.running = FALSE;
 	fl = flat(nh.y, nh.x);
 	ch = winat(nh.y, nh.x);
 	/*
@@ -84,7 +85,7 @@ over:
 	 * to run until he enters the room all the way
 	 */
 	if ((chat(hero.y,hero.x) == DOOR) && (ch == FLOOR))
-		running = FALSE;
+		turn.running = FALSE;
 	if (!(fl & F_REAL) && ch == FLOOR) {
 		chat(nh.y, nh.x) = ch = TRAP;
 		flat(nh.y, nh.x) |= F_REAL;
@@ -102,10 +103,10 @@ over:
 	case LLWALL:
 	case LRWALL:
 hit_bound:
-		if (running && isgone(proom) && !on(player, ISBLIND)) {
+		if (turn.running && isgone(proom) && !on(player, ISBLIND)) {
 			bool	b1, b2;
 
-			switch (runch)
+			switch (turn.run_dir)
 			{
 			case 'h':
 			case 'l':
@@ -118,10 +119,10 @@ hit_bound:
 				if (!(b1 ^ b2))
 					break;
 				if (b1) {
-					runch = 'k';
+					turn.run_dir = 'k';
 					dy = -1;
 				} else {
-					runch = 'j';
+					turn.run_dir = 'j';
 					dy = 1;
 				}
 				dx = 0;
@@ -137,20 +138,20 @@ hit_bound:
 				if (!(b1 ^ b2))
 					break;
 				if (b1) {
-					runch = 'h';
+					turn.run_dir = 'h';
 					dx = -1;
 				} else {
-					runch = 'l';
+					turn.run_dir = 'l';
 					dx = 1;
 				}
 				dy = 0;
 				goto over;
 			}
 		}
-		after = running = FALSE;
+		turn.after = turn.running = FALSE;
 		break;
 	case DOOR:
-		running = FALSE;
+		turn.running = FALSE;
 		if (flat(hero.y, hero.x) & F_PASS)
 			enter_room(&nh);
 		goto move_stuff;
@@ -166,13 +167,13 @@ hit_bound:
 			be_trapped(&hero);
 		goto move_stuff;
 	default:
-		running = FALSE;
+		turn.running = FALSE;
 		if (ismonster(ch) || moat(nh.y, nh.x))
 			fight(&nh, ch, cur_weapon, FALSE);
 		else {
-			running = FALSE;
+			turn.running = FALSE;
 			if (ch != STAIRS)
-				take = ch;
+				turn.take = ch;
 move_stuff:
 			display().draw_tile(hero, chat(hero.y, hero.x));
 			if ((fl & F_PASS) && (chat(oldpos.y, oldpos.x) == DOOR
@@ -228,7 +229,7 @@ be_trapped(coord *tc)
 	byte tr;
 	int index;
 
-	count = running = FALSE;
+	game().turn.count = game().turn.running = FALSE;
 	index = INDEX(tc->y, tc->x);
 	_level[index] = TRAP;
 	tr = _flags[index] & F_TMASK;

@@ -43,6 +43,7 @@ look(bool wakeup)
 	byte ch, pch;
 	int index;
 	THING *tp;
+	rogue::Turn &turn = game().turn;
 	struct room *rp;
 	int ey, ex;
 	int passcount = 0;
@@ -87,7 +88,7 @@ look(bool wakeup)
 	ex = hero.x + 1;
 	sx = hero.x - 1;
 	sy = hero.y - 1;
-	if (door_stop && !firstmove && running) {
+	if (turn.door_stop && !turn.first_move && turn.running) {
 		sumhero = hero.y + hero.x;
 		diffhero = hero.y - hero.x;
 	}
@@ -131,8 +132,8 @@ look(bool wakeup)
 
 			if ((tp = moat(y,x)) != NULL) {
 				if (on(player, SEEMONST) && on(*tp, ISINVIS)) {
-					if (door_stop && !firstmove)
-						running = FALSE;
+					if (turn.door_stop && !turn.first_move)
+						turn.running = FALSE;
 					continue;
 				} else {
 					if (wakeup)
@@ -153,8 +154,8 @@ look(bool wakeup)
 					((ch!=PASSAGE) && (*fp & (F_PASS | F_MAZE)) && ch != ARMOR)
 						? TileStyle::Inverse : TileStyle::Normal);
 
-			if (door_stop && !firstmove && running) {
-				switch (runch) {
+			if (turn.door_stop && !turn.first_move && turn.running) {
+				switch (turn.run_dir) {
 				when 'h':
 					if (x == ex)
 						continue;
@@ -184,7 +185,7 @@ look(bool wakeup)
 				switch (ch) {
 				case DOOR:
 					if (x == hero.x || y == hero.y)
-						running = FALSE;
+						turn.running = FALSE;
 					break;
 				case PASSAGE:
 					if (x == hero.x || y == hero.y)
@@ -200,13 +201,13 @@ look(bool wakeup)
 				case ' ':
 					break;
 				default:
-					running = FALSE;
+					turn.running = FALSE;
 					break;
 				}
 			}
 		}
-	if (door_stop && !firstmove && passcount > 1)
-		running = FALSE;
+	if (turn.door_stop && !turn.first_move && passcount > 1)
+		turn.running = FALSE;
 	/*@
 	 * The expression (was_trapped > TRUE) would never evaluate to true if
 	 * `was_trapped` was a real boolean. I guess this is specifically testing
@@ -414,8 +415,9 @@ bool
 get_dir()
 {
 	int ch;
+	rogue::Turn &turn = game().turn;
 
-	if (again)
+	if (turn.again)
 		return TRUE;
 	msg("which direction? ");
 	do
@@ -423,13 +425,13 @@ get_dir()
 			msg("");
 			return FALSE;
 		}
-	while (find_dir(ch, &delta) == 0);
+	while (find_dir(ch, &turn.delta) == 0);
 	msg("");
 	if (on(player, ISHUH) && rnd(5) == 0)
 		do {
-			delta.y = rnd(3) - 1;
-			delta.x = rnd(3) - 1;
-		} while (delta.y == 0 && delta.x == 0);
+			turn.delta.y = rnd(3) - 1;
+			turn.delta.x = rnd(3) - 1;
+		} while (turn.delta.y == 0 && turn.delta.x == 0);
 	return TRUE;
 }
 
@@ -700,14 +702,14 @@ search()
 							break;
 						chat(y, x) = DOOR;
 						*fp |= F_REAL;
-						count = running = FALSE;
+						game().turn.count = game().turn.running = FALSE;
 						break;
 					case FLOOR:
 						if (rnd(2) != 0)
 							break;
 						chat(y, x) = TRAP;
 						*fp |= F_REAL;
-						count = running = FALSE;
+						game().turn.count = game().turn.running = FALSE;
 						msg("you found %s", tr_name(*fp & F_TMASK));
 						break;
 				}

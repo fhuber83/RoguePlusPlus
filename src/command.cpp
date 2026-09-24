@@ -6,8 +6,6 @@
 
 #include	"rogue.h"
 
-static int lastcount;
-static byte lastch, do_take, lasttake;
 
 void
 command()
@@ -22,7 +20,7 @@ command()
 		status();
 #ifdef WIZARD
 		if (wizard)
-			noscore = TRUE;
+			game().noscore = TRUE;
 #endif
 		if (no_command) {
 			if (--no_command <= 0) {
@@ -58,20 +56,21 @@ com_char()
 {
 	bool same;
 	byte ch;
+	rogue::Turn &turn = game().turn;
 
-	same = (fastmode == faststate);
+	same = (turn.fast_mode == turn.fast_state);
 	ch = readchar();
 	if (same)
-		fastmode = faststate;
+		turn.fast_mode = turn.fast_state;
 	else
-		fastmode = !faststate;
+		turn.fast_mode = !turn.fast_state;
 	switch (ch) {
 		when '\b': ch = 'h';
 		when '+': ch = 't';
 		when '-': ch = 'z';
 		break;
 	}
-	if (mpos && !running)
+	if (game().message.end && !turn.running)
 		msg("");
 	return ch;
 }
@@ -86,47 +85,48 @@ get_prefix()
 {
 	int junk;
 	byte retch, ch;
+	rogue::Turn &turn = game().turn;
 
-	after = TRUE;
-	fastmode = faststate;
+	turn.after = TRUE;
+	turn.fast_mode = turn.fast_state;
 	look(TRUE); //@ draw player in updated position on every non-sleep frame
-	if (!running)
-		door_stop = FALSE;
-	do_take = TRUE;
-	again = FALSE;
-	if (--count > 0) {
-		do_take = lasttake;
-		retch = lastch;
-		fastmode = FALSE;
+	if (!turn.running)
+		turn.door_stop = FALSE;
+	turn.do_take = TRUE;
+	turn.again = FALSE;
+	if (--turn.count > 0) {
+		turn.do_take = turn.last_take;
+		retch = turn.last_ch;
+		turn.fast_mode = FALSE;
 		display().flush();  //@ repeated commands, ie, "10s"
 	} else {
-		count = 0;
-		if (running) {
-			retch = runch;
-			do_take = lasttake;
+		turn.count = 0;
+		if (turn.running) {
+			retch = turn.run_dir;
+			turn.do_take = turn.last_take;
 			display().flush();  //@ running ("H", "fh", "L", etc)
 		} else {
 			for (retch = 0; retch == 0; ) {
 				switch (ch = com_char()) {
 					case '0': case '1': case '2': case '3': case '4':
 					case '5': case '6': case '7': case '8': case '9':
-						junk = count * 10;
+						junk = turn.count * 10;
 						if ((junk += ch - '0') > 0 && junk < 10000)
-							count = junk;
+							turn.count = junk;
 						show_count();
 					when 'f':
-						fastmode = !fastmode;
+						turn.fast_mode = !turn.fast_mode;
 					when 'g':
-						do_take = FALSE;
+						turn.do_take = FALSE;
 					when 'a':
-						retch = lastch;
-						count = lastcount;
-						do_take = lasttake;
-						again = TRUE;
+						retch = turn.last_ch;
+						turn.count = turn.last_count;
+						turn.do_take = turn.last_take;
+						turn.again = TRUE;
 					when ' ':	/* Spaces are ignored */
 					when ESCAPE:
-						door_stop = FALSE;
-						count = 0;
+						turn.door_stop = FALSE;
+						turn.count = 0;
 						show_count();
 					otherwise:
 						retch = ch;
@@ -134,15 +134,15 @@ get_prefix()
 			}
 		}
 	}
-	if (count)
-		fastmode = FALSE;
+	if (turn.count)
+		turn.fast_mode = FALSE;
 	switch (retch) {
 	case 'h': case 'j': case 'k': case 'l':
 	case 'y': case 'u': case 'b': case 'n':
-		if (fastmode && !running ) {
+		if (turn.fast_mode && !turn.running ) {
 			if (!on(player, ISBLIND)) {
-				door_stop = TRUE;
-				firstmove = TRUE;
+				turn.door_stop = TRUE;
+				turn.first_move = TRUE;
 			}
 			retch = toupper(retch);
 		}
@@ -156,21 +156,21 @@ get_prefix()
 #endif //WIZARD
 		break;
 	default:
-		count = 0;
+		turn.count = 0;
 		break;
 	}
-	if (count || lastcount)
+	if (turn.count || turn.last_count)
 		show_count();
-	lastch = retch;
-	lastcount = count;
-	lasttake = do_take;
+	turn.last_ch = retch;
+	turn.last_count = turn.count;
+	turn.last_take = turn.do_take;
 	return retch;
 }
 
 void
 show_count()
 {
-	display().draw_count(count);
+	display().draw_count(game().turn.count);
 }
 
 void
@@ -178,6 +178,7 @@ execcom()
 {
 	coord mv;
 	int ch;
+	rogue::Turn &turn = game().turn;
 
 	do {
 		switch (ch = get_prefix()) {
@@ -190,11 +191,11 @@ execcom()
 			do_run(tolower(ch));
 		when 't':
 			if (get_dir())
-				missile(delta.y, delta.x);
+				missile(turn.delta.y, turn.delta.x);
 			else
-				after = FALSE;
-		when 'Q': after = FALSE; quit();
-		when 'i': after = FALSE; inventory(pack, 0, "");
+				turn.after = FALSE;
+		when 'Q': turn.after = FALSE; quit();
+		when 'i': turn.after = FALSE; inventory(pack, 0, "");
 		when 'd': drop();
 		when 'q': quaff();
 		when 'r': read_scroll();
@@ -204,63 +205,63 @@ execcom()
 		when 'T': take_off();
 		when 'P': ring_on();
 		when 'R': ring_off();
-		when 'c': after = FALSE; call();
-		when '>': after = FALSE; d_level();
-		when '<': after = FALSE; u_level();
-		when '/': after = FALSE; help(helpobjs);
-		when '?': after = FALSE; help(helpcoms);
+		when 'c': turn.after = FALSE; call();
+		when '>': turn.after = FALSE; d_level();
+		when '<': turn.after = FALSE; u_level();
+		when '/': turn.after = FALSE; help(helpobjs);
+		when '?': turn.after = FALSE; help(helpcoms);
 		when 's': search();
 		when 'z':
 			if (get_dir())
 				do_zap();
 			else
-				after = FALSE;
-		when 'D': after = FALSE; discovered();
+				turn.after = FALSE;
+		when 'D': turn.after = FALSE; discovered();
 		when CTRL('T'):
-			after = FALSE;
+			turn.after = FALSE;
 			msg((game().options.expert ^= 1)
 				? "Ok, I'll be brief"
 				: "Goodie, I can use big words again!");
-		when 'F': after = FALSE; do_macro(game().options.macro, MACROSZ);
-		when CTRL('F'): after = FALSE; typebuf = game().options.macro;
-		when CTRL('R'): after = FALSE; msg(huh);
+		when 'F': turn.after = FALSE; do_macro(game().options.macro, MACROSZ);
+		when CTRL('F'): turn.after = FALSE; turn.typeahead = game().options.macro;
+		when CTRL('R'): turn.after = FALSE; msg(game().message.last);
 		when 'v':
-			after = FALSE;
+			turn.after = FALSE;
 			msg("Rogue version %d.%d (Mr. Mctesq was here), dungeon %u", REV, VER,
 				rogue::rng().seed());
-		when 'S': after = FALSE; save_game();
+		when 'S': turn.after = FALSE; save_game();
 		when '.': doctor();
 		when '^':
-			after = FALSE;
+			turn.after = FALSE;
 			if (get_dir()) {
 				coord lookat;
 
-				lookat.y = hero.y + delta.y;
-				lookat.x = hero.x + delta.x;
+				lookat.y = hero.y + turn.delta.y;
+				lookat.x = hero.x + turn.delta.x;
 				if (chat(lookat.y, lookat.x) != TRAP)
 					msg("no trap there.");
 				else
 					msg("you found %s",
 						tr_name(flat(lookat.y, lookat.x) & F_TMASK));
 			}
-		when 'o': after = FALSE; msg("i don't have any options, oh my!");
+		when 'o': turn.after = FALSE; msg("i don't have any options, oh my!");
 		when CTRL('L'):
-			after = FALSE;
+			turn.after = FALSE;
 			msg("the screen looks fine to me (jll was here)");
 #ifdef WIZARD
-		when 'C': after = FALSE; create_obj();
+		when 'C': turn.after = FALSE; create_obj();
 #endif
 		otherwise:
-			after = FALSE;
-			save_msg = FALSE;
+			turn.after = FALSE;
+			game().message.remember = FALSE;
 			msg("illegal command '%s'", io_unctrl(ch));
-			count = 0;
-			save_msg = TRUE;
+			turn.count = 0;
+			game().message.remember = TRUE;
 		}
-		if (take && do_take)
-			pick_up(take);
-		take = 0;
-		if (!running)
-			door_stop = FALSE;
-	} while (after == FALSE);
+		if (turn.take && turn.do_take)
+			pick_up(turn.take);
+		turn.take = 0;
+		if (!turn.running)
+			turn.door_stop = FALSE;
+	} while (turn.after == FALSE);
 }

@@ -144,8 +144,8 @@ stomach(void)
 			return;
 		no_command += rnd(8) + 4;
 		player.t_flags &= ~ISRUN;
-		running = FALSE;
-		count = 0;
+		game().turn.running = FALSE;
+		game().turn.count = 0;
 		hungry_state = 3;
 		msg("%syou faint from lack of food",noterse("you feel very weak. "));
 	}

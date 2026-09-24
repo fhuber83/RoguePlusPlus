@@ -94,7 +94,7 @@ new_level(void)
 	} while (!(isfloor(_level[index]) && (_flags[index] & F_REAL)
 				&& moat(hero.y, hero.x) == NULL));
 
-	mpos = 0;
+	game().message.end = 0;
 	enter_room(&hero);
 	display().draw_tile(hero, PLAYER);
 	bcopy(oldpos,hero);

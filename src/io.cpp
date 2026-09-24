@@ -13,7 +13,6 @@
  * msg:
  *	Display a message at the top of the screen.
  */
-static int newpos = 0;
 
 static void more_at(const char *msg, int col);
 
@@ -43,7 +42,7 @@ vmsg(const char *fmt, va_list argp)
 	if (*fmt == '\0')
 	{
 		rogue::ui::display().clear_message();
-		mpos = 0;
+		game().message.end = 0;
 		return;
 	}
 	/*
@@ -90,21 +89,22 @@ addmsg(const char *fmt, ...)
 void
 endmsg(void)
 {
-	if (save_msg)
-		strcpy(huh, msgbuf);
-	if (mpos) {
+	rogue::MessageLine &message = game().message;
+	if (message.remember)
+		strcpy(message.last, message.text);
+	if (message.end) {
 		look(FALSE);
-		more_at(" More ", mpos);
+		more_at(" More ", message.end);
 	}
 	/*
 	 * All messages should start with uppercase, except ones that
 	 * start with a pack addressing character
 	 */
-	if (is_lower(msgbuf[0]) && msgbuf[1] != ')')
-		msgbuf[0] = toupper(msgbuf[0]);
-	putmsg(msgbuf);
-	mpos = newpos;
-	newpos = 0;
+	if (is_lower(message.text[0]) && message.text[1] != ')')
+		message.text[0] = toupper(message.text[0]);
+	putmsg(message.text);
+	message.end = message.next_end;
+	message.next_end = 0;
 }
 
 
@@ -115,7 +115,7 @@ endmsg(void)
 void
 more(const char *msg)
 {
-	more_at(msg, mpos);
+	more_at(msg, game().message.end);
 }
 
 //@ more() for a message line text that ends in column col
@@ -143,9 +143,10 @@ more_at(const char *msg, int col)
 void
 doadd(const char *fmt, va_list argp)
 {
+	rogue::MessageLine &message = game().message;
 
-	vsnprintf(&msgbuf[newpos], BUFSIZE - newpos, fmt, argp);
-	newpos = strlen(msgbuf);
+	vsnprintf(&message.text[message.next_end], BUFSIZE - message.next_end, fmt, argp);
+	message.next_end = strlen(message.text);
 }
 
 /*
@@ -162,7 +163,7 @@ putmsg(char *msg)
 	curmsg = msg;
 	do {
 		rogue::ui::display().draw_message(curmsg);
-		newpos = curlen = strlen(curmsg);
+		game().message.next_end = curlen = strlen(curmsg);
 		if (curlen > COLS) {
 			more_at(" Cont ", curlen);
 			lastmsg = curmsg;

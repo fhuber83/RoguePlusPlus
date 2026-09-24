@@ -97,10 +97,10 @@ over:
 			 && dist <= BOLT_LENGTH	* BOLT_LENGTH)
 			&&	!on(*th, ISCANC) && rnd(DRAGONSHOT) == 0)
 		{
-			running = FALSE;
-			delta.y = sign(hero.y - th->t_pos.y);
-			delta.x = sign(hero.x - th->t_pos.x);
-			fire_bolt(&th->t_pos,&delta,th->t_type == 'D' ? "flame" : "frost");
+			game().turn.running = FALSE;
+			game().turn.delta.y = sign(hero.y - th->t_pos.y);
+			game().turn.delta.x = sign(hero.x - th->t_pos.x);
+			fire_bolt(&th->t_pos,&game().turn.delta,th->t_type == 'D' ? "flame" : "frost");
 			return;
 		}
 	}
@@ -352,7 +352,7 @@ roomin(coord *cp)
 #ifdef DEBUG
 	debug("in some bizarre place (%d, %d)", unc(*cp));
 #endif //DEBUG
-	bailout = TRUE;
+	game().turn.bailout = TRUE;
 	return NULL;
 }
 

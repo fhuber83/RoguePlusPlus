@@ -45,6 +45,7 @@ do_zap()
 	int y, x;
 	const char *name;
 	int which_one;
+	rogue::Turn &turn = game().turn;
 
 	if ((obj = get_item("zap with", STICK)) == NULL)
 		return;
@@ -56,7 +57,7 @@ do_zap()
 		else
 		{
 			msg("you can't zap with that!");
-			after = FALSE;
+			turn.after = FALSE;
 			return;
 		}
 	}
@@ -116,8 +117,8 @@ do_zap()
 		x = hero.x;
 		while (step_ok(winat(y, x)))
 		{
-			y += delta.y;
-			x += delta.x;
+			y += turn.delta.y;
+			x += turn.delta.x;
 		}
 		if ((tp = moat(y, x)) != NULL)
 		{
@@ -146,9 +147,9 @@ do_zap()
 				if (see_monst(tp))
 					display().draw_tile({x, y}, chat(y, x));
 				oldch = tp->t_oldch;
-				delta.y = y;
-				delta.x = x;
-				new_monster(tp, monster = rnd(26) + 'A', &delta);
+				turn.delta.y = y;
+				turn.delta.x = x;
+				new_monster(tp, monster = rnd(26) + 'A', &turn.delta);
 				if (see_monst(tp))
 					display().draw_tile({x, y}, monster);
 				tp->t_oldch = oldch;
@@ -182,8 +183,8 @@ do_zap()
 				}
 				else /* it MUST BE at WS_TELTO */
 				{
-					tp->t_pos.y = hero.y + delta.y;
-					tp->t_pos.x = hero.x + delta.x;
+					tp->t_pos.y = hero.y + turn.delta.y;
+					tp->t_pos.x = hero.x + turn.delta.x;
 				}
 				if (tp->t_type == 'F')
 					player.t_flags &= ~ISHELD;
@@ -206,16 +207,16 @@ do_zap()
 		bolt.o_flags = ISMISL;
 		if (cur_weapon != NULL)
 			bolt.o_launch = cur_weapon->o_which;
-		do_motion(&bolt, delta.y, delta.x);
+		do_motion(&bolt, turn.delta.y, turn.delta.x);
 		if ((tp = moat(bolt.o_pos.y, bolt.o_pos.x)) != NULL && !save_throw(VS_MAGIC, tp))
 			hit_monster(unc(bolt.o_pos), &bolt);
 		else
 		msg("the missle vanishes with a puff of smoke");
 	}
 	when WS_HIT:
-		delta.y += hero.y;
-		delta.x += hero.x;
-		if ((tp = moat(delta.y, delta.x)) != NULL)
+		turn.delta.y += hero.y;
+		turn.delta.x += hero.x;
+		if ((tp = moat(turn.delta.y, turn.delta.x)) != NULL)
 		{
 			if (rnd(20) == 0)
 			{
@@ -227,7 +228,7 @@ do_zap()
 				obj->o_damage = "2d8";
 				obj->o_dplus = 4;
 			}
-			fight(&delta, tp->t_type, obj, FALSE);
+			fight(&turn.delta, tp->t_type, obj, FALSE);
 		}
 	when WS_HASTE_M:
 	case WS_SLOW_M:
@@ -235,8 +236,8 @@ do_zap()
 		x = hero.x;
 		while (step_ok(winat(y, x)))
 		{
-			y += delta.y;
-			x += delta.x;
+			y += turn.delta.y;
+			x += turn.delta.x;
 		}
 		if ((tp = moat(y, x)) != NULL)
 		{
@@ -255,9 +256,9 @@ do_zap()
 					tp->t_flags |= ISSLOW;
 				tp->t_turn = TRUE;
 			}
-			delta.y = y;
-			delta.x = x;
-			start_run(&delta);
+			turn.delta.y = y;
+			turn.delta.x = x;
+			start_run(&turn.delta);
 		}
 	when WS_ELECT:
 	case WS_FIRE:
@@ -268,7 +269,7 @@ do_zap()
 			name = "flame";
 		else
 			name = "ice";
-		fire_bolt(&hero, &delta, name);
+		fire_bolt(&hero, &turn.delta, name);
 		ws_know[which_one] = TRUE;
 #ifdef DEBUG
 	otherwise:

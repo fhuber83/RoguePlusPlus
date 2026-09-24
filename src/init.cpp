@@ -415,7 +415,6 @@ init_materials()
  */
 long *e_levels;		/* Pointer to array of experience level */
 char *tbuf;			/* Temp buffer used in fighting */
-char *msgbuf;		/* Message buffer for msg() */
 char *prbuf;		/* Printing buffer used everywhere */
 char *ring_buf;		/* Buffer used by ring code */
 //@ Deprecated:
@@ -453,7 +452,6 @@ init_ds(void)
 
 	//@ data discarded and re-created on new and restored games:
 	tbuf = newmem(MAXSTR);
-	msgbuf = newmem(BUFSIZE);
 	prbuf = newmem(MAXSTR);
 	ring_buf = newmem(6);
 	e_levels = (long *)newmem(20 * sizeof (long));
@@ -471,7 +469,6 @@ free_ds()
 	free(_things);
 	free(_t_alloc);
 	free(tbuf);
-	free(msgbuf);
 	free(prbuf);
 	free(ring_buf);
 	free(e_levels);

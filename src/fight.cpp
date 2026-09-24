@@ -234,9 +234,16 @@ attack(Creature *mp)
 				}
 				else
 				{
+					/*@
+					 * inv_name() must run before discard(): it reads steal's
+					 * fields into prbuf, and a discarded pool slot is not
+					 * guaranteed to keep its contents (see MODERNIZATION.md
+					 * on the entity pool).
+					 */
+					const char *name = inv_name(steal, TRUE);
 					detach(pack, steal);
 					discard(steal);
-					msg(she_stole, inv_name(steal, TRUE));
+					msg(she_stole, name);
 				}
 			}
 		}

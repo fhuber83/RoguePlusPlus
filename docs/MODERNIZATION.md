@@ -134,8 +134,13 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
    - **6.4 Lists.**
      - The intrusive `l_next`/`l_prev` links are gone. `rogue::List<T>` (`entities/List.hpp`, over `std::list<T *>`) holds the level's `monsters` and `objects` and every creature's `t_pack`. `attach()`/`detach()`/`free_list()` stay as macros over it, and the `next()`/`prev()` macros are gone.
      - Walks keep their original shape: `for (tp = list.first(); tp != NULL; tp = list.after(tp))`. `after()` returns null for an entry that is no longer in the list, just as a detached node's cleared `l_next` did. `runners()` relies on that: when a nymph or leprechaun vanishes during its move, the other monsters skip theirs that turn, as in the original.
-     - **Deviation from the plan:** the pool in `game().pool` still owns creatures and items, instead of `std::unique_ptr`. The original reads things after freeing them, and that only works because a freed slot keeps its contents until it is reused: the nymph's theft message after `discard()`, `t_dest` pointing into gold the rogue picked up, and a vanished thief that is hasted or flying moving again in `runners()`. With heap ownership each of these is a use-after-free. A pool slot is a stable identity, so saving games (phase 8) can refer to slots. Moving to owning containers needs those reads fixed first (phase 7).
+     - **Deviation from the plan:** the pool in `game().pool` still owns creatures and items, instead of `std::unique_ptr`. The original reads things after freeing them, and that only worked because a freed slot keeps its contents until it is reused: the nymph's theft message after `discard()`, `t_dest` pointing into gold the rogue picked up, and a vanished thief that is hasted or flying moving again in `runners()`. With heap ownership each of these would be a use-after-free; they are fixed now (6.5). A pool slot is still a stable identity, so saving games (phase 8) can refer to slots; moving to owning containers is still open (phase 7).
      - Verified with the A/B, descending and wizard item replays: identical. `tests/entities/ListTest.cpp` covers the list, including a walk that detaches its current entry.
+   - **6.5 Post-discard reads.** The three reads 6.4 flagged as relying on a discarded pool slot keeping its contents are fixed, so they no longer stand in the way of moving the pool to owning containers:
+     - `fight.cpp`'s nymph theft now calls `inv_name(steal, TRUE)` before `detach`/`discard(steal)` and holds the formatted name (it points into `prbuf`, unaffected by discard) for the `msg()` call, instead of formatting after the slot is freed.
+     - `pack.cpp`'s `pick_up()` `GOLD` case now redirects any monster whose `t_dest` points at the gold's `o_pos` to `&hero` before discarding it, the same redirect `add_pack()`'s `picked_up:` label already does for other floor items. Previously only non-gold pickups got this redirect, so a monster (via `find_dest()`) could be left with `t_dest` pointing at a freed `Item`.
+     - `chase.cpp`'s `runners()` checks `game().level.monsters.contains(tp)` after each `do_chase(tp)` call and `continue`s (which still ends the pass over the list via `after()` returning null, so a vanished thief still costs the rest of the monsters their move, as before) instead of going on to read `*tp` for the haste/fly checks and the `t_turn` toggle.
+     - `rogue_tests` and a manual smoke run pass; the A/B/descending replays that verified 6.1-6.4 have not been re-run against these three spots specifically. None of the three change any path where nothing gets discarded mid-turn.
 
 ## Target architecture
 
@@ -180,6 +185,7 @@ Each phase is a series of small commits that each build and play.
    - *Done:* item kinds become an `enum class` with a separate glyph mapping.
    - *Done:* replace the intrusive `l_next`/`l_prev` lists (`list.cpp`) with standard containers. Ownership stays with the pool, whose slots are the stable IDs (see 6.4 for why not `std::unique_ptr` yet).
    - *Done:* replace the `#define t_pos _t._t_pos` accessor macros with members.
+   - *Done:* fix the three reads of a discarded pool slot that would break under owning containers (see 6.5).
 7. **Domain modules.**
    - Move behaviour into the target directories: item effects become per-kind handlers, `fight` becomes `Combat`, `chase` becomes `MonsterAI`, and the level generation files become `LevelGenerator`.
    - Scheduler: replace `daemon.cpp` with typed events or `std::function` rather than function-pointer slots.
@@ -195,7 +201,7 @@ Each phase is a series of small commits that each build and play.
 
 ## Notes for whoever continues
 
-- Code reads creatures and items after `discard()`, which is safe only because pool slots keep their contents until reused. Before creatures and items can move to `std::unique_ptr` ownership, these reads have to go: `inv_name(steal)` after `discard(steal)` in `attack()` (nymph), `t_dest` left pointing at gold that `pick_up()` discards, and `runners()` chasing a monster again after `attack()` removed it (hasted or flying thieves). Fixing them changes behaviour in those corners, so do it as its own step.
+- The three reads of a discarded pool slot noted in 6.4/6.5 (`inv_name(steal)` after `discard(steal)`, `t_dest` into picked-up gold, `runners()` re-chasing a removed monster) are fixed. Other code may still read creatures/items after `discard()` relying on a freed slot keeping its contents until reused — audit for that before moving the pool to `std::unique_ptr` ownership (phase 7).
 - `score()` writes `sc_name[38]` to `rogue.scr` with uninitialized bytes after the name. Harmless, but compare score files by the name up to its NUL. Phase 8 replaces the format.
 
 - `faststate` ("Fast Play") used to be toggled by Scroll Lock and is now always `FALSE`. Reintroduce it as a real option or key if wanted.

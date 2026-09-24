@@ -263,13 +263,27 @@ pick_up(byte ch)
 	switch (ch)
 	{
 	case GOLD:
+	{
+		Creature *mp;
+
 		if ((obj = find_obj(hero.y, hero.x)) == NULL)
 		return;
 		money(obj->o_goldval);
+		/*@
+		 * find_dest() can point a monster's t_dest straight at this gold's
+		 * o_pos. Redirect it to the hero before the gold's pool slot is
+		 * discarded, same as add_pack()'s "picked_up" redirect for other
+		 * floor items, so nothing is left pointing at a freed Item.
+		 */
+		for (mp = game().level.monsters.first(); mp != NULL; mp = game().level.monsters.after(mp))
+			if (mp->t_dest != NULL &&
+			   (mp->t_dest->x == obj->o_pos.x) && (mp->t_dest->y == obj->o_pos.y))
+				mp->t_dest = &hero;
 		detach(game().level.objects, obj);
 		discard(obj);
 		proom->r_goldval = 0;
 		break;
+	}
 	default:
 	case ARMOR:
 	case POTION:

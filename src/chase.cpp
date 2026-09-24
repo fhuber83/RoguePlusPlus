@@ -25,11 +25,24 @@ runners()
 			dist = DISTANCE(hero.y, hero.x, tp->t_pos.y, tp->t_pos.x);
 			if	(!(on(*tp, ISSLOW) || (tp->t_type == 'S' && dist > 3)) || tp->t_turn)
 				do_chase(tp);
+			/*@
+			 * do_chase() can end in attack(), which removes tp from the
+			 * level (a Leprechaun or Nymph vanishes once it steals). Once
+			 * that happens tp is a freed pool slot and must not be read
+			 * again this turn; the loop still stops walking the list at
+			 * this point, as in the original (see MODERNIZATION.md 6.4).
+			 */
+			if (!game().level.monsters.contains(tp))
+				continue;
 			if (on(*tp, ISHASTE))
 				do_chase(tp);
+			if (!game().level.monsters.contains(tp))
+				continue;
 			dist = DISTANCE(hero.y, hero.x, tp->t_pos.y, tp->t_pos.x);
 			if (on(*tp, ISFLY) && dist > 3)
 				do_chase(tp);
+			if (!game().level.monsters.contains(tp))
+				continue;
 			tp->t_turn ^= TRUE;
 		}
 	}

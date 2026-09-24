@@ -12,8 +12,20 @@
 #include "core/Dice.hpp"
 #include "core/Flags.hpp"
 #include "core/Random.hpp"
+#include "ui/Display.hpp"
+#include "ui/Input.hpp"
 
 #include "extern.h"
+#include "glyphs.h"
+
+/*@
+ * Screen size. Fixed at 80x25 (see rogue::ui::Screen); these used to be the
+ * ncurses globals of the same name. Only game files see these; the curses
+ * backend uses ncurses' own.
+ */
+const int LINES = MAXLINES;
+const int COLS = MAXCOLS;
+
 
 /*
  *  Options set for PC rogue
@@ -306,6 +318,11 @@ struct h_list {
  * Coordinate data type
  */
 using coord = rogue::Coord;  //@ see core/Coord.hpp
+
+//@ Game output goes through the display, see ui/Display.hpp
+using rogue::ui::display;
+using rogue::ui::input;
+using rogue::ui::TileStyle;
 
 /*@
  * Data type for strength values and modifiers
@@ -628,8 +645,7 @@ void	doadd(const char *fmt, va_list argp);
 void	wait_msg(const char *msg);
 void	endmsg(void);
 void	more(const char *msg);
-void	putmsg(int msgline, char *msg);
-void	scrlmsg(int msgline, char *str1, char *str2);
+void	putmsg(char *msg);
 void	status(void);
 void	wait_for(byte ch);
 void	show_win(char *message);

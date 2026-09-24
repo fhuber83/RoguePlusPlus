@@ -21,8 +21,8 @@ FILE(GLOB_RECURSE ROGUE_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/s
 LIST(FILTER ROGUE_SOURCES EXCLUDE REGEX "/src/app/")
 
 ADD_LIBRARY(rogue_game STATIC ${ROGUE_SOURCES})
-# src/ is a quote-only include path: src/curses.h must not shadow the system
-# <curses.h> that curses.cpp includes with angle brackets.
+# src/ is a quote-only include path, so project headers never shadow system
+# headers such as <curses.h> (included by ui/curses/CursesTerminal.cpp).
 TARGET_INCLUDE_DIRECTORIES(rogue_game PUBLIC ${CURSES_INCLUDE_DIRS})
 TARGET_COMPILE_OPTIONS(rogue_game PUBLIC "-iquote${CMAKE_CURRENT_SOURCE_DIR}/src")
 TARGET_COMPILE_DEFINITIONS(rogue_game PUBLIC MINROG ROGUE_CHARSET=3)

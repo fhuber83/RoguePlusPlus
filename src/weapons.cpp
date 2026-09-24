@@ -5,7 +5,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 #define NONE 100
 
@@ -102,7 +101,7 @@ do_motion(THING *obj, int ydelta, int xdelta)
 		 * Erase the old one
 		 */
 		if (under != '@' && !(obj->o_pos == hero) && cansee(unc(obj->o_pos)))
-			mvaddch(obj->o_pos.y, obj->o_pos.x, under);
+			display().draw_tile(obj->o_pos, under);
 		/*
 		 * Get the new position
 		 */
@@ -116,7 +115,7 @@ do_motion(THING *obj, int ydelta, int xdelta)
 			 */
 			if (cansee(unc(obj->o_pos))) {
 				under = chat(obj->o_pos.y, obj->o_pos.x);
-				mvaddch(obj->o_pos.y, obj->o_pos.x, obj->o_type);
+				display().draw_tile(obj->o_pos, obj->o_type);
 				tick_pause();
 			} else
 				under = '@';
@@ -163,11 +162,10 @@ fall(THING *obj, bool pr)
 		bcopy(obj->o_pos,fpos);
 		if (cansee(fpos.y, fpos.x))
 		{
-			if ((flat(obj->o_pos.y, obj->o_pos.x) & F_PASS) ||
-						   (flat(obj->o_pos.y, obj->o_pos.x) & F_MAZE))
-				standout();
-			mvaddch(fpos.y, fpos.x, obj->o_type);
-			standend();
+			display().draw_tile(fpos, obj->o_type,
+					((flat(obj->o_pos.y, obj->o_pos.x) & F_PASS) ||
+					 (flat(obj->o_pos.y, obj->o_pos.x) & F_MAZE))
+						? TileStyle::Inverse : TileStyle::Normal);
 			if (moat(fpos.y,fpos.x) != NULL)
 				moat(fpos.y,fpos.x)->t_oldch = obj->o_type;
 		}
@@ -323,6 +321,6 @@ fallpos(THING *obj, coord *newpos)
 void
 tick_pause(void)
 {
-	cur_refresh();
+	display().flush();
 	msleep(55);
 }

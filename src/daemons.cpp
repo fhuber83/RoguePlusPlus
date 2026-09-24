@@ -5,7 +5,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 
 /*
@@ -93,7 +92,7 @@ unsee(void)
 
 	for (th = mlist; th != NULL; th = next(th))
 		if (on(*th, ISINVIS) && see_monst(th) && th->t_oldch != '@')
-			mvaddch(th->t_pos.y, th->t_pos.x,th->t_oldch);
+			display().draw_tile(th->t_pos, th->t_oldch);
 	player.t_flags &= ~CANSEE;
 }
 

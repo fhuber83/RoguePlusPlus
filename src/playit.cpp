@@ -17,7 +17,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 //@ both derived from `screen` in env file and used in curses.c
 int bwflag = FALSE;
@@ -43,7 +42,7 @@ playit(char *sname)
 	if (sname) {
 		restore(sname);
 		setup();
-		cursor(FALSE);
+		display().show_cursor(FALSE);
 	} else {
 		oldpos.x = hero.x;
 		oldpos.y = hero.y;
@@ -61,7 +60,7 @@ playit(char *sname)
 void
 quit()
 {
-	int oy, ox;
+	coord here;
 	byte answer;
 	static bool qstate = FALSE;
 
@@ -73,26 +72,23 @@ quit()
 		leave();
 	qstate = TRUE;
 	mpos = 0;
-	getyx(eatme,oy, ox);  //@ Rogue devs cursing curses!
-	move(0,0);
-	clrtoeol();
-	move(0,0);
+	here = display().write("");  //@ where the cursor was
+	display().clear_line(0);
 	if (!terse)
-		addstr("Do you wish to ");
+		display().write_at(0, 0, "Do you wish to ");
 	str_attr("end your quest now (%Yes/%No) ?");
 	look(FALSE);
 	answer = readchar();
 	if (answer == 'y' || answer == 'Y') {
-		clear();
-		move(0,0);
-		printw("You quit with %u gold pieces\n", purse);
+		display().clear_page();
+		sprintf(prbuf, "You quit with %u gold pieces\n", purse);
+		display().write_at(0, 0, prbuf);
 		score(purse, 1, 0);
 		fatal("");
 	} else {
-		move(0, 0);
-		clrtoeol();
+		display().clear_line(0);
 		status();
-		move(oy, ox);
+		display().write_at(here.y, here.x, "");
 		mpos = 0;
 		count = 0;
 	}
@@ -107,10 +103,7 @@ void
 leave()
 {
 	look(FALSE);
-	move(LINES - 1, 0);
-	clrtoeol();
-	move(LINES - 2, 0);
-	clrtoeol();
-	move(LINES - 2, 0);
+	display().clear_line(LINES - 1);
+	display().clear_line(LINES - 2);
 	fatal("Ok, if you want to leave that badly\n");
 }

@@ -5,7 +5,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 THING *_things;
 int   *_t_alloc;

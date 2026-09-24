@@ -5,7 +5,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 static int	exp_add(THING *tp);
 

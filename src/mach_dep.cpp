@@ -5,7 +5,6 @@
  */
 
 #include	"rogue.h"
-#include	"curses.h"
 
 
 byte swap_bits(
@@ -95,65 +94,62 @@ flush_type()
 void
 credits()
 {
-	#define ULINE() if(is_color) lmagenta();else uline();
 
 	char tname[25];
 
-	cursor(FALSE);
-	clear();
-	if (is_color)
-		brown();
-	box(0,0,LINES-1,COLS-1);
-	bold();
-	center(2,"ROGUE:  The Adventure Game");
-	ULINE();
-	center(4,"The game of Rogue was designed by:");
-	high();
-	center(6,"Michael Toy and Glenn Wichman");
-	ULINE();
-	center(9,"Various implementations by:");
-	high();
-	center(11,"Ken Arnold, Jon Lane and Michael Toy");
-	ULINE();
-	center(14,"Adapted for the IBM PC by:");
-	high();
-	center(16,"A.I. Design");
-	ULINE();
-	if (is_color)
-		yellow();
-	center(19,"(C)Copyright 1985");
-	high();
-	center(20,"Epyx Incorporated");
-	standend();
-	if (is_color)
-		yellow();
-	center(21,"All Rights Reserved");
-	if (is_color)
-		brown();
-	move(22, 0);
-	addch(DVRIGHT);
-	repchr(DHLINE, COLS-2);
-	addch(DVLEFT);
-	standend();
-	mvaddstr(23,2,"Rogue's Name? ");
-	is_saved = TRUE;		/*  status line hack @ to disable updates */
-	high();
-	getinfo(tname,23);
+	display().draw_title();
+	input().read_line(tname,23);
 	if (*tname && *tname != ESCAPE)
 		strcpy(whoami, tname);
-	is_saved = FALSE;  //@ re-enable status line updates
-	move(23, 0);
-	//@ a single clrtobol(), if available, could replace the next 3 lines
-	clrtoeol();
-	move(24, 0);
-	clrtoeol();
-	if (is_color)
-		brown();
-	mvaddch(22,0,LLWALL);
-	mvaddch(22,COLS-1,LRWALL);
-	standend();
+	display().end_title();
 }
 
+
+/*
+ * Table for IBM extended key translation
+ * @ moved from mach_dep.c to curses.c and back: keys as rogue::ui::key values
+ */
+static const struct xlate {
+	int keycode;
+	byte keyis;
+} xtab[] = {
+	{rogue::ui::key::Enter,	'\n'}, //@ Keypad Enter
+	{rogue::ui::key::Home,	'y'},
+	{rogue::ui::key::Up,	'k'},
+	{rogue::ui::key::PageUp,	'u'},
+	{rogue::ui::key::Backspace, 'h'},
+	{rogue::ui::key::Left,	'h'},
+	{rogue::ui::key::Right,	'l'},
+	{rogue::ui::key::End,	'b'},
+	{rogue::ui::key::Down,	'j'},
+	{rogue::ui::key::PageDown,	'n'},
+	{rogue::ui::key::Insert,	'>'},
+	{rogue::ui::key::Delete,	's'},
+	{rogue::ui::key::function(1),	'?'},
+	{rogue::ui::key::function(2),	'/'},
+	{rogue::ui::key::function(3),	'a'},
+	{rogue::ui::key::function(4),	CTRL('R')},
+	{rogue::ui::key::function(5),	'c'},
+	{rogue::ui::key::function(6),	'D'},
+	{rogue::ui::key::function(7),	'i'},
+	{rogue::ui::key::function(8),	'^'},
+	{rogue::ui::key::function(9),	CTRL('F')},
+	{rogue::ui::key::AltF9,	'F'}  //@ ALT+F9
+};
+
+/*@
+ * Map a key to an 8-bit command character using the translation table
+ */
+static byte
+xlate_ch(int ch)
+{
+	for (const struct xlate *x = xtab; x < xtab + (sizeof xtab) / sizeof *xtab; x++)
+	{
+		if (ch == x->keycode)
+			return x->keyis;
+	}
+	return (byte)ch;
+}
 
 /*
  * readchar:
@@ -167,7 +163,7 @@ readchar()
 
 	if (*typebuf) {
 		SIG2();
-		cur_refresh();  //@ macros
+		display().flush();  //@ macros
 		return(*typebuf++);
 	}
 	/*
@@ -177,9 +173,9 @@ readchar()
 	do
 	{
 		SIG2();  /* Rogue spends a lot of time here @ you bet! */
-		cur_refresh();  //@ command input
+		display().flush();  //@ command input
 	}
-	while ((xch = getch_timeout(250)) == NOCHAR);
+	while ((xch = input().read_key(250)) == rogue::ui::key::None);
 	ch = xlate_ch(xch);
 	if (ch == ESCAPE)
 		count = 0;
@@ -217,7 +213,7 @@ fatal(const char *msg, ...)
 {
 	va_list argp;
 
-	cur_endwin();
+	rogue::ui::stop_terminal();
 
 	va_start(argp, msg);
 	vprintf(msg, argp);
@@ -233,7 +229,7 @@ fatal(const char *msg, ...)
  */
 void md_exit(int status)
 {
-	cur_endwin();
+	rogue::ui::stop_terminal();
 	free_ds();
 #ifdef ROGUE_DEBUG
 	printf("Exited normally\n");

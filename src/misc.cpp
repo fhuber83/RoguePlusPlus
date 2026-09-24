@@ -5,7 +5,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 /*
  * tr_name:
@@ -63,11 +62,10 @@ look(bool wakeup)
 				for (y = oldpos.y - 1; y <= (oldpos.y + 1); y++) {
 					if ((y == hero.y && x == hero.x) || offmap(y,x))
 						continue;
-					move(y,x);
-					ch = inch();
+					ch = display().tile_at({x, y});
 					if (ch == FLOOR) {
 						if (oldrp->r_flags.test(RoomFlag::Dark) && !oldrp->r_flags.test(RoomFlag::Gone))
-							addch(' ');
+							display().draw_tile({x, y}, ' ');
 					} else {
 						fp = &_flags[INDEX(y,x)];
 						/*
@@ -78,7 +76,7 @@ look(bool wakeup)
 						if (((*fp&F_MAZE) || (*fp&F_PASS)) && (ch!=PASSAGE)
 							&& (ch != STAIRS) &&
 							((*fp & F_PNUM) == (pfl & F_PNUM)) )
-								addch(PASSAGE);
+								display().draw_tile({x, y}, PASSAGE);
 					}
 				}
 		}
@@ -147,17 +145,13 @@ look(bool wakeup)
 				}
 			}
 
-			if ((ch!=PASSAGE) && (*fp & (F_PASS | F_MAZE)))
-				/*
-				 * The current character used for IBM ARMOR doesn't
-				 * look right in Inverse
-				 */
-				if (ch != ARMOR)
-					standout();
-
-			move(y, x);
-			addch(ch);
-			standend();
+			/*
+			 * The current character used for IBM ARMOR doesn't
+			 * look right in Inverse
+			 */
+			display().draw_tile({x, y}, ch,
+					((ch!=PASSAGE) && (*fp & (F_PASS | F_MAZE)) && ch != ARMOR)
+						? TileStyle::Inverse : TileStyle::Normal);
 
 			if (door_stop && !firstmove && running) {
 				switch (runch) {
@@ -213,7 +207,6 @@ look(bool wakeup)
 		}
 	if (door_stop && !firstmove && passcount > 1)
 		running = FALSE;
-	move(hero.y, hero.x);
 	/*@
 	 * The expression (was_trapped > TRUE) would never evaluate to true if
 	 * `was_trapped` was a real boolean. I guess this is specifically testing
@@ -224,13 +217,12 @@ look(bool wakeup)
 	 * I guess int would be a better type, or perhape another logic to detect
 	 * teleport traps.
 	 */
-	if ((flat(hero.y,hero.x) & F_PASS) || (was_trapped > TRUE)
+	display().draw_tile(hero, PLAYER,
+			((flat(hero.y,hero.x) & F_PASS) || (was_trapped > TRUE)
 					|| (flat(hero.y,hero.x) & F_MAZE))
-		standout();
-	addch(PLAYER);
-	standend();
+				? TileStyle::Inverse : TileStyle::Normal);
 	if (was_trapped) {
-		beep();
+		display().bell();
 		was_trapped = FALSE;
 	}
 }
@@ -495,7 +487,7 @@ call_it(bool know, char **guess)
 		**guess = '\0';
 	else if (!know && **guess == '\0') {
 		msg("%scall it? ",noterse("what do you want to "));
-		getinfo(prbuf,MAXNAME);
+		input().read_line(prbuf,MAXNAME);
 		if (*prbuf != ESCAPE)
 			strcpy(*guess, prbuf);
 		msg("");
@@ -596,12 +588,12 @@ help(struct h_list *helpscr)
 	int isfull;
 	byte answer = 0;
 
-	wdump();
+	display().open_page();
 	while (*helpscr->h_desc && answer != ESCAPE)
 	{
 		isfull = FALSE;
 		if ((hcount % (terse?23:46)) == 0)
-			clear();
+			display().clear_page();
 		/*
 		 * determine row and column
 		 */
@@ -621,10 +613,8 @@ help(struct h_list *helpscr)
 				 isfull = TRUE;
 		}
 
-		move (hrow,hcol);
-
-		addstr((char *)helpscr->h_chstr);
-		addstr(helpscr->h_desc);
+		display().write_at(hrow, hcol, (const char *)helpscr->h_chstr);
+		display().write(helpscr->h_desc);
 		helpscr++;
 
 		/*
@@ -633,18 +623,18 @@ help(struct h_list *helpscr)
 		if ( (*helpscr->h_desc == 0) || isfull)
 		{
 			if (*helpscr->h_desc == 0)
-				mvaddstr (24,0,"--press space to continue--");
+				display().write_at(24, 0, "--press space to continue--");
 			else if (terse)
-				mvaddstr (24,0,"--Space for more, Esc to continue--");
+				display().write_at(24, 0, "--Space for more, Esc to continue--");
 			else
-				mvaddstr (24,0,"--Press space for more, Esc to continue--");
+				display().write_at(24, 0, "--Press space for more, Esc to continue--");
 			do
 				answer = readchar();
 			while (answer != ' ' && answer != ESCAPE) ;
 		}
 		hcount++;
 	}
-	wrestor();
+	display().close_page();
 }
 
 
@@ -812,7 +802,7 @@ call()
 	}
 	msg("Was called \"%s\"", elsewise);
 	msg("what do you want to call it? ");
-	getinfo(prbuf,MAXNAME);
+	input().read_line(prbuf,MAXNAME);
 	if (*prbuf && *prbuf != ESCAPE)
 		strcpy(guess[obj->o_which], prbuf);
 	msg("");
@@ -827,7 +817,7 @@ do_macro(char *buf, int sz)
 	char *cp = prbuf;
 
 	msg("F9 was %s, enter new macro: ",buf);
-	if (getinfo(prbuf,sz-1) != ESCAPE)
+	if (input().read_line(prbuf,sz-1) != ESCAPE)
 		do {
 			if (*cp != CTRL('F'))
 				*buf++ = *cp;

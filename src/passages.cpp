@@ -5,7 +5,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 /*
  * conn:
@@ -296,7 +295,7 @@ add_pass()
 	for (y = 1; y < maxrow; y++)
 		for (x = 0; x < COLS; x++)
 			if ((ch = chat(y, x)) == DOOR || ch == PASSAGE)
-				mvaddch(y, x, ch);
+				display().draw_tile({x, y}, ch);
 }
 #endif
 

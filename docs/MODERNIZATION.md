@@ -34,6 +34,54 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
    - `core/Flags<E>` is an opt-in, type-safe bitset. Room flags are now `RoomFlags` (`RoomFlag::Dark/Gone/Maze`).
    - Fixed an original bug found by a test: the 13th entry of `passages[]` was never initialized as a dark corridor.
    - **Deferred to phase 6:** item kinds as an `enum class`, and creature/object flags as `Flags`. Item kinds double as map glyphs (`POTION == '!'`), and both flag sets live in `union thing`, so they move together with the THING split.
+4. **UI seam.** Game logic draws only through `ui::Display` and reads keys only through `ui::Input`.
+   - **4.1 Screen and terminal.**
+     - `ui::Screen` is an 80×25 grid of CP437 cells with a cursor and a current DOS attribute, standing in for PC Rogue's video memory. Writes go to the grid and through to a connected `ui::Terminal`. Reads come from the grid.
+     - `mvinch`/`inch` read-back is now exact. The curses port reverse-mapped terminal characters, and in ASCII mode it could not tell room corners from walls.
+     - `curses.cpp` became `ui/curses/CursesTerminal.cpp`, which only paints cells (charset and colour mapping) and reads keys, returned as `ui::key` values.
+     - The DOS screen API the game calls (`cur_*`, `set_attr`, `wdump`/`wrestor`, boxes, curtains, `getinfo`, key translation) moved to `ui/DosScreen.cpp` on top of `Screen`. The local `curses.h` macros are unchanged, so game files did not change.
+     - `LINES`/`COLS` are now constants in the local `curses.h` instead of ncurses' globals. `ROGUE_COLUMNS` and the unused `keypad.h` are gone.
+     - Verified by replaying four seeds with the same keystrokes on the old and new builds. All 360 tmux captures, colours included, were identical. `tests/ui/ScreenTest.cpp` covers the grid headlessly.
+   - **4.2 Message and status lines.**
+     - `ui::Display` (`ui/Display.hpp`) is the game-facing output interface. So far it covers the message line (`draw_message`, `clear_message`, and `show_more`/`blink_more`/`hide_more` for the More and Cont prompts), the status lines (`draw_status(ui::Status)`) and the clock (`draw_clock`).
+     - `ui::ScreenDisplay` implements it on a `Screen` with the original layout. `ui::display()` returns the game's instance.
+     - `io.cpp` keeps the logic: formatting, capitalisation, the `huh` history, `look()` before More, waiting for the space key, splitting long messages, and building `ui::Status` from game state. It no longer draws.
+     - Small fixes:
+       - Hits and Str now also redraw when only the maximum changes.
+       - The More prompt restores the exact cells it covered. The old code rewrote them as plain text and repeated column 78 in column 79.
+     - `scrlmsg()` is gone. Its sideways scroll was never refreshed, so only the last frame was ever visible. The 40-column status positions (`PT()`) are gone too.
+     - `wait_msg`, `show_win` and `str_attr` still draw directly. They move with the full-screen views in 4.4.
+     - The same A/B replay gave identical captures. `tests/ui/ScreenDisplayTest.cpp` covers the layout.
+   - **4.3 Map.**
+     - Game code draws the map with `display().draw_tile(Coord, glyph, TileStyle)` and reads the hero's view back with `display().tile_at(Coord)`.
+     - `TileStyle` (`Normal`, `Inverse`, `Bolt`, `FrostBolt`) replaces the `standout()`/`blue()`/`red()` brackets. Inverse covers passages and mazes, sensed monsters, detected items and the teleport flash.
+     - The repeat count, animation refreshes and the trap bell go through `draw_count`, `flush` and `bell`. `rogue.h` includes `ui/Display.hpp` and brings `display` and `TileStyle` into scope.
+     - Domain files no longer call `mvaddch`, `mvinch`, `standout` or the colour macros. The exceptions are the full-screen views in `misc.cpp` (help), `things.cpp` (inventory) and `wizard.cpp` (`show_map`), plus `implode()` in `new_leve.cpp`, which all belong to 4.4.
+     - Verification: the A/B replay, a fuzz replay over six seeds, and scripted item scenarios on `WIZARD` builds (`C` creates items). All captures were identical. Frame-by-frame captures of zapped wands showed the same red bolt in both builds. `WIZARD` builds do not compile as is, so both trees were patched in scratch copies for this (see the notes below).
+   - **4.4a In-game pages and prompts.**
+     - `Display` gained a page API. `open_page`/`close_page` keep and restore the game view, `page_open()` pauses the clock and `clear_page` blanks the screen. Text goes through `write_at`/`write` with a named `ui::Ink` style (the old colour macros by name) and `clear_line`, plus `show_cursor` and `wipe` (the `implode` effect).
+     - Converted: help (`misc.cpp`), inventory and discoveries (`add_line`/`end_line` in `things.cpp`), the wizard map, `show_win`, `str_attr`, `wait_msg`, the quit prompt and `leave()` (`playit.cpp`), and the new-level wipe.
+     - Verified with the A/B, fuzz and quit/page replays: identical apart from one capture taken in the middle of a curtain animation.
+   - **4.4b Title and ending screens.**
+     - `Display` draws whole screens: `draw_title`/`end_title` (credits and the name prompt), `draw_tombstone`, `draw_scores` (the game fills in `ui::ScoreLine` values with the rank and fate text) and `draw_winner`, plus `curtain_down`/`curtain_up` and `wipe`. `ScreenDisplay` holds the artwork that used to live in `mach_dep.cpp`, `rip.cpp` and `curses.cpp`.
+     - `ui::start_terminal()`/`ui::stop_terminal()` replace `winit()`/`cur_endwin()` in `main`, `fatal` and `md_exit`.
+     - `score()` opens a page instead of setting `is_saved`. The clock now pauses only for open pages. `is_saved` and the DOS `implode`, curtain, box, `center` and `repchr` code are gone.
+     - `save.cpp` is down to its two stubs. The dead memory-dump save and restore code was deleted, since phase 8 replaces it.
+     - Verified with the A/B and quit replays, a crafted `rogue.scr` covering every fate in the Hall of Fame (`-s`), and captures of the credits and name entry. All identical apart from one mid-curtain frame.
+   - **4.5 Input.**
+     - `ui::Input` (`ui/Input.hpp`) has `read_key(timeout)` (characters or `ui::key` values) and `read_line`, which replaces `getinfo`. `ui::ScreenInput` implements it on the `Screen` connected to the terminal, and `ui::input()` returns the game's instance.
+     - The key-to-command table (F1 to `?`, arrows to `hjkl`, ...) lives next to `readchar()` in `mach_dep.cpp` again.
+     - Game files no longer include the local `curses.h`, which is deleted. The glyph codes, screen size and key constants they need are in `glyphs.h`, which `rogue.h` includes. `LINES`/`COLS` are constants in `rogue.h`.
+     - `ui/DosScreen.cpp` keeps only the DOS attribute tables, glyph colouring and terminal start and stop. `curses_common.h` is private to `ui/`.
+     - Verified with the A/B, quit and fuzz replays and a name-editing replay (typing, backspace, Enter): identical. `tests/ui/ScreenInputTest.cpp` covers line editing.
+   - **4.6 DOS emulation removed.**
+     - Cells hold a glyph code and a `ui::Style` (foreground and background `ui::Color`, blink, underline) instead of a DOS attribute byte.
+     - `ScreenDisplay` owns the colour policy: the style of each `Ink`/`TileStyle`, the colours map glyphs get, and a monochrome switch (`SCREEN=bw` in `rogue.opt`, or a terminal without colours).
+     - `CursesTerminal` renders a cell from one glyph table (code → ASCII, box-line ASCII, Unicode) and turns a style into curses attributes and a colour pair. It requires wide-character curses (CMake already did).
+     - Gone: `ui/DosScreen.cpp`, `curses_common.h`, `ui/curses/curses_dos.h`, the three-way CCODE tables, the narrow-character path, `scr_type`/`is_color` (it was always 80×25 colour) and the CP437 pass-through charset. `ROGUE_CHARSET=1` still selects ASCII; any other value means Unicode.
+     - Monochrome underline is a real underline now. The old table asked for blue on blue.
+     - Glyph codes stay CP437 bytes, because game logic compares them and they double as item kinds. Separating them is phase 6.
+     - Verified with the A/B, quit, fuzz, name-editing, Hall of Fame and monochrome (`SCREEN=bw`) replays: identical apart from mid-curtain frames.
 
 ## Target architecture
 
@@ -57,11 +105,13 @@ Dependency rule: `ui` → `game` → (`rules`, `entities`, `items`, `world`) →
 
 Each phase is a series of small commits that each build and play.
 
-4. **UI seam.**
-   - Define `ui::Display` and `ui::Input`.
-   - Route `msg`/`addmsg`/`more`, the map drawing (`mvaddch` in game files), the status line and the full-screen views through them.
-   - Move `curses.cpp` and the drawing half of `io.cpp` into `ui/curses/`.
-   - Delete the DOS-attribute emulation (`curses_dos.h`, CP437 translation) in favour of a clean `Glyph → cchar_t` mapping.
+4. **UI seam** (*done*, see above). Steps:
+   1. *Done:* `ui::Screen` grid plus `ui::Terminal` backend (see above).
+   2. *Done:* message and status lines behind `ui::Display` (see above).
+   3. *Done:* the map goes through `Display` (see above).
+   4. *Done:* full-screen views, in-game pages and prompts (4.4a), title and ending screens (4.4b).
+   5. *Done:* input behind `ui::Input`, and no game file includes the DOS screen API.
+   6. *Done:* the DOS emulation is gone (see above).
 5. **Game state.** Gather the ~90 globals from `extern.cpp`/`init.cpp` into a `Game` context (player, level, monster list, floor items, RNG, scheduler, known-item tables, options). Free functions take or reach it explicitly, and globals are removed one group at a time.
 6. **Entities.**
    - Split `union thing` into `Monster` and `Item`.
@@ -84,5 +134,6 @@ Each phase is a series of small commits that each build and play.
 ## Notes for whoever continues
 
 - `faststate` ("Fast Play") used to be toggled by Scroll Lock and is now always `FALSE`. Reintroduce it as a real option or key if wanted.
-- `save_game()` prints "saving games is disabled" and `restore()` still contains the memory-dump code. Treat both as dead until phase 8.
+- `save_game()` prints "saving games is disabled" and `restore()` exits with a message. Phase 8 brings real saving.
+- `WIZARD` builds do not compile: `CTRL(D)` in `command.cpp` should be `CTRL('D')`, `rogue.h` defines `bool wizard;` in the header (it should be `extern`, while `extern.cpp` defines it only under `WIZARD`), and `create_obj()` passes a `short *` and `stdscr` to `get_num(int *)`.
 - The terminal must be 80×25. `COLS == 40` paths still exist for the old 40-column mode.

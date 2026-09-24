@@ -5,7 +5,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 #define GOLDGRP 1
 
@@ -229,7 +228,6 @@ enter_room(coord *cp)
 	door_open(rp);
 	if (!rp->r_flags.test(RoomFlag::Dark) && !on(player,ISBLIND) && !rp->r_flags.test(RoomFlag::Maze))
 		for (y = rp->r_pos.y; y < rp->r_max.y + rp->r_pos.y; y++) {
-			move(y, rp->r_pos.x);
 			for (x = rp->r_pos.x; x < rp->r_max.x + rp->r_pos.x; x++) {
 				/*
 				 * Displaying monsters is all handled in the
@@ -237,10 +235,10 @@ enter_room(coord *cp)
 				 */
 				tp = moat(y, x);
 				if (tp == NULL || !see_monst(tp))
-					addch(chat(y, x));
+					display().draw_tile({x, y}, chat(y, x));
 				else {
 					tp->t_oldch = chat(y,x);
-					addch(tp->t_disguise);
+					display().draw_tile({x, y}, tp->t_disguise);
 				}
 			}
 		}
@@ -265,7 +263,7 @@ leave_room(coord *cp)
 		floor = PASSAGE;
 	for (y = rp->r_pos.y + 1; y < rp->r_max.y + rp->r_pos.y - 1; y++)
 		for (x = rp->r_pos.x + 1; x < rp->r_max.x + rp->r_pos.x - 1; x++)
-			switch (ch = mvinch(y, x)) {
+			switch (ch = display().tile_at({x, y})) {
 			case ' ':
 			case PASSAGE:
 			case TRAP:
@@ -273,7 +271,7 @@ leave_room(coord *cp)
 				break;
 			case FLOOR:
 				if (floor == ' ')
-					addch(' ');
+					display().draw_tile({x, y}, ' ');
 				break;
 			default:
 				/*
@@ -285,14 +283,12 @@ leave_room(coord *cp)
 				if (ismonster(ch))
 				{
 					if (on(player, SEEMONST)) {
-						standout();
-						addch(ch);
-						standend();
+						display().draw_tile({x, y}, ch, TileStyle::Inverse);
 						break;
 					} else
 						moat(y, x)->t_oldch = '@';
 				}
-				addch(floor);
+				display().draw_tile({x, y}, floor);
 				break;
 			}
 	door_open(rp);

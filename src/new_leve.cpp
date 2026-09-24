@@ -6,7 +6,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 #define TREAS_ROOM 20	/* one chance in TREAS_ROOM for a treasure room */
 #define MAXTREAS 10	/* maximum number of treasures in a treasure room */
@@ -53,7 +52,7 @@ new_level(void)
 	do_rooms();				/* Draw rooms */
 	if (max_level > 1)
 	{
-		implode();
+		display().wipe();
 	}
 	status();
 	do_passages();			/* Draw passages */
@@ -97,7 +96,7 @@ new_level(void)
 
 	mpos = 0;
 	enter_room(&hero);
-	mvaddch(hero.y, hero.x, PLAYER);
+	display().draw_tile(hero, PLAYER);
 	bcopy(oldpos,hero);
 	oldrp = proom;
 	if (on(player, SEEMONST))

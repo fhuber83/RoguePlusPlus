@@ -5,7 +5,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 
 //@ turn_see() wrapper to use as a fuse
@@ -108,7 +107,7 @@ quaff(void)
 				if (is_magic(tp))
 				{
 					show = TRUE;
-					mvwaddch(hw, tp->o_pos.y, tp->o_pos.x, goodch(tp));
+					display().draw_tile(tp->o_pos, goodch(tp));
 					p_know[P_TFIND] = TRUE;
 				}
 			}
@@ -119,7 +118,7 @@ quaff(void)
 					if (is_magic(tp))
 					{
 						show = TRUE;
-						mvwaddch(hw, th->t_pos.y, th->t_pos.x, MAGIC);
+						display().draw_tile(th->t_pos, MAGIC);
 						p_know[P_TFIND] = TRUE;
 					}
 				}
@@ -223,7 +222,7 @@ invis_on(void)
 	for (th = mlist; th != NULL; th = next(th))
 	if (on(*th, ISINVIS) && see_monst(th))
 	{
-		mvaddch(th->t_pos.y, th->t_pos.x,th->t_disguise);
+		display().draw_tile(th->t_pos, th->t_disguise);
 	}
 }
 
@@ -236,25 +235,21 @@ turn_see(bool turn_off)
 {
 	THING *mp;
 	bool can_see, add_new;
-	byte was_there = inch();
+	byte was_there = ' ';
 
 	add_new = FALSE;
 	for (mp = mlist; mp != NULL; mp = next(mp)) {
-		move(mp->t_pos.y, mp->t_pos.x);
-		can_see = (see_monst(mp) || (was_there = inch()) == mp->t_type);
+		can_see = (see_monst(mp) || (was_there = display().tile_at(mp->t_pos)) == mp->t_type);
 		if (turn_off) {
 			if (!see_monst(mp) && mp->t_oldch != '@')
-				addch(mp->t_oldch);
+				display().draw_tile(mp->t_pos, mp->t_oldch);
 		} else {
 			if (!can_see) {
-				standout();
 				mp->t_oldch = was_there;
-			}
-			addch(mp->t_type);
-			if (!can_see) {
-				standend();
 				add_new = TRUE;
 			}
+			display().draw_tile(mp->t_pos, mp->t_type,
+					can_see ? TileStyle::Normal : TileStyle::Inverse);
 		}
 	}
 	player.t_flags |= SEEMONST;

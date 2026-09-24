@@ -6,7 +6,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 /*
  * fix_stick:
@@ -145,13 +144,13 @@ do_zap()
 				pp = tp->t_pack;
 				detach(mlist, tp);
 				if (see_monst(tp))
-					mvaddch(y, x, chat(y, x));
+					display().draw_tile({x, y}, chat(y, x));
 				oldch = tp->t_oldch;
 				delta.y = y;
 				delta.x = x;
 				new_monster(tp, monster = rnd(26) + 'A', &delta);
 				if (see_monst(tp))
-					mvaddch(y, x, monster);
+					display().draw_tile({x, y}, monster);
 				tp->t_oldch = oldch;
 				tp->t_pack = pp;
 				ws_know[WS_POLYMORPH] |= (monster != omonst);
@@ -165,7 +164,7 @@ do_zap()
 			else
 			{
 				if (see_monst(tp))
-					mvaddch(y, x, tp->t_oldch);
+					display().draw_tile({x, y}, tp->t_oldch);
 				if (which_one == WS_TELAWAY)
 				{
 					tp->t_oldch = '@';
@@ -177,13 +176,9 @@ do_zap()
 					}  while (!(isfloor(winat(new_yx.y, new_yx.x))));
 					tp->t_pos = new_yx;
 					if (see_monst(tp))
-						mvaddch(tp->t_pos.y, tp->t_pos.x, tp->t_disguise);
+						display().draw_tile(tp->t_pos, tp->t_disguise);
 					else if (on(player, SEEMONST))
-					{
-						standout();
-						mvaddch(tp->t_pos.y, tp->t_pos.x, tp->t_disguise);
-						standend();
-					}
+						display().draw_tile(tp->t_pos, tp->t_disguise, TileStyle::Inverse);
 				}
 				else /* it MUST BE at WS_TELTO */
 				{
@@ -193,7 +188,7 @@ do_zap()
 				if (tp->t_type == 'F')
 					player.t_flags &= ~ISHELD;
 				if (tp->t_pos.y != y || tp->t_pos.x != x)
-					tp->t_oldch = mvinch(tp->t_pos.y, tp->t_pos.x);
+					tp->t_oldch = display().tile_at(tp->t_pos);
 			}
 			tp->t_dest = &hero;
 			tp->t_flags |= ISRUN;
@@ -376,7 +371,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 		pos.x += dir->x;
 		ch = winat(pos.y, pos.x);
 		spotpos[i].s_pos = pos;
-		if ((spotpos[i].s_under = mvinch(pos.y, pos.x)) == dirch)
+		if ((spotpos[i].s_under = display().tile_at(pos)) == dirch)
 			spotpos[i].s_under = 0;
 		switch (ch) {
 		case DOOR:
@@ -408,8 +403,8 @@ fire_bolt(coord *start, coord *dir, const char *name)
 						msg("the flame bounces off the dragon");
 					else {
 						hit_monster(unc(pos), &bolt);
-						if (mvinch(unc(pos)) != dirch)
-							spotpos[i].s_under = mvinch(unc(pos));
+						if (display().tile_at(pos) != dirch)
+							spotpos[i].s_under = display().tile_at(pos);
 					}
 				} else if (ch != 'X' || tp->t_disguise == 'X') {
 					if (start == &hero)
@@ -438,20 +433,15 @@ fire_bolt(coord *start, coord *dir, const char *name)
 				} else
 					msg("the %s whizzes by you", name);
 			}
-			if (is_frost)
-				blue();
-			else
-				red();
 			tick_pause();
-			mvaddch(pos.y, pos.x, dirch);
-			standend();
+			display().draw_tile(pos, dirch, is_frost ? TileStyle::FrostBolt : TileStyle::Bolt);
 			break;
 		}
 	}
 	for (j = 0; j < i; j++) {
 		tick_pause();
 		if (spotpos[j].s_under)
-			mvaddch(spotpos[j].s_pos.y, spotpos[j].s_pos.x, spotpos[j].s_under);
+			display().draw_tile(spotpos[j].s_pos, spotpos[j].s_under);
 	}
 }
 

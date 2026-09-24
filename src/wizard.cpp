@@ -7,7 +7,6 @@
  */
 
 #include "rogue.h"
-#include "curses.h"
 
 #ifdef WIZARD
 static int	get_num(int *place);
@@ -164,7 +163,7 @@ teleport(void)
 	int rm;
 	coord c;
 
-	mvaddch(hero.y, hero.x, chat(hero.y, hero.x));
+	display().draw_tile(hero, chat(hero.y, hero.x));
 	do
 	{
 		rm = rnd_room();
@@ -181,7 +180,7 @@ teleport(void)
 		bcopy(hero,c);
 		look(TRUE);
 	}
-	mvaddch(hero.y, hero.x, PLAYER);
+	display().draw_tile(hero, PLAYER);
 	/*
 	 * turn off ISHELD in case teleportation was done while fighting
 	 * a Fungi
@@ -226,19 +225,16 @@ show_map(void)
 {
 	int y, x, real;
 
-	wdump();
-	clear();
+	display().open_page();
+	display().clear_page();
 	for (y = 1; y < maxrow; y++)
 	for (x = 0; x < COLS; x++)
 	{
-		if (!(real = flat(y, x) & F_REAL))
-		standout();
-		mvaddch(y, x, chat(y, x));
-		if (!real)
-		standend();
+		real = flat(y, x) & F_REAL;
+		display().draw_tile({x, y}, chat(y, x), real ? TileStyle::Normal : TileStyle::Inverse);
 	}
 	show_win("---More (level map)---");
-	wrestor();
+	display().close_page();
 }
 
 static
@@ -247,7 +243,7 @@ get_num(int *place)
 {
 	char numbuf[12];
 
-	getinfo(numbuf,10);
+	input().read_line(numbuf,10);
 	*place = atoi(numbuf);
 	return(*place);
 }

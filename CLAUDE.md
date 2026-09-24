@@ -37,6 +37,7 @@ At runtime the game reads `rogue.opt` (options) and writes `rogue.scr` (scores) 
 ## Architecture (current, pre-modularization)
 
 - **Core types** (`src/core/`): `Random`, `Coord` (the legacy `coord` is an alias), `Dice` (parses damage strings like `"1d2/1d5"`), and `Flags<E>`, a bitset for opted-in enums (`RoomFlag`/`RoomFlags` so far).
+- **Game state** (`src/game/`): `rogue::Game`, reached through `game()`, gathers the former globals group by group (phase 5; only `options` so far). The rest still live in `extern.cpp`/`init.cpp`.
 - **Headers**:
   - `extern.h`: libc includes, POSIX feature macros, and libc "overrides": `#define access(f) access(f, F_OK)`, `stpchr`, `setmem`/`bcopy`. Remember these when a libc call behaves unexpectedly.
   - `rogue.h`: game constants, structs, globals, prototypes, plus accessor macros like `#define t_pos _t._t_pos` over `union thing` (THING).

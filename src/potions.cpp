@@ -143,7 +143,7 @@ quaff(void)
 			invis_on();
 		}
 		sight();
-		msg("this potion tastes like %s juice", fruit);
+		msg("this potion tastes like %s juice", game().options.fruit);
 	when P_RAISE:
 		p_know[P_RAISE] = TRUE;
 		msg("you suddenly feel much more skillful");

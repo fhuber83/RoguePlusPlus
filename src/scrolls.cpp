@@ -86,7 +86,7 @@ read_scroll()
 		 */
 		s_know[S_IDENT] = TRUE;
 		msg("this scroll is an identify scroll");
-		if (! strcmp(s_menu,"on") || !strcmp(s_menu,"sel"))
+		if (! strcmp(game().options.menu,"on") || !strcmp(game().options.menu,"sel"))
 			more(" More ");
 		whatis();
 	when S_MAP:
@@ -179,7 +179,7 @@ read_scroll()
 		 * Reading it is a mistake and produces laughter at the
 		 * poor rogue's boo boo.
 		 */
-			msg(laugh, terse || expert ? "" : in_dist);
+			msg(laugh, game().options.brief() ? "" : in_dist);
 	when S_REMOVE:
 		if (cur_armor != NULL)
 			cur_armor->o_flags &= ~ISCURSED;
@@ -216,7 +216,7 @@ read_scroll()
 		 * If he doesn't have a weapon I get to chortle again!
 		 */
 		if (cur_weapon == NULL || cur_weapon->o_type != WEAPON)
-			msg(laugh, terse || expert ? "" : in_dist);
+			msg(laugh, game().options.brief() ? "" : in_dist);
 		else {
 			/*
 			 * You aren't allowed to doubly vorpalize a weapon.
@@ -233,7 +233,7 @@ read_scroll()
 				cur_weapon->o_dplus++;
 				cur_weapon->o_charges = 1;
 				msg(flashmsg, w_names[cur_weapon->o_which],
-					terse || expert ? "" : intense);
+					game().options.brief() ? "" : intense);
 
 				/*
 				 * Sometimes this is a mixed blessing ...

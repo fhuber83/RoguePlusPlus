@@ -279,7 +279,7 @@ init_names()
 	for (i = 0; i < MAXSCROLLS; i++)
 	{
 	cp = prbuf;
-	nwords = rnd(terse?3:4) + 2;
+	nwords = rnd(game().options.terse?3:4) + 2;
 	while (nwords--)
 	{
 		nsyl = rnd(2) + 1;

@@ -95,8 +95,7 @@ talloc()
 	{
 		if (_t_alloc[i] == 0)
 		{
-			if (++total > maxitems)
-			maxitems = total;
+			++total;
 			_t_alloc[i]++;
 			setmem(&_things[i],sizeof(THING),0);
 			return &_things[i];

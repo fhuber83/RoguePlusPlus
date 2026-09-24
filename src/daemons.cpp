@@ -157,7 +157,7 @@ stomach(void)
 		 * (e.g. 3-(80/40) = 1, 3-(40/40) = 2 : pretty gross huh?)
 		 */
 		deltafood = ring_eat(LEFT) + ring_eat(RIGHT) + 1;
-		if (terse)
+		if (game().options.terse)
 			deltafood *= 2;
 		food_left -= deltafood;
 

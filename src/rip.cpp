@@ -44,7 +44,7 @@ score(int amount, int flags, char monst)
 	{
 		wait_msg("see rankings");
 	}
-	while ((file = fopen(s_score, "r")) == NULL)
+	while ((file = fopen(game().options.score_file, "r")) == NULL)
 	{
 		display().write("\n");
 		if (noscore || (amount == 0))
@@ -55,7 +55,7 @@ reread:
 		{
 		case 'c':
 		case 'C':
-			fclose(fopen(s_score, "w"));
+			fclose(fopen(game().options.score_file, "w"));
 			break;
 		case 'r':
 		case 'R':
@@ -72,7 +72,7 @@ reread:
 
 	if (noscore != TRUE)
 	{
-		strcpy(his_score.sc_name,whoami);
+		strcpy(his_score.sc_name,game().options.name);
 		his_score.sc_gold = amount;
 		his_score.sc_fate = flags ? flags : monst;
 		his_score.sc_level = max_level;
@@ -81,7 +81,7 @@ reread:
 	}
 	fclose(file);
 	if (rank > 0) {
-		if ((file = fopen(s_score, "w")) != NULL) {
+		if ((file = fopen(game().options.score_file, "w")) != NULL) {
 			put_scores(top_ten);
 			fclose(file);
 		}
@@ -218,7 +218,7 @@ death(char monst)
 	//@ killname() leaves the death reason in prbuf
 	killname(monst, TRUE);
 	year = md_localtime()->year;
-	display().draw_tombstone(whoami, prbuf, purse, year);
+	display().draw_tombstone(game().options.name, prbuf, purse, year);
 	display().curtain_up();
 	display().write_at(LINES-1, 0, "");
 	score(purse, 0, monst);
@@ -238,7 +238,7 @@ total_winner(void)
 	int oldpurse;
 	char buf[132];  //@ as printw() had
 
-	display().draw_winner(terse);
+	display().draw_winner(game().options.terse);
 	wait_for(' ');
 	display().clear_page();
 	display().write_at(0, 0, "   Worth  Item");

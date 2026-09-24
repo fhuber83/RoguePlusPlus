@@ -26,13 +26,13 @@ byte swap_bits(
 void
 setup()
 {
-	terse = FALSE;
+	game().options.terse = FALSE;
 	maxrow = 23;
 	if (COLS == 40) {
 		maxrow = 22;
-		terse = TRUE;
+		game().options.terse = TRUE;
 	}
-	expert = terse;
+	game().options.expert = game().options.terse;
 }
 
 
@@ -100,7 +100,7 @@ credits()
 	display().draw_title();
 	input().read_line(tname,23);
 	if (*tname && *tname != ESCAPE)
-		strcpy(whoami, tname);
+		strcpy(game().options.name, tname);
 	display().end_title();
 }
 

@@ -68,9 +68,9 @@ inv_name(THING *obj, bool drop)
 	when FOOD:
 		if (which == 1)
 			if (obj->o_count == 1)
-				sprintf(pb, "A%s %s", vowelstr(fruit), fruit);
+				sprintf(pb, "A%s %s", vowelstr(game().options.fruit), game().options.fruit);
 			else
-				sprintf(pb, "%d %ss", obj->o_count, fruit);
+				sprintf(pb, "%d %ss", obj->o_count, game().options.fruit);
 		else
 			if (obj->o_count == 1)
 				strcpy(pb, "Some food");
@@ -158,7 +158,7 @@ chopmsg(char *s, const char *shmsg, const char *lnmsg, ...)
 {
 	va_list argp;
 	va_start(argp, lnmsg);
-	vsnprintf(s, MAXSTR, (terse || expert) ? shmsg : lnmsg, argp);
+	vsnprintf(s, MAXSTR, game().options.brief() ? shmsg : lnmsg, argp);
 	va_end(argp);
 }
 
@@ -572,7 +572,7 @@ nothing(byte type)
 	const char *tystr;
 
 	sprintf(prbuf, "Haven't discovered anything");
-	if (terse)
+	if (game().options.terse)
 		sprintf(prbuf,"Nothing");
 	sp = &prbuf[strlen(prbuf)];
 	switch (type)

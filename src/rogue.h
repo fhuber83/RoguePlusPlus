@@ -460,14 +460,13 @@ struct monster {
 	struct stats m_stats;		/* Initial stats */
 };
 
+#include "game/Game.hpp"
+
 /*
  * External variables
  * @ all in extern.c unless noted (init.c, env.c, croot.c, main.c, protect.c)
  */
-extern int maxitems;
 extern int maxrow;
-extern int reinit;
-extern int revno, verno;
 extern int is_me;
 extern int iguess;
 extern bool bailout;
@@ -479,8 +478,8 @@ extern const char *it, *you, *no_mem;
 extern char *s_guess[], *p_guess[], *r_guess[], *ws_guess[];
 extern char f_damage[];
 
-extern bool amulet, after, again, door_stop, expert, fastmode, faststate,
-			firstmove, noscore, playing, running, save_msg, saw_amulet, terse;
+extern bool amulet, after, again, door_stop, fastmode, faststate,
+			firstmove, noscore, playing, running, save_msg, saw_amulet;
 
 //@ originally a bool. See extern.c, move.c, misc.c
 extern unsigned char was_trapped;
@@ -502,7 +501,6 @@ extern int	a_chances[], a_class[], count, food_left,
 		ntraps, purse, quiet, total;
 
 
-extern char *_whoami;  //@ defined (no value set) but seems unused
 
 extern THING *cur_armor, *cur_ring[], *cur_weapon,
 		*lvl_obj, *mlist, player;
@@ -534,10 +532,7 @@ extern struct array s_names[], _guesses[];
 
 
 //@ env.c
-extern char s_menu[], s_fruit[], s_score[], s_save[], s_macro[];
-extern char s_drive[], s_screen[];
-extern char fruit[], macro[], whoami[];
-//@ extern char s_name[];  //@ not found. Perhaps old name for whoami[]?
+//@ the options it reads are in game().options
 
 
 //@ init.c

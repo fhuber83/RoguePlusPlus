@@ -25,7 +25,7 @@ ifterse(const char *tfmt, const char *fmt, ...)
 	va_list argp;
 	va_start(argp, fmt);
 
-	if (expert)
+	if (game().options.expert)
 		vmsg(tfmt, argp);
 	else
 		vmsg(fmt, argp);
@@ -356,12 +356,6 @@ SIG2(void)
 		showtime = TRUE;
 	}
 
-	if (reinit)
-	{
-		reinit = FALSE;
-		showtime = TRUE;
-	}
-
 	if (showtime)
 		rogue::ui::display().draw_clock(bighand ? bighand : 12, littlehand);
 }
@@ -369,5 +363,5 @@ SIG2(void)
 const char *
 noterse(const char *str)
 {
-	return( terse || expert ? nullstr : str);
+	return( game().options.brief() ? nullstr : str);
 }

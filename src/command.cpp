@@ -218,15 +218,15 @@ execcom()
 		when 'D': after = FALSE; discovered();
 		when CTRL('T'):
 			after = FALSE;
-			msg((expert ^= 1)
+			msg((game().options.expert ^= 1)
 				? "Ok, I'll be brief"
 				: "Goodie, I can use big words again!");
-		when 'F': after = FALSE; do_macro(macro, MACROSZ);
-		when CTRL('F'): after = FALSE; typebuf = macro;
+		when 'F': after = FALSE; do_macro(game().options.macro, MACROSZ);
+		when CTRL('F'): after = FALSE; typebuf = game().options.macro;
 		when CTRL('R'): after = FALSE; msg(huh);
 		when 'v':
 			after = FALSE;
-			msg("Rogue version %d.%d (Mr. Mctesq was here), dungeon %u", revno, verno,
+			msg("Rogue version %d.%d (Mr. Mctesq was here), dungeon %u", REV, VER,
 				rogue::rng().seed());
 		when 'S': after = FALSE; save_game();
 		when '.': doctor();

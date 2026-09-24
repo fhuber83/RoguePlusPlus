@@ -18,9 +18,6 @@
 
 #include "rogue.h"
 
-//@ both derived from `screen` in env file and used in curses.c
-int bwflag = FALSE;
-
 /*
  * endit:
  *	Exit the program abnormally.
@@ -74,7 +71,7 @@ quit()
 	mpos = 0;
 	here = display().write("");  //@ where the cursor was
 	display().clear_line(0);
-	if (!terse)
+	if (!game().options.terse)
 		display().write_at(0, 0, "Do you wish to ");
 	str_attr("end your quest now (%Yes/%No) ?");
 	look(FALSE);

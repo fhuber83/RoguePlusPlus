@@ -7,13 +7,6 @@
 #include "rogue.h"
 
 /*
- * revno: current revision level
- * verno: current version of a particular rev
- */
-int revno = REV;
-int verno = VER;
-
-/*
  * All this should be low as possible in memory so that
  * we can save the min
  */
@@ -267,12 +260,6 @@ const char *he_man[] = {
 	"Bug Chaser"
 };
 
-/*
- * Lattice C compiler funnies
- */
-int maxitems = 0;
-int reinit = FALSE;
-
 bool after;				/* True if we want after daemons */
 bool noscore;				/* Was a wizard sometime */
 bool again;			/* The last command is repeated */
@@ -294,8 +281,6 @@ bool playing = TRUE;			/* True until he quits */
 bool running = FALSE;			/* True if player is running */
 bool save_msg = TRUE;			/* Remember last msg */
 /* bool slow_invent = FALSE; */		/* Inventory one line at a time */
-bool terse = FALSE;
-bool expert = FALSE;
 /*@
  * `was_trapped` was originally a bool, which in original code was typedef'd as
  * unsigned char. As it is used in ++ increment and > test, I've reverted it
@@ -341,8 +326,6 @@ int quiet = 0;				/* Number of quiet turns */
 int food_left;				/* Amount of food in hero's stomach */
 int group = 2;				/* Current group number */
 int hungry_state = 0;			/* How hungry is he */
-
-char *_whoami;
 
 /* WINDOW *hw;				 Used as a scratch window */
 

@@ -280,7 +280,7 @@ eat()
 	if (obj == cur_weapon)
 		cur_weapon = NULL;
 	if (obj->o_which == 1)
-		msg("my, that was a yummy %s", fruit);
+		msg("my, that was a yummy %s", game().options.fruit);
 	else
 		if (rnd(100) > 70)
 		{
@@ -592,13 +592,13 @@ help(struct h_list *helpscr)
 	while (*helpscr->h_desc && answer != ESCAPE)
 	{
 		isfull = FALSE;
-		if ((hcount % (terse?23:46)) == 0)
+		if ((hcount % (game().options.terse?23:46)) == 0)
 			display().clear_page();
 		/*
 		 * determine row and column
 		 */
 		hcol = 0;
-		if (terse)
+		if (game().options.terse)
 		{
 			hrow = hcount % 23;
 			if (hrow == 22)
@@ -624,7 +624,7 @@ help(struct h_list *helpscr)
 		{
 			if (*helpscr->h_desc == 0)
 				display().write_at(24, 0, "--press space to continue--");
-			else if (terse)
+			else if (game().options.terse)
 				display().write_at(24, 0, "--Space for more, Esc to continue--");
 			else
 				display().write_at(24, 0, "--Press space for more, Esc to continue--");

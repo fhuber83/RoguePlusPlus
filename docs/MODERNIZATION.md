@@ -83,6 +83,13 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - Glyph codes stay CP437 bytes, because game logic compares them and they double as item kinds. Separating them is phase 6.
      - Verified with the A/B, quit, fuzz, name-editing, Hall of Fame and monochrome (`SCREEN=bw`) replays: identical apart from mid-curtain frames.
 
+5. **Game state** (in progress). Globals move into `rogue::Game` (`game/Game.hpp`), reached through `rogue::game()` the way `display()` is. `rogue.h` includes it after the legacy types it holds, so game files keep including only `rogue.h`. Each group of globals is deleted and the compiler finds every use, which leaves locals that shadow a global alone.
+   - **5.1 Options.**
+     - `game().options` (`rogue::Options`) holds what `rogue.opt`, the name prompt and the in-game toggles set: `name` (was `whoami`), `fruit`, `macro`, `score_file`, `save_file`, `drive`, `menu`, `screen`, `monochrome` (was `bwflag`), `terse` and `expert`. The buffers keep their original sizes. `brief()` replaces the repeated `terse || expert`.
+     - `env.cpp` builds its label table per call, since it now points into the game.
+     - Deleted dead globals: `revno`/`verno` (the `v` command prints `REV`/`VER`), `maxitems` (written, never read), `reinit` (never set) and `_whoami`.
+     - Verified with the A/B replay over four seeds plus two seeds with a `rogue.opt` that sets every option (name, fruit, macro, `menu=sel`, `screen=bw`, score file). The replays now end on the score screen with a pre-created score file, and the score files are compared too. All identical apart from one mid-curtain frame. `tests/game/GameTest.cpp` covers the defaults and reading `rogue.opt`.
+
 ## Target architecture
 
 ```
@@ -112,7 +119,14 @@ Each phase is a series of small commits that each build and play.
    4. *Done:* full-screen views, in-game pages and prompts (4.4a), title and ending screens (4.4b).
    5. *Done:* input behind `ui::Input`, and no game file includes the DOS screen API.
    6. *Done:* the DOS emulation is gone (see above).
-5. **Game state.** Gather the ~90 globals from `extern.cpp`/`init.cpp` into a `Game` context (player, level, monster list, floor items, RNG, scheduler, known-item tables, options). Free functions take or reach it explicitly, and globals are removed one group at a time.
+5. **Game state** (*in progress*, see above). Gather the ~90 globals from `extern.cpp`/`init.cpp` into a `Game` context (player, level, monster list, floor items, RNG, scheduler, known-item tables, options). Free functions take or reach it explicitly, and globals are removed one group at a time. Steps:
+   1. *Done:* options (see above).
+   2. Messages and command state: `after`, `again`, `count`, `running`, `delta`, `huh`, `mpos`, the `command.cpp` and `io.cpp` statics, ...
+   3. The player: `player`, `max_stats`, `purse`, food and hunger, worn and wielded items, `amulet`, ...
+   4. The level: `level`, `rooms`, `passages`, the map and flag grids, floor items and monsters, traps.
+   5. Items: the known-item and guess tables, per-game names, colours, stones and materials, the probability tables that `init_*()` accumulates, and the item pool.
+   6. The scheduler (`daemon.cpp` slots) and the RNG.
+   Algorithm scratch state (`maze.cpp`, `passages.cpp`, `ch_ret`, ...) and fixed tables stay where they are until phase 7.
 6. **Entities.**
    - Split `union thing` into `Monster` and `Item`.
    - Item kinds become an `enum class` with a separate glyph mapping, and creature/object flags become `rogue::Flags`.
@@ -132,6 +146,8 @@ Each phase is a series of small commits that each build and play.
    - Remove the `//@` port annotations once the code they describe is gone.
 
 ## Notes for whoever continues
+
+- `score()` writes `sc_name[38]` to `rogue.scr` with uninitialized bytes after the name. Harmless, but compare score files by the name up to its NUL. Phase 8 replaces the format.
 
 - `faststate` ("Fast Play") used to be toggled by Scroll Lock and is now always `FALSE`. Reintroduce it as a real option or key if wanted.
 - `save_game()` prints "saving games is disabled" and `restore()` exits with a message. Phase 8 brings real saving.

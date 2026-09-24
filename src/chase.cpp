@@ -195,7 +195,7 @@ see_monst(THING *mp)
 	  && ((cur_weapon->o_flags & DIDFLASH) == 0))
 	{
 		cur_weapon->o_flags |=	DIDFLASH;
-		msg(flashmsg, w_names[cur_weapon->o_which], terse	|| expert ? "" : intense);
+		msg(flashmsg, w_names[cur_weapon->o_which], game().options.brief() ? "" : intense);
 	}
 	return TRUE;
 }

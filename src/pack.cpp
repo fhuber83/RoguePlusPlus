@@ -313,8 +313,8 @@ get_item(const char *purpose, int type)
 	byte gi_state;	/* get item sub state */
 	int once_only = FALSE;
 
-	if (((!strncmp(s_menu,"sel",3) && strcmp(purpose,"eat")
-	  && strcmp(purpose,"drop"))) || !strcmp(s_menu,"on"))
+	if (((!strncmp(game().options.menu,"sel",3) && strcmp(purpose,"eat")
+	  && strcmp(purpose,"drop"))) || !strcmp(game().options.menu,"on"))
 		once_only = TRUE;
 
 	gi_state = again;
@@ -334,7 +334,7 @@ get_item(const char *purpose, int type)
 				ch = '*';
 				goto skip;
 			}
-			if (!terse && !expert)
+			if (!game().options.brief())
 				addmsg("which object do you want to ");
 			msg("%s? (* for list): ",purpose);
 			/*

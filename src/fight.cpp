@@ -435,7 +435,7 @@ hit(const char *er, const char *ee)
 	const char *s = "";
 
 	addmsg(prname(er, TRUE));
-	switch ((terse || expert) ? 1 : rnd(4))
+	switch (game().options.brief() ? 1 : rnd(4))
 	{
 		when 0: s = " scored an excellent hit on ";
 		when 1: s = " hit ";
@@ -457,7 +457,7 @@ miss(const char *er, const char *ee)
 
 
 	addmsg(prname(er, TRUE));
-	switch ((terse || expert) ? 1 : rnd(4))
+	switch (game().options.brief() ? 1 : rnd(4))
 	{
 		when 0: s = (er == 0 ? " swing and miss" : " swings and misses");
 		when 1: s = (er == 0 ? " miss" : " misses");

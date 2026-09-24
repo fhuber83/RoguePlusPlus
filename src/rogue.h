@@ -424,6 +424,7 @@ extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
 #include "items/Identification.hpp"
 #include "items/Inventory.hpp"
 #include "items/effects/Potion.hpp"
+#include "items/effects/Scroll.hpp"
 
 using rogue::items::new_thing;
 using rogue::items::inv_name;
@@ -442,6 +443,7 @@ using rogue::items::effects::quaff;
 using rogue::items::effects::invis_on;
 using rogue::items::effects::turn_see;
 using rogue::items::effects::th_effect;
+using rogue::items::effects::read_scroll;
 
 /*
  * External variables
@@ -702,9 +704,6 @@ void	leave_room(coord *cp);
 //@ save.c
 void	save_game(void);
 void	restore(char *savefile);
-
-//@ scrolls.c
-void read_scroll(void);
 
 //@ slime.c
 void	slime_split(Creature *tp);

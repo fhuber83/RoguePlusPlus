@@ -1,10 +1,6 @@
-/*
- * Read a scroll and let it happen
- *
- * scrolls.c	1.4 (AI Design)	12/14/84
- */
-
 #include "rogue.h"
+
+namespace rogue::items::effects {
 
 const char *laugh = "you hear maniacal laughter%s.";
 const char *in_dist = " in the distance";
@@ -275,3 +271,5 @@ read_scroll()
 	if (discardit)
 	discard(obj);
 }
+
+}  // namespace rogue::items::effects

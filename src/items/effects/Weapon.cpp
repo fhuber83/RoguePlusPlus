@@ -1,10 +1,6 @@
-/*
- * Functions for dealing with problems brought about by weapons
- *
- * weapons.c	1.4 (AI Design)	12/22/84
- */
-
 #include "rogue.h"
+
+namespace rogue::items::effects {
 
 #define NONE 100
 
@@ -325,3 +321,5 @@ tick_pause(void)
 	display().flush();
 	msleep(55);
 }
+
+}  // namespace rogue::items::effects

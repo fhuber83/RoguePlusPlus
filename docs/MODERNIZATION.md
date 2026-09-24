@@ -159,6 +159,8 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
   - Verified: same seed gives an identical opening frame; `rogue_tests` passes.
 - **7.1g Rings.** `rings.cpp` (`ring_on()`, `ring_off()`, `ring_eat()`, `ring_num()`, and the private `gethand()`) moves to `src/items/effects/Ring.{hpp,cpp}`, same treatment as 7.1d-f. `rings.cpp` is deleted.
   - Verified: same seed gives an identical opening frame; `rogue_tests` passes.
+- **7.1h Armor and weapons.** `armor.cpp` (`wear()`, `take_off()`, `waste_time()`) moves to `src/items/effects/Armor.{hpp,cpp}`; `weapons.cpp` (`missile()`, `do_motion()`, `fall()`, `init_weapon()`, `hit_monster()`, `num()`, `wield()`, `tick_pause()`, and the private `short_name()`/`fallpos()`/`init_dam[]`) moves to `src/items/effects/Weapon.{hpp,cpp}`. Same treatment as 7.1d-g. Both source files are deleted. This closes out 7.1: every item-domain file (`things.cpp`, `pack.cpp`, `potions.cpp`, `scrolls.cpp`, `sticks.cpp`, `rings.cpp`, `armor.cpp`, `weapons.cpp`) now lives under `src/items/`.
+  - Verified: same seed gives an identical opening frame; a manual playthrough exercised `take_off` (`T`), `wear` (`W`, including the mid-dress monster hit `waste_time()` allows). `rogue_tests` passes.
 
 ## Target architecture
 
@@ -205,11 +207,11 @@ Each phase is a series of small commits that each build and play.
    - *Done:* replace the `#define t_pos _t._t_pos` accessor macros with members.
    - *Done:* fix the three reads of a discarded pool slot that would break under owning containers (see 6.5).
 7. **Domain modules.** Move behaviour into the target directories. Level generation, item effects, combat and monster spawning/AI are mutually coupled in the original (`rooms.cpp`/`new_leve.cpp` call `new_thing()`/`new_creature()`/`new_monster()`/`give_pack()` to populate rooms; `fight.cpp` calls `slime_split()` which calls `new_monster()`; `potions.cpp`'s `th_effect()` is called from `fight.cpp`; `scrolls.cpp`/`sticks.cpp` call monster-waking/spawning functions) — there is no clean leaf to start from. A namespaced function can still be called by not-yet-moved legacy code (the same trick `display()`/`rng()` used in phases 4-5), so no ordering is a hard blocker; the choice below is about which files get touched twice (once when moved, again when whatever they call moves later) versus once. `items/` is furthest upstream of the rest (level gen, combat and monster spawning all call into it), so it goes first. Steps:
-   1. Items (`potions.cpp`, `scrolls.cpp`, `sticks.cpp`, `rings.cpp`, `armor.cpp`, `weapons.cpp`, the catalog/inventory pieces of `things.cpp`/`pack.cpp`) become `items/`: per-kind effect handlers, `ItemCatalog` (`new_thing()` and friends) and `Inventory`. The largest step, split further:
+   1. *Done:* Items (`potions.cpp`, `scrolls.cpp`, `sticks.cpp`, `rings.cpp`, `armor.cpp`, `weapons.cpp`, the catalog/inventory pieces of `things.cpp`/`pack.cpp`) become `items/`: per-kind effect handlers, `ItemCatalog` (`new_thing()` and friends) and `Inventory`. The largest step, split further:
       1. *Done:* Catalog (`new_thing()`, `pick_one()`) becomes `items::ItemCatalog` (7.1a).
       2. *Done:* Identification/display (`inv_name()`, `discovered()`, `add_line()`/`end_line()`, `print_disc()`, `set_order()`, `nothing()`, `chopmsg()`) becomes `items::Identification` (7.1b).
       3. *Done:* Inventory (all of `pack.cpp`, plus `drop()`/`can_drop()` from `things.cpp`) becomes `items::Inventory` (7.1c). `pack.cpp` and `things.cpp` are gone.
-      4. Effects, one commit per kind, `items::effects::*`: *done:* potions (7.1d), scrolls (7.1e), wands (7.1f), rings (7.1g). Remaining: armor and weapons.
+      4. Effects, one commit per kind, `items::effects::*`: *done:* potions (7.1d), scrolls (7.1e), wands (7.1f), rings (7.1g), armor and weapons (7.1h). 7.1 is complete.
    2. Scheduler (`daemon.cpp`, `daemons.cpp`) becomes `rules::Scheduler`; the function-pointer slots become typed events. Self-contained.
    3. Commands (`command.cpp`) becomes `game::CommandDispatcher` over a `Command` enum. Only touches the dispatch layer and the key table in `mach_dep.cpp`.
    4. Combat (`fight.cpp`) becomes `rules::Combat`. After items, since it reads their internals and calls `th_effect()`.

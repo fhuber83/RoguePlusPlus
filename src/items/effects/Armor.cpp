@@ -1,10 +1,6 @@
-/*
- * This file contains misc functions for dealing with armor
- * @(#)armor.c		1.2 (AI Design)		2/12/84
- *
- */
-
 #include "rogue.h"
+
+namespace rogue::items::effects {
 
 /*
  * wear:
@@ -65,3 +61,5 @@ waste_time()
 	do_daemons();
 	do_fuses();
 }
+
+}  // namespace rogue::items::effects

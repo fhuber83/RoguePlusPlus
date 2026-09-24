@@ -427,6 +427,8 @@ extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
 #include "items/effects/Scroll.hpp"
 #include "items/effects/Wand.hpp"
 #include "items/effects/Ring.hpp"
+#include "items/effects/Armor.hpp"
+#include "items/effects/Weapon.hpp"
 
 using rogue::items::new_thing;
 using rogue::items::inv_name;
@@ -455,6 +457,17 @@ using rogue::items::effects::ring_on;
 using rogue::items::effects::ring_off;
 using rogue::items::effects::ring_eat;
 using rogue::items::effects::ring_num;
+using rogue::items::effects::wear;
+using rogue::items::effects::take_off;
+using rogue::items::effects::waste_time;
+using rogue::items::effects::missile;
+using rogue::items::effects::do_motion;
+using rogue::items::effects::fall;
+using rogue::items::effects::init_weapon;
+using rogue::items::effects::hit_monster;
+using rogue::items::effects::num;
+using rogue::items::effects::wield;
+using rogue::items::effects::tick_pause;
 
 /*
  * External variables
@@ -502,11 +515,6 @@ extern char *ring_buf;
  * @ curses.c has its own header
  * @ mach_dep.c functions are declared in extern.h
  */
-
-//@ armor.c
-void	wear(void);
-void	take_off(void);
-void	waste_time(void);
 
 //@ chase.c
 void	runners(void);
@@ -725,16 +733,6 @@ char	*stccpy(char *s1, char *s2, int count);
 char	*stpblk(char *str);
 char	*endblk(char *str);
 void	lcase(char *str);
-
-//@ weapons.c
-void	missile(int ydelta, int xdelta);
-void	do_motion(Item *obj, int ydelta, int xdelta);
-void	fall(Item *obj, bool pr);
-void	init_weapon(Item *weap, byte type);
-void	wield(void);
-void	tick_pause(void);
-char	*num(int n1, int n2, char type);
-bool	hit_monster(int y, int x, Item *obj);
 
 //@ wizard.c
 void	whatis(void);

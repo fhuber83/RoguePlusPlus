@@ -10,7 +10,8 @@
  * Headers not related to curses or provided externally were moved elsewhere.
  * Unused headers were removed.
  *
- * The DOS curses implementation, curses.c, shall NOT include this header
+ * The terminal backend, ui/curses/CursesTerminal.cpp, shall NOT include
+ * this header
  *
  * This is, along with the included curses_common.h header, is the curses
  * public API as used by the game.
@@ -51,14 +52,15 @@
 
 
 /*@
- * Global variables declarations. All defined in curses.c
+ * Screen size. Fixed at 80x25 (see rogue::ui::Screen); these used to be the
+ * ncurses globals of the same name. const gives them internal linkage, so
+ * they do not clash with ncurses' own symbols.
  */
-extern int LINES, COLS;
+const int LINES = MAXLINES;
+const int COLS = MAXCOLS;
+
+/*@
+ * Global variables declarations. All defined in ui/DosScreen.cpp
+ */
 extern int is_saved;
 extern int scr_type;
-
-/*
- * we need to know location of screen being saved
- * @ used in save.c
- */
-extern char savewin[];

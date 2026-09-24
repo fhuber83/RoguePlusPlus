@@ -34,6 +34,14 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
    - `core/Flags<E>` is an opt-in, type-safe bitset. Room flags are now `RoomFlags` (`RoomFlag::Dark/Gone/Maze`).
    - Fixed an original bug found by a test: the 13th entry of `passages[]` was never initialized as a dark corridor.
    - **Deferred to phase 6:** item kinds as an `enum class`, and creature/object flags as `Flags`. Item kinds double as map glyphs (`POTION == '!'`), and both flag sets live in `union thing`, so they move together with the THING split.
+4. **UI seam** (in progress, see the phase 4 steps below).
+   - **4.1 Screen and terminal.**
+     - `ui::Screen` is an 80×25 grid of CP437 cells with a cursor and a current DOS attribute, standing in for PC Rogue's video memory. Writes go to the grid and through to a connected `ui::Terminal`. Reads come from the grid.
+     - `mvinch`/`inch` read-back is now exact. The curses port reverse-mapped terminal characters, and in ASCII mode it could not tell room corners from walls.
+     - `curses.cpp` became `ui/curses/CursesTerminal.cpp`, which only paints cells (charset and colour mapping) and reads keys, returned as `ui::key` values.
+     - The DOS screen API the game calls (`cur_*`, `set_attr`, `wdump`/`wrestor`, boxes, curtains, `getinfo`, key translation) moved to `ui/DosScreen.cpp` on top of `Screen`. The local `curses.h` macros are unchanged, so game files did not change.
+     - `LINES`/`COLS` are now constants in the local `curses.h` instead of ncurses' globals. `ROGUE_COLUMNS` and the unused `keypad.h` are gone.
+     - Verified by replaying four seeds with the same keystrokes on the old and new builds. All 360 tmux captures, colours included, were identical. `tests/ui/ScreenTest.cpp` covers the grid headlessly.
 
 ## Target architecture
 
@@ -57,11 +65,13 @@ Dependency rule: `ui` → `game` → (`rules`, `entities`, `items`, `world`) →
 
 Each phase is a series of small commits that each build and play.
 
-4. **UI seam.**
-   - Define `ui::Display` and `ui::Input`.
-   - Route `msg`/`addmsg`/`more`, the map drawing (`mvaddch` in game files), the status line and the full-screen views through them.
-   - Move `curses.cpp` and the drawing half of `io.cpp` into `ui/curses/`.
-   - Delete the DOS-attribute emulation (`curses_dos.h`, CP437 translation) in favour of a clean `Glyph → cchar_t` mapping.
+4. **UI seam.** Game logic stops touching the screen directly. Steps:
+   1. *Done:* `ui::Screen` grid plus `ui::Terminal` backend (see above).
+   2. **Message and status lines.** Put `msg`/`addmsg`/`endmsg`/`more`, `status()` and the `SIG2` clock behind `ui::Display`, and move the drawing half of `io.cpp` into `ui/`.
+   3. **Map.** Game code draws and reads tiles through `Display` (`draw_tile(Coord, …)`, `tile_at(Coord)`) instead of `mvaddch`/`mvinch`.
+   4. **Full-screen views.** Inventory, discoveries, help, tombstone and scores, and credits become `Display` calls.
+   5. **Input.** `readchar`/`getinfo` go behind `ui::Input`.
+   6. **Drop the DOS emulation.** Cells hold a `Glyph` and a style instead of CP437 codes and DOS attributes. `CursesTerminal` maps `Glyph → cchar_t`, and `curses_dos.h`, the CCODE tables and the attribute tables go away.
 5. **Game state.** Gather the ~90 globals from `extern.cpp`/`init.cpp` into a `Game` context (player, level, monster list, floor items, RNG, scheduler, known-item tables, options). Free functions take or reach it explicitly, and globals are removed one group at a time.
 6. **Entities.**
    - Split `union thing` into `Monster` and `Item`.

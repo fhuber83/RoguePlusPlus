@@ -11,6 +11,8 @@
  *  The two basic functions here will be "save" and "restor".
  */
 
+#include "ui/Screen.hpp"
+
 #include "rogue.h"
 #include "curses.h"
 
@@ -145,10 +147,11 @@ save_ds(char *savename)
 	/*
 	 * save the screen (have to bring it into current data segment first)
 	 */
-	wdump();
-	if (fwrite(savewin, 4000, 1, file))
-		errno = 0;
-	wrestor();
+	{
+		rogue::ui::Screen::Snapshot shot = rogue::ui::screen().snapshot();
+		if (fwrite(&shot, sizeof shot, 1, file))
+			errno = 0;
+	}
 
 wr_err:
 	fclose(file);
@@ -262,13 +265,16 @@ rok:
 		fatal("Restore Error: new screen size\n");
 	}
 
-	wdump();
-	if (!fread(savewin, 4000, 1, file))
 	{
-		fclose(file);
-		fatal("Serious restore error");
+		rogue::ui::Screen::Snapshot shot;
+		if (!fread(&shot, sizeof shot, 1, file))
+		{
+			fclose(file);
+			fatal("Serious restore error");
+		}
+		rogue::ui::screen().restore(shot);
+		rogue::ui::screen().refresh();
 	}
-	wrestor();
 
 	fclose(file);
 	//@ no_check = old_check;  //@ no longer your concern

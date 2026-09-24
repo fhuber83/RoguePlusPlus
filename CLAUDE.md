@@ -41,11 +41,15 @@ At runtime the game reads `rogue.opt` (options) and writes `rogue.scr` (scores) 
   - `extern.h`: libc includes, POSIX feature macros, and libc "overrides": `#define access(f) access(f, F_OK)`, `stpchr`, `setmem`/`bcopy`. Remember these when a libc call behaves unexpectedly.
   - `rogue.h`: game constants, structs, globals, prototypes, plus accessor macros like `#define t_pos _t._t_pos` over `union thing` (THING).
   - `extern.cpp`/`init.cpp`: define most of the globals.
-- **Curses layer (two-sided)**: `curses.cpp` reimplements the original DOS screen API on top of ncurses. It translates DOS attributes and CP437 codes to ncurses colours and Unicode. It is the only file that includes the system `<curses.h>`, together with `curses_common.h` and the private `curses_dos.h`. Game files include the local `"curses.h"` instead. That header maps `move`, `clear`, `inch`, `standout`, etc. onto `cur_*` functions and turns `stdscr`/`hw` into `NULL`. **Never include the system `<curses.h>` in game files, and never include the local `curses.h` in `curses.cpp`.**
+- **Screen layer** (`src/ui/`, phase 4 in progress):
+  - `ui::Screen` is the 80×25 cell grid (CP437 code + DOS attribute) the game draws on. Reads such as `mvinch` come from this grid, never from the terminal.
+  - `ui::Terminal` is the backend interface. `ui/curses/CursesTerminal.cpp` implements it and is the only file that includes the system `<curses.h>` (plus the private `ui/curses/curses_dos.h`).
+  - `ui/DosScreen.cpp` implements the original DOS screen API (`cur_*`, `set_attr`, `wdump`/`wrestor`, boxes, curtains, `getinfo`, key translation) on top of `Screen`.
+  - Game files include the local `"curses.h"`, whose macros map `move`, `clear`, `inch`, `standout`, etc. onto those `cur_*` functions. `LINES`/`COLS` there are constants (80×25). **Never include the system `<curses.h>` in game files, and never include the local `curses.h` in the terminal backend.**
 - **Machine layer**: `mach_dep.cpp` holds time, sleep, `readchar`, `newmem`, `fatal`/`md_exit`, and the credits screen.
 - **Game loop**: `app/main.cpp` parses arguments, seeds `rng()`, and sets up the game with `init_*()` → `new_level()`, then starts daemons and fuses (`daemon.cpp` is the scheduler with function-pointer slots, `daemons.cpp` holds the callbacks `doctor`/`stomach`/`runners`/…). `playit()` (in `playit.cpp`, formerly `main.c`) loops over `command()` in `command.cpp`. The domain files are `fight`, `chase` (monster AI), `monsters`/`slime`, `things`/`pack`/`list` (items and the intrusive linked lists), `potions`/`scrolls`/`sticks`/`rings`/`armor`/`weapons`, level generation in `new_leve`/`rooms`/`passages`/`maze`, and endings/scores in `rip`.
-- **Output from game logic** goes straight to the screen: `msg()`/`addmsg()` in `io.cpp`, and `mvaddch` in map code. Phase 4 of the roadmap puts this behind a `Display` interface.
+- **Output from game logic** goes straight to the screen: `msg()`/`addmsg()` in `io.cpp`, and `mvaddch` in map code. Phase 4 of the roadmap puts this behind a `Display` interface. `tests/ui/ScreenTest.cpp` shows how to drive a `Screen` headlessly with a fake `Terminal`.
 
 ## Compile-time macros
 
-CMake sets `MINROG` and `ROGUE_CHARSET=3` (1=ASCII, 2=CP437, 3=UNICODE; UNICODE falls back to ASCII without wide-char curses). Remaining optional switches: `WIZARD` (debug commands), `DEBUG`, `ROGUE_DEBUG`, `ROGUE_COLUMNS` (default 80), and `ROGUE_SCR_TYPE`.
+CMake sets `MINROG` and `ROGUE_CHARSET=3` (1=ASCII, 2=CP437, 3=UNICODE; UNICODE falls back to ASCII without wide-char curses). Remaining optional switches: `WIZARD` (debug commands), `DEBUG`, `ROGUE_DEBUG`, and `ROGUE_SCR_TYPE`.

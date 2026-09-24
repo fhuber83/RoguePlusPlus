@@ -11,8 +11,9 @@ void
 command()
 {
 	int ntimes;
+	rogue::Player &player = game().player;
 
-	if (on(player, ISHASTE))
+	if (on(player.body, ISHASTE))
 		ntimes = rnd(2) + 2;
 	else
 		ntimes = 1;
@@ -22,10 +23,10 @@ command()
 		if (wizard)
 			game().noscore = TRUE;
 #endif
-		if (no_command) {
-			if (--no_command <= 0) {
+		if (player.no_command) {
+			if (--player.no_command <= 0) {
 				msg("you can move again");
-				no_command = 0;
+				player.no_command = 0;
 			}
 			display().flush();  //@ sleeping, fainted, frozen, etc
 		} else
@@ -34,9 +35,9 @@ command()
 		do_daemons();
 		for (ntimes = LEFT; ntimes <= RIGHT; ntimes++)
 		{
-			if (cur_ring[ntimes])
+			if (player.rings[ntimes])
 			{
-				switch (cur_ring[ntimes]->o_which)
+				switch (player.rings[ntimes]->o_which)
 				{
 				when R_SEARCH:
 					search();
@@ -140,7 +141,7 @@ get_prefix()
 	case 'h': case 'j': case 'k': case 'l':
 	case 'y': case 'u': case 'b': case 'n':
 		if (turn.fast_mode && !turn.running ) {
-			if (!on(player, ISBLIND)) {
+			if (!on(game().player.body, ISBLIND)) {
 				turn.door_stop = TRUE;
 				turn.first_move = TRUE;
 			}

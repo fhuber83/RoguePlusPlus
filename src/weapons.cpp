@@ -53,7 +53,7 @@ missile(int ydelta, int xdelta)
 	hack:
 	if (obj->o_count < 2) {
 		detach(pack, obj);
-		inpack--;
+		game().player.in_pack--;
 	} else {
 		/*
 		 * here is a quick hack to check if we can get a new item
@@ -65,7 +65,7 @@ missile(int ydelta, int xdelta)
 		}
 		obj->o_count--;
 		if (obj->o_group == 0)
-			inpack--;
+			game().player.in_pack--;
 		bcopy(*nitem,*obj);
 		nitem->o_count = 1;
 		obj = nitem;
@@ -246,14 +246,15 @@ wield(void)
 {
 	THING *obj, *oweapon;
 	char *sp;
+	rogue::Player &player = game().player;
 
-	oweapon = cur_weapon;
-	if (!can_drop(cur_weapon))
+	oweapon = player.weapon;
+	if (!can_drop(player.weapon))
 	{
-		cur_weapon = oweapon;
+		player.weapon = oweapon;
 		return;
 	}
-	cur_weapon = oweapon;
+	player.weapon = oweapon;
 	if ((obj = get_item("wield", WEAPON)) == NULL)
 	{
 bad:
@@ -270,7 +271,7 @@ bad:
 		goto bad;
 
 	sp = inv_name(obj, TRUE);
-	cur_weapon = obj;
+	player.weapon = obj;
 	ifterse2("now wielding %s (%c)", "you are now wielding %s (%c)",
 		sp, pack_char(obj));
 }

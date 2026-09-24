@@ -111,7 +111,7 @@ f_restor(void)
 {
 	struct monster *mp = &monsters['F'-'A'];
 
-	fung_hit = 0;
+	game().player.fung_hit = 0;
 	strcpy(f_damage, mp->m_stats.s_dmg);
 }
 
@@ -191,7 +191,7 @@ wake_monster(int y, int x)
 		tp->t_dest = &hero;
 		tp->t_flags |= ISRUN;
 	}
-	if (ch == 'M' && !on(player, ISBLIND) && !on(*tp, ISFOUND)
+	if (ch == 'M' && !on(game().player.body, ISBLIND) && !on(*tp, ISFOUND)
 		&& !on(*tp, ISCANC) && on(*tp, ISRUN))
 	{
 		rp = proom;
@@ -199,11 +199,11 @@ wake_monster(int y, int x)
 		if ((rp != NULL && !rp->r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
 			tp->t_flags |= ISFOUND;
 			if (!save(VS_MAGIC)) {
-				if (on(player, ISHUH))
+				if (on(game().player.body, ISHUH))
 					lengthen(unconfuse, rnd(20) + HUHDURATION);
 				else
 					fuse(unconfuse, rnd(20) + HUHDURATION);
-				player.t_flags |= ISHUH;
+				game().player.body.t_flags |= ISHUH;
 				msg("the medusa's gaze has confused you");
 			}
 		}

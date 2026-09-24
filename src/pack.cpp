@@ -83,7 +83,7 @@ add_pack(THING *obj, bool silent)
 	/*
 	 * Check if there is room
 	 */
-	if (inpack >= MAXPACK-1)
+	if (game().player.in_pack >= MAXPACK-1)
 	{
 		msg("you can't carry anything else");
 		return;
@@ -105,7 +105,7 @@ add_pack(THING *obj, bool silent)
 			obj->o_flags |= ISFOUND;
 	}
 
-	inpack++;
+	game().player.in_pack++;
 	if (from_floor)
 	{
 		detach(lvl_obj, obj);
@@ -215,8 +215,8 @@ picked_up:
 
 	if (obj->o_type == AMULET)
 	{
-		amulet = TRUE;
-		saw_amulet = TRUE;
+		game().player.has_amulet = TRUE;
+		game().player.saw_amulet = TRUE;
 	}
 	/*
 	 * Notify the user
@@ -412,7 +412,7 @@ money(int value)
 	byte floor;
 
 	floor = proom->r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
-	purse += value;
+	game().player.purse += value;
 	display().draw_tile(hero, floor);
 	chat(hero.y, hero.x) = floor;
 	if (value > 0)

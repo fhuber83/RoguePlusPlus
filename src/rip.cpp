@@ -75,7 +75,7 @@ reread:
 		strcpy(his_score.sc_name,game().options.name);
 		his_score.sc_gold = amount;
 		his_score.sc_fate = flags ? flags : monst;
-		his_score.sc_level = max_level;
+		his_score.sc_level = game().player.max_level;
 		his_score.sc_rank  = pstats.s_lvl;
 		rank = add_scores(&his_score, top_ten);
 	}
@@ -212,16 +212,16 @@ death(char monst)
 {
 	int year;
 
-	purse -= purse / 10;
+	game().player.purse -= game().player.purse / 10;
 
 	display().curtain_down();
 	//@ killname() leaves the death reason in prbuf
 	killname(monst, TRUE);
 	year = md_localtime()->year;
-	display().draw_tombstone(game().options.name, prbuf, purse, year);
+	display().draw_tombstone(game().options.name, prbuf, game().player.purse, year);
 	display().curtain_up();
 	display().write_at(LINES-1, 0, "");
-	score(purse, 0, monst);
+	score(game().player.purse, 0, monst);
 	md_exit(EXIT_SUCCESS);
 }
 
@@ -242,7 +242,7 @@ total_winner(void)
 	wait_for(' ');
 	display().clear_page();
 	display().write_at(0, 0, "   Worth  Item");
-	oldpurse = purse;
+	oldpurse = game().player.purse;
 	for (c = 'a', obj = pack; obj != NULL; c++, obj = next(obj))
 	{
 	switch (obj->o_type)
@@ -323,11 +323,11 @@ total_winner(void)
 		worth = 0;
 	snprintf(buf, sizeof buf, "%c) %5d  %s", c, worth, inv_name(obj, FALSE));
 	display().write_at(c - 'a' + 1, 0, buf);
-	purse += worth;
+	game().player.purse += worth;
 	}
 	snprintf(buf, sizeof buf, "   %5u  Gold Pieces          ", oldpurse);
 	display().write_at(c - 'a' + 1, 0, buf);
-	score(purse, 2, 0);
+	score(game().player.purse, 2, 0);
 	md_exit(EXIT_SUCCESS);
 }
 

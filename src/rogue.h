@@ -88,18 +88,18 @@ const int COLS = MAXCOLS;
 #define until(expr)	while(!(expr))
 #define next(ptr)	(*ptr).l_next
 #define prev(ptr)	(*ptr).l_prev
-#define hero		player.t_pos
-#define pstats		player.t_stats
-#define pack		player.t_pack
-#define proom		player.t_room
-#define max_hp		player.t_stats.s_maxhp
+#define hero		game().player.body.t_pos
+#define pstats		game().player.body.t_stats
+#define pack		game().player.body.t_pack
+#define proom		game().player.body.t_room
+#define max_hp		game().player.body.t_stats.s_maxhp
 #define attach(a,b)	list_attach(&a,b)
 #define detach(a,b)	list_detach(&a,b)
 #define free_list(a)	list_free(&a)
 #define max(a,b)	((a) > (b) ? (a) : (b))
 #define on(thing,flag)	(((thing).t_flags & (flag)) != 0)
 #define GOLDCALC	(rnd(50 + 10 * level) + 2)
-#define ISRING(h,r)	(cur_ring[h] != NULL && cur_ring[h]->o_which == r)
+#define ISRING(h,r)	(game().player.rings[h] != NULL && game().player.rings[h]->o_which == r)
 #define ISWEARING(r)	(ISRING(LEFT, r) || ISRING(RIGHT, r))
 #define ISMULT(type) 	(type==POTION || type==SCROLL || type==FOOD || type==GOLD)
 #define chat(y,x)	(_level[INDEX(y,x)])
@@ -477,10 +477,7 @@ extern const char *it, *you, *no_mem;
 extern char *s_guess[], *p_guess[], *r_guess[], *ws_guess[];
 extern char f_damage[];
 
-extern bool amulet, saw_amulet;
 
-//@ originally a bool. See extern.c, move.c, misc.c
-extern unsigned char was_trapped;
 #ifdef WIZARD
 bool wizard;
 #endif
@@ -492,21 +489,13 @@ extern const char *a_names[], *flashmsg, *he_man[], *intense, *p_colors[],
 
 extern struct h_list helpcoms[], helpobjs[];
 
-extern int	a_chances[], a_class[], food_left,
-		fung_hit, group, hungry_state, inpack,
-		level, max_level, no_command, no_food, no_move,
-		ntraps, purse, quiet, total;
+extern int	a_chances[], a_class[], group, level, no_food, ntraps, total;
 
 
 
-extern THING *cur_armor, *cur_ring[], *cur_weapon,
-		*lvl_obj, *mlist, player;
+extern THING *lvl_obj, *mlist;
 
-extern coord	oldpos;
-
-extern struct room	*oldrp, passages[], rooms[];
-
-extern struct stats	max_stats;
+extern struct room	passages[], rooms[];
 
 extern struct monster	monsters[];
 

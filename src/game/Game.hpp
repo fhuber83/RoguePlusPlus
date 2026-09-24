@@ -70,8 +70,38 @@ struct Turn {
 	byte do_take = 0;
 };
 
+/*
+ * The rogue: the creature itself, what he carries and wears, his condition.
+ */
+struct Player {
+	THING body = {};				/* player: position, stats, flags, pack */
+	struct stats max_stats = { 16, 0, 1, 10, 12, "1d4", 12 };	/* The maximum for the player */
+	int purse = 0;					/* How much gold the rogue has */
+	int in_pack = 0;				/* inpack: number of things in pack */
+	THING *armor = nullptr;			/* cur_armor: what a well dresssed rogue wears */
+	THING *weapon = nullptr;		/* cur_weapon: which weapon he is weilding */
+	THING *rings[2] = {};			/* cur_ring: which rings are being worn */
+	int food_left = 0;				/* Amount of food in hero's stomach */
+	int hungry_state = 0;			/* How hungry is he */
+	bool has_amulet = false;		/* amulet: he has the amulet */
+	bool saw_amulet = false;		/* He has seen the amulet */
+	int max_level = 0;				/* Deepest player has gone */
+	int no_command = 0;				/* Number of turns asleep */
+	int no_move = 0;				/* Number of turns held in place */
+	int quiet = 0;					/* Number of quiet turns */
+	int fung_hit = 0;				/* Number of time fungi has hit */
+	/*@
+	 * Was originally a bool, which was unsigned char. It is incremented and
+	 * compared with TRUE, see be_trapped() in move.cpp and look() in misc.cpp.
+	 */
+	unsigned char was_trapped = FALSE;	/* Was a trap sprung */
+	coord old_pos = {};				/* oldpos: position before last look() call */
+	struct room *old_room = nullptr;	/* oldrp: roomin(&old_pos) */
+};
+
 struct Game {
 	Options options;
+	Player player;
 	MessageLine message;
 	Turn turn;
 	bool playing = true;			/* True until he quits */

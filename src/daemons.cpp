@@ -18,14 +18,14 @@ doctor(void)
 
 	lv = pstats.s_lvl;
 	ohp = pstats.s_hpt;
-	quiet++;
+	game().player.quiet++;
 	if (lv < 8)
 	{
-		if (quiet + (lv << 1) > 20)
+		if (game().player.quiet + (lv << 1) > 20)
 			pstats.s_hpt++;
 	}
 	else
-	if (quiet >= 3)
+	if (game().player.quiet >= 3)
 		pstats.s_hpt += rnd(lv - 7) + 1;
 	if (ISRING(LEFT, R_REGEN))
 		pstats.s_hpt++;
@@ -35,7 +35,7 @@ doctor(void)
 	{
 		if (pstats.s_hpt > max_hp)
 			pstats.s_hpt = max_hp;
-		quiet = 0;
+		game().player.quiet = 0;
 	}
 }
 
@@ -77,7 +77,7 @@ rollwand(void)
 void
 unconfuse(void)
 {
-	player.t_flags &= ~ISHUH;
+	game().player.body.t_flags &= ~ISHUH;
 	msg("you feel less confused now");
 }
 
@@ -93,7 +93,7 @@ unsee(void)
 	for (th = mlist; th != NULL; th = next(th))
 		if (on(*th, ISINVIS) && see_monst(th) && th->t_oldch != '@')
 			display().draw_tile(th->t_pos, th->t_oldch);
-	player.t_flags &= ~CANSEE;
+	game().player.body.t_flags &= ~CANSEE;
 }
 
 /*
@@ -103,10 +103,10 @@ unsee(void)
 void
 sight(void)
 {
-	if (on(player, ISBLIND))
+	if (on(game().player.body, ISBLIND))
 	{
 		extinguish(sight);
-		player.t_flags &= ~ISBLIND;
+		game().player.body.t_flags &= ~ISBLIND;
 		if (!proom->r_flags.test(RoomFlag::Gone))
 			enter_room(&hero);
 		msg("the veil of darkness lifts");
@@ -120,7 +120,7 @@ sight(void)
 void
 nohaste(void)
 {
-	player.t_flags &= ~ISHASTE;
+	game().player.body.t_flags &= ~ISHASTE;
 	msg("you feel yourself slowing down");
 }
 
@@ -132,26 +132,27 @@ void
 stomach(void)
 {
 	int oldfood, deltafood;
+	rogue::Player &player = game().player;
 
-	if (food_left <= 0)
+	if (player.food_left <= 0)
 	{
-		if (food_left-- < -STARVETIME)
+		if (player.food_left-- < -STARVETIME)
 			death('s');
 		/*
 		 * the hero is fainting
 		 */
-		if (no_command || rnd(5) != 0)
+		if (player.no_command || rnd(5) != 0)
 			return;
-		no_command += rnd(8) + 4;
-		player.t_flags &= ~ISRUN;
+		player.no_command += rnd(8) + 4;
+		player.body.t_flags &= ~ISRUN;
 		game().turn.running = FALSE;
 		game().turn.count = 0;
-		hungry_state = 3;
+		player.hungry_state = 3;
 		msg("%syou faint from lack of food",noterse("you feel very weak. "));
 	}
 	else
 	{
-		oldfood = food_left;
+		oldfood = player.food_left;
 		/*
 		 * If you are in 40 column mode use food twice as fast
 		 * (e.g. 3-(80/40) = 1, 3-(40/40) = 2 : pretty gross huh?)
@@ -159,16 +160,16 @@ stomach(void)
 		deltafood = ring_eat(LEFT) + ring_eat(RIGHT) + 1;
 		if (game().options.terse)
 			deltafood *= 2;
-		food_left -= deltafood;
+		player.food_left -= deltafood;
 
-		if (food_left < MORETIME && oldfood >= MORETIME)
+		if (player.food_left < MORETIME && oldfood >= MORETIME)
 		{
-			hungry_state = 2;
+			player.hungry_state = 2;
 			msg("you are starting to feel weak");
 		}
-		else if (food_left < 2 * MORETIME && oldfood >= 2 * MORETIME)
+		else if (player.food_left < 2 * MORETIME && oldfood >= 2 * MORETIME)
 		{
-			hungry_state = 1;
+			player.hungry_state = 1;
 			msg("you are starting to get hungry");
 		}
 	}

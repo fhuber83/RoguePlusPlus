@@ -72,7 +72,7 @@ do_zap()
 		/*
 		 * Reddy Kilowat wand.  Light up the room
 		 */
-		if (on(player,ISBLIND))
+		if (on(game().player.body,ISBLIND))
 			msg("you feel a warm glow around you");
 		else
 		{
@@ -126,7 +126,7 @@ do_zap()
 
 			omonst = monster = tp->t_type;
 			if (monster == 'F')
-				player.t_flags &= ~ISHELD;
+				game().player.body.t_flags &= ~ISHELD;
 			if (which_one == MAXSTICKS)
 			{
 				if (monster == obj->o_enemy)
@@ -178,7 +178,7 @@ do_zap()
 					tp->t_pos = new_yx;
 					if (see_monst(tp))
 						display().draw_tile(tp->t_pos, tp->t_disguise);
-					else if (on(player, SEEMONST))
+					else if (on(game().player.body, SEEMONST))
 						display().draw_tile(tp->t_pos, tp->t_disguise, TileStyle::Inverse);
 				}
 				else /* it MUST BE at WS_TELTO */
@@ -187,7 +187,7 @@ do_zap()
 					tp->t_pos.x = hero.x + turn.delta.x;
 				}
 				if (tp->t_type == 'F')
-					player.t_flags &= ~ISHELD;
+					game().player.body.t_flags &= ~ISHELD;
 				if (tp->t_pos.y != y || tp->t_pos.x != x)
 					tp->t_oldch = display().tile_at(tp->t_pos);
 			}
@@ -205,8 +205,8 @@ do_zap()
 		bolt.o_hplus = 1000;
 		bolt.o_dplus = 1;
 		bolt.o_flags = ISMISL;
-		if (cur_weapon != NULL)
-			bolt.o_launch = cur_weapon->o_which;
+		if (game().player.weapon != NULL)
+			bolt.o_launch = game().player.weapon->o_which;
 		do_motion(&bolt, turn.delta.y, turn.delta.x);
 		if ((tp = moat(bolt.o_pos.y, bolt.o_pos.x)) != NULL && !save_throw(VS_MAGIC, tp))
 			hit_monster(unc(bolt.o_pos), &bolt);
@@ -420,8 +420,8 @@ fire_bolt(coord *start, coord *dir, const char *name)
 					if (is_frost) {
 						msg("You are frozen by a blast of frost%s.",
 							noterse(" from the Ice Monster"));
-						if (no_command < 20)
-							no_command += spread(7);
+						if (game().player.no_command < 20)
+							game().player.no_command += spread(7);
 					} else if ((pstats.s_hpt -= roll(6, 6)) <= 0) {
 						if (start == &hero)
 							death('b');

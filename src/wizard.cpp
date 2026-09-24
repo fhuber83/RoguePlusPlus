@@ -162,6 +162,7 @@ teleport(void)
 {
 	int rm;
 	coord c;
+	rogue::Player &player = game().player;
 
 	display().draw_tile(hero, chat(hero.y, hero.x));
 	do
@@ -185,11 +186,11 @@ teleport(void)
 	 * turn off ISHELD in case teleportation was done while fighting
 	 * a Fungi
 	 */
-	if (on(player, ISHELD)) {
-		player.t_flags &= ~ISHELD;
+	if (on(player.body, ISHELD)) {
+		player.body.t_flags &= ~ISHELD;
 		f_restor();
 	}
-	no_move = 0;
+	player.no_move = 0;
 	game().turn.count = 0;
 	game().turn.running = FALSE;
 	flush_type();
@@ -201,11 +202,11 @@ teleport(void)
 	if (!wizard)
 	{
 #endif //WIZARD
-	if (on(player, ISHUH))
+	if (on(player.body, ISHUH))
 		lengthen(unconfuse, rnd(4)+2);
 	else
 		fuse(unconfuse, rnd(4)+2);
-	player.t_flags |= ISHUH;
+	player.body.t_flags |= ISHUH;
 #ifdef WIZARD
 	}
 #endif //WIZARD

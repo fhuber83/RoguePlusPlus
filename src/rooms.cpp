@@ -101,7 +101,7 @@ do_rooms(void)
 		/*
 		 * Put the gold in
 		 */
-		if ((rnd(2) == 0) && (!saw_amulet || (level >= max_level))) {
+		if ((rnd(2) == 0) && (!game().player.saw_amulet || (level >= game().player.max_level))) {
 			THING *gold;
 
 			if ((gold = new_item()) != NULL) {
@@ -226,7 +226,7 @@ enter_room(coord *cp)
 		return;
 	}
 	door_open(rp);
-	if (!rp->r_flags.test(RoomFlag::Dark) && !on(player,ISBLIND) && !rp->r_flags.test(RoomFlag::Maze))
+	if (!rp->r_flags.test(RoomFlag::Dark) && !on(game().player.body,ISBLIND) && !rp->r_flags.test(RoomFlag::Maze))
 		for (y = rp->r_pos.y; y < rp->r_max.y + rp->r_pos.y; y++) {
 			for (x = rp->r_pos.x; x < rp->r_max.x + rp->r_pos.x; x++) {
 				/*
@@ -258,7 +258,7 @@ leave_room(coord *cp)
 
 	rp = proom;
 	proom = &passages[flat(cp->y, cp->x) & F_PNUM];
-	floor = (rp->r_flags.test(RoomFlag::Dark) && !on(player, ISBLIND)) ? ' ' : FLOOR;
+	floor = (rp->r_flags.test(RoomFlag::Dark) && !on(game().player.body, ISBLIND)) ? ' ' : FLOOR;
 	if (rp->r_flags.test(RoomFlag::Maze))
 		floor = PASSAGE;
 	for (y = rp->r_pos.y + 1; y < rp->r_max.y + rp->r_pos.y - 1; y++)
@@ -282,7 +282,7 @@ leave_room(coord *cp)
 				 */
 				if (ismonster(ch))
 				{
-					if (on(player, SEEMONST)) {
+					if (on(game().player.body, SEEMONST)) {
 						display().draw_tile({x, y}, ch, TileStyle::Inverse);
 						break;
 					} else

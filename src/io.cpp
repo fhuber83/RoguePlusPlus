@@ -219,23 +219,24 @@ status(void)
 {
 	rogue::ui::Status st;
 	int ac;
+	rogue::Player &player = game().player;
 
 	SIG2();
 
 	/*@
 	 * The armor class shown ignores rings of protection, as it always did
 	 */
-	ac = cur_armor != NULL ? cur_armor->o_ac : pstats.s_arm;
+	ac = player.armor != NULL ? player.armor->o_ac : pstats.s_arm;
 
 	st.level = level;
 	st.hp = pstats.s_hpt;
 	st.hp_max = max_hp;
 	st.str = pstats.s_str;
-	st.str_max = max_stats.s_str;
-	st.gold = purse;
+	st.str_max = player.max_stats.s_str;
+	st.gold = player.purse;
 	st.armor = AC(ac);
 	st.rank = he_man[pstats.s_lvl-1];
-	st.hunger = hungry_state;
+	st.hunger = player.hungry_state;
 	rogue::ui::display().draw_status(st);
 }
 

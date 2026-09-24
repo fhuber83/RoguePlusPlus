@@ -136,13 +136,13 @@ inv_name(THING *obj, bool drop)
 #endif
 		break;
 	}
-	if (obj == cur_armor)
+	if (obj == game().player.armor)
 		strcat(pb, " (being worn)");
-	if (obj == cur_weapon)
+	if (obj == game().player.weapon)
 		strcat(pb, " (weapon in hand)");
-	if (obj == cur_ring[LEFT])
+	if (obj == game().player.rings[LEFT])
 		strcat(pb, " (on left hand)");
-	else if (obj == cur_ring[RIGHT])
+	else if (obj == game().player.rings[RIGHT])
 		strcat(pb, " (on right hand)");
 	if (drop && ismonster(prbuf[0]))
 		prbuf[0] = tolower(prbuf[0]);
@@ -198,11 +198,11 @@ drop(void)
 		nobj->o_count = 1;
 		op = nobj;
 		if (op->o_group != 0)
-			inpack++;
+			game().player.in_pack++;
 	}
 	else
 		detach(pack, op);
-	inpack--;
+	game().player.in_pack--;
 	/*
 	 * Link it into the level object list
 	 */
@@ -210,7 +210,7 @@ drop(void)
 	chat(hero.y, hero.x) = op->o_type;
 	bcopy(op->o_pos,hero);
 	if (op->o_type == AMULET)
-		amulet = FALSE;
+		game().player.has_amulet = FALSE;
 	msg("dropped %s", inv_name(op, TRUE));
 }
 
@@ -221,31 +221,32 @@ drop(void)
 bool
 can_drop(THING *op)
 {
+	rogue::Player &player = game().player;
 	if (op == NULL)
 		return TRUE;
-	if (op != cur_armor && op != cur_weapon
-		&& op != cur_ring[LEFT] && op != cur_ring[RIGHT])
+	if (op != player.armor && op != player.weapon
+		&& op != player.rings[LEFT] && op != player.rings[RIGHT])
 		return TRUE;
 	if (op->o_flags & ISCURSED) {
 		msg("you can't.  It appears to be cursed");
 		return FALSE;
 	}
-	if (op == cur_weapon)
-		cur_weapon = NULL;
-	else if (op == cur_armor) {
+	if (op == player.weapon)
+		player.weapon = NULL;
+	else if (op == player.armor) {
 		waste_time();
-		cur_armor = NULL;
+		player.armor = NULL;
 	} else {
 		int hand;
 
-		if (op != cur_ring[hand = LEFT])
-			if (op != cur_ring[hand = RIGHT]) {
+		if (op != player.rings[hand = LEFT])
+			if (op != player.rings[hand = RIGHT]) {
 #ifdef DEBUG
 				debug("Candrop called with funny thing");
 #endif
 				return TRUE;
 			}
-		cur_ring[hand] = NULL;
+		player.rings[hand] = NULL;
 		switch (op->o_which) {
 		case R_ADDSTR:
 			chg_str(-op->o_ac);

@@ -138,7 +138,7 @@ over:
 			   && _level[INDEX(th->t_pos.y,th->t_pos.x)] == FLOOR)
 			display().draw_tile(th->t_pos, FLOOR);
 		else if (th->t_oldch == FLOOR && !cansee(th->t_pos.y, th->t_pos.x)
-				&& !on(player, SEEMONST))
+				&& !on(game().player.body, SEEMONST))
 			display().draw_tile(th->t_pos, ' ');
 		else
 			display().draw_tile(th->t_pos, th->t_oldch);
@@ -160,7 +160,7 @@ over:
 		display().draw_tile(ch_ret, th->t_disguise,
 				(flat(ch_ret.y,ch_ret.x) & F_PASS) ? TileStyle::Inverse : TileStyle::Normal);
 	}
-	else if (on(player,	SEEMONST))
+	else if (on(game().player.body,	SEEMONST))
 	{
 		th->t_oldch = display().tile_at(ch_ret);
 		display().draw_tile(ch_ret, th->t_type, TileStyle::Inverse);
@@ -179,9 +179,9 @@ over:
 bool
 see_monst(THING *mp)
 {
-	if (on(player, ISBLIND))
+	if (on(game().player.body, ISBLIND))
 		return	FALSE;
-	if (on(*mp,	ISINVIS) && !on(player,	CANSEE))
+	if (on(*mp,	ISINVIS) && !on(game().player.body,	CANSEE))
 		return	FALSE;
 	if (DISTANCE(mp->t_pos.y, mp->t_pos.x, hero.y, hero.x) >= LAMPDIST &&
 	  ((mp->t_room != proom || mp->t_room->r_flags.test(RoomFlag::Dark) ||
@@ -191,11 +191,11 @@ see_monst(THING *mp)
 	 * If we are seeing	the enemy of a vorpally	enchanted weapon for the first
 	 * time, give the player a hint as to what that weapon is good for.
 	 */
-	if (cur_weapon != NULL && mp->t_type == cur_weapon->o_enemy
-	  && ((cur_weapon->o_flags & DIDFLASH) == 0))
+	if (game().player.weapon != NULL && mp->t_type == game().player.weapon->o_enemy
+	  && ((game().player.weapon->o_flags & DIDFLASH) == 0))
 	{
-		cur_weapon->o_flags |=	DIDFLASH;
-		msg(flashmsg, w_names[cur_weapon->o_which], game().options.brief() ? "" : intense);
+		game().player.weapon->o_flags |=	DIDFLASH;
+		msg(flashmsg, w_names[game().player.weapon->o_which], game().options.brief() ? "" : intense);
 	}
 	return TRUE;
 }
@@ -378,7 +378,7 @@ cansee(int y, int x)
 	struct room *rer;
 	coord tp;
 
-	if (on(player, ISBLIND))
+	if (on(game().player.body, ISBLIND))
 		return	FALSE;
 	if (DISTANCE(y, x, hero.y, hero.x) < LAMPDIST)
 		return	TRUE;

@@ -17,6 +17,7 @@ ring_on()
 {
 	THING *obj;
 	int ring = -1;
+	rogue::Player &player = game().player;
 
 	if ((obj = get_item("put on", RING)) == NULL)
 		goto no_ring;
@@ -34,18 +35,18 @@ ring_on()
 	if (is_current(obj))
 		goto no_ring;
 
-	if (cur_ring[LEFT] == NULL)
+	if (player.rings[LEFT] == NULL)
 		ring = LEFT;
-	if (cur_ring[RIGHT] == NULL)
+	if (player.rings[RIGHT] == NULL)
 		ring = RIGHT;
-	if (cur_ring[LEFT] == NULL && cur_ring[RIGHT] == NULL)
+	if (player.rings[LEFT] == NULL && player.rings[RIGHT] == NULL)
 		if ((ring = gethand()) < 0)
 			goto no_ring;
 	if (ring < 0) {
 		msg("you already have a ring on each hand");
 		goto no_ring;
 	}
-	cur_ring[ring] = obj;
+	player.rings[ring] = obj;
 
 	/*
 	 * Calculate the effect it has on the poor guy.
@@ -81,20 +82,21 @@ ring_off(void)
 	int ring;
 	THING *obj;
 	char packchar;
+	rogue::Player &player = game().player;
 
-	if (cur_ring[LEFT] == NULL && cur_ring[RIGHT] == NULL) {
+	if (player.rings[LEFT] == NULL && player.rings[RIGHT] == NULL) {
 		msg("you aren't wearing any rings");
 		game().turn.after = FALSE;
 		return;
-	} else if (cur_ring[LEFT] == NULL)
+	} else if (player.rings[LEFT] == NULL)
 		ring = RIGHT;
-	else if (cur_ring[RIGHT] == NULL)
+	else if (player.rings[RIGHT] == NULL)
 		ring = LEFT;
 	else
 		if ((ring = gethand()) < 0)
 			return;
 	game().message.end = 0;
-	obj = cur_ring[ring];
+	obj = player.rings[ring];
 	if (obj == NULL) {
 		msg("not wearing such a ring");
 		game().turn.after = FALSE;
@@ -138,9 +140,9 @@ gethand(void)
 int
 ring_eat(int hand)
 {
-	if (cur_ring[hand] == NULL)
+	if (game().player.rings[hand] == NULL)
 		return 0;
-	switch (cur_ring[hand]->o_which) {
+	switch (game().player.rings[hand]->o_which) {
 	case R_REGEN:
 		return 2;
 	case R_SUSTSTR:

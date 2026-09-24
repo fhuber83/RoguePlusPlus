@@ -21,6 +21,7 @@ read_scroll()
 	THING *op;
 	int index;
 	bool discardit = FALSE;
+	rogue::Player &player = game().player;
 
 	obj = get_item("read", SCROLL);
 	if (obj == NULL)
@@ -33,19 +34,19 @@ read_scroll()
 	/*
 	 * Calculate the effect it has on the poor guy.
 	 */
-	if (obj == cur_weapon)
-		cur_weapon = NULL;
+	if (obj == player.weapon)
+		player.weapon = NULL;
 	switch (obj->o_which){
 	when S_CONFUSE:
 		/*
 		 * Scroll of monster confusion.  Give him that power.
 		 */
-		player.t_flags |= CANHUH;
+		player.body.t_flags |= CANHUH;
 		msg("your hands begin to glow red");
 	when S_ARMOR:
-		if (cur_armor != NULL) {
-			cur_armor->o_ac--;
-			cur_armor->o_flags &= ~ISCURSED;
+		if (player.armor != NULL) {
+			player.armor->o_ac--;
+			player.armor->o_flags &= ~ISCURSED;
 			ifterse0("your armor glows faintly",
 				"your armor glows faintly for a moment");
 		}
@@ -67,8 +68,8 @@ read_scroll()
 		 * Scroll which makes you fall asleep
 		 */
 		s_know[S_SLEEP] = TRUE;
-		no_command += rnd(SLEEPTIME) + 4;
-		player.t_flags &= ~ISRUN;
+		player.no_command += rnd(SLEEPTIME) + 4;
+		player.body.t_flags &= ~ISRUN;
 		msg("you fall asleep");
 	when S_CREATE:
 		{
@@ -163,16 +164,16 @@ read_scroll()
 			s_know[S_TELEP] = TRUE;
 		}
 	when S_ENCH:
-		if (cur_weapon == NULL || cur_weapon->o_type != WEAPON)
+		if (player.weapon == NULL || player.weapon->o_type != WEAPON)
 		msg("you feel a strange sense of loss");
 		else
 		{
-		cur_weapon->o_flags &= ~ISCURSED;
+		player.weapon->o_flags &= ~ISCURSED;
 		if (rnd(2) == 0)
-			cur_weapon->o_hplus++;
+			player.weapon->o_hplus++;
 		else
-			cur_weapon->o_dplus++;
-		ifterse1("your %s glows blue","your %s glows blue for a moment", w_names[cur_weapon->o_which]);
+			player.weapon->o_dplus++;
+		ifterse1("your %s glows blue","your %s glows blue for a moment", w_names[player.weapon->o_which]);
 		}
 	when S_SCARE:
 		/*
@@ -181,14 +182,14 @@ read_scroll()
 		 */
 			msg(laugh, game().options.brief() ? "" : in_dist);
 	when S_REMOVE:
-		if (cur_armor != NULL)
-			cur_armor->o_flags &= ~ISCURSED;
-		if (cur_weapon != NULL)
-			cur_weapon->o_flags &= ~ISCURSED;
-		if (cur_ring[LEFT] != NULL)
-			cur_ring[LEFT]->o_flags &= ~ISCURSED;
-		if (cur_ring[RIGHT] != NULL)
-			cur_ring[RIGHT]->o_flags &= ~ISCURSED;
+		if (player.armor != NULL)
+			player.armor->o_flags &= ~ISCURSED;
+		if (player.weapon != NULL)
+			player.weapon->o_flags &= ~ISCURSED;
+		if (player.rings[LEFT] != NULL)
+			player.rings[LEFT]->o_flags &= ~ISCURSED;
+		if (player.rings[RIGHT] != NULL)
+			player.rings[RIGHT]->o_flags &= ~ISCURSED;
 		ifterse0("somebody is watching over you","you feel as if somebody is watching over you");
 	when S_AGGR:
 		/*
@@ -215,24 +216,24 @@ read_scroll()
 		 *
 		 * If he doesn't have a weapon I get to chortle again!
 		 */
-		if (cur_weapon == NULL || cur_weapon->o_type != WEAPON)
+		if (player.weapon == NULL || player.weapon->o_type != WEAPON)
 			msg(laugh, game().options.brief() ? "" : in_dist);
 		else {
 			/*
 			 * You aren't allowed to doubly vorpalize a weapon.
 			 */
-			if (cur_weapon->o_enemy != 0) {
+			if (player.weapon->o_enemy != 0) {
 				msg("your %s vanishes in a puff of smoke",
-				w_names[cur_weapon->o_which]);
-				detach(pack, cur_weapon);
-				discard(cur_weapon);
-				cur_weapon = NULL;
+				w_names[player.weapon->o_which]);
+				detach(pack, player.weapon);
+				discard(player.weapon);
+				player.weapon = NULL;
 			} else {
-				cur_weapon->o_enemy = pick_mons();
-				cur_weapon->o_hplus++;
-				cur_weapon->o_dplus++;
-				cur_weapon->o_charges = 1;
-				msg(flashmsg, w_names[cur_weapon->o_which],
+				player.weapon->o_enemy = pick_mons();
+				player.weapon->o_hplus++;
+				player.weapon->o_dplus++;
+				player.weapon->o_charges = 1;
+				msg(flashmsg, w_names[player.weapon->o_which],
 					game().options.brief() ? "" : intense);
 
 				/*
@@ -258,7 +259,7 @@ read_scroll()
 	/*
 	 * Get rid of the thing
 	 */
-	inpack--;
+	player.in_pack--;
 	if (obj->o_count > 1)
 	obj->o_count--;
 	else

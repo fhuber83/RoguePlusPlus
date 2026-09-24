@@ -95,6 +95,10 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - `game().playing` and `game().noscore`.
      - Functions that use a group often bind a local reference (`rogue::Turn &turn = game().turn;`).
      - The A/B replay now also covers repeat counts, `a`, `g` and `f` prefixes, and defining and running the F9 macro. Identical.
+   - **5.3 The player.**
+     - `game().player` (`rogue::Player`) holds the rogue: `body` (the THING that was `player`, so `hero`, `pstats`, `pack`, `proom` and `max_hp` now expand to `game().player.body...`), `max_stats`, `purse`, `in_pack`, `armor`/`weapon`/`rings[2]` (were `cur_armor`, `cur_weapon`, `cur_ring`), food and hunger, `has_amulet` (was `amulet`), `saw_amulet`, `max_level`, `no_command`, `no_move`, `quiet`, `fung_hit`, `was_trapped`, and `look()`'s `old_pos`/`old_room` (were `oldpos`/`oldrp`).
+     - `e_levels` stays a fixed table in `init.cpp`, since it is the same in every game.
+     - Verified with the A/B replay: identical.
 
 ## Target architecture
 
@@ -128,7 +132,7 @@ Each phase is a series of small commits that each build and play.
 5. **Game state** (*in progress*, see above). Gather the ~90 globals from `extern.cpp`/`init.cpp` into a `Game` context (player, level, monster list, floor items, RNG, scheduler, known-item tables, options). Free functions take or reach it explicitly, and globals are removed one group at a time. Steps:
    1. *Done:* options (see above).
    2. *Done:* messages and command state (see above).
-   3. The player: `player`, `max_stats`, `purse`, food and hunger, worn and wielded items, `amulet`, ...
+   3. *Done:* the player (see above).
    4. The level: `level`, `rooms`, `passages`, the map and flag grids, floor items and monsters, traps.
    5. Items: the known-item and guess tables, per-game names, colours, stones and materials, the probability tables that `init_*()` accumulates, and the item pool.
    6. The scheduler (`daemon.cpp` slots) and the RNG.

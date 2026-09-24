@@ -21,15 +21,16 @@ new_level(void)
 	byte *fp;
 	int index;
 	coord stairs;
+	rogue::Player &player = game().player;
 
-	player.t_flags &= ~ISHELD;	/* unhold when you go down just in case */
+	player.body.t_flags &= ~ISHELD;	/* unhold when you go down just in case */
 	/*
 	 * Monsters only get displayed when you move
 	 * so start a level by having the poor guy rest
 	 * God forbid he lands next to a monster!
 	 */
-	if (level > max_level)
-		max_level = level;
+	if (level > player.max_level)
+		player.max_level = level;
 	/*
 	 * Clean things off from last level
 	 */
@@ -50,7 +51,7 @@ new_level(void)
 	 */
 	free_list(lvl_obj);
 	do_rooms();				/* Draw rooms */
-	if (max_level > 1)
+	if (player.max_level > 1)
 	{
 		display().wipe();
 	}
@@ -97,9 +98,9 @@ new_level(void)
 	game().message.end = 0;
 	enter_room(&hero);
 	display().draw_tile(hero, PLAYER);
-	bcopy(oldpos,hero);
-	oldrp = proom;
-	if (on(player, SEEMONST))
+	bcopy(player.old_pos,hero);
+	player.old_room = proom;
+	if (on(player.body, SEEMONST))
 		turn_see(FALSE);
 }
 
@@ -136,7 +137,7 @@ put_things(void)
 	 * This is real unfair - I'm going to allow one thing, that way
 	 * the poor guy will get some food.
 	 */
-	if (saw_amulet && level < max_level)
+	if (game().player.saw_amulet && level < game().player.max_level)
 		i = MAXOBJ - 1;
 	else {
 		/*
@@ -145,7 +146,7 @@ put_things(void)
 		 * Check this first so if we are out of memory the guy has a
 		 * hope of getting the amulet
 		 */
-		if (level >= AMULETLEVEL && !saw_amulet) {
+		if (level >= AMULETLEVEL && !game().player.saw_amulet) {
 			if ((cur = new_item()) != NULL) {
 				attach(lvl_obj, cur);
 				cur->o_hplus = cur->o_dplus = 0;

@@ -24,6 +24,7 @@ quaff(void)
 {
 	THING *obj, *th;
 	bool discardit = FALSE;
+	rogue::Player &player = game().player;
 
 	if ((obj = get_item("quaff", POTION)) == NULL)
 		return;
@@ -35,8 +36,8 @@ quaff(void)
 		msg("yuk! Why would you want to drink that?");
 		return;
 	}
-	if (obj == cur_weapon)
-		cur_weapon = NULL;
+	if (obj == player.weapon)
+		player.weapon = NULL;
 
 	/*
 	 * Calculate the effect it has on the poor guy.
@@ -45,13 +46,13 @@ quaff(void)
 	{
 	when P_CONFUSE:
 		p_know[P_CONFUSE] = TRUE;
-		if (!on(player, ISHUH))
+		if (!on(player.body, ISHUH))
 			{
-			if (on(player, ISHUH))
+			if (on(player.body, ISHUH))
 				lengthen(unconfuse, rnd(8)+HUHDURATION);
 			else
 				fuse(unconfuse, rnd(8)+HUHDURATION);
-			player.t_flags |= ISHUH;
+			player.body.t_flags |= ISHUH;
 			msg("wait, what's going on? Huh? What? Who?");
 		}
 	when P_POISON:
@@ -133,11 +134,11 @@ quaff(void)
 				noterse(", then it passes"));
 	when P_PARALYZE:
 		p_know[P_PARALYZE] = TRUE;
-		no_command = HOLDTIME;
-		player.t_flags &= ~ISRUN;
+		player.no_command = HOLDTIME;
+		player.body.t_flags &= ~ISRUN;
 		msg("you can't move");
 	when P_SEEINVIS:
-		if (!on(player, CANSEE)) {
+		if (!on(player.body, CANSEE)) {
 			fuse(unsee, SEEDURATION);
 			look(FALSE);
 			invis_on();
@@ -164,22 +165,22 @@ quaff(void)
 			msg("you feel yourself moving much faster");
 	when P_RESTORE:
 		if (ISRING(LEFT, R_ADDSTR))
-			add_str(&pstats.s_str, -cur_ring[LEFT]->o_ac);
+			add_str(&pstats.s_str, -player.rings[LEFT]->o_ac);
 		if (ISRING(RIGHT, R_ADDSTR))
-			add_str(&pstats.s_str, -cur_ring[RIGHT]->o_ac);
-		if (pstats.s_str < max_stats.s_str)
-			pstats.s_str = max_stats.s_str;
+			add_str(&pstats.s_str, -player.rings[RIGHT]->o_ac);
+		if (pstats.s_str < player.max_stats.s_str)
+			pstats.s_str = player.max_stats.s_str;
 		if (ISRING(LEFT, R_ADDSTR))
-			add_str(&pstats.s_str, cur_ring[LEFT]->o_ac);
+			add_str(&pstats.s_str, player.rings[LEFT]->o_ac);
 		if (ISRING(RIGHT, R_ADDSTR))
-			add_str(&pstats.s_str, cur_ring[RIGHT]->o_ac);
+			add_str(&pstats.s_str, player.rings[RIGHT]->o_ac);
 		msg("%syou feel warm all over",
 			noterse("hey, this tastes great.  It makes "));
 	when P_BLIND:
 		p_know[P_BLIND] = TRUE;
-		if (!on(player, ISBLIND))
+		if (!on(player.body, ISBLIND))
 		{
-			player.t_flags |= ISBLIND;
+			player.body.t_flags |= ISBLIND;
 			fuse(sight, SEEDURATION);
 			look(FALSE);
 		}
@@ -194,7 +195,7 @@ quaff(void)
 	/*
 	 * Throw the item away
 	 */
-	inpack--;
+	player.in_pack--;
 	if (obj->o_count > 1)
 		obj->o_count--;
 	else
@@ -218,7 +219,7 @@ invis_on(void)
 {
 	THING *th;
 
-	player.t_flags |= CANSEE;
+	game().player.body.t_flags |= CANSEE;
 	for (th = mlist; th != NULL; th = next(th))
 	if (on(*th, ISINVIS) && see_monst(th))
 	{
@@ -252,9 +253,9 @@ turn_see(bool turn_off)
 					can_see ? TileStyle::Normal : TileStyle::Inverse);
 		}
 	}
-	player.t_flags |= SEEMONST;
+	game().player.body.t_flags |= SEEMONST;
 	if (turn_off)
-		player.t_flags &= ~SEEMONST;
+		game().player.body.t_flags &= ~SEEMONST;
 	return add_new;
 }
 

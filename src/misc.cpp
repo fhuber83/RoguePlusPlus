@@ -44,6 +44,7 @@ look(bool wakeup)
 	int index;
 	THING *tp;
 	rogue::Turn &turn = game().turn;
+	rogue::Player &player = game().player;
 	struct room *rp;
 	int ey, ex;
 	int passcount = 0;
@@ -57,15 +58,15 @@ look(bool wakeup)
 	/*
 	 * if the hero has moved
 	 */
-	if (!(oldpos == hero)) {
-		if (!on(player,ISBLIND)) {
-			for (x = oldpos.x - 1; x <= (oldpos.x + 1); x++)
-				for (y = oldpos.y - 1; y <= (oldpos.y + 1); y++) {
+	if (!(player.old_pos == hero)) {
+		if (!on(player.body,ISBLIND)) {
+			for (x = player.old_pos.x - 1; x <= (player.old_pos.x + 1); x++)
+				for (y = player.old_pos.y - 1; y <= (player.old_pos.y + 1); y++) {
 					if ((y == hero.y && x == hero.x) || offmap(y,x))
 						continue;
 					ch = display().tile_at({x, y});
 					if (ch == FLOOR) {
-						if (oldrp->r_flags.test(RoomFlag::Dark) && !oldrp->r_flags.test(RoomFlag::Gone))
+						if (player.old_room->r_flags.test(RoomFlag::Dark) && !player.old_room->r_flags.test(RoomFlag::Gone))
 							display().draw_tile({x, y}, ' ');
 					} else {
 						fp = &_flags[INDEX(y,x)];
@@ -81,8 +82,8 @@ look(bool wakeup)
 					}
 				}
 		}
-		oldpos = hero;
-		oldrp = rp;
+		player.old_pos = hero;
+		player.old_room = rp;
 	}
 	ey = hero.y + 1;
 	ex = hero.x + 1;
@@ -96,7 +97,7 @@ look(bool wakeup)
 		if (y > 0 && y < maxrow) for (x = sx; x <= ex; x++) {
 			if (x <= 0 || x >= COLS)
 				continue;
-			if (!on(player, ISBLIND)) {
+			if (!on(player.body, ISBLIND)) {
 				if (y == hero.y && x == hero.x)
 					continue;
 			} else if (y != hero.y || x != hero.x)
@@ -131,7 +132,7 @@ look(bool wakeup)
 			}
 
 			if ((tp = moat(y,x)) != NULL) {
-				if (on(player, SEEMONST) && on(*tp, ISINVIS)) {
+				if (on(player.body, SEEMONST) && on(*tp, ISINVIS)) {
 					if (turn.door_stop && !turn.first_move)
 						turn.running = FALSE;
 					continue;
@@ -139,7 +140,7 @@ look(bool wakeup)
 					if (wakeup)
 						wake_monster(y, x);
 					if (tp->t_oldch != ' ' ||
-						(!rp->r_flags.test(RoomFlag::Dark) && !on(player, ISBLIND)))
+						(!rp->r_flags.test(RoomFlag::Dark) && !on(player.body, ISBLIND)))
 							tp->t_oldch = _level[index];
 					if (see_monst(tp))
 						ch = tp->t_disguise;
@@ -219,12 +220,12 @@ look(bool wakeup)
 	 * teleport traps.
 	 */
 	display().draw_tile(hero, PLAYER,
-			((flat(hero.y,hero.x) & F_PASS) || (was_trapped > TRUE)
+			((flat(hero.y,hero.x) & F_PASS) || (player.was_trapped > TRUE)
 					|| (flat(hero.y,hero.x) & F_MAZE))
 				? TileStyle::Inverse : TileStyle::Normal);
-	if (was_trapped) {
+	if (player.was_trapped) {
 		display().bell();
-		was_trapped = FALSE;
+		player.was_trapped = FALSE;
 	}
 }
 
@@ -257,6 +258,7 @@ void
 eat()
 {
 	THING *obj;
+	rogue::Player &player = game().player;
 
 	if ((obj = get_item("eat", FOOD)) == NULL)
 		return;
@@ -265,21 +267,21 @@ eat()
 		msg("ugh, you would get ill if you ate that");
 		return;
 	}
-	inpack--;
+	player.in_pack--;
 	if (--obj->o_count < 1)
 	{
 		detach(pack, obj);
 		discard(obj);
 	}
-	if (food_left < 0)
-		food_left = 0;
-	if (food_left > (STOMACHSIZE - 20))
-		no_command += 2 + rnd(5);
-	if ((food_left += HUNGERTIME - 200 + rnd(400)) > STOMACHSIZE)
-		food_left = STOMACHSIZE;
-	hungry_state = 0;
-	if (obj == cur_weapon)
-		cur_weapon = NULL;
+	if (player.food_left < 0)
+		player.food_left = 0;
+	if (player.food_left > (STOMACHSIZE - 20))
+		player.no_command += 2 + rnd(5);
+	if ((player.food_left += HUNGERTIME - 200 + rnd(400)) > STOMACHSIZE)
+		player.food_left = STOMACHSIZE;
+	player.hungry_state = 0;
+	if (obj == player.weapon)
+		player.weapon = NULL;
 	if (obj->o_which == 1)
 		msg("my, that was a yummy %s", game().options.fruit);
 	else
@@ -291,7 +293,7 @@ eat()
 		}
 		else
 			msg("yum, that tasted good");
-	if (no_command)
+	if (player.no_command)
 		msg("You feel bloated and fall asleep");
 }
 
@@ -310,11 +312,11 @@ chg_str(int amt)
 	add_str(&pstats.s_str, amt);
 	comp = pstats.s_str;
 	if (ISRING(LEFT, R_ADDSTR))
-		add_str(&comp, -cur_ring[LEFT]->o_ac);
+		add_str(&comp, -game().player.rings[LEFT]->o_ac);
 	if (ISRING(RIGHT, R_ADDSTR))
-		add_str(&comp, -cur_ring[RIGHT]->o_ac);
-	if (comp > max_stats.s_str)
-		max_stats.s_str = comp;
+		add_str(&comp, -game().player.rings[RIGHT]->o_ac);
+	if (comp > game().player.max_stats.s_str)
+		game().player.max_stats.s_str = comp;
 }
 
 /*
@@ -337,18 +339,19 @@ add_str(str_t *sp, int amt)
 bool
 add_haste(bool potion)
 {
-	if (on(player, ISHASTE))
+	rogue::Player &player = game().player;
+	if (on(player.body, ISHASTE))
 	{
-		no_command += rnd(8);
-		player.t_flags &= ~ISRUN;
+		player.no_command += rnd(8);
+		player.body.t_flags &= ~ISRUN;
 		extinguish(nohaste);
-		player.t_flags &= ~ISHASTE;
+		player.body.t_flags &= ~ISHASTE;
 		msg("you faint from exhaustion");
 		return FALSE;
 	}
 	else
 	{
-		player.t_flags |= ISHASTE;
+		player.body.t_flags |= ISHASTE;
 		if (potion)
 			fuse(nohaste, rnd(4)+10);
 		return TRUE;
@@ -398,8 +401,8 @@ is_current(THING *obj)
 {
 	if (obj == NULL)
 		return FALSE;
-	if (obj == cur_armor || obj == cur_weapon || obj == cur_ring[LEFT]
-		|| obj == cur_ring[RIGHT]) {
+	if (obj == game().player.armor || obj == game().player.weapon || obj == game().player.rings[LEFT]
+		|| obj == game().player.rings[RIGHT]) {
 		msg("That's already in use");
 		return TRUE;
 	}
@@ -427,7 +430,7 @@ get_dir()
 		}
 	while (find_dir(ch, &turn.delta) == 0);
 	msg("");
-	if (on(player, ISHUH) && rnd(5) == 0)
+	if (on(game().player.body, ISHUH) && rnd(5) == 0)
 		do {
 			turn.delta.y = rnd(3) - 1;
 			turn.delta.x = rnd(3) - 1;
@@ -679,7 +682,7 @@ search()
 	byte *fp;
 	int ey, ex;
 
-	if (on(player, ISBLIND))
+	if (on(game().player.body, ISBLIND))
 		return;
 	ey = hero.y + 1;
 	ex = hero.x + 1;
@@ -740,7 +743,7 @@ void
 u_level()
 {
 	if (chat(hero.y, hero.x) == STAIRS)
-		if (amulet) {
+		if (game().player.has_amulet) {
 			level--;
 			if (level == 0)
 				total_winner();

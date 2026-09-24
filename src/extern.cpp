@@ -264,19 +264,11 @@ bool s_know[MAXSCROLLS];		/* Does he know what a scroll does */
 bool p_know[MAXPOTIONS];		/* Does he know what a potion does */
 bool r_know[MAXRINGS];			/* Does he know what a ring does */
 bool ws_know[MAXSTICKS];		/* Does he know what a stick does */
-bool amulet = FALSE;			/* He has the amulet */
-bool saw_amulet = FALSE;	    /* He has seen the amulet */
 /* bool askme = TRUE; */			/* Ask about unidentified things */
 /* bool fight_flush = TRUE;	*/	/* True if toilet input */
 /* bool jump = FALSE;	*/		/* Show running as series of jumps */
 /* bool passgo = TRUE;	*/		/* Follow passages */
 /* bool slow_invent = FALSE; */		/* Inventory one line at a time */
-/*@
- * `was_trapped` was originally a bool, which in original code was typedef'd as
- * unsigned char. As it is used in ++ increment and > test, I've reverted it
- * to its original (real) type. See be_trapped() in move.c and look() in misc.c
- */
-unsigned char was_trapped = FALSE;		/* Was a trap sprung */
 #ifdef WIZARD
 bool wizard = FALSE;			/* True if allows wizard commands */
 #endif
@@ -296,30 +288,16 @@ int iguess = 0;
 const char *ws_type[MAXSTICKS];		/* Is it a wand or a staff */
 
 int maxrow;			/* Last Line used for map  */
-int max_level;				/* Deepest player has gone */
 int ntraps;				/* Number of traps on this level */
 int level = 1;				/* What level rogue is on */
-int purse = 0;				/* How much gold the rogue has */
-int no_move = 0;			/* Number of turns held in place */
-int no_command = 0;			/* Number of turns asleep */
-int inpack = 0;				/* Number of things in pack */
 int total = 0;				/* Total dynamic memory bytes */
 int no_food = 0;			/* Number of levels without food */
-int fung_hit = 0;			/* Number of time fungi has hit */
-int quiet = 0;				/* Number of quiet turns */
-int food_left;				/* Amount of food in hero's stomach */
 int group = 2;				/* Current group number */
-int hungry_state = 0;			/* How hungry is he */
 
 /* WINDOW *hw;				 Used as a scratch window */
 
-coord oldpos;				/* Position before last look() call */
 
-THING *cur_armor;			/* What a well dresssed rogue wears */
-THING *cur_ring[2];			/* Which rings are being worn */
-THING *cur_weapon;			/* Which weapon he is weilding */
 
-struct room *oldrp;			/* Roomin(&oldpos) */
 struct room rooms[MAXROOMS];		/* One for each room -- A level */
 
 #define XX  {0, 0}
@@ -345,11 +323,6 @@ struct room passages[MAXPASS] =		/* One for each passage */
 #undef XX
 
 
-#define INIT_STATS { 16, 0, 1, 10, 12, "1d4", 12 }
-
-struct stats max_stats = INIT_STATS;	/* The maximum for the player */
-
-THING player;				/* The rogue */
 THING *lvl_obj = NULL;			/* List of objects on this level */
 THING *mlist = NULL;			/* List of monsters on the level */
 

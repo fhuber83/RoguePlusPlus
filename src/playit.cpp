@@ -41,9 +41,9 @@ playit(char *sname)
 		setup();
 		display().show_cursor(FALSE);
 	} else {
-		oldpos.x = hero.x;
-		oldpos.y = hero.y;
-		oldrp = roomin(&hero);
+		game().player.old_pos.x = hero.x;
+		game().player.old_pos.y = hero.y;
+		game().player.old_room = roomin(&hero);
 	}
 	while (game().playing)
 		command();			/* Command execution */
@@ -78,9 +78,9 @@ quit()
 	answer = readchar();
 	if (answer == 'y' || answer == 'Y') {
 		display().clear_page();
-		sprintf(prbuf, "You quit with %u gold pieces\n", purse);
+		sprintf(prbuf, "You quit with %u gold pieces\n", game().player.purse);
 		display().write_at(0, 0, prbuf);
-		score(purse, 1, 0);
+		score(game().player.purse, 1, 0);
 		fatal("");
 	} else {
 		display().clear_line(0);

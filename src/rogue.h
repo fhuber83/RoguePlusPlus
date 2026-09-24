@@ -425,6 +425,7 @@ extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
 #include "items/Inventory.hpp"
 #include "items/effects/Potion.hpp"
 #include "items/effects/Scroll.hpp"
+#include "items/effects/Wand.hpp"
 
 using rogue::items::new_thing;
 using rogue::items::inv_name;
@@ -444,6 +445,11 @@ using rogue::items::effects::invis_on;
 using rogue::items::effects::turn_see;
 using rogue::items::effects::th_effect;
 using rogue::items::effects::read_scroll;
+using rogue::items::effects::fix_stick;
+using rogue::items::effects::do_zap;
+using rogue::items::effects::drain;
+using rogue::items::effects::fire_bolt;
+using rogue::items::effects::charge_str;
 
 /*
  * External variables
@@ -708,13 +714,6 @@ void	restore(char *savefile);
 //@ slime.c
 void	slime_split(Creature *tp);
 bool	plop_monster(int r, int c, coord *cp);
-
-//@ sticks.c
-void	fix_stick(Item *cur);
-void	do_zap(void);
-void	drain(void);
-void	fire_bolt(coord *start, coord *dir, const char *name);
-char	*charge_str(Item *obj);
 
 //@ strings.c
 bool	is_alpha(char ch);

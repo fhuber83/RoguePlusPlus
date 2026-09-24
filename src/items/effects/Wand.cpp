@@ -1,11 +1,6 @@
-/*
- * Functions to implement the various sticks one might find
- * while wandering around the dungeon.
- *
- * @(#)sticks.c		1.2 (AI Design)		2/12/84
- */
-
 #include "rogue.h"
+
+namespace rogue::items::effects {
 
 /*
  * fix_stick:
@@ -462,3 +457,5 @@ charge_str(Item *obj)
 		sprintf(buf, " [%d charges]", obj->o_charges);
 	return buf;
 }
+
+}  // namespace rogue::items::effects

@@ -155,6 +155,8 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
   - Verified: same seed gives an identical opening frame; `rogue_tests` passes. Not exercised live (this seed's level 1 has no potion in reach); the move is line-for-line unchanged apart from the namespace, same as 7.1a-c.
 - **7.1e Scrolls.** `scrolls.cpp` (`read_scroll()` and the file-scope strings `laugh`/`in_dist`) moves to `src/items/effects/Scroll.{hpp,cpp}`, same treatment as 7.1d. `scrolls.cpp` is deleted.
   - Verified: same seed gives an identical opening frame; `rogue_tests` passes.
+- **7.1f Wands.** `sticks.cpp` (`fix_stick()`, `do_zap()`, `drain()`, `fire_bolt()`, `charge_str()`) moves to `src/items/effects/Wand.{hpp,cpp}`, same treatment as 7.1d/e. `sticks.cpp` is deleted.
+  - Verified: same seed gives an identical opening frame; `rogue_tests` passes.
 
 ## Target architecture
 
@@ -205,7 +207,7 @@ Each phase is a series of small commits that each build and play.
       1. *Done:* Catalog (`new_thing()`, `pick_one()`) becomes `items::ItemCatalog` (7.1a).
       2. *Done:* Identification/display (`inv_name()`, `discovered()`, `add_line()`/`end_line()`, `print_disc()`, `set_order()`, `nothing()`, `chopmsg()`) becomes `items::Identification` (7.1b).
       3. *Done:* Inventory (all of `pack.cpp`, plus `drop()`/`can_drop()` from `things.cpp`) becomes `items::Inventory` (7.1c). `pack.cpp` and `things.cpp` are gone.
-      4. Effects, one commit per kind, `items::effects::*`: *done:* potions (7.1d), scrolls (7.1e). Remaining: sticks (wands), rings, armor and weapons.
+      4. Effects, one commit per kind, `items::effects::*`: *done:* potions (7.1d), scrolls (7.1e), wands (7.1f). Remaining: rings, armor and weapons.
    2. Scheduler (`daemon.cpp`, `daemons.cpp`) becomes `rules::Scheduler`; the function-pointer slots become typed events. Self-contained.
    3. Commands (`command.cpp`) becomes `game::CommandDispatcher` over a `Command` enum. Only touches the dispatch layer and the key table in `mach_dep.cpp`.
    4. Combat (`fight.cpp`) becomes `rules::Combat`. After items, since it reads their internals and calls `th_effect()`.

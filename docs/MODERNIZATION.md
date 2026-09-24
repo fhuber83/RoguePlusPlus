@@ -142,6 +142,11 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - `chase.cpp`'s `runners()` checks `game().level.monsters.contains(tp)` after each `do_chase(tp)` call and `continue`s (which still ends the pass over the list via `after()` returning null, so a vanished thief still costs the rest of the monsters their move, as before) instead of going on to read `*tp` for the haste/fly checks and the `t_turn` toggle.
      - `rogue_tests` and a manual smoke run pass; the A/B/descending replays that verified 6.1-6.4 have not been re-run against these three spots specifically. None of the three change any path where nothing gets discarded mid-turn.
 
+## Domain modules (in progress)
+
+- **7.1a Catalog.** `new_thing()` and its private `pick_one()` helper move from `things.cpp` to `src/items/ItemCatalog.{hpp,cpp}`, `namespace rogue::items`, unchanged apart from the namespace. `rogue.h` includes the header after `game/Game.hpp` and brings `new_thing` into the global namespace with `using rogue::items::new_thing;`, so every existing caller (`monsters.cpp`, `new_leve.cpp`, `rooms.cpp`) is unaffected.
+  - Verified: same seed (`-d 4242`) gives an identical opening frame before and after, so the RNG call order through `new_thing()` is unchanged. `rogue_tests` passes.
+
 ## Target architecture
 
 ```
@@ -186,10 +191,17 @@ Each phase is a series of small commits that each build and play.
    - *Done:* replace the intrusive `l_next`/`l_prev` lists (`list.cpp`) with standard containers. Ownership stays with the pool, whose slots are the stable IDs (see 6.4 for why not `std::unique_ptr` yet).
    - *Done:* replace the `#define t_pos _t._t_pos` accessor macros with members.
    - *Done:* fix the three reads of a discarded pool slot that would break under owning containers (see 6.5).
-7. **Domain modules.**
-   - Move behaviour into the target directories: item effects become per-kind handlers, `fight` becomes `Combat`, `chase` becomes `MonsterAI`, and the level generation files become `LevelGenerator`.
-   - Scheduler: replace `daemon.cpp` with typed events or `std::function` rather than function-pointer slots.
-   - Commands: `command.cpp` becomes `CommandDispatcher` over a `Command` enum.
+7. **Domain modules.** Move behaviour into the target directories. Level generation, item effects, combat and monster spawning/AI are mutually coupled in the original (`rooms.cpp`/`new_leve.cpp` call `new_thing()`/`new_creature()`/`new_monster()`/`give_pack()` to populate rooms; `fight.cpp` calls `slime_split()` which calls `new_monster()`; `potions.cpp`'s `th_effect()` is called from `fight.cpp`; `scrolls.cpp`/`sticks.cpp` call monster-waking/spawning functions) — there is no clean leaf to start from. A namespaced function can still be called by not-yet-moved legacy code (the same trick `display()`/`rng()` used in phases 4-5), so no ordering is a hard blocker; the choice below is about which files get touched twice (once when moved, again when whatever they call moves later) versus once. `items/` is furthest upstream of the rest (level gen, combat and monster spawning all call into it), so it goes first. Steps:
+   1. Items (`potions.cpp`, `scrolls.cpp`, `sticks.cpp`, `rings.cpp`, `armor.cpp`, `weapons.cpp`, the catalog/inventory pieces of `things.cpp`/`pack.cpp`) become `items/`: per-kind effect handlers, `ItemCatalog` (`new_thing()` and friends) and `Inventory`. The largest step, split further:
+      1. Catalog: `new_thing()`, `pick_one()`, `set_order()`, `nothing()` (`things.cpp`) become `items::ItemCatalog`.
+      2. Identification/display: `inv_name()`, `discovered()`, `print_disc()` (`things.cpp`).
+      3. Inventory: `add_pack()`/`pick_up()`/`inventory()`/`get_item()` (`pack.cpp`) become `items::Inventory`.
+      4. Effects, one commit per kind, `items::effects::*`: potions, scrolls, sticks (wands), rings, armor and weapons.
+   2. Scheduler (`daemon.cpp`, `daemons.cpp`) becomes `rules::Scheduler`; the function-pointer slots become typed events. Self-contained.
+   3. Commands (`command.cpp`) becomes `game::CommandDispatcher` over a `Command` enum. Only touches the dispatch layer and the key table in `mach_dep.cpp`.
+   4. Combat (`fight.cpp`) becomes `rules::Combat`. After items, since it reads their internals and calls `th_effect()`.
+   5. Monster catalog and AI (`monsters.cpp`, `slime.cpp`, `chase.cpp`) become `entities::MonsterCatalog`/`MonsterAI`. After combat, since `do_chase()` calls `attack()` and `slime_split()` calls `new_monster()`.
+   6. Level generation (`new_leve.cpp`, `rooms.cpp`, `passages.cpp`, `maze.cpp`) becomes `world::LevelGenerator`. Last, since it spawns both items and monsters.
 8. **Persistence.**
    - Options loader.
    - High scores as a real file format.
@@ -201,7 +213,7 @@ Each phase is a series of small commits that each build and play.
 
 ## Notes for whoever continues
 
-- The three reads of a discarded pool slot noted in 6.4/6.5 (`inv_name(steal)` after `discard(steal)`, `t_dest` into picked-up gold, `runners()` re-chasing a removed monster) are fixed. Other code may still read creatures/items after `discard()` relying on a freed slot keeping its contents until reused — audit for that before moving the pool to `std::unique_ptr` ownership (phase 7).
+- The three reads of a discarded pool slot noted in 6.4/6.5 (`inv_name(steal)` after `discard(steal)`, `t_dest` into picked-up gold, `runners()` re-chasing a removed monster) are fixed. Audited every other `discard()` call site (`list.cpp`, `weapons.cpp`, `fight.cpp`, `pack.cpp`, `potions.cpp`, `misc.cpp`, `scrolls.cpp`): each either reads the freed item's fields before discarding it, reassigns the pointer to a live object first, or captures the next list pointer before detaching. Nothing else relies on a freed slot keeping its contents, so this is no longer a blocker for moving the pool to `std::unique_ptr` ownership.
 - `score()` writes `sc_name[38]` to `rogue.scr` with uninitialized bytes after the name. Harmless, but compare score files by the name up to its NUL. Phase 8 replaces the format.
 
 - `faststate` ("Fast Play") used to be toggled by Scroll Lock and is now always `FALSE`. Reintroduce it as a real option or key if wanted.

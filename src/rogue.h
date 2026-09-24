@@ -420,6 +420,9 @@ extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
 				ws_magic_base[], things_base[];
 
 #include "game/Game.hpp"
+#include "items/ItemCatalog.hpp"
+
+using rogue::items::new_thing;
 
 /*
  * External variables
@@ -726,7 +729,6 @@ char	*inv_name(Item *obj, bool drop);
 void	drop(void);
 void	discovered(void);
 bool	can_drop(Item *op);
-Item	*new_thing(void);
 byte	add_line(const char *use, const char *fmt, const char *arg);
 byte	end_line(const char *use);
 

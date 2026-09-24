@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cstdint>
+#include <expected>
 #include <span>
+#include <string>
 #include <string_view>
 
 #include "core/Coord.hpp"
@@ -150,9 +152,9 @@ public:
 /// The display the game uses.
 Display &display();
 
-/// Starts the terminal the display shows on. Exits the game when the
-/// terminal is too small.
-void start_terminal();
+/// Starts the terminal the display shows on; `monochrome` turns colours
+/// off. Fails when the terminal is too small.
+std::expected<void, std::string> start_terminal(bool monochrome);
 /// Gives the terminal back to the shell. Safe to call when not started.
 void stop_terminal();
 

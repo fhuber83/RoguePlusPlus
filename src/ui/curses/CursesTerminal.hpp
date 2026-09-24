@@ -7,8 +7,8 @@
 
 namespace rogue::ui {
 
-/// Terminal on top of ncurses. Maps CP437 cells to ASCII or Unicode and DOS
-/// attributes to curses colour pairs.
+/// Terminal on top of ncurses. Maps glyph codes to Unicode (or ASCII) and
+/// styles to curses colour pairs.
 class CursesTerminal final : public Terminal {
 public:
 	CursesTerminal() = default;

@@ -73,7 +73,7 @@ TEST(ScreenDisplay, MoreGoesAfterTheMessageAndLeavesNoTrace)
 	d.draw_message("You hit it.");
 	d.show_more(" More ", 11);
 	EXPECT_EQ(row_text(s, 0, 0, 17), "You hit it. More ");
-	EXPECT_EQ(s.at(0, 12).attr, rogue::ui::dos::Standout);
+	EXPECT_EQ(s.at(0, 12).style, rogue::ui::Standout);
 	d.blink_more(); // does nothing when the prompt fits
 	EXPECT_EQ(row_text(s, 0, 11, 6), " More ");
 	d.hide_more();
@@ -167,33 +167,31 @@ TEST(ScreenDisplay, TilesAreDrawnAndReadBack)
 	d.draw_tile({10, 5}, 'K');
 	EXPECT_EQ(d.tile_at({10, 5}), 'K');
 	EXPECT_EQ(s.at(5, 10).ch, 'K');
-	EXPECT_EQ(s.at(5, 10).attr, rogue::ui::dos::Normal);
+	EXPECT_EQ(s.at(5, 10).style, rogue::ui::Plain);
 	EXPECT_EQ(d.tile_at({11, 5}), ' ');
 }
 
 TEST(ScreenDisplay, TileStylesPickTheAttribute)
 {
-	namespace dos = rogue::ui::dos;
-	using rogue::ui::TileStyle;
+		using rogue::ui::TileStyle;
 	Screen s;
 	ScreenDisplay d(s);
 	d.draw_tile({1, 2}, 'K', TileStyle::Inverse);
 	d.draw_tile({2, 2}, '*', TileStyle::Bolt);
 	d.draw_tile({3, 2}, '*', TileStyle::FrostBolt);
-	EXPECT_EQ(s.at(2, 1).attr, dos::Standout);
-	EXPECT_EQ(s.at(2, 2).attr, dos::Red);
-	EXPECT_EQ(s.at(2, 3).attr, dos::Blue);
+	EXPECT_EQ(s.at(2, 1).style, rogue::ui::Standout);
+	EXPECT_EQ(s.at(2, 2).style, rogue::ui::Style{rogue::ui::Color::Red});
+	EXPECT_EQ(s.at(2, 3).style, rogue::ui::Style{rogue::ui::Color::Blue});
 }
 
 TEST(ScreenDisplay, MapGlyphsGetTheirColours)
 {
-	namespace dos = rogue::ui::dos;
-	Screen s;
+		Screen s;
 	ScreenDisplay d(s);
 	d.draw_tile({4, 4}, 0xfa); // FLOOR
 	d.draw_tile({5, 4}, 0x01, rogue::ui::TileStyle::Inverse); // PLAYER in a passage
-	EXPECT_EQ(s.at(4, 4).attr, dos::Green | dos::Bright);
-	EXPECT_EQ(s.at(4, 5).attr, dos::Yellow | dos::Standout);
+	EXPECT_EQ(s.at(4, 4).style, rogue::ui::Style{rogue::ui::Color::LightGreen});
+	EXPECT_EQ(s.at(4, 5).style, (rogue::ui::Style{rogue::ui::Color::Yellow, rogue::ui::Color::LightGrey}));
 }
 
 TEST(ScreenDisplay, TilesOffTheScreenAreIgnored)
@@ -233,15 +231,14 @@ TEST(ScreenDisplay, WriteReturnsWhereTextEnded)
 
 TEST(ScreenDisplay, WriteUsesInkAndRestoresTheAttribute)
 {
-	namespace dos = rogue::ui::dos;
-	using rogue::ui::Ink;
+		using rogue::ui::Ink;
 	Screen s;
 	ScreenDisplay d(s);
 	d.write_at(0, 0, "Y", Ink::Reverse);
 	d.write("es", Ink::Normal);
-	EXPECT_EQ(s.at(0, 0).attr, dos::Standout);
-	EXPECT_EQ(s.at(0, 1).attr, dos::Normal);
-	EXPECT_EQ(s.attr(), dos::Normal);
+	EXPECT_EQ(s.at(0, 0).style, rogue::ui::Standout);
+	EXPECT_EQ(s.at(0, 1).style, rogue::ui::Plain);
+	EXPECT_EQ(s.style(), rogue::ui::Plain);
 }
 
 TEST(ScreenDisplay, ClearLineBlanksToTheRightEdge)
@@ -301,6 +298,24 @@ TEST(ScreenDisplay, ScoresListOneLinePerEntry)
 	EXPECT_EQ(row_text(s, 0, 0, 27), "Guildmaster's Hall Of Fame:");
 	EXPECT_EQ(row_text(s, 4, 0, 38), "500   Conan killed by a bat on level 3");
 	EXPECT_EQ(row_text(s, 5, 0, 25), "20    Ada quit on level 1");
-	EXPECT_EQ(s.at(5, 6).attr, s.at(5, 0).attr); // the new entry is one colour
-	EXPECT_NE(s.at(4, 6).attr, s.at(4, 0).attr); // others show the name in red
+	EXPECT_EQ(s.at(5, 6).style, s.at(5, 0).style); // the new entry is one colour
+	EXPECT_NE(s.at(4, 6).style, s.at(4, 0).style); // others show the name in red
+}
+
+TEST(ScreenDisplay, MonochromeDropsColours)
+{
+	using rogue::ui::Color;
+	using rogue::ui::Ink;
+	using rogue::ui::Style;
+	Screen s;
+	ScreenDisplay d(s);
+	d.set_monochrome(true);
+	d.draw_tile({4, 4}, 0xfa); // FLOOR
+	d.write_at(0, 0, "x", Ink::Yellow);
+	d.write_at(0, 1, "y", Ink::Reverse);
+	d.write_at(0, 2, "z", Ink::Underline);
+	EXPECT_EQ(s.at(4, 4).style, rogue::ui::Plain);
+	EXPECT_EQ(s.at(0, 0).style, rogue::ui::Plain);
+	EXPECT_EQ(s.at(0, 1).style, (Style{Color::DarkGrey, Color::LightGrey}));
+	EXPECT_TRUE(s.at(0, 2).style.underline);
 }

@@ -12,6 +12,14 @@
 
 #include "rogue.h"
 
+//@ Starts the terminal, or exits with the reason it could not
+static void
+start_terminal()
+{
+	if (auto started = rogue::ui::start_terminal(bwflag); !started)
+		fatal("%s", started.error().c_str());
+}
+
 int
 main(int argc, char **argv)
 {
@@ -40,7 +48,7 @@ main(int argc, char **argv)
 					 savfile = s_save;
 					 break;
 				case 's': case 'S':
-					rogue::ui::start_terminal();
+					start_terminal();
 					noscore = TRUE;
 					score(0,0,0);
 					fatal("");
@@ -58,7 +66,7 @@ main(int argc, char **argv)
 	}
 	if (savfile == 0) {
 		rogue::rng().reseed(seed);
-		rogue::ui::start_terminal();
+		start_terminal();
 		credits();
 
 		init_player();			/* Set up initial player stats */

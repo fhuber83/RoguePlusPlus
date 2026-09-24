@@ -34,7 +34,7 @@ bool Screen::show_cursor(bool visible)
 	return was;
 }
 
-void Screen::put(std::uint8_t ch, std::uint8_t attr)
+void Screen::put(std::uint8_t ch, Style style)
 {
 	if (ch == '\n') {
 		erase_to_eol();
@@ -44,7 +44,7 @@ void Screen::put(std::uint8_t ch, std::uint8_t attr)
 		}
 		return;
 	}
-	cells_[row_][col_] = Cell{ch, attr, false};
+	cells_[row_][col_] = Cell{ch, style, false};
 	draw(row_, col_);
 	if (col_ < Cols - 1)
 		col_++;
@@ -67,7 +67,7 @@ void Screen::line(int row, int col, std::uint8_t ch, int length, bool vertical)
 		int c = vertical ? col : col + i;
 		if (!contains(r, c))
 			break;
-		set(r, c, Cell{ch, attr_, true});
+		set(r, c, Cell{ch, style_, true});
 	}
 }
 

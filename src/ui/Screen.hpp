@@ -10,8 +10,8 @@ namespace rogue::ui {
 
 class Terminal;
 
-/// The game's 80x25 text screen: a grid of CP437 cells with a cursor and a
-/// current attribute, like the video memory PC Rogue wrote to.
+/// The game's 80x25 text screen: a grid of glyph cells with a cursor and a
+/// current style, like the video memory PC Rogue wrote to.
 ///
 /// Writes update the grid and, when a Terminal is connected, go straight
 /// through to it. Reads come from the grid only. That makes read-back exact
@@ -39,17 +39,17 @@ public:
 
 	// Writing
 
-	void set_attr(std::uint8_t attr) { attr_ = attr; }
-	std::uint8_t attr() const { return attr_; }
+	void set_style(Style style) { style_ = style; }
+	Style style() const { return style_; }
 
 	/// Writes at the cursor and advances it, wrapping at the end of a line.
 	/// '\n' clears to the end of the line and moves to the next one.
 	/// At the bottom-right corner the cursor stays put.
-	void put(std::uint8_t ch, std::uint8_t attr);
-	void put(std::uint8_t ch) { put(ch, attr_); }
+	void put(std::uint8_t ch, Style style);
+	void put(std::uint8_t ch) { put(ch, style_); }
 	void put(std::string_view text);
 
-	/// Draws `length` line cells (Cell::line) with the current attribute,
+	/// Draws `length` line cells (Cell::line) with the current style,
 	/// clipped to the screen. The cursor does not move.
 	void line(int row, int col, std::uint8_t ch, int length, bool vertical);
 
@@ -86,7 +86,7 @@ private:
 	Snapshot cells_{};
 	int row_ = 0;
 	int col_ = 0;
-	std::uint8_t attr_ = dos::Normal;
+	Style style_;
 	bool cursor_visible_ = true;
 	Terminal *terminal_ = nullptr;
 };

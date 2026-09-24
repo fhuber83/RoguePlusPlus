@@ -84,13 +84,13 @@ int ScreenInput::read_line(char *buf, int size)
 
 /*@
  * Step back and blank the character under the cursor, in the current
- * attribute as curses' winsch() did
+ * style as curses' winsch() did
  */
 void ScreenInput::backspace()
 {
 	if (screen_.col() > 0)
 		screen_.set_cursor(screen_.row(), screen_.col() - 1);
-	screen_.set(screen_.row(), screen_.col(), Cell{' ', screen_.attr(), false});
+	screen_.set(screen_.row(), screen_.col(), Cell{' ', screen_.style(), false});
 }
 
 Input &input()

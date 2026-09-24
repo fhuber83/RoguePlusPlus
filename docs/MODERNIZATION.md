@@ -34,7 +34,7 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
    - `core/Flags<E>` is an opt-in, type-safe bitset. Room flags are now `RoomFlags` (`RoomFlag::Dark/Gone/Maze`).
    - Fixed an original bug found by a test: the 13th entry of `passages[]` was never initialized as a dark corridor.
    - **Deferred to phase 6:** item kinds as an `enum class`, and creature/object flags as `Flags`. Item kinds double as map glyphs (`POTION == '!'`), and both flag sets live in `union thing`, so they move together with the THING split.
-4. **UI seam** (in progress, see the phase 4 steps below).
+4. **UI seam.** Game logic draws only through `ui::Display` and reads keys only through `ui::Input`.
    - **4.1 Screen and terminal.**
      - `ui::Screen` is an 80×25 grid of CP437 cells with a cursor and a current DOS attribute, standing in for PC Rogue's video memory. Writes go to the grid and through to a connected `ui::Terminal`. Reads come from the grid.
      - `mvinch`/`inch` read-back is now exact. The curses port reverse-mapped terminal characters, and in ASCII mode it could not tell room corners from walls.
@@ -74,6 +74,14 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - Game files no longer include the local `curses.h`, which is deleted. The glyph codes, screen size and key constants they need are in `glyphs.h`, which `rogue.h` includes. `LINES`/`COLS` are constants in `rogue.h`.
      - `ui/DosScreen.cpp` keeps only the DOS attribute tables, glyph colouring and terminal start and stop. `curses_common.h` is private to `ui/`.
      - Verified with the A/B, quit and fuzz replays and a name-editing replay (typing, backspace, Enter): identical. `tests/ui/ScreenInputTest.cpp` covers line editing.
+   - **4.6 DOS emulation removed.**
+     - Cells hold a glyph code and a `ui::Style` (foreground and background `ui::Color`, blink, underline) instead of a DOS attribute byte.
+     - `ScreenDisplay` owns the colour policy: the style of each `Ink`/`TileStyle`, the colours map glyphs get, and a monochrome switch (`SCREEN=bw` in `rogue.opt`, or a terminal without colours).
+     - `CursesTerminal` renders a cell from one glyph table (code → ASCII, box-line ASCII, Unicode) and turns a style into curses attributes and a colour pair. It requires wide-character curses (CMake already did).
+     - Gone: `ui/DosScreen.cpp`, `curses_common.h`, `ui/curses/curses_dos.h`, the three-way CCODE tables, the narrow-character path, `scr_type`/`is_color` (it was always 80×25 colour) and the CP437 pass-through charset. `ROGUE_CHARSET=1` still selects ASCII; any other value means Unicode.
+     - Monochrome underline is a real underline now. The old table asked for blue on blue.
+     - Glyph codes stay CP437 bytes, because game logic compares them and they double as item kinds. Separating them is phase 6.
+     - Verified with the A/B, quit, fuzz, name-editing, Hall of Fame and monochrome (`SCREEN=bw`) replays: identical apart from mid-curtain frames.
 
 ## Target architecture
 
@@ -97,13 +105,13 @@ Dependency rule: `ui` → `game` → (`rules`, `entities`, `items`, `world`) →
 
 Each phase is a series of small commits that each build and play.
 
-4. **UI seam.** Game logic stops touching the screen directly. Steps:
+4. **UI seam** (*done*, see above). Steps:
    1. *Done:* `ui::Screen` grid plus `ui::Terminal` backend (see above).
    2. *Done:* message and status lines behind `ui::Display` (see above).
    3. *Done:* the map goes through `Display` (see above).
    4. *Done:* full-screen views, in-game pages and prompts (4.4a), title and ending screens (4.4b).
    5. *Done:* input behind `ui::Input`, and no game file includes the DOS screen API.
-   6. **Drop the DOS emulation.** Cells hold a `Glyph` and a style instead of CP437 codes and DOS attributes. `CursesTerminal` maps `Glyph → cchar_t`, and `curses_dos.h`, the CCODE tables and the attribute tables go away.
+   6. *Done:* the DOS emulation is gone (see above).
 5. **Game state.** Gather the ~90 globals from `extern.cpp`/`init.cpp` into a `Game` context (player, level, monster list, floor items, RNG, scheduler, known-item tables, options). Free functions take or reach it explicitly, and globals are removed one group at a time.
 6. **Entities.**
    - Split `union thing` into `Monster` and `Item`.

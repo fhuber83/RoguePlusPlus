@@ -25,6 +25,7 @@ quaff(void)
 	THING *obj, *th;
 	bool discardit = FALSE;
 	rogue::Player &player = game().player;
+	rogue::Items &items = game().items;
 
 	if ((obj = get_item("quaff", POTION)) == NULL)
 		return;
@@ -45,7 +46,7 @@ quaff(void)
 	switch (obj->o_which)
 	{
 	when P_CONFUSE:
-		p_know[P_CONFUSE] = TRUE;
+		items.p_know[P_CONFUSE] = TRUE;
 		if (!on(player.body, ISHUH))
 			{
 			if (on(player.body, ISHUH))
@@ -59,7 +60,7 @@ quaff(void)
 		{
 		const char *sick = "you feel %s sick.";
 
-		p_know[P_POISON] = TRUE;
+		items.p_know[P_POISON] = TRUE;
 		if (!ISWEARING(R_SUSTSTR))
 		{
 			chg_str(-(rnd(3)+1));
@@ -69,13 +70,13 @@ quaff(void)
 			msg(sick, "momentarily");
 		}
 	when P_HEALING:
-		p_know[P_HEALING] = TRUE;
+		items.p_know[P_HEALING] = TRUE;
 		if ((pstats.s_hpt += roll(pstats.s_lvl, 4)) > max_hp)
 			pstats.s_hpt = ++max_hp;
 		sight();
 		msg("you begin to feel better");
 	when P_STRENGTH:
-		p_know[P_STRENGTH] = TRUE;
+		items.p_know[P_STRENGTH] = TRUE;
 		chg_str(1);
 		msg("you feel stronger. What bulging muscles!");
 	when P_MFIND:
@@ -87,7 +88,7 @@ quaff(void)
 		{
 			if (turn_see(FALSE))
 			{
-				p_know[P_MFIND] = TRUE;
+				items.p_know[P_MFIND] = TRUE;
 			}
 			msg("");
 		}
@@ -109,7 +110,7 @@ quaff(void)
 				{
 					show = TRUE;
 					display().draw_tile(tp->o_pos, goodch(tp));
-					p_know[P_TFIND] = TRUE;
+					items.p_know[P_TFIND] = TRUE;
 				}
 			}
 			for (th = game().level.monsters; th != NULL; th = next(th))
@@ -120,7 +121,7 @@ quaff(void)
 					{
 						show = TRUE;
 						display().draw_tile(th->t_pos, MAGIC);
-						p_know[P_TFIND] = TRUE;
+						items.p_know[P_TFIND] = TRUE;
 					}
 				}
 			}
@@ -133,7 +134,7 @@ quaff(void)
 		msg("you have a strange feeling for a moment%s.",
 				noterse(", then it passes"));
 	when P_PARALYZE:
-		p_know[P_PARALYZE] = TRUE;
+		items.p_know[P_PARALYZE] = TRUE;
 		player.no_command = HOLDTIME;
 		player.body.t_flags &= ~ISRUN;
 		msg("you can't move");
@@ -146,11 +147,11 @@ quaff(void)
 		sight();
 		msg("this potion tastes like %s juice", game().options.fruit);
 	when P_RAISE:
-		p_know[P_RAISE] = TRUE;
+		items.p_know[P_RAISE] = TRUE;
 		msg("you suddenly feel much more skillful");
 		raise_level();
 	when P_XHEAL:
-		p_know[P_XHEAL] = TRUE;
+		items.p_know[P_XHEAL] = TRUE;
 		if ((pstats.s_hpt += roll(pstats.s_lvl, 8)) > max_hp)
 		{
 			if (pstats.s_hpt > max_hp + pstats.s_lvl + 1)
@@ -160,7 +161,7 @@ quaff(void)
 		sight();
 		msg("you begin to feel much better");
 	when P_HASTE:
-		p_know[P_HASTE] = TRUE;
+		items.p_know[P_HASTE] = TRUE;
 		if (add_haste(TRUE))
 			msg("you feel yourself moving much faster");
 	when P_RESTORE:
@@ -177,7 +178,7 @@ quaff(void)
 		msg("%syou feel warm all over",
 			noterse("hey, this tastes great.  It makes "));
 	when P_BLIND:
-		p_know[P_BLIND] = TRUE;
+		items.p_know[P_BLIND] = TRUE;
 		if (!on(player.body, ISBLIND))
 		{
 			player.body.t_flags |= ISBLIND;
@@ -204,7 +205,7 @@ quaff(void)
 		discardit = TRUE;
 	}
 
-	call_it(p_know[obj->o_which], &p_guess[obj->o_which]);
+	call_it(items.p_know[obj->o_which], &items.p_guess[obj->o_which]);
 
 	if (discardit)
 		discard(obj);

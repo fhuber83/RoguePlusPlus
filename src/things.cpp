@@ -23,6 +23,7 @@ inv_name(THING *obj, bool drop)
 {
 	int which = obj->o_which;
 	char *pb;
+	rogue::Items &items = game().items;
 
 	pb = prbuf;
 	switch (obj->o_type)
@@ -35,12 +36,12 @@ inv_name(THING *obj, bool drop)
 			sprintf(pb, "%d scrolls ", obj->o_count);
 			pb = &prbuf[strlen(prbuf)];
 		}
-		if (s_know[which])
-			sprintf(pb, "of %s", s_magic[which].mi_name);
-		else if (*s_guess[which])
-			sprintf(pb, "called %s", s_guess[which]);
+		if (items.s_know[which])
+			sprintf(pb, "of %s", items.s_magic[which].mi_name);
+		else if (*items.s_guess[which])
+			sprintf(pb, "called %s", items.s_guess[which]);
 		else
-			chopmsg(pb, "titled '%.17s'","titled '%s'", &s_names[which]);
+			chopmsg(pb, "titled '%.17s'","titled '%s'", &items.s_names[which]);
 	when POTION:
 		if (obj->o_count == 1)
 		{
@@ -52,19 +53,19 @@ inv_name(THING *obj, bool drop)
 			sprintf(pb, "%d potions ", obj->o_count);
 			pb = &pb[strlen(prbuf)];
 		}
-		if (p_know[which]) {
+		if (items.p_know[which]) {
 			chopmsg(pb, "of %s", "of %s(%s)",
-				p_magic[which].mi_name, p_colors[which]);
+				items.p_magic[which].mi_name, items.p_colors[which]);
 		}
-		else if (*p_guess[which]) {
-			chopmsg(pb, "called %s","called %s(%s)", p_guess[which],
-				p_colors[which]);
+		else if (*items.p_guess[which]) {
+			chopmsg(pb, "called %s","called %s(%s)", items.p_guess[which],
+				items.p_colors[which]);
 		}
 		else if (obj->o_count == 1)
-			sprintf(prbuf, "A%s %s potion", vowelstr(p_colors[which]),
-				p_colors[which]);
+			sprintf(prbuf, "A%s %s potion", vowelstr(items.p_colors[which]),
+				items.p_colors[which]);
 		else
-			sprintf(prbuf, "%d %s potions", obj->o_count, p_colors[which]);
+			sprintf(prbuf, "%d %s potions", obj->o_count, items.p_colors[which]);
 	when FOOD:
 		if (which == 1)
 			if (obj->o_count == 1)
@@ -105,28 +106,28 @@ inv_name(THING *obj, bool drop)
 	when AMULET:
 		strcpy(pb, "The Amulet of Yendor");
 	when STICK:
-		sprintf(pb, "A%s %s ", vowelstr(ws_type[which]),
-		ws_type[which]);
+		sprintf(pb, "A%s %s ", vowelstr(items.ws_type[which]),
+		items.ws_type[which]);
 		pb = &prbuf[strlen(prbuf)];
-		if (ws_know[which])
+		if (items.ws_know[which])
 			chopmsg(pb, "of %s%s", "of %s%s(%s)",
-				ws_magic[which].mi_name,
-				charge_str(obj), ws_made[which]);
-		else if (*ws_guess[which])
-			chopmsg(pb, "called %s", "called %s(%s)", ws_guess[which],
-				ws_made[which]);
+				items.ws_magic[which].mi_name,
+				charge_str(obj), items.ws_made[which]);
+		else if (*items.ws_guess[which])
+			chopmsg(pb, "called %s", "called %s(%s)", items.ws_guess[which],
+				items.ws_made[which]);
 		else
-			sprintf(pb = &prbuf[2], "%s %s", ws_made[which], ws_type[which]);
+			sprintf(pb = &prbuf[2], "%s %s", items.ws_made[which], items.ws_type[which]);
 	when RING:
-		if (r_know[which])
+		if (items.r_know[which])
 			chopmsg(pb, "A%s ring of %s", "A%s ring of %s(%s)", ring_num(obj),
-				r_magic[which].mi_name, r_stones[which]);
-		else if (*r_guess[which])
+				items.r_magic[which].mi_name, items.r_stones[which]);
+		else if (*items.r_guess[which])
 			chopmsg(pb, "A ring called %s", "A ring called %s(%s)",
-				r_guess[which], r_stones[which]);
+				items.r_guess[which], items.r_stones[which]);
 		else
-			sprintf(pb, "A%s %s ring", vowelstr(r_stones[which]),
-				r_stones[which]);
+			sprintf(pb, "A%s %s ring", vowelstr(items.r_stones[which]),
+				items.r_stones[which]);
 #ifdef DEBUG
 	when GOLD:
 		sprintf(pb, "Gold at %d,%d", obj->o_pos.y, obj->o_pos.x);
@@ -269,6 +270,7 @@ new_thing(void)
 {
 	THING *cur;
 	int j, k;
+	rogue::Items &items = game().items;
 
 	if ((cur = new_item()) == NULL)
 		return NULL;
@@ -283,14 +285,14 @@ new_thing(void)
 	 * Decide what kind of object it will be
 	 * If we haven't had food for a while, let it be food.
 	 */
-	switch (game().level.no_food > 3 ? 2 : pick_one(things, NUMTHINGS))
+	switch (game().level.no_food > 3 ? 2 : pick_one(items.things, NUMTHINGS))
 	{
 	when 0:
 		cur->o_type = POTION;
-		cur->o_which = pick_one(p_magic, MAXPOTIONS);
+		cur->o_which = pick_one(items.p_magic, MAXPOTIONS);
 	when 1:
 		cur->o_type = SCROLL;
-		cur->o_which = pick_one(s_magic, MAXSCROLLS);
+		cur->o_which = pick_one(items.s_magic, MAXSCROLLS);
 	when 2:
 		game().level.no_food = 0;
 		cur->o_type = FOOD;
@@ -332,7 +334,7 @@ new_thing(void)
 			cur->o_ac -= rnd(3) + 1;
 	when 5:
 		cur->o_type = RING;
-		cur->o_which = pick_one(r_magic, MAXRINGS);
+		cur->o_which = pick_one(items.r_magic, MAXRINGS);
 		switch (cur->o_which)
 		{
 		when R_ADDSTR:
@@ -351,7 +353,7 @@ new_thing(void)
 		}
 	when 6:
 		cur->o_type = STICK;
-		cur->o_which = pick_one(ws_magic, MAXSTICKS);
+		cur->o_which = pick_one(items.ws_magic, MAXSTICKS);
 		fix_stick(cur);
 #ifdef DEBUG
 	otherwise:
@@ -433,28 +435,29 @@ print_disc(byte type)
 	int i, maxnum = 0, num_found;
 	static THING obj;
 	static short order[MAX(MAXSCROLLS, MAXPOTIONS, MAXRINGS, MAXSTICKS)];
+	rogue::Items &items = game().items;
 
 	switch (type)
 	{
 	case SCROLL:
 		maxnum = MAXSCROLLS;
-		know = s_know;
-		guess = s_guess;
+		know = items.s_know;
+		guess = items.s_guess;
 		break;
 	case POTION:
 		maxnum = MAXPOTIONS;
-		know = p_know;
-		guess = p_guess;
+		know = items.p_know;
+		guess = items.p_guess;
 		break;
 	case RING:
 		maxnum = MAXRINGS;
-		know = r_know;
-		guess = r_guess;
+		know = items.r_know;
+		guess = items.r_guess;
 		break;
 	case STICK:
 		maxnum = MAXSTICKS;
-		know = ws_know;
-		guess = ws_guess;
+		know = items.ws_know;
+		guess = items.ws_guess;
 		break;
 	}
 	set_order(order, maxnum);

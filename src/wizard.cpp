@@ -21,6 +21,7 @@ void
 whatis(void)
 {
 	THING *obj;
+	rogue::Items &items = game().items;
 
 	if (pack == NULL) {
 		msg("You don't have anything in your pack to identify");
@@ -38,22 +39,22 @@ whatis(void)
 
 	switch (obj->o_type) {
 	when SCROLL:
-		s_know[obj->o_which] = TRUE;
-		*s_guess[obj->o_which] = '\0';
+		items.s_know[obj->o_which] = TRUE;
+		*items.s_guess[obj->o_which] = '\0';
 	when POTION:
-		p_know[obj->o_which] = TRUE;
-		*p_guess[obj->o_which] = '\0';
+		items.p_know[obj->o_which] = TRUE;
+		*items.p_guess[obj->o_which] = '\0';
 	when STICK:
-		ws_know[obj->o_which] = TRUE;
+		items.ws_know[obj->o_which] = TRUE;
 		obj->o_flags |= ISKNOW;
-		*ws_guess[obj->o_which] = '\0';
+		*items.ws_guess[obj->o_which] = '\0';
 	when WEAPON:
 	case ARMOR:
 		obj->o_flags |= ISKNOW;
 	when RING:
-		r_know[obj->o_which] = TRUE;
+		items.r_know[obj->o_which] = TRUE;
 		obj->o_flags |= ISKNOW;
-		*r_guess[obj->o_which] = '\0';
+		*items.r_guess[obj->o_which] = '\0';
 		break;
 	}
 	/*

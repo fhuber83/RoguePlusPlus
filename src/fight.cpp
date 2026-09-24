@@ -185,7 +185,7 @@ attack(THING *mp)
 			 * Violet fungi stops the poor guy from moving
 			 */
 			player.body.t_flags |= ISHELD;
-			sprintf(f_damage,"%dd1",++player.fung_hit);
+			sprintf(game().player.flytrap_damage,"%dd1",++player.fung_hit);
 		when 'L':
 		{
 			/*

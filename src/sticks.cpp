@@ -14,7 +14,7 @@
 void
 fix_stick(THING *cur)
 {
-	if (strcmp(ws_type[cur->o_which], "staff") == 0)
+	if (strcmp(game().items.ws_type[cur->o_which], "staff") == 0)
 		cur->o_damage = "2d3";
 	else
 		cur->o_damage = "1d1";
@@ -77,7 +77,7 @@ do_zap()
 			msg("you feel a warm glow around you");
 		else
 		{
-			ws_know[WS_LIGHT] = TRUE;
+			game().items.ws_know[WS_LIGHT] = TRUE;
 			if (proom->r_flags.test(RoomFlag::Gone))
 				msg("the corridor glows and then fades");
 			else
@@ -155,7 +155,7 @@ do_zap()
 					display().draw_tile({x, y}, monster);
 				tp->t_oldch = oldch;
 				tp->t_pack = pp;
-				ws_know[WS_POLYMORPH] |= (monster != omonst);
+				game().items.ws_know[WS_POLYMORPH] |= (monster != omonst);
 			}
 			else if (which_one == WS_CANCEL)
 			{
@@ -200,7 +200,7 @@ do_zap()
 	{
 		THING bolt;
 
-		ws_know[WS_MISSILE] = TRUE;
+		game().items.ws_know[WS_MISSILE] = TRUE;
 		bolt.o_type = '*';
 		bolt.o_hurldmg = "1d8";
 		bolt.o_hplus = 1000;
@@ -271,7 +271,7 @@ do_zap()
 		else
 			name = "ice";
 		fire_bolt(&hero, &turn.delta, name);
-		ws_know[which_one] = TRUE;
+		game().items.ws_know[which_one] = TRUE;
 #ifdef DEBUG
 	otherwise:
 		msg("what a bizarre schtick!");

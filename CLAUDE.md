@@ -32,12 +32,12 @@ At runtime the game reads `rogue.opt` (options) and writes `rogue.scr` (scores) 
 - Legacy headers define many lowercase macros (`on`, `next`, `prev`, `pack`, `hero`, `max`, `max_hp`, `attach`, `detach`, `when`, …). Include standard and modern headers **before** `rogue.h`/`extern.h`, as `rogue.h` does for `core/` and `ui/`. Never name members after those macros. That's why `Flags` has `unset()` rather than `clear()`.
 - All randomness goes through `rogue::rng()` (or the `rnd()`/`roll()` wrappers). Never use `rand()` or the clock, or seeds stop reproducing.
 - **`//@` and `/*@` comments** in legacy files mark changes made by the Linux port and this project. Everything else there is original 1980s code.
-- Keep string handling `const`-correct. Buffers the game really writes to (`prbuf`, `f_damage`, `s_names`, `_guesses`, …) are `char[]`. Everything else is `const char *`.
+- Keep string handling `const`-correct. Buffers the game really writes to (`prbuf`, `flytrap_damage`, `s_names`, `guesses`, …) are `char[]`. Everything else is `const char *`.
 
 ## Architecture (current, pre-modularization)
 
 - **Core types** (`src/core/`): `Random`, `Coord` (the legacy `coord` is an alias), `Dice` (parses damage strings like `"1d2/1d5"`), and `Flags<E>`, a bitset for opted-in enums (`RoomFlag`/`RoomFlags` so far).
-- **Game state** (`src/game/`): `rogue::Game`, reached through `game()`, gathers the former globals group by group (phase 5; so far `options`, `message`, `turn`, `player`, `level`, `playing` and `noscore`). The legacy macros `hero`, `pstats`, `pack`, `proom` and `max_hp` expand to `game().player.body`, and `chat()`/`flat()` index `game().level.map`/`flags`. The rest still live in `extern.cpp`/`init.cpp`.
+- **Game state** (`src/game/`): `rogue::Game`, reached through `game()`, gathers the former globals group by group (phase 5; so far `options`, `message`, `turn`, `player`, `level`, `items`, `playing` and `noscore`). The legacy macros `hero`, `pstats`, `pack`, `proom` and `max_hp` expand to `game().player.body`, and `chat()`/`flat()` index `game().level.map`/`flags`. The rest still live in `extern.cpp`/`init.cpp`.
 - **Headers**:
   - `extern.h`: libc includes, POSIX feature macros, and libc "overrides": `#define access(f) access(f, F_OK)`, `stpchr`, `setmem`/`bcopy`. Remember these when a libc call behaves unexpectedly.
   - `rogue.h`: game constants, structs, globals, prototypes, plus accessor macros like `#define t_pos _t._t_pos` over `union thing` (THING).

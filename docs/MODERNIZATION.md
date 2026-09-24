@@ -103,6 +103,11 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - `game().level` (`rogue::Level`) holds `depth` (was `level`), `ntraps`, `no_food`, `rooms`, `passages`, the `map` and `flags` grids (were the allocated `_level`/`_flags`; `chat()`/`flat()` index them), and the `objects` and `monsters` lists (were `lvl_obj`/`mlist`). Its constructor makes every passage a dark, gone room, which replaces the 13-entry initializer.
      - `maxrow` is a constant next to `LINES`/`COLS`. It was always 23, and `setup()` no longer sets it.
      - Verified with the A/B replay, plus a descending replay on scratch builds of both trees patched so that `>` works anywhere. Three seeds went 6 to 24 levels deep, with mazes, traps and deaths along the way. Identical.
+   - **5.5 Items.**
+     - `game().items` (`rogue::Items`) holds what there is to find in this game and what the rogue knows about it. That covers the odds tables `s_magic`, `p_magic`, `r_magic`, `ws_magic` and `things`, the per-game looks (`s_names`, `p_colors`, `r_stones`, `ws_made`, `ws_type`), the `*_know` and `*_guess` tables with their storage (`guesses`, was `_guesses`) and `iguess`, the item `pool`/`pool_used` (were the allocated `_things`/`_t_alloc`) with `total`, and the weapon `group` counter. These keep their original names, since the prefixes are systematic.
+     - The odds tables in `extern.cpp` are now `const` (`s_magic_base`, ..., `things_base`). `Items()` copies them, because `init_*()` accumulate the odds and add the stone value to the worth of rings. Before this change a second game in the same process would have accumulated the odds twice.
+     - `f_damage` became `game().player.flytrap_damage`, next to `fung_hit`, which it grows with.
+     - Verified with the A/B and descending replays: identical. `tests/game/GameTest.cpp` checks that the odds are copied per game and that the passages start dark and gone (moved from `StaticTablesTest`).
 
 ## Target architecture
 
@@ -138,7 +143,7 @@ Each phase is a series of small commits that each build and play.
    2. *Done:* messages and command state (see above).
    3. *Done:* the player (see above).
    4. *Done:* the level (see above).
-   5. Items: the known-item and guess tables, per-game names, colours, stones and materials, the probability tables that `init_*()` accumulates, and the item pool.
+   5. *Done:* items (see above).
    6. The scheduler (`daemon.cpp` slots) and the RNG.
    Algorithm scratch state (`maze.cpp`, `passages.cpp`, `ch_ret`, ...) and fixed tables stay where they are until phase 7.
 6. **Entities.**

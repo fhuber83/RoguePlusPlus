@@ -768,6 +768,7 @@ call()
 	char **guess;
 	const char *elsewise;
 	bool *know;
+	rogue::Items &items = game().items;
 
 	obj = get_item("call", CALLABLE);
 	/*
@@ -778,25 +779,25 @@ call()
 	switch (obj->o_type)
 	{
 	when RING:
-		guess = (char **)r_guess;
-		know = r_know;
+		guess = (char **)items.r_guess;
+		know = items.r_know;
 		elsewise = (*guess[obj->o_which] != '\0' ?
-			guess[obj->o_which] : r_stones[obj->o_which]);
+			guess[obj->o_which] : items.r_stones[obj->o_which]);
 	when POTION:
-		guess = (char **)p_guess;
-		know = p_know;
+		guess = (char **)items.p_guess;
+		know = items.p_know;
 		elsewise = (*guess[obj->o_which] != '\0' ?
-			guess[obj->o_which] : p_colors[obj->o_which]);
+			guess[obj->o_which] : items.p_colors[obj->o_which]);
 	when SCROLL:
-		guess = (char **)s_guess;
-		know = s_know;
+		guess = (char **)items.s_guess;
+		know = items.s_know;
 		elsewise = (*guess[obj->o_which] != '\0' ?
-			guess[obj->o_which] : s_names[obj->o_which].storage);
+			guess[obj->o_which] : items.s_names[obj->o_which].storage);
 	when STICK:
-		guess = (char **)ws_guess;
-		know = ws_know;
+		guess = (char **)items.ws_guess;
+		know = items.ws_know;
 		elsewise = (*guess[obj->o_which] != '\0' ?
-			guess[obj->o_which] : ws_made[obj->o_which]);
+			guess[obj->o_which] : items.ws_made[obj->o_which]);
 	otherwise:
 		msg("you can't call that anything");
 		return;

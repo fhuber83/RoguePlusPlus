@@ -176,7 +176,7 @@ put_things(void)
 	 * Do MAXOBJ attempts to put things on a level
 	 */
 	for (;i < MAXOBJ; i++)
-		if (total < MAXITEMS && rnd(100) < 35) {
+		if (game().items.total < MAXITEMS && rnd(100) < 35) {
 			/*
 			 * Pick a new object and link it in the list
 			 */
@@ -216,7 +216,7 @@ treas_room(void)
 	if (spots > (MAXTREAS - MINTREAS))
 		spots = (MAXTREAS - MINTREAS);
 	num_monst = nm = rnd(spots) + MINTREAS;
-	while (nm-- && total < MAXITEMS)
+	while (nm-- && game().items.total < MAXITEMS)
 	{
 		do
 		{

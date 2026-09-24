@@ -198,7 +198,7 @@ init_weapon(THING *weap, byte type)
 	if (weap->o_flags & ISMANY)
 	{
 		weap->o_count = rnd(8) + 8;
-		weap->o_group = group++;
+		weap->o_group = game().items.group++;
 	}
 	else
 		weap->o_count = 1;

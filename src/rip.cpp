@@ -237,6 +237,7 @@ total_winner(void)
 	byte c;
 	int oldpurse;
 	char buf[132];  //@ as printw() had
+	rogue::Items &items = game().items;
 
 	display().draw_winner(game().options.terse);
 	wait_for(' ');
@@ -283,19 +284,19 @@ total_winner(void)
 			worth += (10 * (a_class[obj->o_which] - obj->o_ac));
 			obj->o_flags |= ISKNOW;
 		when SCROLL:
-			worth = s_magic[obj->o_which].mi_worth;
+			worth = items.s_magic[obj->o_which].mi_worth;
 			worth *= obj->o_count;
-			if (!s_know[obj->o_which])
+			if (!items.s_know[obj->o_which])
 				worth /= 2;
-			s_know[obj->o_which] = TRUE;
+			items.s_know[obj->o_which] = TRUE;
 		when POTION:
-			worth = p_magic[obj->o_which].mi_worth;
+			worth = items.p_magic[obj->o_which].mi_worth;
 			worth *= obj->o_count;
-			if (!p_know[obj->o_which])
+			if (!items.p_know[obj->o_which])
 				worth /= 2;
-			p_know[obj->o_which] = TRUE;
+			items.p_know[obj->o_which] = TRUE;
 		when RING:
-			worth = r_magic[obj->o_which].mi_worth;
+			worth = items.r_magic[obj->o_which].mi_worth;
 			if (obj->o_which == R_ADDSTR || obj->o_which == R_ADDDAM ||
 				obj->o_which == R_PROTECT || obj->o_which == R_ADDHIT)
 			{
@@ -307,14 +308,14 @@ total_winner(void)
 			if (!(obj->o_flags & ISKNOW))
 				worth /= 2;
 			obj->o_flags |= ISKNOW;
-			r_know[obj->o_which] = TRUE;
+			items.r_know[obj->o_which] = TRUE;
 		when STICK:
-			worth = ws_magic[obj->o_which].mi_worth;
+			worth = items.ws_magic[obj->o_which].mi_worth;
 			worth += 20 * obj->o_charges;
 			if (!(obj->o_flags & ISKNOW))
 				worth /= 2;
 			obj->o_flags |= ISKNOW;
-			ws_know[obj->o_which] = TRUE;
+			items.ws_know[obj->o_which] = TRUE;
 			when AMULET:
 			worth = 1000;
 			break;

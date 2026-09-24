@@ -90,15 +90,16 @@ void *  //@ maybe should be THING*, as this is a specialized malloc()
 talloc()
 {
 	int i;
+	rogue::Items &items = game().items;
 
 	for (i=0;i<MAXITEMS;i++)
 	{
-		if (_t_alloc[i] == 0)
+		if (items.pool_used[i] == 0)
 		{
-			++total;
-			_t_alloc[i]++;
-			setmem(&_things[i],sizeof(THING),0);
-			return &_things[i];
+			++items.total;
+			items.pool_used[i]++;
+			setmem(&items.pool[i],sizeof(THING),0);
+			return &items.pool[i];
 		}
 	}
 	return NULL;
@@ -115,10 +116,10 @@ discard(THING *item)
 
 	for (i=0;i<MAXITEMS;i++)
 	{
-		if (item == &_things[i])
+		if (item == &game().items.pool[i])
 		{
-			--total;
-			_t_alloc[i] = 0;
+			--game().items.total;
+			game().items.pool_used[i] = 0;
 			return 1;
 		}
 	}

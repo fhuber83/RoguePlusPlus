@@ -69,3 +69,30 @@ TEST(Options, LongValuesAreTruncated)
 	EXPECT_LT(std::strlen(game().options.fruit), sizeof game().options.fruit);
 	game().options = {};
 }
+
+// Each game starts from the catalog odds and accumulates its own copy.
+TEST(Items, OddsAreCopiedPerGame)
+{
+	rogue::Items items;
+	for (int i = 0; i < MAXSCROLLS; i++)
+		EXPECT_EQ(items.s_magic[i].mi_prob, s_magic_base[i].mi_prob);
+	for (int i = 0; i < NUMTHINGS; i++)
+		EXPECT_EQ(items.things[i].mi_prob, things_base[i].mi_prob);
+
+	game().items = {};
+	init_things();
+	EXPECT_EQ(game().items.things[NUMTHINGS-1].mi_prob, 100);
+	EXPECT_EQ(things_base[NUMTHINGS-1].mi_prob, 5);
+	game().items = {};
+}
+
+TEST(Level, PassagesAreGoneAndDark)
+{
+	rogue::Level level;
+	for (const auto &p : level.passages) {
+		EXPECT_TRUE(p.r_flags.test(RoomFlag::Gone));
+		EXPECT_TRUE(p.r_flags.test(RoomFlag::Dark));
+		EXPECT_FALSE(p.r_flags.test(RoomFlag::Maze));
+	}
+	EXPECT_EQ(level.depth, 1);
+}

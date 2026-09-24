@@ -84,7 +84,7 @@ new_monster(THING *tp, byte type, coord *cp)
 	if (ISWEARING(R_AGGR))
 		start_run(cp);
 	if (type == 'F')
-		tp->t_stats.s_dmg = f_damage;
+		tp->t_stats.s_dmg = game().player.flytrap_damage;
 	if (type == 'X')
 	{
 		switch (rnd(game().level.depth > 25 ? 9 : 8))
@@ -112,7 +112,7 @@ f_restor(void)
 	struct monster *mp = &monsters['F'-'A'];
 
 	game().player.fung_hit = 0;
-	strcpy(f_damage, mp->m_stats.s_dmg);
+	strcpy(game().player.flytrap_damage, mp->m_stats.s_dmg);
 }
 
 /*
@@ -231,7 +231,7 @@ give_pack(THING *tp)
 	/*
 	 * check if we can allocate a new item
 	 */
-	if (total < MAXITEMS && rnd(100) < monsters[tp->t_type-'A'].m_carry)
+	if (game().items.total < MAXITEMS && rnd(100) < monsters[tp->t_type-'A'].m_carry)
 		attach(tp->t_pack, new_thing());
 }
 

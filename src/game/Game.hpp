@@ -90,6 +90,7 @@ struct Player {
 	int no_move = 0;				/* Number of turns held in place */
 	int quiet = 0;					/* Number of quiet turns */
 	int fung_hit = 0;				/* Number of time fungi has hit */
+	char flytrap_damage[10] = "";	/* f_damage: the venus flytrap's attack, grows per hit */
 	/*@
 	 * Was originally a bool, which was unsigned char. It is incremented and
 	 * compared with TRUE, see be_trapped() in move.cpp and look() in misc.cpp.
@@ -127,10 +128,49 @@ struct Level {
 	}
 };
 
+/*
+ * What there is to find in this game, how it looks, and what the rogue knows
+ * about it; plus the pool items are allocated from.
+ */
+struct Items {
+	/* Names, cumulative odds and worth of each kind; init_*() accumulate */
+	struct magic_item s_magic[MAXSCROLLS];
+	struct magic_item p_magic[MAXPOTIONS];
+	struct magic_item r_magic[MAXRINGS];
+	struct magic_item ws_magic[MAXSTICKS];
+	struct magic_item things[NUMTHINGS];	/* Odds of each type of item */
+	/* How the kinds look in this game */
+	struct array s_names[MAXSCROLLS] = {};	/* Names of the scrolls */
+	const char *p_colors[MAXPOTIONS] = {};	/* Colors of the potions */
+	const char *r_stones[MAXRINGS] = {};	/* Stone settings of the rings */
+	const char *ws_made[MAXSTICKS] = {};	/* What sticks are made of */
+	const char *ws_type[MAXSTICKS] = {};	/* Is it a wand or a staff */
+	/* What the rogue knows, and what he has called the kinds he doesn't */
+	bool s_know[MAXSCROLLS] = {};			/* Does he know what a scroll does */
+	bool p_know[MAXPOTIONS] = {};			/* Does he know what a potion does */
+	bool r_know[MAXRINGS] = {};				/* Does he know what a ring does */
+	bool ws_know[MAXSTICKS] = {};			/* Does he know what a stick does */
+	char *s_guess[MAXSCROLLS] = {};			/* Players guess at what scroll is */
+	char *p_guess[MAXPOTIONS] = {};			/* Players guess at what potion is */
+	char *r_guess[MAXRINGS] = {};			/* Players guess at what ring is */
+	char *ws_guess[MAXSTICKS] = {};			/* Players guess at what wand is */
+	/* storage for the guesses (was _guesses) */
+	struct array guesses[MAXSCROLLS+MAXPOTIONS+MAXRINGS+MAXSTICKS] = {};
+	int iguess = 0;
+	/* The items in play, allocated by new_item() (list.cpp) */
+	THING pool[MAXITEMS] = {};				/* _things */
+	int pool_used[MAXITEMS] = {};			/* _t_alloc */
+	int total = 0;							/* Number of items in use */
+	int group = 2;							/* Current group number */
+
+	Items();
+};
+
 struct Game {
 	Options options;
 	Player player;
 	Level level;
+	Items items;
 	MessageLine message;
 	Turn turn;
 	bool playing = true;			/* True until he quits */

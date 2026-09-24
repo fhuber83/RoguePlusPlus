@@ -23,6 +23,7 @@ read_scroll()
 	bool discardit = FALSE;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
+	rogue::Items &items = game().items;
 
 	obj = get_item("read", SCROLL);
 	if (obj == NULL)
@@ -68,7 +69,7 @@ read_scroll()
 		/*
 		 * Scroll which makes you fall asleep
 		 */
-		s_know[S_SLEEP] = TRUE;
+		items.s_know[S_SLEEP] = TRUE;
 		player.no_command += rnd(SLEEPTIME) + 4;
 		player.body.t_flags &= ~ISRUN;
 		msg("you fall asleep");
@@ -86,7 +87,7 @@ read_scroll()
 		/*
 		 * Identify, let the rogue figure something out
 		 */
-		s_know[S_IDENT] = TRUE;
+		items.s_know[S_IDENT] = TRUE;
 		msg("this scroll is an identify scroll");
 		if (! strcmp(game().options.menu,"on") || !strcmp(game().options.menu,"sel"))
 			more(" More ");
@@ -95,7 +96,7 @@ read_scroll()
 		/*
 		 * Scroll of magic mapping.
 		 */
-		s_know[S_MAP] = TRUE;
+		items.s_know[S_MAP] = TRUE;
 		msg("oh, now this scroll has a map on it");
 		/*
 		 * Take all the things we want to keep hidden out of the window
@@ -147,7 +148,7 @@ read_scroll()
 			}
 		}
 		if (ch) {
-			s_know[S_GFIND] = TRUE;
+			items.s_know[S_GFIND] = TRUE;
 			msg("your nose tingles as you sense food");
 		} else
 			ifterse0("you hear a growling noise close by","you hear a growling noise very close to you");
@@ -162,7 +163,7 @@ read_scroll()
 		cur_room = proom;
 		teleport();
 		if (cur_room != proom)
-			s_know[S_TELEP] = TRUE;
+			items.s_know[S_TELEP] = TRUE;
 		}
 	when S_ENCH:
 		if (player.weapon == NULL || player.weapon->o_type != WEAPON)
@@ -268,7 +269,7 @@ read_scroll()
 	detach(pack, obj);
 	discardit = TRUE;
 	}
-	call_it(s_know[obj->o_which], &s_guess[obj->o_which]);
+	call_it(items.s_know[obj->o_which], &items.s_guess[obj->o_which]);
 
 	if (discardit)
 	discard(obj);

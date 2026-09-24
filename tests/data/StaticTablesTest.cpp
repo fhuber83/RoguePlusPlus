@@ -12,12 +12,3 @@ TEST(StaticTables, AllMonsterAttacksParse)
 			<< m.m_name << ": \"" << m.m_stats.s_dmg << '"';
 	}
 }
-
-TEST(StaticTables, AllPassagesAreGoneAndDark)
-{
-	for (int i = 0; i < MAXPASS; i++) {
-		EXPECT_TRUE(game().level.passages[i].r_flags.test(RoomFlag::Gone));
-		EXPECT_TRUE(game().level.passages[i].r_flags.test(RoomFlag::Dark));
-		EXPECT_FALSE(game().level.passages[i].r_flags.test(RoomFlag::Maze));
-	}
-}

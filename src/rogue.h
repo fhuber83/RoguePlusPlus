@@ -462,6 +462,10 @@ struct monster {
 	struct stats m_stats;		/* Initial stats */
 };
 
+//@ The tables each game copies into game().items (extern.cpp)
+extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
+				ws_magic_base[], things_base[];
+
 #include "game/Game.hpp"
 
 /*
@@ -469,28 +473,23 @@ struct monster {
  * @ all in extern.c unless noted (init.c, env.c, croot.c, main.c, protect.c)
  */
 extern int is_me;
-extern int iguess;
 
 //@ nullstr should probably be used in misc and wizard instead of (size_t)NULL
 extern char nullstr[];
 extern const char *it, *you, *no_mem;
 
-extern char *s_guess[], *p_guess[], *r_guess[], *ws_guess[];
-extern char f_damage[];
 
 
 #ifdef WIZARD
 bool wizard;
 #endif
 
-extern bool p_know[], r_know[], s_know[], ws_know[];
 
-extern const char *a_names[], *flashmsg, *he_man[], *intense, *p_colors[],
-		*r_stones[], *w_names[], *ws_made[], *ws_type[];
+extern const char *a_names[], *flashmsg, *he_man[], *intense, *w_names[];
 
 extern struct h_list helpcoms[], helpobjs[];
 
-extern int	a_chances[], a_class[], group, total;
+extern int	a_chances[], a_class[];
 
 
 
@@ -498,10 +497,7 @@ extern int	a_chances[], a_class[], group, total;
 
 extern struct monster	monsters[];
 
-extern struct magic_item	p_magic[], r_magic[], s_magic[],
-				things[], ws_magic[];
 
-extern struct array s_names[], _guesses[];
 
 
 /*@
@@ -523,8 +519,6 @@ extern struct array s_names[], _guesses[];
 //@ init.c
 extern char *tbuf, *prbuf;
 extern long *e_levels;
-extern THING *_things;
-extern int   *_t_alloc;
 extern char *ring_buf;
 //@ extern char *_top, *_base;  //@ not found
 /*@

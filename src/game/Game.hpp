@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/Random.hpp"
+
 /*
  * The state of one game, gathered from the globals of the original sources.
  *
@@ -166,19 +168,42 @@ struct Items {
 	Items();
 };
 
+/*
+ * Daemons (run every turn) and fuses (go off after a number of turns), see
+ * daemon.cpp.
+ */
+struct Scheduler {
+	static constexpr int max_actions = 20;	/* MAXDAEMONS */
+	struct Action {
+		void (*func)() = nullptr;	/* d_func: nullptr for a free slot */
+		int time = 0;				/* d_time: turns left, or DAEMON */
+	};
+	Action actions[max_actions] = {};	/* d_list */
+};
+
 struct Game {
+	Random random{Random::from_clock()};	/* All randomness, see rng() */
 	Options options;
 	Player player;
 	Level level;
 	Items items;
+	Scheduler scheduler;
 	MessageLine message;
 	Turn turn;
 	bool playing = true;			/* True until he quits */
 	bool noscore = false;			/* Was a wizard sometime */
+
+	Game() = default;
+	// It points into itself (guesses, worn items in the pool, level lists)
+	Game(const Game &) = delete;
+	Game &operator=(const Game &) = delete;
 };
 
 // The game being played.
 Game &game();
+
+// The generator of the game being played; rnd() and roll() use it.
+inline Random &rng() { return game().random; }
 
 }  // namespace rogue
 

@@ -10,7 +10,7 @@
 #define EMPTY	0
 #define FULL	1
 #define DAEMON -1
-#define MAXDAEMONS 20
+#define MAXDAEMONS rogue::Scheduler::max_actions
 
 /*@
  * struct delayed_action, as well as functions using it as return type such
@@ -28,24 +28,24 @@
  * would be a somewhat complex approach using unions to simulate overload, a
  * sophistication not needed for Rogue.
  */
-static
-struct delayed_action {
-	void (*d_func)();
-	int d_time;
-} d_list[MAXDAEMONS];
+//@ The slots (were the static d_list) live in game().scheduler
+using delayed_action = rogue::Scheduler::Action;
+
+static delayed_action *d_begin() { return game().scheduler.actions; }
+static delayed_action *d_end() { return d_begin() + MAXDAEMONS; }
 
 /*
  * d_slot:
  *	Find an empty slot in the daemon/fuse list
  */
 static
-struct delayed_action *
+delayed_action *
 d_slot(void)
 {
-	struct delayed_action *dev;
+	delayed_action *dev;
 
-	for (dev = d_list; dev < &d_list[MAXDAEMONS]; dev++)
-		if (dev->d_func == EMPTY)
+	for (dev = d_begin(); dev < d_end(); dev++)
+		if (dev->func == EMPTY)
 			return dev;
 #ifdef DEBUG
 	debug("Ran out of fuse slots");
@@ -58,13 +58,13 @@ d_slot(void)
  *	Find a particular slot in the table
  */
 static
-struct delayed_action *
+delayed_action *
 find_slot(void (*func)())
 {
-	struct delayed_action *dev;
+	delayed_action *dev;
 
-	for (dev = d_list; dev < &d_list[MAXDAEMONS]; dev++)
-	if (func == dev->d_func)
+	for (dev = d_begin(); dev < d_end(); dev++)
+	if (func == dev->func)
 		return dev;
 	return NULL;
 }
@@ -76,11 +76,11 @@ find_slot(void (*func)())
 void
 start_daemon(void (*func)())
 {
-	struct delayed_action *dev;
+	delayed_action *dev;
 
 	dev = d_slot();
-	dev->d_func = func;
-	dev->d_time = DAEMON;
+	dev->func = func;
+	dev->time = DAEMON;
 }
 
 /*
@@ -90,20 +90,20 @@ start_daemon(void (*func)())
 void
 do_daemons(void)
 {
-	struct delayed_action *dev;
+	delayed_action *dev;
 
 	/*
 	 * Loop through the devil list
 	 */
-	for (dev = d_list; dev < &d_list[MAXDAEMONS]; dev++)
+	for (dev = d_begin(); dev < d_end(); dev++)
 	{
 		/*
 		 * Executing each one, giving it the proper arguments
 		 * @ Sorry, no more "arguments". And it was a single one.
 		 */
-		if (dev->d_time == DAEMON && dev->d_func != EMPTY)
+		if (dev->time == DAEMON && dev->func != EMPTY)
 		{
-			(*dev->d_func)();
+			(*dev->func)();
 		}
 	}
 }
@@ -115,11 +115,11 @@ do_daemons(void)
 void
 fuse(void (*func)(), int time)
 {
-	struct delayed_action *wire;
+	delayed_action *wire;
 
 	wire = d_slot();
-	wire->d_func = func;
-	wire->d_time = time;
+	wire->func = func;
+	wire->time = time;
 }
 
 /*
@@ -129,11 +129,11 @@ fuse(void (*func)(), int time)
 void
 lengthen(void (*func)(), int xtime)
 {
-	struct delayed_action *wire;
+	delayed_action *wire;
 
 	if ((wire = find_slot(func)) == NULL)
 		return;
-	wire->d_time += xtime;
+	wire->time += xtime;
 }
 
 /*
@@ -143,11 +143,11 @@ lengthen(void (*func)(), int xtime)
 void
 extinguish(void (*func)())
 {
-	struct delayed_action *wire;
+	delayed_action *wire;
 
 	if ((wire = find_slot(func)) == NULL)
 		return;
-	wire->d_func = EMPTY;
+	wire->func = EMPTY;
 }
 
 /*
@@ -157,20 +157,20 @@ extinguish(void (*func)())
 void
 do_fuses(void)
 {
-	struct delayed_action *wire;
+	delayed_action *wire;
 
 	/*
 	 * Step though the list
 	 */
-	for (wire = d_list; wire < &d_list[MAXDAEMONS]; wire++) {
+	for (wire = d_begin(); wire < d_end(); wire++) {
 	/*
 	 * Decrementing counters and starting things we want.  We also need
 	 * to remove the fuse from the list once it has gone off.
 	 */
-		if (wire->d_func != EMPTY && wire->d_time > 0 && --wire->d_time == 0)
+		if (wire->func != EMPTY && wire->time > 0 && --wire->time == 0)
 		{
-			(*wire->d_func)();
-			wire->d_func = EMPTY;
+			(*wire->func)();
+			wire->func = EMPTY;
 		}
 	}
 }

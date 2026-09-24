@@ -470,35 +470,22 @@ extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
 
 /*
  * External variables
- * @ all in extern.c unless noted (init.c, env.c, croot.c, main.c, protect.c)
+ * @ The state of a game is in game() (game/Game.hpp). What is left here are
+ * @ fixed tables and strings (extern.cpp) and scratch buffers (init.cpp).
  */
-extern int is_me;
 
 //@ nullstr should probably be used in misc and wizard instead of (size_t)NULL
 extern char nullstr[];
 extern const char *it, *you, *no_mem;
 
-
-
 #ifdef WIZARD
 bool wizard;
 #endif
 
-
 extern const char *a_names[], *flashmsg, *he_man[], *intense, *w_names[];
-
 extern struct h_list helpcoms[], helpobjs[];
-
 extern int	a_chances[], a_class[];
-
-
-
-
-
 extern struct monster	monsters[];
-
-
-
 
 /*@
  * Definition commented out:
@@ -508,15 +495,10 @@ extern struct monster	monsters[];
  * Not found:
  * extern bool in_shell;
  * extern char file_name[], home[], outbuf[];
- * extern int lastscore;
+ * extern int lastscore, is_me;
  */
 
-
-//@ env.c
-//@ the options it reads are in game().options
-
-
-//@ init.c
+//@ init.c: scratch buffers and the experience level table
 extern char *tbuf, *prbuf;
 extern long *e_levels;
 extern char *ring_buf;
@@ -525,9 +507,6 @@ extern char *ring_buf;
  * Deprecated:
  * extern char *end_mem;
  */
-
-
-
 
 /*
  * Function types

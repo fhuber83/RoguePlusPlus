@@ -83,7 +83,7 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - Glyph codes stay CP437 bytes, because game logic compares them and they double as item kinds. Separating them is phase 6.
      - Verified with the A/B, quit, fuzz, name-editing, Hall of Fame and monochrome (`SCREEN=bw`) replays: identical apart from mid-curtain frames.
 
-5. **Game state** (in progress). Globals move into `rogue::Game` (`game/Game.hpp`), reached through `rogue::game()` the way `display()` is. `rogue.h` includes it after the legacy types it holds, so game files keep including only `rogue.h`. Each group of globals is deleted and the compiler finds every use, which leaves locals that shadow a global alone.
+5. **Game state.** Globals moved into `rogue::Game` (`game/Game.hpp`), reached through `rogue::game()` the way `display()` is. `rogue.h` includes it after the legacy types it holds, so game files keep including only `rogue.h`. Each group of globals is deleted and the compiler finds every use, which leaves locals that shadow a global alone.
    - **5.1 Options.**
      - `game().options` (`rogue::Options`) holds what `rogue.opt`, the name prompt and the in-game toggles set: `name` (was `whoami`), `fruit`, `macro`, `score_file`, `save_file`, `drive`, `menu`, `screen`, `monochrome` (was `bwflag`), `terse` and `expert`. The buffers keep their original sizes. `brief()` replaces the repeated `terse || expert`.
      - `env.cpp` builds its label table per call, since it now points into the game.
@@ -108,6 +108,12 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - The odds tables in `extern.cpp` are now `const` (`s_magic_base`, ..., `things_base`). `Items()` copies them, because `init_*()` accumulate the odds and add the stone value to the worth of rings. Before this change a second game in the same process would have accumulated the odds twice.
      - `f_damage` became `game().player.flytrap_damage`, next to `fung_hit`, which it grows with.
      - Verified with the A/B and descending replays: identical. `tests/game/GameTest.cpp` checks that the odds are copied per game and that the passages start dark and gone (moved from `StaticTablesTest`).
+   - **5.6 Scheduler and RNG.**
+     - `game().scheduler` holds the daemon and fuse slots that were `daemon.cpp`'s static `d_list`.
+     - `game().random` is the game's `Random`, and `rogue::rng()` (now in `game/Game.hpp`) returns it, so `core/` no longer holds a global generator.
+     - The `extern` section of `rogue.h` now lists only fixed tables, common strings and scratch buffers. Deleted the declared-but-undefined `is_me`.
+     - Verified with the A/B and descending replays: identical.
+   - **What stays outside `Game`, deliberately:** fixed tables (`monsters`, `w_names`, `a_names`, `a_class`, `a_chances`, `he_man`, help, the `*_base` odds, `e_levels`), common strings (`nullstr`, `it`, `you`, ...), scratch buffers (`prbuf`, `tbuf`, `ring_buf`, phase 9), per-algorithm file statics (`maze.cpp`, `passages.cpp`, `ch_ret`, `nh`, `slimy`, `things.cpp`'s paging, `env.cpp`'s parser, `rip.cpp`'s `file`, phase 7), and the clock state in `SIG2()`. `w_names[FLAME]` is still overwritten while a bolt flies (`sticks.cpp`).
 
 ## Target architecture
 
@@ -138,13 +144,13 @@ Each phase is a series of small commits that each build and play.
    4. *Done:* full-screen views, in-game pages and prompts (4.4a), title and ending screens (4.4b).
    5. *Done:* input behind `ui::Input`, and no game file includes the DOS screen API.
    6. *Done:* the DOS emulation is gone (see above).
-5. **Game state** (*in progress*, see above). Gather the ~90 globals from `extern.cpp`/`init.cpp` into a `Game` context (player, level, monster list, floor items, RNG, scheduler, known-item tables, options). Free functions take or reach it explicitly, and globals are removed one group at a time. Steps:
+5. **Game state** (*done*, see above). Gather the ~90 globals from `extern.cpp`/`init.cpp` into a `Game` context (player, level, monster list, floor items, RNG, scheduler, known-item tables, options). Free functions take or reach it explicitly, and globals are removed one group at a time. Steps:
    1. *Done:* options (see above).
    2. *Done:* messages and command state (see above).
    3. *Done:* the player (see above).
    4. *Done:* the level (see above).
    5. *Done:* items (see above).
-   6. The scheduler (`daemon.cpp` slots) and the RNG.
+   6. *Done:* the scheduler (`daemon.cpp` slots) and the RNG.
    Algorithm scratch state (`maze.cpp`, `passages.cpp`, `ch_ret`, ...) and fixed tables stay where they are until phase 7.
 6. **Entities.**
    - Split `union thing` into `Monster` and `Item`.

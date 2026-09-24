@@ -273,18 +273,9 @@ const char *he_man[] = {
 #ifdef WIZARD
 bool wizard = FALSE;			/* True if allows wizard commands */
 #endif
-/* now names are associated with fixed pointers */
 /* char *release;	*/			/* Release number of rogue */
-/* storage array for guesses */
-
-
 /* WINDOW *hw;				 Used as a scratch window */
-
-
-
-
-
-
+//@ the game's variables that were here are in game() (game/Game.hpp)
 
 /*@
  * Original code did not define a value for s_maxhp member of stats struct.

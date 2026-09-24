@@ -422,12 +422,21 @@ extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
 #include "game/Game.hpp"
 #include "items/ItemCatalog.hpp"
 #include "items/Identification.hpp"
+#include "items/Inventory.hpp"
 
 using rogue::items::new_thing;
 using rogue::items::inv_name;
 using rogue::items::discovered;
 using rogue::items::add_line;
 using rogue::items::end_line;
+using rogue::items::add_pack;
+using rogue::items::pick_up;
+using rogue::items::get_item;
+using rogue::items::inventory;
+using rogue::items::pack_char;
+using rogue::items::money;
+using rogue::items::drop;
+using rogue::items::can_drop;
 
 /*
  * External variables
@@ -658,14 +667,6 @@ void	new_level(void);
 void	put_things(void);
 int	rnd_room(void);
 
-//@ pack.c
-Item	*get_item(const char *purpose, ItemFilter type);
-void	add_pack(Item *obj, bool silent);
-void	pick_up(byte ch);
-void	money(int value);
-byte	inventory(const List<Item> &list, ItemFilter type, const char *lstr);
-byte	pack_char(Item *obj);
-
 //@ passages.c
 void	conn(int r1, int r2);
 void	do_passages(void);
@@ -728,10 +729,6 @@ char	*stccpy(char *s1, char *s2, int count);
 char	*stpblk(char *str);
 char	*endblk(char *str);
 void	lcase(char *str);
-
-//@ things.c
-void	drop(void);
-bool	can_drop(Item *op);
 
 //@ weapons.c
 void	missile(int ydelta, int xdelta);

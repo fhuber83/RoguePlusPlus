@@ -149,8 +149,8 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
 - **7.1b Identification/display.** `inv_name()`, `discovered()`, `add_line()`/`end_line()` (the paging used by both the discoveries screen and `pack.cpp`'s `inventory()`), and their private helpers `chopmsg()`, `print_disc()`, `set_order()`, `nothing()` move from `things.cpp` to `src/items/Identification.{hpp,cpp}`, same `using`-into-global-namespace treatment as 7.1a. New module `.cpp` files follow `game/Game.cpp`'s convention: they include only `rogue.h` (which pulls in their own header at the right point), not their own header directly, since these headers rely on legacy typedefs (`byte`) already being in scope. `things.cpp` is now just `drop()`/`can_drop()`, moving in 7.1c.
   - Dropped three write-only statics (`newpage`, `lastfmt`, `lastarg` in `add_line()`/`end_line()`): grepped every read site across `src/`, found none. Dead since at least the 4.4a page-API conversion, when whatever re-read them for scrollback was replaced.
   - Verified: same seed gives an identical opening frame; a manual playthrough exercised `inventory` (`i`), `drop`, `discoveries` (`D`) with real item names, and picking up gold (which also exercises the 6.5 `t_dest` redirect). `rogue_tests` passes.
-
-## Target architecture
+- **7.1c Inventory.** All of `pack.cpp` (`add_pack()`, `inventory()`, `pick_up()`, `get_item()`, `pack_char()`, `money()`, and the private `pack_obj()`) plus `drop()`/`can_drop()` from `things.cpp` move to `src/items/Inventory.{hpp,cpp}`, same treatment as 7.1a/b. `pack.cpp` and `things.cpp` are now empty and deleted; every function that lived in either was item-catalog, naming or pack code, so nothing was left behind for a 7.1d.
+  - Verified: same seed gives an identical opening frame; a manual playthrough exercised picking up gold, `inventory` (`i`) and `drop` (`d`, with the select-from-list prompt). `rogue_tests` passes.
 
 ```
 src/
@@ -196,9 +196,9 @@ Each phase is a series of small commits that each build and play.
    - *Done:* fix the three reads of a discarded pool slot that would break under owning containers (see 6.5).
 7. **Domain modules.** Move behaviour into the target directories. Level generation, item effects, combat and monster spawning/AI are mutually coupled in the original (`rooms.cpp`/`new_leve.cpp` call `new_thing()`/`new_creature()`/`new_monster()`/`give_pack()` to populate rooms; `fight.cpp` calls `slime_split()` which calls `new_monster()`; `potions.cpp`'s `th_effect()` is called from `fight.cpp`; `scrolls.cpp`/`sticks.cpp` call monster-waking/spawning functions) — there is no clean leaf to start from. A namespaced function can still be called by not-yet-moved legacy code (the same trick `display()`/`rng()` used in phases 4-5), so no ordering is a hard blocker; the choice below is about which files get touched twice (once when moved, again when whatever they call moves later) versus once. `items/` is furthest upstream of the rest (level gen, combat and monster spawning all call into it), so it goes first. Steps:
    1. Items (`potions.cpp`, `scrolls.cpp`, `sticks.cpp`, `rings.cpp`, `armor.cpp`, `weapons.cpp`, the catalog/inventory pieces of `things.cpp`/`pack.cpp`) become `items/`: per-kind effect handlers, `ItemCatalog` (`new_thing()` and friends) and `Inventory`. The largest step, split further:
-      1. Catalog: `new_thing()`, `pick_one()`, `set_order()`, `nothing()` (`things.cpp`) become `items::ItemCatalog`.
-      2. Identification/display: `inv_name()`, `discovered()`, `print_disc()` (`things.cpp`).
-      3. Inventory: `add_pack()`/`pick_up()`/`inventory()`/`get_item()` (`pack.cpp`) become `items::Inventory`.
+      1. *Done:* Catalog (`new_thing()`, `pick_one()`) becomes `items::ItemCatalog` (7.1a).
+      2. *Done:* Identification/display (`inv_name()`, `discovered()`, `add_line()`/`end_line()`, `print_disc()`, `set_order()`, `nothing()`, `chopmsg()`) becomes `items::Identification` (7.1b).
+      3. *Done:* Inventory (all of `pack.cpp`, plus `drop()`/`can_drop()` from `things.cpp`) becomes `items::Inventory` (7.1c). `pack.cpp` and `things.cpp` are gone.
       4. Effects, one commit per kind, `items::effects::*`: potions, scrolls, sticks (wands), rings, armor and weapons.
    2. Scheduler (`daemon.cpp`, `daemons.cpp`) becomes `rules::Scheduler`; the function-pointer slots become typed events. Self-contained.
    3. Commands (`command.cpp`) becomes `game::CommandDispatcher` over a `Command` enum. Only touches the dispatch layer and the key table in `mach_dep.cpp`.

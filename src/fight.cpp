@@ -62,8 +62,8 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 		}
 		if (on(player.body, CANHUH)) {
 			did_huh = TRUE;
-			tp->t_flags |= ISHUH;
-			player.body.t_flags &= ~CANHUH;
+			tp->t_flags.set(ISHUH);
+			player.body.t_flags.unset(CANHUH);
 			msg("your hands stop glowing red");
 		}
 		if (tp->t_stats.s_hpt <= 0)
@@ -184,7 +184,7 @@ attack(Creature *mp)
 			/*
 			 * Violet fungi stops the poor guy from moving
 			 */
-			player.body.t_flags |= ISHELD;
+			player.body.t_flags.set(ISHELD);
 			sprintf(game().player.flytrap_damage,"%dd1",++player.fung_hit);
 		when 'L':
 		{
@@ -344,7 +344,7 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 				hplus += player.rings[RIGHT]->o_ac;
 		}
 		cp = weap->o_damage;
-		if (hurl && (weap->o_flags&ISMISL) && player.weapon != NULL &&
+		if (hurl && weap->o_flags.test(ISMISL) && player.weapon != NULL &&
 			  player.weapon->o_which == weap->o_launch)
 		{
 			cp = weap->o_hurldmg;
@@ -646,7 +646,7 @@ killed(Creature *tp, bool pr)
 	switch (tp->t_type)
 	{
 	when 'F':
-		game().player.body.t_flags &= ~ISHELD;
+		game().player.body.t_flags.unset(ISHELD);
 		f_restor();
 	when 'L':;
 		Item *gold;

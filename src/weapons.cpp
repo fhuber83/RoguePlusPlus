@@ -12,16 +12,16 @@ static struct init_weps {
 	const char *iw_dam;	/* Damage when wielded */
 	const char *iw_hrl;	/* Damage when thrown */
 	char iw_launch;	/* Launching weapon */
-	int iw_flags;	/* Miscellaneous flags */
+	ItemFlags iw_flags;	/* Miscellaneous flags */
 } init_dam[MAXWEAPONS] = {
-	{"2d4",	"1d3",	NONE,     0},            	/* Mace */
-	{"3d4",	"1d2",	NONE,     0},            	/* Long sword */
-	{"1d1",	"1d1",	NONE,     0},            	/* Bow */
+	{"2d4",	"1d3",	NONE,     {}},            	/* Mace */
+	{"3d4",	"1d2",	NONE,     {}},            	/* Long sword */
+	{"1d1",	"1d1",	NONE,     {}},            	/* Bow */
 	{"1d1",	"2d3",	BOW,      ISMANY|ISMISL},	/* Arrow */
 	{"1d6",	"1d4",	NONE,     ISMISL},       	/* Dagger */
-	{"4d4",	"1d2",	NONE,     0},            	/* 2h sword */
+	{"4d4",	"1d2",	NONE,     {}},            	/* 2h sword */
 	{"1d1",	"1d3",	NONE,     ISMANY|ISMISL},	/* Dart */
-	{"1d1",	"1d1",	NONE,     0},            	/* Crossbow */
+	{"1d1",	"1d1",	NONE,     {}},            	/* Crossbow */
 	{"1d2",	"2d5",	CROSSBOW, ISMANY|ISMISL},	/* Crossbow bolt */
 	{"2d3",	"1d6",	NONE,     ISMISL}        	/* Spear */
 };
@@ -195,7 +195,7 @@ init_weapon(Item *weap, byte type)
 	weap->o_hurldmg = iwp->iw_hrl;
 	weap->o_launch = iwp->iw_launch;
 	weap->o_flags = iwp->iw_flags;
-	if (weap->o_flags & ISMANY)
+	if (weap->o_flags.test(ISMANY))
 	{
 		weap->o_count = rnd(8) + 8;
 		weap->o_group = game().items.group++;

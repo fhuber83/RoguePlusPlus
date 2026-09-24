@@ -77,7 +77,7 @@ rollwand(void)
 void
 unconfuse(void)
 {
-	game().player.body.t_flags &= ~ISHUH;
+	game().player.body.t_flags.unset(ISHUH);
 	msg("you feel less confused now");
 }
 
@@ -93,7 +93,7 @@ unsee(void)
 	for (th = game().level.monsters; th != NULL; th = next(th))
 		if (on(*th, ISINVIS) && see_monst(th) && th->t_oldch != '@')
 			display().draw_tile(th->t_pos, th->t_oldch);
-	game().player.body.t_flags &= ~CANSEE;
+	game().player.body.t_flags.unset(CANSEE);
 }
 
 /*
@@ -106,7 +106,7 @@ sight(void)
 	if (on(game().player.body, ISBLIND))
 	{
 		extinguish(sight);
-		game().player.body.t_flags &= ~ISBLIND;
+		game().player.body.t_flags.unset(ISBLIND);
 		if (!proom->r_flags.test(RoomFlag::Gone))
 			enter_room(&hero);
 		msg("the veil of darkness lifts");
@@ -120,7 +120,7 @@ sight(void)
 void
 nohaste(void)
 {
-	game().player.body.t_flags &= ~ISHASTE;
+	game().player.body.t_flags.unset(ISHASTE);
 	msg("you feel yourself slowing down");
 }
 
@@ -144,7 +144,7 @@ stomach(void)
 		if (player.no_command || rnd(5) != 0)
 			return;
 		player.no_command += rnd(8) + 4;
-		player.body.t_flags &= ~ISRUN;
+		player.body.t_flags.unset(ISRUN);
 		game().turn.running = FALSE;
 		game().turn.count = 0;
 		player.hungry_state = 3;

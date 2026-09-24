@@ -127,7 +127,7 @@ do_zap()
 
 			omonst = monster = tp->t_type;
 			if (monster == 'F')
-				player.body.t_flags &= ~ISHELD;
+				player.body.t_flags.unset(ISHELD);
 			if (which_one == MAXSTICKS)
 			{
 				if (monster == obj->o_enemy)
@@ -159,8 +159,8 @@ do_zap()
 			}
 			else if (which_one == WS_CANCEL)
 			{
-				tp->t_flags |= ISCANC;
-				tp->t_flags &= ~(ISINVIS|CANHUH);
+				tp->t_flags.set(ISCANC);
+				tp->t_flags.unset(ISINVIS|CANHUH);
 				tp->t_disguise = tp->t_type;
 			}
 			else
@@ -188,12 +188,12 @@ do_zap()
 					tp->t_pos.x = hero.x + turn.delta.x;
 				}
 				if (tp->t_type == 'F')
-					player.body.t_flags &= ~ISHELD;
+					player.body.t_flags.unset(ISHELD);
 				if (tp->t_pos.y != y || tp->t_pos.x != x)
 					tp->t_oldch = display().tile_at(tp->t_pos);
 			}
 			tp->t_dest = &hero;
-			tp->t_flags |= ISRUN;
+			tp->t_flags.set(ISRUN);
 		}
 	}
 	when WS_MISSILE:
@@ -245,16 +245,16 @@ do_zap()
 			if (which_one == WS_HASTE_M)
 			{
 				if (on(*tp, ISSLOW))
-					tp->t_flags &= ~ISSLOW;
+					tp->t_flags.unset(ISSLOW);
 				else
-					tp->t_flags |= ISHASTE;
+					tp->t_flags.set(ISHASTE);
 			}
 			else
 			{
 				if (on(*tp, ISHASTE))
-					tp->t_flags &= ~ISHASTE;
+					tp->t_flags.unset(ISHASTE);
 				else
-					tp->t_flags |= ISSLOW;
+					tp->t_flags.set(ISSLOW);
 				tp->t_turn = TRUE;
 			}
 			turn.delta.y = y;
@@ -456,7 +456,7 @@ charge_str(Item *obj)
 {
 	static char buf[20];
 
-	if (!(obj->o_flags & ISKNOW))
+	if (!obj->o_flags.test(ISKNOW))
 		buf[0] = '\0';
 	else
 		sprintf(buf, " [%d charges]", obj->o_charges);

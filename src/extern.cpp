@@ -291,20 +291,24 @@ struct monster monsters[26] =
 	/* Name		 CARRY	FLAG    str, exp, lvl, amr, hpt, dmg, maxhp */
 	{ "aquator",	0,	ISMEAN,	{ XX, 20,   5,   2, ___, "0d0/0d0", ___ } },
 	{ "bat",	 	0,	ISFLY,	{ XX,  1,   1,   3, ___, "1d2", ___ } },
-	{ "centaur",	 15,	0,	{ XX, 25,   4,   4, ___, "1d6/1d6", ___ } },
+	{ "centaur",	 15,	{},	{ XX, 25,   4,   4, ___, "1d6/1d6", ___ } },
 	{ "dragon",	 100,	ISMEAN,	{ XX,6800, 10,  -1, ___, "1d8/1d8/3d10", ___ } },
 	{ "emu",	 0,	ISMEAN,	{ XX,  2,   1,   7, ___, "1d2", ___ } },
-		/*@ damage is overwritten per game via f_damage, see new_monster() */
+		/*@ damage is overwritten per game via flytrap_damage, see new_monster() */
 		/* string with others, since it is written on in the program */
 	{ "venus flytrap",0,	ISMEAN,	{ XX, 80,   8,   3, ___, "0d0", ___ } },
 	{ "griffin",	 20,	ISMEAN|ISFLY|ISREGEN,	{XX,2000, 13, 2,___, "4d3/3d5/4d3", ___ } },
 	{ "hobgoblin",	 0,	ISMEAN,	{ XX,  3,   1,   5, ___, "1d8", ___ } },
 	{ "ice monster", 0,	ISMEAN,	{ XX,  15,   1,   9, ___, "1d2", ___ } },
-	{ "jabberwock",  70,	0,	{ XX,4000, 15,   6, ___, "2d12/2d4", ___ } },
+	{ "jabberwock",  70,	{},	{ XX,4000, 15,   6, ___, "2d12/2d4", ___ } },
 	{ "kestral",	 0,	ISMEAN|ISFLY, { XX,  1,   1,   7, ___, "1d4", ___ } },
-	{ "leprechaun",	 ISGREED,	0,	{ XX, 10,   3,   8, ___, "1d2", ___ } },
+		/*@
+		 * The original has ISGREED (0x40) in the CARRY column: leprechauns
+		 * carry something 64% of the time and are not greedy. Kept as is.
+		 */
+	{ "leprechaun",	 0x40,	{},	{ XX, 10,   3,   8, ___, "1d2", ___ } },
 	{ "medusa",	 40,	ISMEAN,	{ XX,200,   8,   2, ___, "3d4/3d4/2d5", ___ } },
-	{ "nymph",	 100,	0,	{ XX, 37,   3,   9, ___, "0d0", ___ } },
+	{ "nymph",	 100,	{},	{ XX, 37,   3,   9, ___, "0d0", ___ } },
 	{ "orc",	 15,	ISGREED,{ XX,  5,   1,   6, ___, "1d8", ___ } },
 	{ "phantom",	 0,ISINVIS,{ XX,120,   8,   3, ___, "4d4", ___ } },
 	{ "quagga",	 30,	ISMEAN,	{ XX, 32,   3,   2, ___, "1d2/1d2/1d4", ___ } },
@@ -313,9 +317,9 @@ struct monster monsters[26] =
 	{ "troll",	 50,	ISREGEN|ISMEAN,{ XX, 120, 6, 4, ___, "1d8/1d8/2d6", ___ } },
 	{ "ur-vile",	 0,	ISMEAN,	{ XX,190,   7,  -2, ___, "1d3/1d3/1d3/4d6", ___ } },
 	{ "vampire",	 20,	ISREGEN|ISMEAN,{ XX,350,   8,   1, ___, "1d10", ___ } },
-	{ "wraith",	 0,	0,	{ XX, 55,   5,   4, ___, "1d6", ___ } },
-	{ "xeroc",30,	0,	{ XX,100,   7,   7, ___, "3d4", ___ } },
-	{ "yeti",	 30,	0,	{ XX, 50,   4,   6, ___, "1d6/1d6", ___ } },
+	{ "wraith",	 0,	{},	{ XX, 55,   5,   4, ___, "1d6", ___ } },
+	{ "xeroc",30,	{},	{ XX,100,   7,   7, ___, "3d4", ___ } },
+	{ "yeti",	 30,	{},	{ XX, 50,   4,   6, ___, "1d6/1d6", ___ } },
 	{ "zombie",	 0,	ISMEAN,	{ XX,  6,   2,   8, ___, "1d8", ___ } }
 };
 #undef ___

@@ -83,21 +83,21 @@ inv_name(Item *obj, bool drop)
 		else
 			sprintf(pb, "A%s ", vowelstr(w_names[which]));
 		pb = &prbuf[strlen(prbuf)];
-		if (obj->o_flags & ISKNOW)
+		if (obj->o_flags.test(ISKNOW))
 			sprintf(pb, "%s %s", num(obj->o_hplus, obj->o_dplus, WEAPON),
 				w_names[which]);
 		else
 			sprintf(pb, "%s", w_names[which]);
 		if (obj->o_count > 1)
 			strcat(pb, "s");
-		if (obj->o_enemy && (obj->o_flags & ISREVEAL))
+		if (obj->o_enemy && obj->o_flags.test(ISREVEAL))
 		{
 			strcat(pb, " of ");
 			strcat(pb, monsters[obj->o_enemy-'A'].m_name);
 			strcat(pb, " slaying");
 		}
 	when ARMOR:
-		if (obj->o_flags & ISKNOW)
+		if (obj->o_flags.test(ISKNOW))
 			chopmsg(pb, "%s %s","%s %s [armor class %d]",
 				num(a_class[which] - obj->o_ac, 0, ARMOR),
 				a_names[which], -(obj->o_ac-11));
@@ -228,7 +228,7 @@ can_drop(Item *op)
 	if (op != player.armor && op != player.weapon
 		&& op != player.rings[LEFT] && op != player.rings[RIGHT])
 		return TRUE;
-	if (op->o_flags & ISCURSED) {
+	if (op->o_flags.test(ISCURSED)) {
 		msg("you can't.  It appears to be cursed");
 		return FALSE;
 	}
@@ -279,7 +279,7 @@ new_thing(void)
 	cur->o_ac = 11;
 	cur->o_count = 1;
 	cur->o_group = 0;
-	cur->o_flags = 0;
+	cur->o_flags.reset();
 	cur->o_enemy = 0;
 	/*
 	 * Decide what kind of object it will be
@@ -306,7 +306,7 @@ new_thing(void)
 		init_weapon(cur, cur->o_which);
 		if ((k = rnd(100)) < 10)
 		{
-			cur->o_flags |= ISCURSED;
+			cur->o_flags.set(ISCURSED);
 			cur->o_hplus -= rnd(3) + 1;
 		}
 		else if (k < 15)
@@ -327,7 +327,7 @@ new_thing(void)
 		cur->o_ac = a_class[j];
 		if ((k = rnd(100)) < 20)
 		{
-			cur->o_flags |= ISCURSED;
+			cur->o_flags.set(ISCURSED);
 			cur->o_ac += rnd(3) + 1;
 		}
 		else if (k < 28)
@@ -344,11 +344,11 @@ new_thing(void)
 			if ((cur->o_ac = rnd(3)) == 0)
 			{
 				cur->o_ac = -1;
-				cur->o_flags |= ISCURSED;
+				cur->o_flags.set(ISCURSED);
 			}
 		when R_AGGR:
 		case R_TELEPORT:
-			cur->o_flags |= ISCURSED;
+			cur->o_flags.set(ISCURSED);
 			break;
 		}
 	when 6:
@@ -462,7 +462,7 @@ print_disc(byte type)
 	}
 	set_order(order, maxnum);
 	obj.o_count = 1;
-	obj.o_flags = 0;
+	obj.o_flags.reset();
 	num_found = 0;
 	for (i = 0; i < maxnum; i++)
 		if (know[order[i]] || *guess[order[i]])

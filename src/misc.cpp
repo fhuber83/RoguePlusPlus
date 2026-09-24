@@ -344,15 +344,15 @@ add_haste(bool potion)
 	if (on(player.body, ISHASTE))
 	{
 		player.no_command += rnd(8);
-		player.body.t_flags &= ~ISRUN;
+		player.body.t_flags.unset(ISRUN);
 		extinguish(nohaste);
-		player.body.t_flags &= ~ISHASTE;
+		player.body.t_flags.unset(ISHASTE);
 		msg("you faint from exhaustion");
 		return FALSE;
 	}
 	else
 	{
-		player.body.t_flags |= ISHASTE;
+		player.body.t_flags.set(ISHASTE);
 		if (potion)
 			fuse(nohaste, rnd(4)+10);
 		return TRUE;
@@ -532,7 +532,7 @@ goodch(Item *obj)
 {
 	char ch = MAGIC;
 
-	if (obj->o_flags & ISCURSED)
+	if (obj->o_flags.test(ISCURSED))
 		ch = BMAGIC;
 	switch (obj->o_type) {
 	when ARMOR:

@@ -54,7 +54,7 @@ quaff(void)
 				lengthen(unconfuse, rnd(8)+HUHDURATION);
 			else
 				fuse(unconfuse, rnd(8)+HUHDURATION);
-			player.body.t_flags |= ISHUH;
+			player.body.t_flags.set(ISHUH);
 			msg("wait, what's going on? Huh? What? Who?");
 		}
 	when P_POISON:
@@ -137,7 +137,7 @@ quaff(void)
 	when P_PARALYZE:
 		items.p_know[P_PARALYZE] = TRUE;
 		player.no_command = HOLDTIME;
-		player.body.t_flags &= ~ISRUN;
+		player.body.t_flags.unset(ISRUN);
 		msg("you can't move");
 	when P_SEEINVIS:
 		if (!on(player.body, CANSEE)) {
@@ -182,7 +182,7 @@ quaff(void)
 		items.p_know[P_BLIND] = TRUE;
 		if (!on(player.body, ISBLIND))
 		{
-			player.body.t_flags |= ISBLIND;
+			player.body.t_flags.set(ISBLIND);
 			fuse(sight, SEEDURATION);
 			look(FALSE);
 		}
@@ -221,7 +221,7 @@ invis_on(void)
 {
 	Creature *th;
 
-	game().player.body.t_flags |= CANSEE;
+	game().player.body.t_flags.set(CANSEE);
 	for (th = game().level.monsters; th != NULL; th = next(th))
 	if (on(*th, ISINVIS) && see_monst(th))
 	{
@@ -255,9 +255,9 @@ turn_see(bool turn_off)
 					can_see ? TileStyle::Normal : TileStyle::Inverse);
 		}
 	}
-	game().player.body.t_flags |= SEEMONST;
+	game().player.body.t_flags.set(SEEMONST);
 	if (turn_off)
-		game().player.body.t_flags &= ~SEEMONST;
+		game().player.body.t_flags.unset(SEEMONST);
 	return add_new;
 }
 
@@ -272,11 +272,11 @@ th_effect(Item *obj, Creature *tp)
 	{
 	when P_CONFUSE:
 	case P_BLIND:
-		tp->t_flags |= ISHUH;
+		tp->t_flags.set(ISHUH);
 		msg("the %s appears confused", monsters[tp->t_type-'A'].m_name);
 	when P_PARALYZE:
-		tp->t_flags &= ~ISRUN;
-		tp->t_flags |= ISHELD;
+		tp->t_flags.unset(ISRUN);
+		tp->t_flags.set(ISHELD);
 	when P_HEALING:
 	case P_XHEAL:
 		if ((tp->t_stats.s_hpt += rnd(8)) > tp->t_stats.s_maxhp)
@@ -286,7 +286,7 @@ th_effect(Item *obj, Creature *tp)
 		tp->t_stats.s_maxhp += 8;
 		tp->t_stats.s_lvl++;
 	when P_HASTE:
-		tp->t_flags |= ISHASTE;
+		tp->t_flags.set(ISHASTE);
 		break;
 	}
 	msg("the flask shatters.");

@@ -46,14 +46,14 @@ whatis(void)
 		*items.p_guess[obj->o_which] = '\0';
 	when STICK:
 		items.ws_know[obj->o_which] = TRUE;
-		obj->o_flags |= ISKNOW;
+		obj->o_flags.set(ISKNOW);
 		*items.ws_guess[obj->o_which] = '\0';
 	when WEAPON:
 	case ARMOR:
-		obj->o_flags |= ISKNOW;
+		obj->o_flags.set(ISKNOW);
 	when RING:
 		items.r_know[obj->o_which] = TRUE;
-		obj->o_flags |= ISKNOW;
+		obj->o_flags.set(ISKNOW);
 		*items.r_guess[obj->o_which] = '\0';
 		break;
 	}
@@ -62,7 +62,7 @@ whatis(void)
 	 * vorpally enchanted against
 	 */
 	if (obj->o_enemy)
-		obj->o_flags |= ISREVEAL;
+		obj->o_flags.set(ISREVEAL);
 	msg(inv_name(obj, FALSE));
 }
 
@@ -107,7 +107,7 @@ create_obj(void)
 		bless = readchar();
 		game().message.end = 0;
 		if (bless == '-')
-			obj->o_flags |= ISCURSED;
+			obj->o_flags.set(ISCURSED);
 		if (obj->o_type == WEAPON)
 		{
 			init_weapon(obj, obj->o_which);
@@ -136,11 +136,11 @@ create_obj(void)
 			bless = readchar();
 			game().message.end = 0;
 			if (bless == '-')
-				obj->o_flags |= ISCURSED;
+				obj->o_flags.set(ISCURSED);
 			obj->o_ac = (bless == '-' ? -1 : rnd(2) + 1);
 		when R_AGGR:
 		case R_TELEPORT:
-			obj->o_flags |= ISCURSED;
+			obj->o_flags.set(ISCURSED);
 			/* fallthrough */
 		}
 	else if (obj->o_type == STICK)
@@ -188,7 +188,7 @@ teleport(void)
 	 * a Fungi
 	 */
 	if (on(player.body, ISHELD)) {
-		player.body.t_flags &= ~ISHELD;
+		player.body.t_flags.unset(ISHELD);
 		f_restor();
 	}
 	player.no_move = 0;
@@ -207,7 +207,7 @@ teleport(void)
 		lengthen(unconfuse, rnd(4)+2);
 	else
 		fuse(unconfuse, rnd(4)+2);
-	player.body.t_flags |= ISHUH;
+	player.body.t_flags.set(ISHUH);
 #ifdef WIZARD
 	}
 #endif //WIZARD

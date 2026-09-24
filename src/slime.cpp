@@ -41,7 +41,7 @@ new_slime(Creature *tp)
 	coord sp;
 
 	ret = FALSE;
-	tp->t_flags |= ISFLY;
+	tp->t_flags.set(ISFLY);
 	if (!plop_monster((ty = tp->t_pos.y), (tx = tp->t_pos.x), &sp)) {
 		/*
 		 * There were no open spaces next to this slime, look for other
@@ -50,7 +50,7 @@ new_slime(Creature *tp)
 		for (y = ty -1; y <= ty+1; y++)
 			for (x = tx-1; x <= tx+1; x++)
 				if (winat(y, x) == 'S' && (ntp = moat(y, x))) {
-					if (ntp->t_flags & ISFLY)
+					if (ntp->t_flags.test(ISFLY))
 						continue;				/* Already done this one */
 					if (new_slime(ntp)) {
 						y = ty+2;
@@ -61,7 +61,7 @@ new_slime(Creature *tp)
 		ret = TRUE;
 		slimy = sp;
 	}
-	tp->t_flags &= ~ISFLY;
+	tp->t_flags.unset(ISFLY);
 	return ret;
 }
 

@@ -122,6 +122,10 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - `new_item()` makes items and `new_creature()` makes monsters, from separate pools in `game().pool` that share one count. The original allocated both from one pool of `MAXITEMS` things, and level generation checks `total < MAXITEMS`, so the shared limit keeps dungeons identical. `discard()` has an overload for each.
      - `list_attach`/`list_detach`/`list_free` are templates in `rogue.h` for both kinds of list.
      - Verified with the A/B and descending replays: identical. `tests/game/GameTest.cpp` checks the shared pool limit.
+   - **6.2 Flags.**
+     - `t_flags` and `m_flags` are `CreatureFlags` (`rogue::Flags<CreatureFlag>`), and `o_flags` is `ItemFlags`. The legacy names (`ISBLIND`, `ISKNOW`, ...) remain as typed constants in `rogue.h`, so mixing a creature flag into an item, or the reverse, no longer compiles. `x |= F`, `x &= ~F` and `x & F` became `set`, `unset` and `test`, and `on()` uses `test`.
+     - Two original quirks keep their bits. Scare monster scrolls remembered being picked up with the creature flag `ISFOUND`, the same bit as `ISEGO`; that is `ItemFlag::Found` now. The leprechaun has `ISGREED` (0x40) in its carry column, so it carries something 64% of the time and is not greedy.
+     - Verified with the A/B and descending replays: identical. `StaticTablesTest` pins the monster flags.
 
 ## Target architecture
 
@@ -162,7 +166,8 @@ Each phase is a series of small commits that each build and play.
    Algorithm scratch state (`maze.cpp`, `passages.cpp`, `ch_ret`, ...) and fixed tables stay where they are until phase 7.
 6. **Entities** (*in progress*, see above).
    - *Done:* split `union thing` into `Creature` (monster or player) and `Item`.
-   - Item kinds become an `enum class` with a separate glyph mapping, and creature/object flags become `rogue::Flags`.
+   - *Done:* creature/object flags become `rogue::Flags`.
+   - Item kinds become an `enum class` with a separate glyph mapping.
    - Replace the intrusive `l_next`/`l_prev` lists (`list.cpp`) with standard containers of `std::unique_ptr` and stable IDs.
    - *Done:* replace the `#define t_pos _t._t_pos` accessor macros with members.
 7. **Domain modules.**

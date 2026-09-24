@@ -244,7 +244,7 @@ be_trapped(coord *tc)
 		msg("you are caught in a bear trap");
 	when T_SLEEP:
 		player.no_command += SLEEPTIME;
-		player.body.t_flags &= ~ISRUN;
+		player.body.t_flags.unset(ISRUN);
 		msg("a %smist envelops you and you fall asleep",
 			noterse("strange white "));
 	when T_ARROW:

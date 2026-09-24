@@ -30,7 +30,7 @@ init_player()
 	init_weapon(obj, MACE);
 	obj->o_hplus = 1;
 	obj->o_dplus = 1;
-	obj->o_flags |= ISKNOW;
+	obj->o_flags.set(ISKNOW);
 	obj->o_count = 1;
 	obj->o_group = 0;
 	add_pack(obj, TRUE);
@@ -46,7 +46,7 @@ init_player()
 	obj->o_dplus = 0;
 	obj->o_count = 1;
 	obj->o_group = 0;
-	obj->o_flags |= ISKNOW;
+	obj->o_flags.set(ISKNOW);
 	add_pack(obj, TRUE);
 	/*
 	 * Now some arrows
@@ -57,7 +57,7 @@ init_player()
 	init_weapon(obj, ARROW);
 	obj->o_count = rnd(15) + 25;
 	obj->o_hplus = obj->o_dplus = 0;
-	obj->o_flags |= ISKNOW;
+	obj->o_flags.set(ISKNOW);
 	add_pack(obj, TRUE);
 	/*
 	 * And his suit of armor
@@ -66,7 +66,7 @@ init_player()
 	obj->o_type = ARMOR;
 	obj->o_which = RING_MAIL;
 	obj->o_ac = a_class[RING_MAIL] - 1;
-	obj->o_flags |= ISKNOW;
+	obj->o_flags.set(ISKNOW);
 	obj->o_count = 1;
 	obj->o_group = 0;
 	game().player.armor = obj;

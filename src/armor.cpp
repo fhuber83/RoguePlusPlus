@@ -29,7 +29,7 @@ wear()
 		return;
 	}
 	waste_time();
-	obj->o_flags |= ISKNOW ;
+	obj->o_flags.set(ISKNOW);
 	sp = inv_name(obj, TRUE);
 	game().player.armor = obj;
 	msg("you are now wearing %s", sp);

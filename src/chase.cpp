@@ -193,9 +193,9 @@ see_monst(Creature *mp)
 	 * time, give the player a hint as to what that weapon is good for.
 	 */
 	if (player.weapon != NULL && mp->t_type == player.weapon->o_enemy
-	  && ((player.weapon->o_flags & DIDFLASH) == 0))
+	  && !player.weapon->o_flags.test(DIDFLASH))
 	{
-		player.weapon->o_flags |=	DIDFLASH;
+		player.weapon->o_flags.set(DIDFLASH);
 		msg(flashmsg, w_names[player.weapon->o_which], game().options.brief() ? "" : intense);
 	}
 	return TRUE;
@@ -219,8 +219,8 @@ start_run(coord *runner)
 		/*
 		 *	Start the beastie running
 		 */
-		tp->t_flags |= ISRUN;
-		tp->t_flags &= ~ISHELD;
+		tp->t_flags.set(ISRUN);
+		tp->t_flags.unset(ISHELD);
 		tp->t_dest	= find_dest(tp);
 	}
 #ifdef DEBUG
@@ -265,7 +265,7 @@ chase(Creature *tp, coord *ee)
 		 * Small chance that it will become un-confused
 		 */
 		if (rnd(30) ==	17)
-			tp->t_flags &= ~ISHUH;
+			tp->t_flags.unset(ISHUH);
 	}
 	/*
 	 * Otherwise, find the empty spot next to the chaser that is

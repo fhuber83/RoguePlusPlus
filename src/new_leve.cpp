@@ -24,7 +24,7 @@ new_level(void)
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 
-	player.body.t_flags &= ~ISHELD;	/* unhold when you go down just in case */
+	player.body.t_flags.unset(ISHELD);	/* unhold when you go down just in case */
 	/*
 	 * Monsters only get displayed when you move
 	 * so start a level by having the poor guy rest
@@ -254,7 +254,7 @@ treas_room(void)
 			if ((tp = new_creature()) != NULL)
 			{
 				new_monster(tp, randmonster(FALSE), &mp);
-				tp->t_flags |= ISMEAN;	/* no sloughers in THIS room */
+				tp->t_flags.set(ISMEAN);	/* no sloughers in THIS room */
 				give_pack(tp);
 			}
 		}

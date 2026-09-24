@@ -266,7 +266,7 @@ total_winner(void)
 				break;
 			}
 			worth *= 3 * (obj->o_hplus + obj->o_dplus) + obj->o_count;
-			obj->o_flags |= ISKNOW;
+			obj->o_flags.set(ISKNOW);
 		when ARMOR:
 			switch (obj->o_which)
 			{
@@ -282,7 +282,7 @@ total_winner(void)
 			}
 			worth += (9 - obj->o_ac) * 100;
 			worth += (10 * (a_class[obj->o_which] - obj->o_ac));
-			obj->o_flags |= ISKNOW;
+			obj->o_flags.set(ISKNOW);
 		when SCROLL:
 			worth = items.s_magic[obj->o_which].mi_worth;
 			worth *= obj->o_count;
@@ -305,16 +305,16 @@ total_winner(void)
 				else
 					worth = 10;
 			}
-			if (!(obj->o_flags & ISKNOW))
+			if (!obj->o_flags.test(ISKNOW))
 				worth /= 2;
-			obj->o_flags |= ISKNOW;
+			obj->o_flags.set(ISKNOW);
 			items.r_know[obj->o_which] = TRUE;
 		when STICK:
 			worth = items.ws_magic[obj->o_which].mi_worth;
 			worth += 20 * obj->o_charges;
-			if (!(obj->o_flags & ISKNOW))
+			if (!obj->o_flags.test(ISKNOW))
 				worth /= 2;
-			obj->o_flags |= ISKNOW;
+			obj->o_flags.set(ISKNOW);
 			items.ws_know[obj->o_which] = TRUE;
 			when AMULET:
 			worth = 1000;

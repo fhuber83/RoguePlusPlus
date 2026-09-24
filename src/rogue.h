@@ -99,7 +99,7 @@ const int maxrow = MAXLINES - 2;
 #define detach(a,b)	list_detach(&a,b)
 #define free_list(a)	list_free(&a)
 #define max(a,b)	((a) > (b) ? (a) : (b))
-#define on(thing,flag)	(((thing).t_flags & (flag)) != 0)
+#define on(thing,flag)	((thing).t_flags.test(flag))
 #define GOLDCALC	(rnd(50 + 10 * game().level.depth) + 2)
 #define ISRING(h,r)	(game().player.rings[h] != NULL && game().player.rings[h]->o_which == r)
 #define ISWEARING(r)	(ISRING(LEFT, r) || ISRING(RIGHT, r))
@@ -146,35 +146,6 @@ const int maxrow = MAXLINES - 2;
 #define VS_BREATH	02
 #define VS_MAGIC	03
 
-/*
- * Various flag bits
- */
-/* flags for objects */
-#define ISCURSED 0x0001		/* object is cursed */
-#define ISKNOW	 0x0002		/* player knows details about the object */
-#define DIDFLASH 0x0004		/* has the vorpal weapon flashed */
-#define ISEGO	 0x0008		/* weapon has control of player @ unused */
-#define ISMISL	 0x0010		/* object is a missile type */
-#define ISMANY	 0x0020		/* object comes in groups */
-#define ISREVEAL 0x0040		/* Do you know who the enemy of the object is */
-
-/* flags for creatures */
-#define ISBLIND	 0x0001		/* creature is blind */
-#define SEEMONST 0x0002		/* hero can detect unseen monsters */
-#define ISRUN	 0x0004		/* creature is running at the player */
-#define ISFOUND	 0x0008		/* creature has been seen (used for objects) */
-#define ISINVIS	 0x0010		/* creature is invisible */
-#define ISMEAN	 0x0020		/* creature can wake when player enters room */
-#define ISGREED	 0x0040		/* creature runs to protect gold */
-#define ISHELD	 0x0080		/* creature has been held */
-#define ISHUH	 0x0100		/* creature is confused */
-#define ISREGEN	 0x0200		/* creature can regenerate */
-#define CANHUH	 0x0400		/* creature can confuse */
-#define CANSEE	 0x0800		/* creature can see invisible creatures */
-#define ISCANC	 0x1000		/* creature has special qualities cancelled */
-#define ISSLOW	 0x2000		/* creature has been slowed */
-#define ISHASTE	 0x4000		/* creature has been hastened */
-#define ISFLY	 0x8000		/* creature is of the flying type */
 
 /*
  * Flags for level map
@@ -394,6 +365,36 @@ struct stats {
 
 using rogue::Creature;
 using rogue::Item;
+using rogue::CreatureFlags;
+using rogue::ItemFlags;
+
+/*
+ * Various flag bits
+ * @ typed now: rogue::ItemFlag and rogue::CreatureFlag, in Flags sets
+ */
+inline constexpr rogue::ItemFlag ISCURSED = rogue::ItemFlag::Cursed;
+inline constexpr rogue::ItemFlag ISKNOW = rogue::ItemFlag::Known;
+inline constexpr rogue::ItemFlag DIDFLASH = rogue::ItemFlag::DidFlash;
+inline constexpr rogue::ItemFlag ISEGO = rogue::ItemFlag::Ego;
+inline constexpr rogue::ItemFlag ISMISL = rogue::ItemFlag::Missile;
+inline constexpr rogue::ItemFlag ISMANY = rogue::ItemFlag::Many;
+inline constexpr rogue::ItemFlag ISREVEAL = rogue::ItemFlag::Revealed;
+inline constexpr rogue::CreatureFlag ISBLIND = rogue::CreatureFlag::Blind;
+inline constexpr rogue::CreatureFlag SEEMONST = rogue::CreatureFlag::SeeMonst;
+inline constexpr rogue::CreatureFlag ISRUN = rogue::CreatureFlag::Running;
+inline constexpr rogue::CreatureFlag ISFOUND = rogue::CreatureFlag::Found;
+inline constexpr rogue::CreatureFlag ISINVIS = rogue::CreatureFlag::Invisible;
+inline constexpr rogue::CreatureFlag ISMEAN = rogue::CreatureFlag::Mean;
+inline constexpr rogue::CreatureFlag ISGREED = rogue::CreatureFlag::Greedy;
+inline constexpr rogue::CreatureFlag ISHELD = rogue::CreatureFlag::Held;
+inline constexpr rogue::CreatureFlag ISHUH = rogue::CreatureFlag::Confused;
+inline constexpr rogue::CreatureFlag ISREGEN = rogue::CreatureFlag::Regen;
+inline constexpr rogue::CreatureFlag CANHUH = rogue::CreatureFlag::CanConfuse;
+inline constexpr rogue::CreatureFlag CANSEE = rogue::CreatureFlag::SeeInvisible;
+inline constexpr rogue::CreatureFlag ISCANC = rogue::CreatureFlag::Cancelled;
+inline constexpr rogue::CreatureFlag ISSLOW = rogue::CreatureFlag::Slow;
+inline constexpr rogue::CreatureFlag ISHASTE = rogue::CreatureFlag::Hasted;
+inline constexpr rogue::CreatureFlag ISFLY = rogue::CreatureFlag::Flying;
 
 #define o_charges	o_ac
 #define o_goldval	o_ac
@@ -404,7 +405,7 @@ using rogue::Item;
 struct monster {
 	const char *m_name;			/* What to call the monster */
 	shint m_carry;			/* Probability of carrying something */
-	unsigned short m_flags;			/* Things about the monster */
+	CreatureFlags m_flags;		/* Things about the monster */
 	struct stats m_stats;		/* Initial stats */
 };
 

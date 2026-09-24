@@ -189,7 +189,7 @@ wake_monster(int y, int x)
 		&& !ISWEARING(R_STEALTH))
 	{
 		tp->t_dest = &hero;
-		tp->t_flags |= ISRUN;
+		tp->t_flags.set(ISRUN);
 	}
 	if (ch == 'M' && !on(game().player.body, ISBLIND) && !on(*tp, ISFOUND)
 		&& !on(*tp, ISCANC) && on(*tp, ISRUN))
@@ -197,13 +197,13 @@ wake_monster(int y, int x)
 		rp = proom;
 		dst = DISTANCE(y, x, hero.y, hero.x);
 		if ((rp != NULL && !rp->r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
-			tp->t_flags |= ISFOUND;
+			tp->t_flags.set(ISFOUND);
 			if (!save(VS_MAGIC)) {
 				if (on(game().player.body, ISHUH))
 					lengthen(unconfuse, rnd(20) + HUHDURATION);
 				else
 					fuse(unconfuse, rnd(20) + HUHDURATION);
-				game().player.body.t_flags |= ISHUH;
+				game().player.body.t_flags.set(ISHUH);
 				msg("the medusa's gaze has confused you");
 			}
 		}
@@ -212,7 +212,7 @@ wake_monster(int y, int x)
 	 * Let greedy ones guard gold
 	 */
 	if (on(*tp, ISGREED) && !on(*tp, ISRUN)) {
-		tp->t_flags = tp->t_flags | ISRUN;
+		tp->t_flags.set(ISRUN);
 		if (proom->r_goldval)
 			tp->t_dest = &proom->r_gold;
 		else

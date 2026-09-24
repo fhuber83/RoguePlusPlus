@@ -172,7 +172,7 @@ ring_eat(int hand)
 const char *
 ring_num(Item *obj)
 {
-	if (!(obj->o_flags & ISKNOW))
+	if (!obj->o_flags.test(ISKNOW))
 		return "";
 	switch (obj->o_which) {
 	when R_PROTECT:

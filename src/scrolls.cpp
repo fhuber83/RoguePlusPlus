@@ -44,12 +44,12 @@ read_scroll()
 		/*
 		 * Scroll of monster confusion.  Give him that power.
 		 */
-		player.body.t_flags |= CANHUH;
+		player.body.t_flags.set(CANHUH);
 		msg("your hands begin to glow red");
 	when S_ARMOR:
 		if (player.armor != NULL) {
 			player.armor->o_ac--;
-			player.armor->o_flags &= ~ISCURSED;
+			player.armor->o_flags.unset(ISCURSED);
 			ifterse0("your armor glows faintly",
 				"your armor glows faintly for a moment");
 		}
@@ -63,8 +63,8 @@ read_scroll()
 			if (x >= 0 && x < COLS)
 				for (y = hero.y - 3; y <= hero.y + 3; y++)
 					if ((y > 0 && y < maxrow) && ((mo=moat(y, x)) != NULL)) {
-						mo->t_flags &= ~ISRUN;
-						mo->t_flags |= ISHELD;
+						mo->t_flags.unset(ISRUN);
+						mo->t_flags.set(ISHELD);
 					}
 	when S_SLEEP:
 		/*
@@ -72,7 +72,7 @@ read_scroll()
 		 */
 		items.s_know[S_SLEEP] = TRUE;
 		player.no_command += rnd(SLEEPTIME) + 4;
-		player.body.t_flags &= ~ISRUN;
+		player.body.t_flags.unset(ISRUN);
 		msg("you fall asleep");
 	when S_CREATE:
 		{
@@ -171,7 +171,7 @@ read_scroll()
 		msg("you feel a strange sense of loss");
 		else
 		{
-		player.weapon->o_flags &= ~ISCURSED;
+		player.weapon->o_flags.unset(ISCURSED);
 		if (rnd(2) == 0)
 			player.weapon->o_hplus++;
 		else
@@ -186,13 +186,13 @@ read_scroll()
 			msg(laugh, game().options.brief() ? "" : in_dist);
 	when S_REMOVE:
 		if (player.armor != NULL)
-			player.armor->o_flags &= ~ISCURSED;
+			player.armor->o_flags.unset(ISCURSED);
 		if (player.weapon != NULL)
-			player.weapon->o_flags &= ~ISCURSED;
+			player.weapon->o_flags.unset(ISCURSED);
 		if (player.rings[LEFT] != NULL)
-			player.rings[LEFT]->o_flags &= ~ISCURSED;
+			player.rings[LEFT]->o_flags.unset(ISCURSED);
 		if (player.rings[RIGHT] != NULL)
-			player.rings[RIGHT]->o_flags &= ~ISCURSED;
+			player.rings[RIGHT]->o_flags.unset(ISCURSED);
 		ifterse0("somebody is watching over you","you feel as if somebody is watching over you");
 	when S_AGGR:
 		/*
@@ -242,9 +242,9 @@ read_scroll()
 				/*
 				 * Sometimes this is a mixed blessing ...
 					if (rnd(20) == 0) {
-						cur_weapon->o_flags |= ISCURSED;
+						cur_weapon->o_flags.set(ISCURSED);
 						if (!save(VS_MAGIC)) {
-							cur_weapon->o_flags |= ISEGO|ISREVEAL;
+							cur_weapon->o_flags.set(ISEGO|ISREVEAL);
 							s_know[S_VORPAL] = TRUE;
 							msg("you feel a sudden desire to kill %ss.",
 							monsters[cur_weapon->o_enemy-'A'].m_name);

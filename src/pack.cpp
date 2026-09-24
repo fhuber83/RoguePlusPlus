@@ -94,7 +94,7 @@ add_pack(Item *obj, bool silent)
 	 */
 	if (obj->o_type == SCROLL && obj->o_which == S_SCARE)
 	{
-		if (obj->o_flags & ISFOUND)
+		if (obj->o_flags.test(rogue::ItemFlag::Found))
 		{
 			detach(game().level.objects, obj);
 			display().draw_tile(hero, floor);
@@ -103,7 +103,7 @@ add_pack(Item *obj, bool silent)
 			return;
 		}
 		else
-			obj->o_flags |= ISFOUND;
+			obj->o_flags.set(rogue::ItemFlag::Found);
 	}
 
 	game().player.in_pack++;

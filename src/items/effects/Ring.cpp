@@ -1,10 +1,6 @@
-/*
- * Routines dealing specifically with rings
- *
- * rings.c		1.4 (AI Design)		12/13/84
- */
-
 #include "rogue.h"
+
+namespace rogue::items::effects {
 
 static int	gethand(void);
 
@@ -186,3 +182,5 @@ ring_num(Item *obj)
 	}
 	return ring_buf;
 }
+
+}  // namespace rogue::items::effects

@@ -426,6 +426,7 @@ extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
 #include "items/effects/Potion.hpp"
 #include "items/effects/Scroll.hpp"
 #include "items/effects/Wand.hpp"
+#include "items/effects/Ring.hpp"
 
 using rogue::items::new_thing;
 using rogue::items::inv_name;
@@ -450,6 +451,10 @@ using rogue::items::effects::do_zap;
 using rogue::items::effects::drain;
 using rogue::items::effects::fire_bolt;
 using rogue::items::effects::charge_str;
+using rogue::items::effects::ring_on;
+using rogue::items::effects::ring_off;
+using rogue::items::effects::ring_eat;
+using rogue::items::effects::ring_num;
 
 /*
  * External variables
@@ -687,12 +692,6 @@ void	door(struct room *rm, coord *cp);
 void	passnum(void);
 void	numpass(int y, int x);
 void	psplat(shint y, shint x);
-
-//@ rings.c
-void	ring_on(void);
-void	ring_off(void);
-const char	*ring_num(Item *obj);
-int	ring_eat(int hand);
 
 //@ rip.c
 void	score(int amount, int flags, char monst);

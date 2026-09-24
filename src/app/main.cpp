@@ -41,9 +41,8 @@ main(int argc, char **argv)
 					 savfile = s_save;
 					 break;
 				case 's': case 'S':
-					winit();
+					rogue::ui::start_terminal();
 					noscore = TRUE;
-					is_saved = TRUE;
 					score(0,0,0);
 					fatal("");
 					break;
@@ -60,7 +59,7 @@ main(int argc, char **argv)
 	}
 	if (savfile == 0) {
 		rogue::rng().reseed(seed);
-		winit();
+		rogue::ui::start_terminal();
 		credits();
 
 		init_player();			/* Set up initial player stats */
@@ -70,7 +69,7 @@ main(int argc, char **argv)
 		init_stones();			/* Set up stone settings of rings */
 		init_materials();			/* Set up materials of wands */
 		setup();
-		drop_curtain();
+		display().curtain_down();
 		new_level();			/* Draw current level */
 		/*
 		 * Start up daemons and fuses
@@ -80,7 +79,7 @@ main(int argc, char **argv)
 		start_daemon(stomach);
 		start_daemon(runners);
 		msg("Hello %s%s.", whoami, noterse(".  Welcome to the Dungeons of Doom"));
-		raise_curtain();
+		display().curtain_up();
 	}
 	playit(savfile);
 	return 0;

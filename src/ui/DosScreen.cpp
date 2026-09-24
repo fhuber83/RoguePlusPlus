@@ -39,7 +39,6 @@ int scr_type = -1;
 static rogue::ui::CursesTerminal terminal;
 
 static Screen::Snapshot savewin;  //@ wdump()/wrestor() buffer
-static Screen::Snapshot curtain;  //@ drop_curtain()/raise_curtain() buffer
 
 /*@
  * Original used decimal literals for both tables
@@ -96,20 +95,6 @@ static const byte monoc_attr[] = {
 } ;
 
 static const byte *at_table = color_attr;
-
-enum { BX_UL, BX_UR, BX_LL, BX_LR, BX_VW, BX_HT, BX_HB, BX_SIZE };
-
-static const byte dbl_box[BX_SIZE] = {
-	DULCORNER, DURCORNER, DLLCORNER, DLRCORNER, DVLINE, DHLINE, DHLINE
-};
-
-static const byte sng_box[BX_SIZE] = {
-	ULCORNER, URCORNER, LLCORNER, LRCORNER, VLINE, HLINE, HLINE
-};
-
-static const byte spc_box[BX_SIZE] = {
-	0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20
-};
 
 /*
  * Table for IBM extended key translation
@@ -463,45 +448,6 @@ cur_endwin()
 }
 
 /*
- *  box:  draw a box using given the
- *        upper left coordinate and the lower right
- */
-static void
-vbox(const byte box[BX_SIZE], int ul_r, int ul_c, int lr_r, int lr_c)
-{
-	Screen &s = screen();
-	bool wason = s.show_cursor(false);
-	int i;
-
-	i = (lr_c - ul_c - 1); s.line(ul_r, ul_c+1, box[BX_HT], i, false);
-	                       s.line(lr_r, ul_c+1, box[BX_HB], i, false);
-	i = (lr_r - ul_r - 1); s.line(ul_r+1, ul_c, box[BX_VW], i, true);
-	                       s.line(ul_r+1, lr_c, box[BX_VW], i, true);
-
-	s.line(ul_r, ul_c, box[BX_UL], 1, false);
-	s.line(ul_r, lr_c, box[BX_UR], 1, false);
-	s.line(lr_r, ul_c, box[BX_LL], 1, false);
-	s.line(lr_r, lr_c, box[BX_LR], 1, false);
-	s.show_cursor(wason);
-}
-
-void
-cur_box(int ul_r, int ul_c, int lr_r, int lr_c)
-{
-	vbox(dbl_box, ul_r, ul_c, lr_r, lr_c);
-}
-
-/*
- * center a string according to how many columns there really are
- */
-void
-center(int row, const char *string)
-{
-	cur_mvaddstr(row, (Screen::Cols - (int)strlen(string)) / 2, string);
-}
-
-
-/*
  * printw(Ieeeee)
  */
 void
@@ -514,103 +460,6 @@ cur_printw(const char *msg, ...)
 	vsnprintf(pwbuf, sizeof(pwbuf), msg, argp);
 	va_end(argp);
 	cur_addstr(pwbuf);
-}
-
-
-/*@
- * Repeat a character cnt times, advancing the cursor
- * Use current attribute, and do not go through cur_addch() processing
- */
-void
-repchr(byte chr, int cnt)
-{
-	Screen &s = screen();
-	int c_row = s.row(), c_col = s.col();
-	s.line(c_row, c_col, chr, cnt, false);
-	s.set_cursor(c_row, c_col + cnt);
-}
-
-/*
- * Clear the screen in an interesting fashion
- */
-void
-implode()
-{
-	Screen &s = screen();
-	int j, delay, r, c, cinc = Screen::Cols/10/2, er, ec;
-
-	er = Screen::Rows-3;
-	delay = 50;
-	for (r = 0,c = 0,ec = Screen::Cols-1; r < 10; r++,c += cinc,er--,ec -= cinc) {
-		vbox(sng_box, r, c, er, ec);
-		s.refresh();
-		msleep(delay);
-		for (j = r+1; j <= er-1; j++) {
-			s.line(j, c+1, ' ', cinc-1, false);
-			s.line(j, ec-cinc+1, ' ', cinc-1, false);
-		}
-		vbox(spc_box, r, c, er, ec);
-	}
-	s.refresh();
-}
-
-
-/*@
- * Display a curtain down animation, keep it in the curtain buffer and clear
- * the screen without showing it. Whatever is drawn next stays hidden until
- * the next refresh, which raise_curtain() does line by line.
- */
-void
-drop_curtain(void)
-{
-	Screen &s = screen();
-	int r;
-	int delay = CURTAIN_TIME / Screen::Rows;
-
-	cursor(FALSE);
-	green();
-	vbox(sng_box, 0, 0, Screen::Rows-1, Screen::Cols-1);
-	s.refresh();
-	msleep(delay);  // not in original
-	yellow();
-	for (r = 1; r < Screen::Rows-1; r++) {
-		s.line(r, 1, FILLER, Screen::Cols-2, false);
-		s.refresh();
-		msleep(delay);
-	}
-	curtain = s.snapshot();
-	msleep(delay);  // not in original, optional
-	cur_move(0,0);
-	cur_standend();
-	s.erase();
-}
-
-
-/*@
- * Display a curtain up animation and re-enable screen refresh
- */
-void
-raise_curtain(void)
-{
-	Screen &s = screen();
-	int line;
-	int delay = CURTAIN_TIME / Screen::Rows;
-
-	// save current screen
-	Screen::Snapshot shown = s.snapshot();
-
-	// restore and display the curtain
-	for (line = 0; line < Screen::Rows; line++)
-		s.restore_row(curtain, line);
-
-	// progressively restore screen
-	for (line = Screen::Rows-1; line >= 0; line--)
-	{
-		s.restore_row(shown, line);
-		s.refresh();
-		msleep(delay);
-	}
-	is_saved = FALSE;
 }
 
 
@@ -710,3 +559,17 @@ backspace(void)
 		s.set_cursor(s.row(), s.col() - 1);
 	s.set(s.row(), s.col(), Cell{});
 }
+
+namespace rogue::ui {
+
+void start_terminal()
+{
+	winit();
+}
+
+void stop_terminal()
+{
+	cur_endwin();
+}
+
+} // namespace rogue::ui

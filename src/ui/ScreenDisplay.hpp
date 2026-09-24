@@ -35,6 +35,13 @@ public:
 	Coord write(std::string_view text, Ink ink = Ink::Normal) override;
 	void clear_line(int row, int col = 0) override;
 	bool show_cursor(bool visible) override;
+	void draw_title() override;
+	void end_title() override;
+	void draw_tombstone(std::string_view name, std::string_view killer, int gold, int year) override;
+	void draw_scores(std::span<const ScoreLine> lines, int highlight) override;
+	void draw_winner(bool brief) override;
+	void curtain_down() override;
+	void curtain_up() override;
 	void wipe() override;
 	void flush() override;
 	void bell() override;
@@ -44,8 +51,14 @@ private:
 	void text_at(int row, int col, std::string_view s);
 	void draw_prompt();
 	void draw_covered();
+	void ink(Ink ink);
+	void centered(int row, std::string_view s);
+	void frame(int top, int left, int bottom, int right, bool single);
 
 	Screen &screen_;
+
+	// What curtain_down() drew, for curtain_up()
+	Screen::Snapshot curtain_{};
 
 	// Game view kept while a page is open
 	Screen::Snapshot game_view_{};

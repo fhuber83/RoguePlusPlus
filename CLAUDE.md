@@ -24,7 +24,7 @@ Targets: `rogue_game` is a static library built from every `src/**/*.cpp` except
 
 Smoke test without a real terminal: `tmux new-session -d -s rg -x 80 -y 25 ./build/rogue++`, then `tmux send-keys -t rg ...` and `tmux capture-pane -p -t rg`. The game needs an 80×25 screen. After the name prompt, wait about 2.5 s for the curtain animation to finish.
 
-At runtime the game reads `rogue.opt` (options) and writes `rogue.scr` (scores) in the current working directory. Saving is disabled: `save_game()` is a stub and `restore()` is dead memory-dump code.
+At runtime the game reads `rogue.opt` (options) and writes `rogue.scr` (scores) in the current working directory. Saving is disabled: `save_game()` and `restore()` are stubs.
 
 ## Conventions
 
@@ -48,7 +48,7 @@ At runtime the game reads `rogue.opt` (options) and writes `rogue.scr` (scores) 
   - Game files include the local `"curses.h"`, whose macros map `move`, `clear`, `inch`, `standout`, etc. onto those `cur_*` functions. `LINES`/`COLS` there are constants (80×25). **Never include the system `<curses.h>` in game files, and never include the local `curses.h` in the terminal backend.**
 - **Machine layer**: `mach_dep.cpp` holds time, sleep, `readchar`, `newmem`, `fatal`/`md_exit`, and the credits screen.
 - **Game loop**: `app/main.cpp` parses arguments, seeds `rng()`, and sets up the game with `init_*()` → `new_level()`, then starts daemons and fuses (`daemon.cpp` is the scheduler with function-pointer slots, `daemons.cpp` holds the callbacks `doctor`/`stomach`/`runners`/…). `playit()` (in `playit.cpp`, formerly `main.c`) loops over `command()` in `command.cpp`. The domain files are `fight`, `chase` (monster AI), `monsters`/`slime`, `things`/`pack`/`list` (items and the intrusive linked lists), `potions`/`scrolls`/`sticks`/`rings`/`armor`/`weapons`, level generation in `new_leve`/`rooms`/`passages`/`maze`, and endings/scores in `rip`.
-- **Output from game logic**: the message line (`msg()`/`addmsg()`/`more()` in `io.cpp`), the status line (`status()`) and the clock draw through `ui::display()` (`ui/Display.hpp`, implemented by `ui/ScreenDisplay.cpp`). Map code and full-screen views still call `mvaddch` and friends directly. Phase 4 moves them behind `Display` too. `tests/ui/ScreenTest.cpp` shows how to drive a `Screen` headlessly with a fake `Terminal`.
+- **Output from game logic** goes through `display()` (`ui/Display.hpp`, implemented by `ui/ScreenDisplay.cpp`): the message line, status and clock, map tiles (`draw_tile`/`tile_at` with a `TileStyle`), pages (`open_page`/`write_at` with an `Ink`), and the title, tombstone, score and winner screens. Game code must not draw with `mvaddch` and friends. Keyboard input (`readchar`, `getinfo`) still goes through the DOS layer until phase 4.5. `tests/ui/ScreenTest.cpp` shows how to drive a `Screen` headlessly with a fake `Terminal`.
 
 ## Compile-time macros
 

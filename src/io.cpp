@@ -344,11 +344,9 @@ SIG2(void)
 	long new_time = md_time();
 
 	/*@
-	 * Do not update between wdump()/wrestor() operations
-	 * (when the user is in a non-game screen like inventory or discoveries)
-	 * Or if the screen is not yet initialized.
+	 * Do not update while a page (inventory, discoveries, ...) is shown
 	 */
-	if (is_saved || display().page_open() || scr_type < 0)
+	if (display().page_open())
 		return;
 	if (new_time - cur_time >= 60)
 	{

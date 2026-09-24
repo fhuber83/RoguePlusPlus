@@ -45,7 +45,6 @@
 #define mvinch	cur_mvinch
 #define addch	cur_addch
 #define addstr	cur_addstr
-#define box	cur_box
 #define printw	cur_printw
 #define getch	cur_getch  //@ no longer used
 #define getch_timeout	cur_getch_timeout

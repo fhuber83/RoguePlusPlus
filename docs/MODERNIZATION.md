@@ -62,6 +62,12 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - `Display` gained a page API. `open_page`/`close_page` keep and restore the game view, `page_open()` pauses the clock and `clear_page` blanks the screen. Text goes through `write_at`/`write` with a named `ui::Ink` style (the old colour macros by name) and `clear_line`, plus `show_cursor` and `wipe` (the `implode` effect).
      - Converted: help (`misc.cpp`), inventory and discoveries (`add_line`/`end_line` in `things.cpp`), the wizard map, `show_win`, `str_attr`, `wait_msg`, the quit prompt and `leave()` (`playit.cpp`), and the new-level wipe.
      - Verified with the A/B, fuzz and quit/page replays: identical apart from one capture taken in the middle of a curtain animation.
+   - **4.4b Title and ending screens.**
+     - `Display` draws whole screens: `draw_title`/`end_title` (credits and the name prompt), `draw_tombstone`, `draw_scores` (the game fills in `ui::ScoreLine` values with the rank and fate text) and `draw_winner`, plus `curtain_down`/`curtain_up` and `wipe`. `ScreenDisplay` holds the artwork that used to live in `mach_dep.cpp`, `rip.cpp` and `curses.cpp`.
+     - `ui::start_terminal()`/`ui::stop_terminal()` replace `winit()`/`cur_endwin()` in `main`, `fatal` and `md_exit`.
+     - `score()` opens a page instead of setting `is_saved`. The clock now pauses only for open pages. `is_saved` and the DOS `implode`, curtain, box, `center` and `repchr` code are gone.
+     - `save.cpp` is down to its two stubs. The dead memory-dump save and restore code was deleted, since phase 8 replaces it.
+     - Verified with the A/B and quit replays, a crafted `rogue.scr` covering every fate in the Hall of Fame (`-s`), and captures of the credits and name entry. All identical apart from one mid-curtain frame.
 
 ## Target architecture
 
@@ -89,7 +95,7 @@ Each phase is a series of small commits that each build and play.
    1. *Done:* `ui::Screen` grid plus `ui::Terminal` backend (see above).
    2. *Done:* message and status lines behind `ui::Display` (see above).
    3. *Done:* the map goes through `Display` (see above).
-   4. **Full-screen views.** *Done (4.4a):* in-game pages and prompts. *Next (4.4b):* credits, tombstone, Hall of Fame, the winner screen, the curtains, the `save.cpp` prompts, and starting and stopping the terminal (`winit`/`cur_endwin` in `main.cpp`, `fatal`, `md_exit`).
+   4. *Done:* full-screen views, in-game pages and prompts (4.4a), title and ending screens (4.4b).
    5. **Input.** `readchar`/`getinfo` go behind `ui::Input`.
    6. **Drop the DOS emulation.** Cells hold a `Glyph` and a style instead of CP437 codes and DOS attributes. `CursesTerminal` maps `Glyph → cchar_t`, and `curses_dos.h`, the CCODE tables and the attribute tables go away.
 5. **Game state.** Gather the ~90 globals from `extern.cpp`/`init.cpp` into a `Game` context (player, level, monster list, floor items, RNG, scheduler, known-item tables, options). Free functions take or reach it explicitly, and globals are removed one group at a time.
@@ -114,6 +120,6 @@ Each phase is a series of small commits that each build and play.
 ## Notes for whoever continues
 
 - `faststate` ("Fast Play") used to be toggled by Scroll Lock and is now always `FALSE`. Reintroduce it as a real option or key if wanted.
-- `save_game()` prints "saving games is disabled" and `restore()` still contains the memory-dump code. Treat both as dead until phase 8.
+- `save_game()` prints "saving games is disabled" and `restore()` exits with a message. Phase 8 brings real saving.
 - `WIZARD` builds do not compile: `CTRL(D)` in `command.cpp` should be `CTRL('D')`, `rogue.h` defines `bool wizard;` in the header (it should be `extern`, while `extern.cpp` defines it only under `WIZARD`), and `create_obj()` passes a `short *` and `stdscr` to `get_num(int *)`.
 - The terminal must be 80×25. `COLS == 40` paths still exist for the old 40-column mode.

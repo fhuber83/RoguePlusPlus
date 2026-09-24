@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <span>
 #include <string_view>
 
 #include "core/Coord.hpp"
@@ -42,6 +43,13 @@ struct Status {
 	int armor = 0;         ///< armour class as shown (higher is better)
 	std::string_view rank; ///< experience title, "Guild Novice" etc.
 	int hunger = 0;        ///< 0 fed, 1 hungry, 2 weak, 3 faint
+};
+
+/// One line of the Hall of Fame.
+struct ScoreLine {
+	int gold = 0;
+	std::string_view name;
+	std::string_view text; ///< rank and fate: ` "Fighter" killed by a bat on level 3`
 };
 
 /// How the game shows things to the player. Game logic decides what to
@@ -107,10 +115,32 @@ public:
 	/// Shows or hides the text cursor and returns whether it was shown.
 	virtual bool show_cursor(bool visible) = 0;
 
-	// Output
+	// Title and ending screens
 
+	/// The credits screen with the name prompt. Leaves the cursor where the
+	/// name goes, with Ink::Bright for the typing.
+	virtual void draw_title() = 0;
+	/// Removes the name prompt from the title screen.
+	virtual void end_title() = 0;
+	virtual void draw_tombstone(std::string_view name, std::string_view killer, int gold, int year) = 0;
+	/// The Hall of Fame; `highlight` is the index of the new entry, or -1.
+	virtual void draw_scores(std::span<const ScoreLine> lines, int highlight) = 0;
+	/// The "You made it!" screen, `brief` for terse mode, with a prompt to
+	/// continue.
+	virtual void draw_winner(bool brief) = 0;
+
+	// Transitions
+
+	/// Lowers a curtain and blanks the screen behind it. Nothing drawn
+	/// afterwards shows until curtain_up().
+	virtual void curtain_down() = 0;
+	/// Raises the curtain on what was drawn behind it.
+	virtual void curtain_up() = 0;
 	/// Clears the screen with the shrinking-boxes effect (new level).
 	virtual void wipe() = 0;
+
+	// Output
+
 
 	/// Makes everything drawn so far visible, for animations.
 	virtual void flush() = 0;
@@ -119,5 +149,11 @@ public:
 
 /// The display the game uses.
 Display &display();
+
+/// Starts the terminal the display shows on. Exits the game when the
+/// terminal is too small.
+void start_terminal();
+/// Gives the terminal back to the shell. Safe to call when not started.
+void stop_terminal();
 
 } // namespace rogue::ui

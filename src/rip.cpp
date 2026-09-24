@@ -39,7 +39,7 @@ score(int amount, int flags, char monst)
 	char response = ' ';
 
 
-	is_saved = TRUE;
+	display().open_page();  //@ stops the clock, as is_saved did
 
 	if (amount || flags || monst)
 	{
@@ -47,7 +47,7 @@ score(int amount, int flags, char monst)
 	}
 	while ((file = fopen(s_score, "r")) == NULL)
 	{
-		printw("\n");
+		display().write("\n");
 		if (noscore || (amount == 0))
 			return;
 		str_attr("No scorefile: %Create %Retry %Abort");
@@ -68,7 +68,7 @@ reread:
 			goto reread;
 		}
 	}
-	printw("\n");
+	display().write("\n");
 	get_scores(top_ten);
 
 	if (noscore != TRUE)
@@ -89,7 +89,7 @@ reread:
 	}
 	pr_scores(rank, top_ten);
 	wait_msg("exit");
-	printw("\n");
+	display().write("\n");
 #endif //WIZARD
 }
 
@@ -125,42 +125,19 @@ static
 void
 pr_scores(int newrank, struct sc_ent *top10)
 {
-	int i;
-	int curl;
+	int i, n;
 	char dthstr[30];
+	char texts[TOPSCORES][MAXSTR];
+	rogue::ui::ScoreLine lines[TOPSCORES];
 	const char *altmsg;
 
-	clear();
-	high();
-	if (scr_type == 7)
-		standout();
-	mvaddstr(0,0,"Guildmaster's Hall Of Fame:");
-	standend();
-	yellow();
-	mvaddstr(2,0,"Gold");
-
-	for (i=0;i<TOPSCORES;i++,top10++)
+	for (i=0,n=0;i<TOPSCORES;i++,top10++)
 	{
+		char *text = texts[n];
+
 		altmsg = NULL;
-		brown();
-		if (newrank - 1 == i)
-		{
-			if (scr_type == 7)
-				standout();
-			else
-				yellow();
-		}
 		if (top10->sc_gold <=0 )
 			break;
-		curl = 4 + ((COLS==40)?(i * 2):i);
-		move (curl,0);
-		printw("%d ",top10->sc_gold);
-		move (curl,6);
-		if (newrank - 1 != i)
-			red();
-		printw("%s",top10->sc_name);
-		if ((newrank) - 1 != i)
-			brown();
 		if (top10->sc_level >= 26)  //@ There is AMULETLEVEL, you know?
 			altmsg = " Honored by the Guild";
 
@@ -168,8 +145,6 @@ pr_scores(int newrank, struct sc_ent *top10)
 		{
 			sprintf(dthstr," killed by %s",
 				killname((0xff & top10->sc_fate), TRUE));
-			if (COLS == 40 && strlen(dthstr) > 23)
-				strcpy(dthstr," killed");
 		}
 		else
 		{
@@ -186,22 +161,23 @@ pr_scores(int newrank, struct sc_ent *top10)
 					break;
 			}
 		}
+		text[0] = '\0';
 		if ((signed)(strlen(top10->sc_name) + 10 +
 			strlen(he_man[top10->sc_rank-1])) < COLS)
 		{
 			if (top10->sc_rank > 1 && (strlen(top10->sc_name)))
-				printw(" \"%s\"",he_man[top10->sc_rank - 1]);
+				sprintf(text, " \"%s\"",he_man[top10->sc_rank - 1]);
 		}
-		if (COLS == 40)
-			move(curl+1,6);
 		if (altmsg == NULL)
-			printw("%s on level %d",dthstr,top10->sc_level);
+			sprintf(text + strlen(text), "%s on level %d",dthstr,top10->sc_level);
 		else
-			addstr(altmsg);
+			strcat(text, altmsg);
+		lines[n].gold = top10->sc_gold;
+		lines[n].name = top10->sc_name;
+		lines[n].text = text;
+		n++;
 	}
-	standend();
-	if (COLS == 80)
-		addstr("\n\n\n\n");
+	display().draw_scores(std::span(lines, n), newrank - 1);
 }
 
 static
@@ -235,47 +211,17 @@ add_scores(struct sc_ent *newscore, struct sc_ent *oldlist)
 void
 death(char monst)
 {
-	char buf[MAXSTR];
 	int year;
 
 	purse -= purse / 10;
 
-	drop_curtain();
-	if (is_color)
-		brown();
-	box((COLS==40)?1:7,(COLS-28)/2,22,(COLS+28)/2);
-	standend();
-
-	center(10, "REST");
-	center(11, "IN");
-	center(12, "PEACE");
-	red();
-	center(21, "  *    *      * ");
-	green();
-	center(22, "___\\/(\\/)/(\\/ \\\\(//)\\)\\/(//)\\\\)//(\\__");
-	standend();
-
-	if (scr_type == 7)
-		uline();
-	center(14, whoami);
-	standend();
-
+	display().curtain_down();
 	//@ killname() leaves the death reason in prbuf
 	killname(monst, TRUE);
-
-	strcpy(buf,"killed by");
-
-	center(15,buf);
-	center(16, prbuf);
-
-	sprintf(buf, "%u Au", purse);
-	center(18, buf);
-
 	year = md_localtime()->year;
-	sprintf(buf, "%u", year);
-	center(19, buf);
-	raise_curtain();
-	move(LINES-1, 0);
+	display().draw_tombstone(whoami, prbuf, purse, year);
+	display().curtain_up();
+	display().write_at(LINES-1, 0, "");
 	score(purse, 0, monst);
 	md_exit(EXIT_SUCCESS);
 }
@@ -291,30 +237,12 @@ total_winner(void)
 	int worth = 0;
 	byte c;
 	int oldpurse;
+	char buf[132];  //@ as printw() had
 
-	clear();
-	if (!terse)
-	{
-	standout();
-	printw("                                                               \n");
-	printw("  @   @               @   @           @          @@@  @     @  \n");
-	printw("  @   @               @@ @@           @           @   @     @  \n");
-	printw("  @   @  @@@  @   @   @ @ @  @@@   @@@@  @@@      @  @@@    @  \n");
-	printw("   @@@@ @   @ @   @   @   @     @ @   @ @   @     @   @     @  \n");
-	printw("      @ @   @ @   @   @   @  @@@@ @   @ @@@@@     @   @     @  \n");
-	printw("  @   @ @   @ @  @@   @   @ @   @ @   @ @         @   @  @     \n");
-	printw("   @@@   @@@   @@ @   @   @  @@@@  @@@@  @@@     @@@   @@   @  \n");
-	}
-	printw("                                                               \n");
-	printw("     Congratulations, you have made it to the light of day!    \n");
-	standend();
-	printw("\nYou have joined the elite ranks of those who have escaped the\n");
-	printw("Dungeons of Doom alive.  You journey home and sell all your loot at\n");
-	printw("a great profit and are admitted to the fighters guild.\n");
-	mvaddstr(LINES - 1, 0, "--Press space to continue--");
+	display().draw_winner(terse);
 	wait_for(' ');
-	clear();
-	mvaddstr(0, 0, "   Worth  Item");
+	display().clear_page();
+	display().write_at(0, 0, "   Worth  Item");
 	oldpurse = purse;
 	for (c = 'a', obj = pack; obj != NULL; c++, obj = next(obj))
 	{
@@ -394,12 +322,12 @@ total_winner(void)
 	}
 	if (worth < 0)
 		worth = 0;
-	move(c - 'a' + 1, 0);
-	printw( "%c) %5d  %s", c, worth, inv_name(obj, FALSE));
+	snprintf(buf, sizeof buf, "%c) %5d  %s", c, worth, inv_name(obj, FALSE));
+	display().write_at(c - 'a' + 1, 0, buf);
 	purse += worth;
 	}
-	move(c - 'a' + 1, 0);
-	printw("   %5u  Gold Pieces          ", oldpurse);
+	snprintf(buf, sizeof buf, "   %5u  Gold Pieces          ", oldpurse);
+	display().write_at(c - 'a' + 1, 0, buf);
 	score(purse, 2, 0);
 	md_exit(EXIT_SUCCESS);
 }

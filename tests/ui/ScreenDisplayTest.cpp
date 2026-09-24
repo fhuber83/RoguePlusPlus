@@ -266,3 +266,41 @@ TEST(ScreenDisplay, ClosingAPageBringsTheGameViewBack)
 	EXPECT_EQ(d.tile_at({10, 10}), '@');
 	EXPECT_EQ(row_text(s, 0, 0, 4), "    ");
 }
+
+TEST(ScreenDisplay, TitleLeavesTheCursorAtTheNamePrompt)
+{
+	Screen s;
+	ScreenDisplay d(s);
+	d.draw_title();
+	EXPECT_EQ(row_text(s, 23, 2, 14), "Rogue's Name? ");
+	EXPECT_EQ(s.row(), 23);
+	EXPECT_EQ(s.col(), 16);
+	d.end_title();
+	EXPECT_EQ(row_text(s, 23, 2, 14), std::string(14, ' '));
+	EXPECT_EQ(s.at(22, 0).ch, 0xc8); // LLWALL closes the frame
+}
+
+TEST(ScreenDisplay, TombstoneCentresTheEpitaph)
+{
+	Screen s;
+	ScreenDisplay d(s);
+	d.draw_tombstone("Tester", "a kestral", 42, 2026);
+	EXPECT_EQ(row_text(s, 14, 37, 6), "Tester");
+	EXPECT_EQ(row_text(s, 16, 35, 9), "a kestral");
+	EXPECT_EQ(row_text(s, 18, 37, 5), "42 Au");
+	EXPECT_EQ(row_text(s, 19, 38, 4), "2026");
+}
+
+TEST(ScreenDisplay, ScoresListOneLinePerEntry)
+{
+	using rogue::ui::ScoreLine;
+	Screen s;
+	ScreenDisplay d(s);
+	ScoreLine lines[] = {{500, "Conan", " killed by a bat on level 3"}, {20, "Ada", " quit on level 1"}};
+	d.draw_scores(lines, 1);
+	EXPECT_EQ(row_text(s, 0, 0, 27), "Guildmaster's Hall Of Fame:");
+	EXPECT_EQ(row_text(s, 4, 0, 38), "500   Conan killed by a bat on level 3");
+	EXPECT_EQ(row_text(s, 5, 0, 25), "20    Ada quit on level 1");
+	EXPECT_EQ(s.at(5, 6).attr, s.at(5, 0).attr); // the new entry is one colour
+	EXPECT_NE(s.at(4, 6).attr, s.at(4, 0).attr); // others show the name in red
+}

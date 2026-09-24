@@ -95,63 +95,14 @@ flush_type()
 void
 credits()
 {
-	#define ULINE() if(is_color) lmagenta();else uline();
 
 	char tname[25];
 
-	cursor(FALSE);
-	clear();
-	if (is_color)
-		brown();
-	box(0,0,LINES-1,COLS-1);
-	bold();
-	center(2,"ROGUE:  The Adventure Game");
-	ULINE();
-	center(4,"The game of Rogue was designed by:");
-	high();
-	center(6,"Michael Toy and Glenn Wichman");
-	ULINE();
-	center(9,"Various implementations by:");
-	high();
-	center(11,"Ken Arnold, Jon Lane and Michael Toy");
-	ULINE();
-	center(14,"Adapted for the IBM PC by:");
-	high();
-	center(16,"A.I. Design");
-	ULINE();
-	if (is_color)
-		yellow();
-	center(19,"(C)Copyright 1985");
-	high();
-	center(20,"Epyx Incorporated");
-	standend();
-	if (is_color)
-		yellow();
-	center(21,"All Rights Reserved");
-	if (is_color)
-		brown();
-	move(22, 0);
-	addch(DVRIGHT);
-	repchr(DHLINE, COLS-2);
-	addch(DVLEFT);
-	standend();
-	mvaddstr(23,2,"Rogue's Name? ");
-	is_saved = TRUE;		/*  status line hack @ to disable updates */
-	high();
+	display().draw_title();
 	getinfo(tname,23);
 	if (*tname && *tname != ESCAPE)
 		strcpy(whoami, tname);
-	is_saved = FALSE;  //@ re-enable status line updates
-	move(23, 0);
-	//@ a single clrtobol(), if available, could replace the next 3 lines
-	clrtoeol();
-	move(24, 0);
-	clrtoeol();
-	if (is_color)
-		brown();
-	mvaddch(22,0,LLWALL);
-	mvaddch(22,COLS-1,LRWALL);
-	standend();
+	display().end_title();
 }
 
 
@@ -167,7 +118,7 @@ readchar()
 
 	if (*typebuf) {
 		SIG2();
-		cur_refresh();  //@ macros
+		display().flush();  //@ macros
 		return(*typebuf++);
 	}
 	/*
@@ -177,7 +128,7 @@ readchar()
 	do
 	{
 		SIG2();  /* Rogue spends a lot of time here @ you bet! */
-		cur_refresh();  //@ command input
+		display().flush();  //@ command input
 	}
 	while ((xch = getch_timeout(250)) == NOCHAR);
 	ch = xlate_ch(xch);
@@ -217,7 +168,7 @@ fatal(const char *msg, ...)
 {
 	va_list argp;
 
-	cur_endwin();
+	rogue::ui::stop_terminal();
 
 	va_start(argp, msg);
 	vprintf(msg, argp);
@@ -233,7 +184,7 @@ fatal(const char *msg, ...)
  */
 void md_exit(int status)
 {
-	cur_endwin();
+	rogue::ui::stop_terminal();
 	free_ds();
 #ifdef ROGUE_DEBUG
 	printf("Exited normally\n");

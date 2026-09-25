@@ -434,6 +434,9 @@ extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
 #include "entities/MonsterCatalog.hpp"
 #include "entities/MonsterAI.hpp"
 #include "world/Rooms.hpp"
+#include "world/Maze.hpp"
+#include "world/Passages.hpp"
+#include "world/LevelGenerator.hpp"
 #include "game/CommandDispatcher.hpp"
 
 using rogue::items::new_thing;
@@ -518,6 +521,8 @@ using rogue::world::cansee;
 using rogue::world::rnd_pos;
 using rogue::world::enter_room;
 using rogue::world::leave_room;
+using rogue::world::new_level;
+using rogue::world::rnd_room;
 using rogue::command;
 using rogue::show_count;
 using rogue::execcom;
@@ -634,15 +639,6 @@ void	leave(void);
 inline int	rnd(int range) { return rogue::rng().below(range); }
 inline int	roll(int number, int sides) { return rogue::rng().roll(number, sides); }
 
-//@ maze.c
-void	draw_maze(struct room *rp);
-void	new_frontier(int y, int x);
-void	add_frnt(int y, int x);
-void	con_frnt(void);
-void	splat(int y, int x);
-bool	maze_at(int y, int x);
-bool	inrange(int y, int x);
-
 //@ misc.c
 void	look(bool wakeup);
 void	eat(void);
@@ -679,28 +675,11 @@ void	door_open(struct room *rp);
 void	descend(const char *mesg);
 void	rndmove(Creature *who, coord *newmv);
 
-//@ new_leve.c
-void	new_level(void);
-void	put_things(void);
-int	rnd_room(void);
-
-//@ passages.c
-void	conn(int r1, int r2);
-void	do_passages(void);
-void	door(struct room *rm, coord *cp);
-void	passnum(void);
-void	numpass(int y, int x);
-void	psplat(shint y, shint x);
-
 //@ rip.c
 void	score(int amount, int flags, char monst);
 void	death(char monst);
 void	total_winner(void);
 char	*killname(byte monst, bool doart);
-
-//@ rooms.c
-void	do_rooms(void);
-void	draw_room(struct room *rp);
 
 //@ save.c
 void	save_game(void);

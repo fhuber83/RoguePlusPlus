@@ -142,7 +142,7 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
      - `chase.cpp`'s `runners()` checks `game().level.monsters.contains(tp)` after each `do_chase(tp)` call and `continue`s (which still ends the pass over the list via `after()` returning null, so a vanished thief still costs the rest of the monsters their move, as before) instead of going on to read `*tp` for the haste/fly checks and the `t_turn` toggle.
      - `rogue_tests` and a manual smoke run pass; the A/B/descending replays that verified 6.1-6.4 have not been re-run against these three spots specifically. None of the three change any path where nothing gets discarded mid-turn.
 
-## Domain modules (in progress)
+## Domain modules (done)
 
 - **7.1a Catalog.** `new_thing()` and its private `pick_one()` helper move from `things.cpp` to `src/items/ItemCatalog.{hpp,cpp}`, `namespace rogue::items`, unchanged apart from the namespace. `rogue.h` includes the header after `game/Game.hpp` and brings `new_thing` into the global namespace with `using rogue::items::new_thing;`, so every existing caller (`monsters.cpp`, `new_leve.cpp`, `rooms.cpp`) is unaffected.
   - Verified: same seed (`-d 4242`) gives an identical opening frame before and after, so the RNG call order through `new_thing()` is unchanged. `rogue_tests` passes.
@@ -184,13 +184,17 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
   - Verified: descending A/B replays against the 7.5a tree, 6 seeds x 406 captures. Seed 7 dies to an orc, and at the default 0.15 s between keys some runs differed in one frame of the tombstone curtain animation, a different frame each time. At 0.6 s between keys, two runs were identical. All other seeds were identical. Slime splitting wasn't reached. `rogue_tests` passes.
 - **7.6a Rooms.** The play-time half of `rooms.cpp` (`rnd_pos()`, `enter_room()`, `leave_room()`) and the geometry helpers that 7.5b left in `MonsterAI` (`roomin()`, `diag_ok()`, `cansee()`) move to `src/world/Rooms.{hpp,cpp}`, `namespace rogue::world`, line for line. All six are called from other files and are brought into the global namespace by `rogue.h`. `rooms.cpp` keeps only the generation half (`do_rooms()`, `draw_room()`, `vert()`, `horiz()`) for 7.6b.
   - Verified: descending A/B replays against the 7.5b tree, 6 seeds x 406 captures. Seed 1 differed in three isolated frames on the first run, a missile in flight next to an ice monster; two reruns were identical, and the baseline replayed against itself also differed once, so it was capture timing. All other seeds were identical. `rogue_tests` passes.
+- **7.6b Level generation.** `new_leve.cpp` moves to `src/world/LevelGenerator.{hpp,cpp}`, with the rest of `rooms.cpp` (`do_rooms()`, `draw_room()`, `vert()`, `horiz()`) after it; `passages.cpp` moves to `src/world/Passages.{hpp,cpp}` and `maze.cpp` to `src/world/Maze.{hpp,cpp}`. All `namespace rogue::world`, line for line. `new_leve.cpp`, `rooms.cpp`, `passages.cpp` and `maze.cpp` are deleted. This closes out 7.6 and phase 7.
+  - **Deviation from the plan:** passages and mazes stay in their own files instead of joining `LevelGenerator.cpp`. Each keeps file-scope scratch state with short names (`pnum`, `newpnum`; `ny`, `nx`, `maxx`, `maxy`, `topy`, ...) and file-local macros (`MAXY`, `MAXX`, `NOTHING`), which would share one scope if merged.
+  - Public: `new_level()` and `rnd_room()`, brought into the global namespace by `rogue.h`. `do_passages()` and `draw_maze()` are only called inside `world/` and get no `using`. Everything else (`put_things()`, `do_rooms()`, `draw_room()`, `conn()`, `door()`, `passnum()`, `numpass()`, `psplat()`, and the maze helpers `new_frontier()`, `add_frnt()`, `con_frnt()`, `splat()`, `maze_at()`, `inrange()`) was only used in its own file and is now `static`; their prototypes are gone from `rogue.h`. `add_pass()` (unused, `WIZARD` only) is left as it was.
+  - Verified: descending A/B replays against the 7.5b tree (covering 7.6a and 7.6b together), 6 seeds x 406 captures down to level 7, all identical. Mazes only appear below level 10, so a second replay pressed only `>` and Space, 8 seeds x 60 captures down to level 20. At 0.15 s between keys some frames of the level-change animation differed, a different one per seed; at 0.6 s all 8 seeds were identical. An instrumented scratch copy counted 95 `draw_maze()` calls in those dives. `rogue_tests` passes.
 
 ## Target architecture
 
 ```
 src/
   core/         Coord, Random (seedable, injectable), Dice ("2d4" -> struct), bitflag enums
-  world/        Level (tile grid + flags), Room, Passage, LevelGenerator (rooms/passages/maze/new_leve)
+  world/        Level (tile grid + flags), Rooms (play time), LevelGenerator (new_leve + rooms), Passages, Maze
   entities/     Creature, Player, Monster, MonsterCatalog (monsters[]), MonsterAI (chase, slime, wander)
   items/        Item, ItemKind, Inventory (pack), ItemCatalog + Identification (names/guesses/know),
                 effects: Potion, Scroll, Wand, Ring, Armor, Weapon
@@ -229,7 +233,7 @@ Each phase is a series of small commits that each build and play.
    - *Done:* replace the intrusive `l_next`/`l_prev` lists (`list.cpp`) with standard containers. Ownership stays with the pool, whose slots are the stable IDs (see 6.4 for why not `std::unique_ptr` yet).
    - *Done:* replace the `#define t_pos _t._t_pos` accessor macros with members.
    - *Done:* fix the three reads of a discarded pool slot that would break under owning containers (see 6.5).
-7. **Domain modules.** Move behaviour into the target directories. Level generation, item effects, combat and monster spawning/AI are mutually coupled in the original (`rooms.cpp`/`new_leve.cpp` call `new_thing()`/`new_creature()`/`new_monster()`/`give_pack()` to populate rooms; `fight.cpp` calls `slime_split()` which calls `new_monster()`; `potions.cpp`'s `th_effect()` is called from `fight.cpp`; `scrolls.cpp`/`sticks.cpp` call monster-waking/spawning functions) — there is no clean leaf to start from. A namespaced function can still be called by not-yet-moved legacy code (the same trick `display()`/`rng()` used in phases 4-5), so no ordering is a hard blocker; the choice below is about which files get touched twice (once when moved, again when whatever they call moves later) versus once. `items/` is furthest upstream of the rest (level gen, combat and monster spawning all call into it), so it goes first. Steps:
+7. **Domain modules** (*done*, see above). Move behaviour into the target directories. Level generation, item effects, combat and monster spawning/AI are mutually coupled in the original (`rooms.cpp`/`new_leve.cpp` call `new_thing()`/`new_creature()`/`new_monster()`/`give_pack()` to populate rooms; `fight.cpp` calls `slime_split()` which calls `new_monster()`; `potions.cpp`'s `th_effect()` is called from `fight.cpp`; `scrolls.cpp`/`sticks.cpp` call monster-waking/spawning functions) — there is no clean leaf to start from. A namespaced function can still be called by not-yet-moved legacy code (the same trick `display()`/`rng()` used in phases 4-5), so no ordering is a hard blocker; the choice below is about which files get touched twice (once when moved, again when whatever they call moves later) versus once. `items/` is furthest upstream of the rest (level gen, combat and monster spawning all call into it), so it goes first. Steps:
    1. *Done:* Items (`potions.cpp`, `scrolls.cpp`, `sticks.cpp`, `rings.cpp`, `armor.cpp`, `weapons.cpp`, the catalog/inventory pieces of `things.cpp`/`pack.cpp`) become `items/`: per-kind effect handlers, `ItemCatalog` (`new_thing()` and friends) and `Inventory`. The largest step, split further:
       1. *Done:* Catalog (`new_thing()`, `pick_one()`) becomes `items::ItemCatalog` (7.1a).
       2. *Done:* Identification/display (`inv_name()`, `discovered()`, `add_line()`/`end_line()`, `print_disc()`, `set_order()`, `nothing()`, `chopmsg()`) becomes `items::Identification` (7.1b).
@@ -239,7 +243,7 @@ Each phase is a series of small commits that each build and play.
    3. *Done:* Commands (`command.cpp`) becomes `game/CommandDispatcher` over a `Command` enum and key table in `game/Command` (7.3).
    4. *Done:* Combat (`fight.cpp`) becomes `rules::Combat` (7.4).
    5. *Done:* Monster catalog and AI (`monsters.cpp`, `slime.cpp`, `chase.cpp`) become `entities::MonsterCatalog` (7.5a) and `entities::MonsterAI` (7.5b).
-   6. Level generation (`new_leve.cpp`, `rooms.cpp`, `passages.cpp`, `maze.cpp`) becomes `world::LevelGenerator`. Last, since it spawns both items and monsters.
+   6. *Done:* Level generation (`new_leve.cpp`, `rooms.cpp`, `passages.cpp`, `maze.cpp`) becomes `world::Rooms` (7.6a), `world::LevelGenerator`, `world::Passages` and `world::Maze` (7.6b).
 8. **Persistence.**
    - Options loader.
    - High scores as a real file format.

@@ -7,6 +7,8 @@
 
 #include "rogue.h"
 
+namespace rogue::world {
+
 #define MAXFRNT 100
 
 #define FRONTIER 'F'
@@ -15,6 +17,13 @@
 static shint frcnt, ny, nx, topy, topx;
 static shint maxx, maxy;
 static shint *fr_y, *fr_x;
+
+static void	new_frontier(int y, int x);
+static void	add_frnt(int y, int x);
+static void	con_frnt(void);
+static void	splat(int y, int x);
+static bool	maze_at(int y, int x);
+static bool	inrange(int y, int x);
 
 void
 draw_maze(struct room *rp)
@@ -174,3 +183,5 @@ inrange(int y, int x)
 {
 	return(y >= topy && y < MAXY && x >= topx && x < MAXX);
 }
+
+}  // namespace rogue::world

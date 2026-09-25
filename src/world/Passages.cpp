@@ -6,6 +6,14 @@
 
 #include "rogue.h"
 
+namespace rogue::world {
+
+static void	conn(int r1, int r2);
+static void	door(struct room *rm, coord *cp);
+static void	passnum(void);
+static void	numpass(int y, int x);
+static void	psplat(shint y, shint x);
+
 /*
  * conn:
  *	Draw a corridor from a room in a certain direction.
@@ -371,3 +379,5 @@ psplat(shint y, shint x)
 	game().level.map[idx = INDEX(y, x)] = PASSAGE;
 	game().level.flags[idx] |= F_PASS;
 }
+
+}  // namespace rogue::world

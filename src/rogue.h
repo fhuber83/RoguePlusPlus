@@ -429,6 +429,15 @@ extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
 #include "items/effects/Ring.hpp"
 #include "items/effects/Armor.hpp"
 #include "items/effects/Weapon.hpp"
+#include "rules/Daemons.hpp"
+#include "rules/Combat.hpp"
+#include "entities/MonsterCatalog.hpp"
+#include "entities/MonsterAI.hpp"
+#include "world/Rooms.hpp"
+#include "world/Maze.hpp"
+#include "world/Passages.hpp"
+#include "world/LevelGenerator.hpp"
+#include "game/CommandDispatcher.hpp"
 
 using rogue::items::new_thing;
 using rogue::items::inv_name;
@@ -468,6 +477,55 @@ using rogue::items::effects::hit_monster;
 using rogue::items::effects::num;
 using rogue::items::effects::wield;
 using rogue::items::effects::tick_pause;
+using rogue::rules::Event;
+using rogue::rules::start_daemon;
+using rogue::rules::fuse;
+using rogue::rules::lengthen;
+using rogue::rules::extinguish;
+using rogue::rules::do_daemons;
+using rogue::rules::do_fuses;
+using rogue::rules::doctor;
+using rogue::rules::swander;
+using rogue::rules::rollwand;
+using rogue::rules::unconfuse;
+using rogue::rules::unsee;
+using rogue::rules::sight;
+using rogue::rules::nohaste;
+using rogue::rules::stomach;
+using rogue::rules::fight;
+using rogue::rules::attack;
+using rogue::rules::swing;
+using rogue::rules::check_level;
+using rogue::rules::save_throw;
+using rogue::rules::save;
+using rogue::rules::is_magic;
+using rogue::rules::raise_level;
+using rogue::rules::killed;
+using rogue::entities::randmonster;
+using rogue::entities::pick_mons;
+using rogue::entities::new_monster;
+using rogue::entities::f_restor;
+using rogue::entities::wanderer;
+using rogue::entities::give_pack;
+using rogue::entities::wake_monster;
+using rogue::entities::moat;
+using rogue::entities::runners;
+using rogue::entities::start_run;
+using rogue::entities::see_monst;
+using rogue::entities::find_dest;
+using rogue::entities::slime_split;
+using rogue::entities::plop_monster;
+using rogue::world::roomin;
+using rogue::world::diag_ok;
+using rogue::world::cansee;
+using rogue::world::rnd_pos;
+using rogue::world::enter_room;
+using rogue::world::leave_room;
+using rogue::world::new_level;
+using rogue::world::rnd_room;
+using rogue::command;
+using rogue::show_count;
+using rogue::execcom;
 
 /*
  * External variables
@@ -516,60 +574,8 @@ extern char *ring_buf;
  * @ mach_dep.c functions are declared in extern.h
  */
 
-//@ chase.c
-void	runners(void);
-void	do_chase(Creature *th);
-void	chase(Creature *tp, coord *ee);
-void	start_run(coord *runner);
-bool	see_monst(Creature *mp);
-bool	diag_ok(coord *sp, coord *ep);
-bool	cansee(int y, int x);
-struct room	*roomin(coord *cp);
-coord	*find_dest(Creature *tp);
-
-//@ command.c
-void	command(void);
-void	show_count(void);
-void	execcom(void);
-
-//@ daemon.c
-void	start_daemon(void (*func)());
-void	do_daemons(void);
-void	fuse(void (*func)(), int time);
-void	lengthen(void (*func)(), int xtime);
-void	extinguish(void (*func)());
-void	do_fuses(void);
-
-//@ daemons.c
-void	doctor(void);
-void	swander(void);
-void	rollwand(void);
-void	unconfuse(void);
-void	unsee(void);
-void	sight(void);
-void	nohaste(void);
-void	stomach(void);
-
 //@ env.h
 bool	setenv_from_file(const char *envfile);
-
-//@ fight.c
-bool	fight(coord *mp, char mn, Item *weap, bool thrown);
-bool	swing(int at_lvl, int op_arm, int wplus);
-bool	roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl);
-bool	save_throw(int which, Creature *tp);
-bool	save(int which);
-bool	is_magic(Item *obj);
-void	attack(Creature *mp);
-void	check_level(void);
-void	hit(const char *er, const char *ee);
-void	miss(const char *er, const char *ee);
-void	raise_level(void);
-void	thunk(Item *weap, const char *mname, const char *does, const char *did);
-void	remove_monster(coord *mp, Creature *tp, bool waskill);
-void	killed(Creature *tp, bool pr);
-int	str_plus(str_t str);
-int	add_dam(str_t str);
 
 //@ init.c
 void	init_player(void);
@@ -633,15 +639,6 @@ void	leave(void);
 inline int	rnd(int range) { return rogue::rng().below(range); }
 inline int	roll(int number, int sides) { return rogue::rng().roll(number, sides); }
 
-//@ maze.c
-void	draw_maze(struct room *rp);
-void	new_frontier(int y, int x);
-void	add_frnt(int y, int x);
-void	con_frnt(void);
-void	splat(int y, int x);
-bool	maze_at(int y, int x);
-bool	inrange(int y, int x);
-
 //@ misc.c
 void	look(bool wakeup);
 void	eat(void);
@@ -671,16 +668,6 @@ int	spread(int nm);
 int	DISTANCE(int y1, int x1, int y2, int x2);
 int	INDEX(int y, int x);
 
-//@ monsters.c
-char	randmonster(bool wander);
-char	pick_mons(void);
-void	new_monster(Creature *tp, byte type, coord *cp);
-void	f_restor(void);
-void	wanderer(void);
-void	give_pack(Creature *tp);
-Creature	*wake_monster(int y, int x);
-Creature	*moat(int my, int mx);
-
 //@ move.c
 void	do_run(byte ch);
 void	do_move(int dy, int dx);
@@ -688,39 +675,15 @@ void	door_open(struct room *rp);
 void	descend(const char *mesg);
 void	rndmove(Creature *who, coord *newmv);
 
-//@ new_leve.c
-void	new_level(void);
-void	put_things(void);
-int	rnd_room(void);
-
-//@ passages.c
-void	conn(int r1, int r2);
-void	do_passages(void);
-void	door(struct room *rm, coord *cp);
-void	passnum(void);
-void	numpass(int y, int x);
-void	psplat(shint y, shint x);
-
 //@ rip.c
 void	score(int amount, int flags, char monst);
 void	death(char monst);
 void	total_winner(void);
 char	*killname(byte monst, bool doart);
 
-//@ rooms.c
-void	do_rooms(void);
-void	draw_room(struct room *rp);
-void	rnd_pos(struct room *rp, coord *cp);
-void	enter_room(coord *cp);
-void	leave_room(coord *cp);
-
 //@ save.c
 void	save_game(void);
 void	restore(char *savefile);
-
-//@ slime.c
-void	slime_split(Creature *tp);
-bool	plop_monster(int r, int c, coord *cp);
 
 //@ strings.c
 bool	is_alpha(char ch);

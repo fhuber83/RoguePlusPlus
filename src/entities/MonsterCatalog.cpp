@@ -6,6 +6,8 @@
 
 #include "rogue.h"
 
+namespace rogue::entities {
+
 static int	exp_add(Creature *tp);
 
 /*
@@ -200,9 +202,9 @@ wake_monster(int y, int x)
 			tp->t_flags.set(ISFOUND);
 			if (!save(VS_MAGIC)) {
 				if (on(game().player.body, ISHUH))
-					lengthen(unconfuse, rnd(20) + HUHDURATION);
+					lengthen(Event::Unconfuse, rnd(20) + HUHDURATION);
 				else
-					fuse(unconfuse, rnd(20) + HUHDURATION);
+					fuse(Event::Unconfuse, rnd(20) + HUHDURATION);
 				game().player.body.t_flags.set(ISHUH);
 				msg("the medusa's gaze has confused you");
 			}
@@ -271,3 +273,5 @@ moat(int my, int mx)
 			return(tp);
 	return(NULL);
 }
+
+}  // namespace rogue::entities

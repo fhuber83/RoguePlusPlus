@@ -81,10 +81,10 @@ main(int argc, char **argv)
 		/*
 		 * Start up daemons and fuses
 		 */
-		start_daemon(doctor);
-		fuse(swander, WANDERTIME);
-		start_daemon(stomach);
-		start_daemon(runners);
+		start_daemon(Event::Doctor);
+		fuse(Event::Swander, WANDERTIME);
+		start_daemon(Event::Stomach);
+		start_daemon(Event::Runners);
 		msg("Hello %s%s.", game().options.name, noterse(".  Welcome to the Dungeons of Doom"));
 		display().curtain_up();
 	}

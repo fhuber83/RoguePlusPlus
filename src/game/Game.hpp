@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/Random.hpp"
+#include "rules/Scheduler.hpp"
 
 /*
  * The state of one game, gathered from the globals of the original sources.
@@ -166,19 +167,6 @@ struct Items {
 };
 
 /*
- * Daemons (run every turn) and fuses (go off after a number of turns), see
- * daemon.cpp.
- */
-struct Scheduler {
-	static constexpr int max_actions = 20;	/* MAXDAEMONS */
-	struct Action {
-		void (*func)() = nullptr;	/* d_func: nullptr for a free slot */
-		int time = 0;				/* d_time: turns left, or DAEMON */
-	};
-	Action actions[max_actions] = {};	/* d_list */
-};
-
-/*
  * The creatures and items in play, allocated by new_creature() and
  * new_item() (list.cpp). The original allocated both from one pool of
  * MAXITEMS things (_things), so the count is shared: when it is full, neither
@@ -199,7 +187,7 @@ struct Game {
 	Level level;
 	Items items;
 	Pool pool;
-	Scheduler scheduler;
+	rules::Scheduler scheduler;		/* Daemons and fuses */
 	MessageLine message;
 	Turn turn;
 	bool playing = true;			/* True until he quits */

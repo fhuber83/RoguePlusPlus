@@ -206,9 +206,9 @@ teleport(void)
 	{
 #endif //WIZARD
 	if (on(player.body, ISHUH))
-		lengthen(unconfuse, rnd(4)+2);
+		lengthen(Event::Unconfuse, rnd(4)+2);
 	else
-		fuse(unconfuse, rnd(4)+2);
+		fuse(Event::Unconfuse, rnd(4)+2);
 	player.body.t_flags.set(ISHUH);
 #ifdef WIZARD
 	}

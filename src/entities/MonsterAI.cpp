@@ -6,9 +6,14 @@
 
 #include "rogue.h"
 
+namespace rogue::entities {
+
+static void	do_chase(Creature *th);
+static void	chase(Creature *tp, coord *ee);
+
 #define	DRAGONSHOT  5	/* one chance in DRAGONSHOT that a dragon will flame */
 
-coord ch_ret;			/* Where chasing takes	you */
+static coord ch_ret;			/* Where chasing takes	you */
 
 /*
  * runners:
@@ -52,7 +57,7 @@ runners()
  * do_chase:
  *	Make one thing chase another.
  */
-void
+static void
 do_chase(Creature *th)
 {
 	int	mindist	= 32767, i, dist;
@@ -250,7 +255,7 @@ start_run(coord *runner)
  *
  *	@@ Wrong documentation: function is actually a void, there is no return
  */
-void
+static void
 chase(Creature *tp, coord *ee)
 {
 	int	x, y;
@@ -346,67 +351,6 @@ chase(Creature *tp, coord *ee)
 }
 
 /*
- * roomin:
- *	Find	what room some coordinates are in. NULL	means they aren't
- *	in any room.
- */
-struct room *
-roomin(coord *cp)
-{
-	struct room *rp;
-	byte *fp;
-
-	for	(rp = game().level.rooms; rp	<= &game().level.rooms[MAXROOMS-1]; rp++)
-		if (cp->x < rp->r_pos.x + rp->r_max.x && rp->r_pos.x <= cp->x
-		 && cp->y < rp->r_pos.y + rp->r_max.y && rp->r_pos.y <= cp->y)
-			return rp;
-	fp = &flat(cp->y, cp->x);
-	if (*fp & F_PASS)
-		return	&game().level.passages[*fp &	F_PNUM];
-#ifdef DEBUG
-	debug("in some bizarre place (%d, %d)", unc(*cp));
-#endif //DEBUG
-	game().turn.bailout = TRUE;
-	return NULL;
-}
-
-/*
- * diag_ok:
- *	Check to see	if the move is legal if	it is diagonal
- */
-bool
-diag_ok(coord *sp, coord *ep)
-{
-	if (ep->x == sp->x || ep->y	== sp->y)
-		return	TRUE;
-	return (step_ok(chat(ep->y,	sp->x))	&& step_ok(chat(sp->y, ep->x)));
-}
-
-/*
- * cansee:
- *	Returns true	if the hero can	see a certain coordinate.
- */
-bool
-cansee(int y, int x)
-{
-	struct room *rer;
-	coord tp;
-
-	if (on(game().player.body, ISBLIND))
-		return	FALSE;
-	if (DISTANCE(y, x, hero.y, hero.x) < LAMPDIST)
-		return	TRUE;
-	/*
-	 * We can only see if the hero in the same room as
-	 * the coordinate and the room is lit or if	it is close.
-	 */
-	tp.y = y;
-	tp.x = x;
-	rer	= roomin(&tp);
-	return (rer	== proom && !rer->r_flags.test(RoomFlag::Dark));
-}
-
-/*
  * find_dest:
  *	find	the proper destination for the monster
  */
@@ -436,3 +380,116 @@ find_dest(Creature *tp)
 	}
 	return &hero;
 }
+
+/*
+ * Code for handling the various special properties of the slime
+ *
+ * slime.c	1.0		(A.I. Design 1.42)	1/17/85
+ */
+
+/*
+ * Slime_split:
+ *	Called when it has been decided that A slime should divide itself
+ */
+
+static coord slimy;
+
+static bool	new_slime(Creature *tp);
+
+void
+slime_split(Creature *tp)
+{
+	Creature *nslime;
+
+	if (!new_slime(tp) || (nslime = new_creature()) == NULL)
+		return;
+	msg("The slime divides.  Ick!");
+	new_monster(nslime, 'S', &slimy);
+	if (cansee(slimy.y, slimy.x)) {
+		nslime->t_oldch = chat(slimy.y, slimy.x);
+		display().draw_tile(slimy, 'S');
+	}
+	start_run(&slimy);
+}
+
+static
+bool
+new_slime(Creature *tp)
+{
+	int y, x, ty, tx;
+	bool ret;
+	Creature *ntp;
+	coord sp;
+
+	ret = FALSE;
+	tp->t_flags.set(ISFLY);
+	if (!plop_monster((ty = tp->t_pos.y), (tx = tp->t_pos.x), &sp)) {
+		/*
+		 * There were no open spaces next to this slime, look for other
+		 * slimes that might have open spaces next to them.
+		 */
+		for (y = ty -1; y <= ty+1; y++)
+			for (x = tx-1; x <= tx+1; x++)
+				if (winat(y, x) == 'S' && (ntp = moat(y, x))) {
+					if (ntp->t_flags.test(ISFLY))
+						continue;				/* Already done this one */
+					if (new_slime(ntp)) {
+						y = ty+2;
+						x = tx +2;
+					}
+				}
+	} else {
+		ret = TRUE;
+		slimy = sp;
+	}
+	tp->t_flags.unset(ISFLY);
+	return ret;
+}
+
+/*@
+ * Pick an appropriate spot around a central spot for a new monster to spawn
+ * (r, c): row, col of central spot
+ * cp: pointer to coordinate for the new monster, if any
+ * Return FALSE if no suitable spot around (r, c) is found
+ *
+ * Original return value was somewhat an abuse of the bool convention,
+ * used both as TRUE/FALSE and as an integer for calculating odds.
+ * To avoid that, 'inv_odds' was created for the rnd() call,
+ * and 'appear' is now "strictly" boolean
+ */
+bool
+plop_monster(int r, int c, coord *cp)
+{
+	int y, x, inv_odds = 0;
+	bool appear = FALSE;
+	byte ch;
+
+	for (y = r-1; y <= r+1; y++)
+		for (x = c-1; x <= c+1; x++) {
+			/*
+			 * Don't put a monster in top of the player.
+			 */
+			if ((y == hero.y && x == hero.x) || offmap(y,x))
+				continue;
+			/*
+			 * Or anything else nasty
+			 */
+			if (step_ok(ch = winat(y, x))) {
+				if (ch == SCROLL && find_obj(y, x)->o_which == S_SCARE)
+					continue;
+				/*@
+				 * Get first available spot with 100% chance,
+				 * then randomly change to next available spot, if any,
+				 * with decreasing 1-to-n odds (50%, 33%, 25%, 20%,...)
+				 */
+				appear = TRUE;
+				if (rnd(++inv_odds) == 0) {
+					cp->y = y;
+					cp->x = x;
+				}
+			}
+		}
+	return appear;
+}
+
+}  // namespace rogue::entities

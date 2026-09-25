@@ -6,6 +6,7 @@
 
 #include	"rogue.h"
 
+namespace rogue {
 
 void
 command()
@@ -52,7 +53,7 @@ command()
 }
 
 //@ No need to declare in rogue.h
-byte
+static byte
 com_char()
 {
 	bool same;
@@ -81,7 +82,7 @@ com_char()
  * Read a command, setting thing up according to prefix like devices
  * Return the command character to be executed.
  */
-byte
+static byte
 get_prefix()
 {
 	int junk;
@@ -137,29 +138,16 @@ get_prefix()
 	}
 	if (turn.count)
 		turn.fast_mode = FALSE;
-	switch (retch) {
-	case 'h': case 'j': case 'k': case 'l':
-	case 'y': case 'u': case 'b': case 'n':
-		if (turn.fast_mode && !turn.running ) {
-			if (!on(game().player.body, ISBLIND)) {
-				turn.door_stop = TRUE;
-				turn.first_move = TRUE;
-			}
-			retch = toupper(retch);
+	//@ Which commands a count repeats is in game/Command.cpp
+	if (command_of(retch) == Command::Move && turn.fast_mode && !turn.running) {
+		if (!on(game().player.body, ISBLIND)) {
+			turn.door_stop = TRUE;
+			turn.first_move = TRUE;
 		}
-		/* fallthrough */
-	case 'H': case 'J': case 'K': case 'L':
-	case 'Y': case 'U': case 'B': case 'N':
-	case 'q': case 'r': case 's': case 'z':
-	case 't': case '.':
-#ifdef WIZARD
-	case CTRL(D): case 'C':
-#endif //WIZARD
-		break;
-	default:
-		turn.count = 0;
-		break;
+		retch = toupper(retch);
 	}
+	if (!repeatable(command_of(retch)))
+		turn.count = 0;
 	if (turn.count || turn.last_count)
 		show_count();
 	turn.last_ch = retch;
@@ -182,58 +170,58 @@ execcom()
 	rogue::Turn &turn = game().turn;
 
 	do {
-		switch (ch = get_prefix()) {
-		when 'h': case 'j': case 'k': case 'l':
-		case 'y': case 'u': case 'b': case 'n':
+		ch = get_prefix();
+		Command cmd = command_of(ch);
+		//@ was a "turn.after = FALSE;" in each case that doesn't take a turn
+		if (!takes_turn(cmd))
+			turn.after = FALSE;
+		switch (cmd) {
+		case Command::Move:
 			find_dir(ch, &mv);
 			do_move(mv.y, mv.x);
-		when 'H': case 'J': case 'K': case 'L':
-		case 'Y': case 'U': case 'B': case 'N':
+		when Command::Run:
 			do_run(tolower(ch));
-		when 't':
+		when Command::Throw:
 			if (get_dir())
 				missile(turn.delta.y, turn.delta.x);
 			else
 				turn.after = FALSE;
-		when 'Q': turn.after = FALSE; quit();
-		when 'i': turn.after = FALSE; inventory(pack, ItemFilter::all(), "");
-		when 'd': drop();
-		when 'q': quaff();
-		when 'r': read_scroll();
-		when 'e': eat();
-		when 'w': wield();
-		when 'W': wear();
-		when 'T': take_off();
-		when 'P': ring_on();
-		when 'R': ring_off();
-		when 'c': turn.after = FALSE; call();
-		when '>': turn.after = FALSE; d_level();
-		when '<': turn.after = FALSE; u_level();
-		when '/': turn.after = FALSE; help(helpobjs);
-		when '?': turn.after = FALSE; help(helpcoms);
-		when 's': search();
-		when 'z':
+		when Command::Quit: quit();
+		when Command::Inventory: inventory(pack, ItemFilter::all(), "");
+		when Command::Drop: drop();
+		when Command::Quaff: quaff();
+		when Command::Read: read_scroll();
+		when Command::Eat: eat();
+		when Command::Wield: wield();
+		when Command::Wear: wear();
+		when Command::TakeOff: take_off();
+		when Command::PutOnRing: ring_on();
+		when Command::RemoveRing: ring_off();
+		when Command::Call: call();
+		when Command::Descend: d_level();
+		when Command::Ascend: u_level();
+		when Command::HelpObjects: help(helpobjs);
+		when Command::HelpCommands: help(helpcoms);
+		when Command::Search: search();
+		when Command::Zap:
 			if (get_dir())
 				do_zap();
 			else
 				turn.after = FALSE;
-		when 'D': turn.after = FALSE; discovered();
-		when CTRL('T'):
-			turn.after = FALSE;
+		when Command::Discoveries: discovered();
+		when Command::ToggleBrief:
 			msg((game().options.expert ^= 1)
 				? "Ok, I'll be brief"
 				: "Goodie, I can use big words again!");
-		when 'F': turn.after = FALSE; do_macro(game().options.macro, MACROSZ);
-		when CTRL('F'): turn.after = FALSE; turn.typeahead = game().options.macro;
-		when CTRL('R'): turn.after = FALSE; msg(game().message.last);
-		when 'v':
-			turn.after = FALSE;
+		when Command::Macro: do_macro(game().options.macro, MACROSZ);
+		when Command::TypeMacro: turn.typeahead = game().options.macro;
+		when Command::RepeatMessage: msg(game().message.last);
+		when Command::Version:
 			msg("Rogue version %d.%d (Mr. Mctesq was here), dungeon %u", REV, VER,
 				rogue::rng().seed());
-		when 'S': turn.after = FALSE; save_game();
-		when '.': doctor();
-		when '^':
-			turn.after = FALSE;
+		when Command::Save: save_game();
+		when Command::Rest: doctor();
+		when Command::IdentifyTrap:
 			if (get_dir()) {
 				coord lookat;
 
@@ -245,15 +233,12 @@ execcom()
 					msg("you found %s",
 						tr_name(flat(lookat.y, lookat.x) & F_TMASK));
 			}
-		when 'o': turn.after = FALSE; msg("i don't have any options, oh my!");
-		when CTRL('L'):
-			turn.after = FALSE;
-			msg("the screen looks fine to me (jll was here)");
+		when Command::Options: msg("i don't have any options, oh my!");
+		when Command::Redraw: msg("the screen looks fine to me (jll was here)");
 #ifdef WIZARD
-		when 'C': turn.after = FALSE; create_obj();
+		when Command::CreateObject: create_obj();
 #endif
-		otherwise:
-			turn.after = FALSE;
+		when Command::Illegal:
 			game().message.remember = FALSE;
 			msg("illegal command '%s'", io_unctrl(ch));
 			turn.count = 0;
@@ -266,3 +251,5 @@ execcom()
 			turn.door_stop = FALSE;
 	} while (turn.after == FALSE);
 }
+
+}  // namespace rogue

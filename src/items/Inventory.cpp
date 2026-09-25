@@ -508,7 +508,7 @@ can_drop(Item *op)
 			break;
 		case R_SEEINVIS:
 			unsee();
-			extinguish(unsee);
+			extinguish(Event::Unsee);
 			break;
 		}
 	}

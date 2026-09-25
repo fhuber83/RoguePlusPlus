@@ -252,7 +252,7 @@ TEST_F(SaveGame, WriteAndRead)
 	new_game(4242, 2);
 	auto path = std::filesystem::temp_directory_path() / "rogue_save_test.sav";
 	if (const char *keep = std::getenv("ROGUE_KEEP_SAVE"))
-		write_save(keep, game(), view());
+		(void)write_save(keep, game(), view());
 	std::string text = save();
 	ASSERT_TRUE(write_save(path.c_str(), game(), view()));
 	EXPECT_FALSE(std::filesystem::exists(path.string() + ".tmp"));

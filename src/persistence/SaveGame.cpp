@@ -37,11 +37,11 @@ static_assert(map_rows == maxrow - 1 && map_cols == COLS);
  * then update the size (measured on x86-64 Linux, where these hold).
  */
 #if defined(__x86_64__) && defined(__linux__)
-static_assert(sizeof(Game) == 32032, "a Game member was added or removed: save it");
+static_assert(sizeof(Game) == 17256, "a Game member was added or removed: save it");
 static_assert(sizeof(Player) == 264, "a Player field was added or removed: save it");
 static_assert(sizeof(Level) == 6488, "a Level field was added or removed: save it");
 static_assert(sizeof(Items) == 3520, "an Items field was added or removed: save it");
-static_assert(sizeof(Pool) == 16112, "a Pool field was added or removed: save it");
+static_assert(sizeof(Pool) == 1336, "a Pool field was added or removed: save it");
 static_assert(sizeof(Turn) == 56, "a Turn field was added or removed: save it");
 static_assert(sizeof(MessageLine) == 268, "a MessageLine field was added or removed: save it");
 static_assert(sizeof(Options) == 137, "an Options field was added or removed: decide whether to save it");
@@ -95,9 +95,10 @@ json coord_json(const coord &c)
 
 json item_ref(const Game &g, const Item *obj)
 {
-	if (!points_into(obj, g.pool.items, MAXITEMS))
+	int slot = g.pool.items.slot_of(obj);
+	if (slot < 0)
 		return nullptr;
-	return obj - g.pool.items;
+	return slot;
 }
 
 json room_ref(const Game &g, const struct room *rp)
@@ -122,7 +123,7 @@ json dest_ref(const Game &g, const coord *dest)
 		if (dest == &g.level.passages[i].r_gold)
 			return json{{"passage_gold", i}};
 	for (int i = 0; i < MAXITEMS; i++)
-		if (dest == &g.pool.items[i].o_pos)
+		if (const Item *obj = g.pool.items.at(i); obj != nullptr && dest == &obj->o_pos)
 			return json{{"item", i}};
 	throw std::logic_error("a monster is after something that can't be saved");
 }
@@ -307,7 +308,7 @@ json level_json(const Game &g)
 	for (const struct room &r : l.passages)
 		passages.push_back(room_json(r));
 	for (const Creature *tp : l.monsters)
-		monsters.push_back(tp - g.pool.creatures);
+		monsters.push_back(g.pool.creatures.slot_of(tp));
 	return {
 		{"depth", l.depth}, {"traps", l.ntraps}, {"no_food", l.no_food},
 		{"rooms", std::move(rooms)}, {"passages", std::move(passages)},
@@ -320,14 +321,14 @@ json pool_json(const Game &g)
 {
 	json items = json::array(), creatures = json::array();
 	for (int i = 0; i < MAXITEMS; i++) {
-		if (g.pool.item_used[i]) {
+		if (const Item *obj = g.pool.items.at(i)) {
 			json o = {{"slot", i}};
-			o.update(item_json(g.pool.items[i]));
+			o.update(item_json(*obj));
 			items.push_back(std::move(o));
 		}
-		if (g.pool.creature_used[i]) {
+		if (const Creature *tp = g.pool.creatures.at(i)) {
 			json c = {{"slot", i}};
-			c.update(creature_json(g, g.pool.creatures[i]));
+			c.update(creature_json(g, *tp));
 			creatures.push_back(std::move(c));
 		}
 	}
@@ -469,15 +470,20 @@ const char *kept_text(const json &v, const char *what)
 	return intern(utf8_to_bytes(v.get<std::string>()));
 }
 
-// A slot number, or nullptr for null; with used, the slot must be in use
+/*
+ * A slot number, or nullptr for null. With used, the slot must be in use;
+ * without, a free slot gives nullptr (a save made before discard() forgot
+ * the last item picked can name the freed slot).
+ */
 Item *item_at(Game &g, const json &v, const char *what, bool used = true)
 {
 	if (v.is_null())
 		return nullptr;
 	int slot = whole(v, what);
-	if (slot < 0 || slot >= MAXITEMS || (used && !g.pool.item_used[slot]))
+	Item *obj = g.pool.items.at(slot);
+	if (slot < 0 || slot >= MAXITEMS || (used && obj == nullptr))
 		fail(std::string(what) + " is not an item in use");
-	return &g.pool.items[slot];
+	return obj;
 }
 
 struct room *room_at(Game &g, const json &v, const char *what)
@@ -729,23 +735,24 @@ void pool_from(Game &g, const json &j)
 	const json &creatures = field(j, "creatures");
 	if (!items.is_array() || !creatures.is_array())
 		fail("\"pool\" should list items and creatures");
-	auto claim = [&](const json &entry, bool *used) {
+	auto claim = [&](const json &entry, auto &slots) {
 		int slot = num_in<int>(entry, "slot", 0, MAXITEMS - 1);
-		if (used[slot])
+		auto *thing = slots.take_at(slot);
+		if (thing == nullptr)
 			fail("pool slot " + std::to_string(slot) + " is saved twice");
-		used[slot] = true;
 		g.pool.total++;
-		return slot;
+		return thing;
 	};
-	std::vector<int> item_slots, creature_slots;
+	std::vector<Item *> item_slots;
+	std::vector<Creature *> creature_slots;
 	for (const json &entry : items)
-		item_slots.push_back(claim(entry, g.pool.item_used));
+		item_slots.push_back(claim(entry, g.pool.items));
 	for (const json &entry : creatures)
-		creature_slots.push_back(claim(entry, g.pool.creature_used));
+		creature_slots.push_back(claim(entry, g.pool.creatures));
 	for (std::size_t i = 0; i < items.size(); i++)
-		item_from(g.pool.items[item_slots[i]], items[i]);
+		item_from(*item_slots[i], items[i]);
 	for (std::size_t i = 0; i < creatures.size(); i++)
-		creature_from(g, g.pool.creatures[creature_slots[i]], creatures[i]);
+		creature_from(g, *creature_slots[i], creatures[i]);
 }
 
 void level_from(Game &g, const json &j)
@@ -770,10 +777,11 @@ void level_from(Game &g, const json &j)
 	const Creature *last = nullptr;
 	for (const json &v : monsters) {
 		int slot = whole(v, "\"monsters\"");
-		if (slot < 0 || slot >= MAXITEMS || !g.pool.creature_used[slot])
+		Creature *tp = g.pool.creatures.at(slot);
+		if (tp == nullptr)
 			fail("\"monsters\" holds a creature not in use");
-		l.monsters.insert_after(last, &g.pool.creatures[slot]);
-		last = &g.pool.creatures[slot];
+		l.monsters.insert_after(last, tp);
+		last = tp;
 	}
 }
 

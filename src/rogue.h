@@ -17,6 +17,7 @@
 #include "core/Flags.hpp"
 #include "core/Random.hpp"
 #include "entities/List.hpp"
+#include "game/Slots.hpp"
 #include "ui/Display.hpp"
 #include "ui/Input.hpp"
 

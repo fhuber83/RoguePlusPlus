@@ -658,6 +658,8 @@ is_magic(Item *obj)
 void
 killed(Creature *tp, bool pr)
 {
+	char type = tp->t_type;	//@ remove_monster() discards tp
+
 	pstats.s_exp += tp->t_stats.s_exp;
 	/*
 	 * If the monster was a violet fungi, un-hold him
@@ -689,7 +691,7 @@ killed(Creature *tp, bool pr)
 	if (on(game().player.body, ISBLIND))
 		msg(it);
 	else
-		msg("the %s", monsters[tp->t_type-'A'].m_name);
+		msg("the %s", monsters[type-'A'].m_name);
 	}
 	/*
 	 * Do adjustments if he went up a level

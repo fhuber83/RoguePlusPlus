@@ -3,7 +3,7 @@
  *	The main program, of course
  *
  *@ Moved from main.c. Command line:
- *@   rogue++ [-r | savefile]   restore a saved game (currently disabled)
+ *@   rogue++ [-r | savefile]   restore a saved game (-r: the savefile option)
  *@   rogue++ -s                show the scores
  *@   rogue++ -d <seed>         play the dungeon generated from <seed>
  */
@@ -12,14 +12,6 @@
 
 #include "persistence/OptionsFile.hpp"
 #include "rogue.h"
-
-//@ Starts the terminal, or exits with the reason it could not
-static void
-start_terminal()
-{
-	if (auto started = rogue::ui::start_terminal(game().options.monochrome); !started)
-		fatal("%s", started.error().c_str());
-}
 
 int
 main(int argc, char **argv)

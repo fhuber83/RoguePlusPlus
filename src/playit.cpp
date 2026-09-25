@@ -37,8 +37,8 @@ void
 playit(char *sname)
 {
 	if (sname) {
+		setup();			//@ first: the save has the terse and expert toggles
 		restore(sname);
-		setup();
 		display().show_cursor(FALSE);
 	} else {
 		game().player.old_pos.x = hero.x;

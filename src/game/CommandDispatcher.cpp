@@ -8,13 +8,24 @@
 
 namespace rogue {
 
+//@ Set by resume_saved_game() until the first command after a restore
+static bool resuming = false;
+
+void
+resume_saved_game()
+{
+	resuming = true;
+}
+
 void
 command()
 {
 	int ntimes;
 	rogue::Player &player = game().player;
 
-	if (on(player.body, ISHASTE))
+	if (resuming)
+		ntimes = 1;	//@ the save was made after this roll
+	else if (on(player.body, ISHASTE))
 		ntimes = rnd(2) + 2;
 	else
 		ntimes = 1;
@@ -91,7 +102,10 @@ get_prefix()
 
 	turn.after = TRUE;
 	turn.fast_mode = turn.fast_state;
-	look(TRUE); //@ draw player in updated position on every non-sleep frame
+	if (resuming)
+		resuming = false;	//@ the save was made after this look()
+	else
+		look(TRUE); //@ draw player in updated position on every non-sleep frame
 	if (!turn.running)
 		turn.door_stop = FALSE;
 	turn.do_take = TRUE;
@@ -150,9 +164,12 @@ get_prefix()
 		turn.count = 0;
 	if (turn.count || turn.last_count)
 		show_count();
-	turn.last_ch = retch;
-	turn.last_count = turn.count;
-	turn.last_take = turn.do_take;
+	//@ Saving isn't repeated: a restored game repeats the command before it
+	if (command_of(retch) != Command::Save) {
+		turn.last_ch = retch;
+		turn.last_count = turn.count;
+		turn.last_take = turn.do_take;
+	}
 	return retch;
 }
 

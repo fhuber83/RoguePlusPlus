@@ -18,13 +18,14 @@ ctest --test-dir build          # all unit tests
 ./build/rogue++                 # new game
 ./build/rogue++ -d 4242         # reproducible dungeon from a seed (`v` in game shows the seed)
 ./build/rogue++ -s              # show scores
+./build/rogue++ -r              # restore the game saved with S
 ```
 
 Targets: `rogue_game` is a static library built from every `src/**/*.cpp` except `src/app/`. `rogue++` links `src/app/main.cpp` against it. `rogue_tests` builds from `tests/**/*.cpp`, and tests may include any game header. Sources are globbed with `CONFIGURE_DEPENDS`. All targets use `-Wall -Wextra -Wpedantic` and **must stay warning-free**.
 
 Smoke test without a real terminal: `tmux new-session -d -s rg -x 80 -y 25 ./build/rogue++`, then `tmux send-keys -t rg ...` and `tmux capture-pane -p -t rg`. The game needs an 80×25 screen. After the name prompt, wait about 2.5 s for the curtain animation to finish.
 
-At runtime the game reads `rogue.opt` (options) and writes `rogue.scr` (scores, JSON; an old binary one is read and rewritten as JSON) in the current working directory. Saving is disabled: `save_game()` and `restore()` are stubs.
+At runtime the game reads `rogue.opt` (options) and writes `rogue.scr` (scores, JSON; an old binary one is read and rewritten as JSON) in the current working directory. `S` saves the game (JSON, default `rogue.sav`, the `savefile` option) and exits; `./build/rogue++ -r` (or `rogue++ <file>`) restores it and deletes the file.
 
 ## Conventions
 

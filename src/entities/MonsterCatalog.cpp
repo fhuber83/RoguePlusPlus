@@ -6,6 +6,8 @@
 
 #include "rogue.h"
 
+namespace rogue::entities {
+
 static int	exp_add(Creature *tp);
 
 /*
@@ -271,3 +273,5 @@ moat(int my, int mx)
 			return(tp);
 	return(NULL);
 }
+
+}  // namespace rogue::entities

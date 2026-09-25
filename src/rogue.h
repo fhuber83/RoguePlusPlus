@@ -431,6 +431,7 @@ extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
 #include "items/effects/Weapon.hpp"
 #include "rules/Daemons.hpp"
 #include "rules/Combat.hpp"
+#include "entities/MonsterCatalog.hpp"
 #include "game/CommandDispatcher.hpp"
 
 using rogue::items::new_thing;
@@ -495,6 +496,14 @@ using rogue::rules::save;
 using rogue::rules::is_magic;
 using rogue::rules::raise_level;
 using rogue::rules::killed;
+using rogue::entities::randmonster;
+using rogue::entities::pick_mons;
+using rogue::entities::new_monster;
+using rogue::entities::f_restor;
+using rogue::entities::wanderer;
+using rogue::entities::give_pack;
+using rogue::entities::wake_monster;
+using rogue::entities::moat;
 using rogue::command;
 using rogue::show_count;
 using rogue::execcom;
@@ -659,16 +668,6 @@ byte	winat(int y, int x);
 int	spread(int nm);
 int	DISTANCE(int y1, int x1, int y2, int x2);
 int	INDEX(int y, int x);
-
-//@ monsters.c
-char	randmonster(bool wander);
-char	pick_mons(void);
-void	new_monster(Creature *tp, byte type, coord *cp);
-void	f_restor(void);
-void	wanderer(void);
-void	give_pack(Creature *tp);
-Creature	*wake_monster(int y, int x);
-Creature	*moat(int my, int mx);
 
 //@ move.c
 void	do_run(byte ch);

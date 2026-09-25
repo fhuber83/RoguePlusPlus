@@ -433,6 +433,7 @@ extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
 #include "rules/Combat.hpp"
 #include "entities/MonsterCatalog.hpp"
 #include "entities/MonsterAI.hpp"
+#include "world/Rooms.hpp"
 #include "game/CommandDispatcher.hpp"
 
 using rogue::items::new_thing;
@@ -508,12 +509,15 @@ using rogue::entities::moat;
 using rogue::entities::runners;
 using rogue::entities::start_run;
 using rogue::entities::see_monst;
-using rogue::entities::diag_ok;
-using rogue::entities::cansee;
-using rogue::entities::roomin;
 using rogue::entities::find_dest;
 using rogue::entities::slime_split;
 using rogue::entities::plop_monster;
+using rogue::world::roomin;
+using rogue::world::diag_ok;
+using rogue::world::cansee;
+using rogue::world::rnd_pos;
+using rogue::world::enter_room;
+using rogue::world::leave_room;
 using rogue::command;
 using rogue::show_count;
 using rogue::execcom;
@@ -697,9 +701,6 @@ char	*killname(byte monst, bool doart);
 //@ rooms.c
 void	do_rooms(void);
 void	draw_room(struct room *rp);
-void	rnd_pos(struct room *rp, coord *cp);
-void	enter_room(coord *cp);
-void	leave_room(coord *cp);
 
 //@ save.c
 void	save_game(void);

@@ -4,14 +4,9 @@
  * How monsters move: chasing the rogue or what they want, whether the rogue
  * can see them, and slimes dividing.
  *
- * roomin(), cansee() and diag_ok() are level geometry that the chase code
- * happened to hold; they belong with the level (phase 7.6).
- *
- * Included by rogue.h after the legacy types (coord, struct room) and
+ * Included by rogue.h after the legacy types (coord) and
  * entities/Creature.hpp (Creature).
  */
-
-struct room;
 
 namespace rogue {
 
@@ -37,25 +32,6 @@ void start_run(coord *runner);
  *	Return true if the hero can see the monster.
  */
 bool see_monst(Creature *mp);
-
-/*
- * diag_ok:
- *	Check to see if the move is legal if it is diagonal.
- */
-bool diag_ok(coord *sp, coord *ep);
-
-/*
- * cansee:
- *	Returns true if the hero can see a certain coordinate.
- */
-bool cansee(int y, int x);
-
-/*
- * roomin:
- *	Find what room some coordinates are in. Null means they aren't in any
- *	room.
- */
-struct room *roomin(coord *cp);
 
 /*
  * find_dest:

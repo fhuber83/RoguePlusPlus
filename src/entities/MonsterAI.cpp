@@ -351,67 +351,6 @@ chase(Creature *tp, coord *ee)
 }
 
 /*
- * roomin:
- *	Find	what room some coordinates are in. NULL	means they aren't
- *	in any room.
- */
-struct room *
-roomin(coord *cp)
-{
-	struct room *rp;
-	byte *fp;
-
-	for	(rp = game().level.rooms; rp	<= &game().level.rooms[MAXROOMS-1]; rp++)
-		if (cp->x < rp->r_pos.x + rp->r_max.x && rp->r_pos.x <= cp->x
-		 && cp->y < rp->r_pos.y + rp->r_max.y && rp->r_pos.y <= cp->y)
-			return rp;
-	fp = &flat(cp->y, cp->x);
-	if (*fp & F_PASS)
-		return	&game().level.passages[*fp &	F_PNUM];
-#ifdef DEBUG
-	debug("in some bizarre place (%d, %d)", unc(*cp));
-#endif //DEBUG
-	game().turn.bailout = TRUE;
-	return NULL;
-}
-
-/*
- * diag_ok:
- *	Check to see	if the move is legal if	it is diagonal
- */
-bool
-diag_ok(coord *sp, coord *ep)
-{
-	if (ep->x == sp->x || ep->y	== sp->y)
-		return	TRUE;
-	return (step_ok(chat(ep->y,	sp->x))	&& step_ok(chat(sp->y, ep->x)));
-}
-
-/*
- * cansee:
- *	Returns true	if the hero can	see a certain coordinate.
- */
-bool
-cansee(int y, int x)
-{
-	struct room *rer;
-	coord tp;
-
-	if (on(game().player.body, ISBLIND))
-		return	FALSE;
-	if (DISTANCE(y, x, hero.y, hero.x) < LAMPDIST)
-		return	TRUE;
-	/*
-	 * We can only see if the hero in the same room as
-	 * the coordinate and the room is lit or if	it is close.
-	 */
-	tp.y = y;
-	tp.x = x;
-	rer	= roomin(&tp);
-	return (rer	== proom && !rer->r_flags.test(RoomFlag::Dark));
-}
-
-/*
  * find_dest:
  *	find	the proper destination for the monster
  */

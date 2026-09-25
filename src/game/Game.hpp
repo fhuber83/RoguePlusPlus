@@ -170,16 +170,15 @@ struct Items {
 };
 
 /*
- * The creatures and items in play, allocated by new_creature() and
- * new_item() (list.cpp). The original allocated both from one pool of
- * MAXITEMS things (_things), so the count is shared: when it is full, neither
- * kind can be made, and level generation checks it.
+ * The creatures and items in play, made by new_creature() and new_item() and
+ * given back by discard() (list.cpp). Each slot owns its thing; lists, packs
+ * and the rest only point at them. The original allocated both kinds from one
+ * array of MAXITEMS things (_things), so the count is shared: when it is
+ * full, neither kind can be made, and level generation checks it.
  */
 struct Pool {
-	Item items[MAXITEMS] = {};
-	bool item_used[MAXITEMS] = {};
-	Creature creatures[MAXITEMS] = {};
-	bool creature_used[MAXITEMS] = {};
+	Slots<Item, MAXITEMS> items;
+	Slots<Creature, MAXITEMS> creatures;
 	int total = 0;							/* Things of both kinds in use */
 };
 
@@ -198,7 +197,7 @@ struct Game {
 	int wander_rolls = 0;			/* between: rollwand() calls since it last rolled */
 
 	Game() = default;
-	// It points into itself (guesses, worn items in the pool, level lists)
+	// It points into itself (guesses, level lists, worn items in the pool)
 	Game(const Game &) = delete;
 	Game &operator=(const Game &) = delete;
 };
@@ -207,9 +206,10 @@ struct Game {
  * How the pool is referenced, as a list of problems (none when all is well):
  * each item in use is in exactly one of the level's objects, the rogue's
  * pack or a monster's pack; each creature in use is on the level's monster
- * list once; worn items are in the pack; a monster's t_dest is the hero, a
- * room's or passage's gold, or a floor item; rooms are rooms or passages;
- * and the count of things in use is right. Holds between commands, which is
+ * list once; worn items are in the pack; the item get_item() gave last is in
+ * use; a monster's t_dest is the hero, a room's or passage's gold, or a floor
+ * item; rooms are rooms or passages; and the count of things in use is right.
+ * Holds between commands, which is
  * when a game is saved.
  */
 std::vector<std::string> pool_problems(const Game &g);

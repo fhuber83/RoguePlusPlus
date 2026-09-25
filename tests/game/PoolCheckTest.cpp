@@ -22,6 +22,7 @@ protected:
 		game().level = rogue::Level();
 		game().player = rogue::Player();
 		game().items = rogue::Items();
+		game().turn = rogue::Turn();
 	}
 
 	static std::string problems()
@@ -113,6 +114,17 @@ TEST_F(PoolCheck, WornItemsAreInThePack)
 	EXPECT_NE(problems(), "");
 	game().level.objects.remove(obj);
 	game().player.body.t_pack.push_front(obj);
+	EXPECT_EQ(problems(), "");
+}
+
+TEST_F(PoolCheck, TheLastItemPickedIsInUse)
+{
+	Item outside{};
+	game().turn.last_item = &outside;
+	EXPECT_NE(problems(), "");
+	Item *obj = new_item();
+	game().player.body.t_pack.push_front(obj);
+	game().turn.last_item = obj;
 	EXPECT_EQ(problems(), "");
 }
 

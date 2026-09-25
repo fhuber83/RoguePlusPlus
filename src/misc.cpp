@@ -259,6 +259,7 @@ void
 eat()
 {
 	Item *obj;
+	int which;
 	rogue::Player &player = game().player;
 
 	if ((obj = get_item("eat", ItemKind::Food)) == NULL)
@@ -269,6 +270,13 @@ eat()
 		return;
 	}
 	player.in_pack--;
+	/*@
+	 * What it is, and whether it was wielded, are checked before the last
+	 * one is discarded. Both were after discard(), reading a freed item.
+	 */
+	which = obj->o_which;
+	if (obj == player.weapon)
+		player.weapon = NULL;
 	if (--obj->o_count < 1)
 	{
 		detach(pack, obj);
@@ -281,9 +289,7 @@ eat()
 	if ((player.food_left += HUNGERTIME - 200 + rnd(400)) > STOMACHSIZE)
 		player.food_left = STOMACHSIZE;
 	player.hungry_state = 0;
-	if (obj == player.weapon)
-		player.weapon = NULL;
-	if (obj->o_which == 1)
+	if (which == 1)
 		msg("my, that was a yummy %s", game().options.fruit);
 	else
 		if (rnd(100) > 70)

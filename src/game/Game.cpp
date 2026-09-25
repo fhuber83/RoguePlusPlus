@@ -24,13 +24,6 @@ bool points_into(const T *p, const T *first, std::size_t n)
 	return !less(p, first) && less(p, first + n);
 }
 
-// The slot of p in slots, or -1 if it isn't one
-template <class T>
-int slot_of(const T *p, const T (&slots)[MAXITEMS])
-{
-	return points_into(p, slots, MAXITEMS) ? static_cast<int>(p - slots) : -1;
-}
-
 bool is_room(const Level &level, const struct room *rp)
 {
 	return points_into(rp, level.rooms, MAXROOMS) || points_into(rp, level.passages, MAXPASS);
@@ -50,7 +43,7 @@ pool_problems(const Game &g)
 
 	auto count_items = [&](const List<Item> &list, const char *where) {
 		for (const Item *obj : list) {
-			int slot = slot_of(obj, pool.items);
+			int slot = pool.items.slot_of(obj);
 			if (slot < 0)
 				problem(std::string("an item outside the pool in ") + where);
 			else
@@ -60,7 +53,7 @@ pool_problems(const Game &g)
 	count_items(level.objects, "the level's objects");
 	count_items(g.player.body.t_pack, "the rogue's pack");
 	for (const Creature *tp : level.monsters) {
-		int slot = slot_of(tp, pool.creatures);
+		int slot = pool.creatures.slot_of(tp);
 		if (slot < 0) {
 			problem("a monster outside the pool");
 			continue;
@@ -84,12 +77,13 @@ pool_problems(const Game &g)
 
 	int used = 0;
 	for (int i = 0; i < MAXITEMS; i++) {
-		used += pool.item_used[i] + pool.creature_used[i];
-		if (pool.item_used[i] ? item_refs[i] != 1 : item_refs[i] != 0)
-			problem("item " + std::to_string(i) + (pool.item_used[i] ? " is in use" : " is free")
+		bool item_used = pool.items.used(i), creature_used = pool.creatures.used(i);
+		used += item_used + creature_used;
+		if (item_used ? item_refs[i] != 1 : item_refs[i] != 0)
+			problem("item " + std::to_string(i) + (item_used ? " is in use" : " is free")
 				+ " and listed " + std::to_string(item_refs[i]) + " times");
-		if (pool.creature_used[i] ? creature_refs[i] != 1 : creature_refs[i] != 0)
-			problem("creature " + std::to_string(i) + (pool.creature_used[i] ? " is in use" : " is free")
+		if (creature_used ? creature_refs[i] != 1 : creature_refs[i] != 0)
+			problem("creature " + std::to_string(i) + (creature_used ? " is in use" : " is free")
 				+ " and listed " + std::to_string(creature_refs[i]) + " times");
 	}
 	if (used != pool.total)
@@ -99,6 +93,8 @@ pool_problems(const Game &g)
 	for (const Item *worn : {player.armor, player.weapon, player.rings[0], player.rings[1]})
 		if (worn != nullptr && !player.body.t_pack.contains(worn))
 			problem("a worn item isn't in the pack");
+	if (g.turn.last_item != nullptr && pool.items.slot_of(g.turn.last_item) < 0)
+		problem("the item picked last isn't in use");
 	if (player.body.t_room != nullptr && !is_room(level, player.body.t_room))
 		problem("the rogue is in a room that isn't one");
 	if (player.old_room != nullptr && !is_room(level, player.old_room))

@@ -77,3 +77,33 @@ TEST(Pool, CreaturesAndItemsShareTheLimit)
 	EXPECT_EQ(discard(&outside), 0);
 	game().pool = rogue::Pool();
 }
+
+// A discarded item can't be the one get_item() gave last: its address may be
+// reused by the next item made.
+TEST(Pool, DiscardForgetsTheLastItemPicked)
+{
+	game().pool = rogue::Pool();
+	Item *kept = new_item();
+	Item *gone = new_item();
+	game().turn.last_item = kept;
+	discard(gone);
+	EXPECT_EQ(game().turn.last_item, kept);
+	discard(kept);
+	EXPECT_EQ(game().turn.last_item, nullptr);
+	game().pool = rogue::Pool();
+}
+
+// A monster after a discarded item goes for the hero instead.
+TEST(Pool, DiscardSendsMonstersAfterTheHero)
+{
+	game().pool = rogue::Pool();
+	game().level = rogue::Level();
+	Item *obj = new_item();
+	Creature *mp = new_creature();
+	game().level.monsters.push_front(mp);
+	mp->t_dest = &obj->o_pos;
+	discard(obj);
+	EXPECT_EQ(mp->t_dest, &hero);
+	game().level = rogue::Level();
+	game().pool = rogue::Pool();
+}

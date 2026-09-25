@@ -2,14 +2,6 @@
 
 namespace rogue::items::effects {
 
-//@ turn_see() wrapper to use as a fuse
-static
-void
-turn_see_off(void)
-{
-	turn_see(TRUE);
-}
-
 /*
  * quaff:
  *	Quaff a potion from the pack
@@ -46,9 +38,9 @@ quaff(void)
 		if (!on(player.body, ISHUH))
 			{
 			if (on(player.body, ISHUH))
-				lengthen(unconfuse, rnd(8)+HUHDURATION);
+				lengthen(Event::Unconfuse, rnd(8)+HUHDURATION);
 			else
-				fuse(unconfuse, rnd(8)+HUHDURATION);
+				fuse(Event::Unconfuse, rnd(8)+HUHDURATION);
 			player.body.t_flags.set(ISHUH);
 			msg("wait, what's going on? Huh? What? Who?");
 		}
@@ -76,7 +68,7 @@ quaff(void)
 		chg_str(1);
 		msg("you feel stronger. What bulging muscles!");
 	when P_MFIND:
-		fuse(turn_see_off, HUHDURATION);
+		fuse(Event::TurnSeeOff, HUHDURATION);
 		if (game().level.monsters.empty())
 			msg("you have a strange feeling%s.",
 				noterse(" for a moment"));
@@ -136,7 +128,7 @@ quaff(void)
 		msg("you can't move");
 	when P_SEEINVIS:
 		if (!on(player.body, CANSEE)) {
-			fuse(unsee, SEEDURATION);
+			fuse(Event::Unsee, SEEDURATION);
 			look(FALSE);
 			invis_on();
 		}
@@ -178,7 +170,7 @@ quaff(void)
 		if (!on(player.body, ISBLIND))
 		{
 			player.body.t_flags.set(ISBLIND);
-			fuse(sight, SEEDURATION);
+			fuse(Event::Sight, SEEDURATION);
 			look(FALSE);
 		}
 		msg("a cloak of darkness falls around you");

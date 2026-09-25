@@ -6,6 +6,7 @@
 
 #include "rogue.h"
 
+namespace rogue::rules {
 
 /*
  * doctor:
@@ -46,7 +47,7 @@ doctor(void)
 void
 swander(void)
 {
-	start_daemon(rollwand);
+	start_daemon(Event::RollWander);
 }
 
 /*
@@ -63,8 +64,8 @@ rollwand(void)
 		if (roll(1, 6) == 4)
 		{
 			wanderer();
-			extinguish(rollwand);
-			fuse(swander, WANDERTIME);
+			extinguish(Event::RollWander);
+			fuse(Event::Swander, WANDERTIME);
 		}
 	between = 0;
 	}
@@ -105,7 +106,7 @@ sight(void)
 {
 	if (on(game().player.body, ISBLIND))
 	{
-		extinguish(sight);
+		extinguish(Event::Sight);
 		game().player.body.t_flags.unset(ISBLIND);
 		if (!proom->r_flags.test(RoomFlag::Gone))
 			enter_room(&hero);
@@ -174,3 +175,5 @@ stomach(void)
 		}
 	}
 }
+
+}  // namespace rogue::rules

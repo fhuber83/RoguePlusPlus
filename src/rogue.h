@@ -429,6 +429,7 @@ extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
 #include "items/effects/Ring.hpp"
 #include "items/effects/Armor.hpp"
 #include "items/effects/Weapon.hpp"
+#include "rules/Daemons.hpp"
 
 using rogue::items::new_thing;
 using rogue::items::inv_name;
@@ -468,6 +469,21 @@ using rogue::items::effects::hit_monster;
 using rogue::items::effects::num;
 using rogue::items::effects::wield;
 using rogue::items::effects::tick_pause;
+using rogue::rules::Event;
+using rogue::rules::start_daemon;
+using rogue::rules::fuse;
+using rogue::rules::lengthen;
+using rogue::rules::extinguish;
+using rogue::rules::do_daemons;
+using rogue::rules::do_fuses;
+using rogue::rules::doctor;
+using rogue::rules::swander;
+using rogue::rules::rollwand;
+using rogue::rules::unconfuse;
+using rogue::rules::unsee;
+using rogue::rules::sight;
+using rogue::rules::nohaste;
+using rogue::rules::stomach;
 
 /*
  * External variables
@@ -531,24 +547,6 @@ coord	*find_dest(Creature *tp);
 void	command(void);
 void	show_count(void);
 void	execcom(void);
-
-//@ daemon.c
-void	start_daemon(void (*func)());
-void	do_daemons(void);
-void	fuse(void (*func)(), int time);
-void	lengthen(void (*func)(), int xtime);
-void	extinguish(void (*func)());
-void	do_fuses(void);
-
-//@ daemons.c
-void	doctor(void);
-void	swander(void);
-void	rollwand(void);
-void	unconfuse(void);
-void	unsee(void);
-void	sight(void);
-void	nohaste(void);
-void	stomach(void);
 
 //@ env.h
 bool	setenv_from_file(const char *envfile);

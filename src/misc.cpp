@@ -250,7 +250,7 @@ find_obj(int y, int x)
 		if (op->o_pos.y == y && op->o_pos.x == x)
 			return op;
 #ifdef DEBUG
-	debug(sprintf(prbuf, "Non-object %c %d,%d", chat(y, x), y, x));
+	debug("Non-object %c %d,%d", chat(y, x), y, x);
 	return NULL;
 #else
 	/* NOTREACHED */
@@ -505,10 +505,12 @@ call_it(bool know, char **guess)
 	if (know && **guess)
 		**guess = '\0';
 	else if (!know && **guess == '\0') {
+		char buf[MAXNAME+1];	//@ was prbuf
+
 		msg("%scall it? ",noterse("what do you want to "));
-		input().read_line(prbuf,MAXNAME);
-		if (*prbuf != ESCAPE)
-			strcpy(*guess, prbuf);
+		input().read_line(buf,MAXNAME);
+		if (*buf != ESCAPE)
+			strcpy(*guess, buf);
 		msg("");
 	}
 }
@@ -833,10 +835,12 @@ call()
 		return;
 	}
 	msg("Was called \"%s\"", elsewise);
+	char buf[MAXNAME+1];	//@ was prbuf
+
 	msg("what do you want to call it? ");
-	input().read_line(prbuf,MAXNAME);
-	if (*prbuf && *prbuf != ESCAPE)
-		strcpy(guess[obj->o_which], prbuf);
+	input().read_line(buf,MAXNAME);
+	if (*buf && *buf != ESCAPE)
+		strcpy(guess[obj->o_which], buf);
 	msg("");
 }
 
@@ -846,10 +850,11 @@ call()
 void
 do_macro(char *buf, int sz)
 {
-	char *cp = prbuf;
+	std::vector<char> line(sz);	//@ was prbuf
+	char *cp = line.data();
 
 	msg("F9 was %s, enter new macro: ",buf);
-	if (input().read_line(prbuf,sz-1) != ESCAPE)
+	if (input().read_line(line.data(),sz-1) != ESCAPE)
 		do {
 			if (*cp != CTRL('F'))
 				*buf++ = *cp;

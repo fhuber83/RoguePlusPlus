@@ -78,8 +78,8 @@ quit()
 	answer = readchar();
 	if (answer == 'y' || answer == 'Y') {
 		display().clear_page();
-		sprintf(prbuf, "You quit with %u gold pieces\n", game().player.purse);
-		display().write_at(0, 0, prbuf);
+		display().write_at(0, 0, std::format("You quit with {} gold pieces\n",
+			static_cast<unsigned>(game().player.purse)));
 		score(game().player.purse, 1, 0);
 		fatal("");
 	} else {

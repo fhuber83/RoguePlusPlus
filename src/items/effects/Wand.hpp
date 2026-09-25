@@ -43,7 +43,7 @@ void fire_bolt(coord *start, coord *dir, const char *name);
  * charge_str:
  *	Return an appropriate string for a wand's charge count.
  */
-char *charge_str(Item *obj);
+std::string charge_str(const Item *obj);
 
 }  // namespace items::effects
 }  // namespace rogue

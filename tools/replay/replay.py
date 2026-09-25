@@ -120,6 +120,9 @@ def main():
     ap.add_argument("--jobs", type=int, default=6, help="runs at once")
     a = ap.parse_args()
     builds = [b.split("=", 1) for b in a.builds]
+    for b in builds:
+        if len(b) != 2 or not os.access(b[1], os.X_OK):
+            ap.error(f"not NAME=BINARY with an executable BINARY: {'='.join(b)!r}")
 
     with ThreadPoolExecutor(a.jobs) as ex:
         futures = {(seed, name): ex.submit(play, a.outdir, name, binary, seed,

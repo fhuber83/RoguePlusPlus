@@ -17,7 +17,7 @@ namespace items {
  * inv_name:
  *	Return the name of something as it would appear in an inventory.
  */
-char *inv_name(Item *obj, bool drop);
+std::string inv_name(const Item *obj, bool drop);
 
 /*
  * discovered:
@@ -30,7 +30,7 @@ void discovered();
  *	Build a paged list of lines (inventory, discoveries) through the
  *	display, one call per line. end_line closes the page.
  */
-unsigned char add_line(const char *use, const char *fmt, const char *arg);
+unsigned char add_line(const char *use, const char *line);
 unsigned char end_line(const char *use);
 
 }  // namespace items

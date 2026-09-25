@@ -454,16 +454,12 @@ fire_bolt(coord *start, coord *dir, const char *name)
  * charge_str:
  *	Return an appropriate string for a wand charge
  */
-char *
-charge_str(Item *obj)
+std::string
+charge_str(const Item *obj)
 {
-	static char buf[20];
-
 	if (!obj->o_flags.test(ISKNOW))
-		buf[0] = '\0';
-	else
-		sprintf(buf, " [%d charges]", obj->o_charges);
-	return buf;
+		return "";
+	return std::format(" [{} charges]", obj->o_charges);
 }
 
 }  // namespace rogue::items::effects

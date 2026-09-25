@@ -238,7 +238,6 @@ fatal(const char *msg, ...)
 void md_exit(int status)
 {
 	rogue::ui::stop_terminal();
-	free_ds();
 #ifdef ROGUE_DEBUG
 	printf("Exited normally\n");
 #endif

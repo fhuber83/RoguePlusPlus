@@ -190,24 +190,18 @@ putmsg(char *msg)
  *	@ renamed to avoid conflict with <curses.h>
  *	@ same purpose but different behavior, so not using the curses version
  */
-char *
+std::string
 io_unctrl(unsigned char ch)
 {
-	static char chstr[9];		/* Defined in curses library */
-
 	if (is_space(ch))
-		strcpy(chstr," ");
+		return " ";
 	else if (!is_print(ch))
 		if (ch < ' ')
-			sprintf(chstr, "^%c", ch + '@');
+			return std::format("^{}", static_cast<char>(ch + '@'));
 		else
-			sprintf(chstr, "\\x%x",ch);
-	else {
-		chstr[0] = ch;
-		chstr[1] = 0;
-	}
-
-	return chstr;
+			return std::format("\\x{:x}", ch);
+	else
+		return std::string(1, static_cast<char>(ch));
 }
 
 /*

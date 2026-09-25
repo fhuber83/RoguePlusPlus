@@ -60,7 +60,7 @@ ring_on()
 	}
 
 	msg("%swearing %s (%c)", noterse("you are now "),
-		inv_name(obj, TRUE), pack_char(obj));
+		inv_name(obj, TRUE).c_str(), pack_char(obj));
 	return ;
 
 no_ring:
@@ -100,7 +100,7 @@ ring_off(void)
 	}
 	packchar = pack_char(obj);
 	if (can_drop(obj))
-		msg("was wearing %s(%c)", inv_name(obj, TRUE), packchar);
+		msg("was wearing %s(%c)", inv_name(obj, TRUE).c_str(), packchar);
 }
 
 /*
@@ -165,8 +165,8 @@ ring_eat(int hand)
  * ring_num:
  *	Print ring bonuses
  */
-const char *
-ring_num(Item *obj)
+std::string
+ring_num(const Item *obj)
 {
 	if (!obj->o_flags.test(ISKNOW))
 		return "";
@@ -175,13 +175,10 @@ ring_num(Item *obj)
 	case R_ADDSTR:
 	case R_ADDDAM:
 	case R_ADDHIT:
-		ring_buf[0] = ' ';
-		strcpy(&ring_buf[1], num(obj->o_ac, 0, RING));
-		break;
+		return " " + num(obj->o_ac, 0, RING);
 	default:
 		return "";
 	}
-	return ring_buf;
 }
 
 }  // namespace rogue::items::effects

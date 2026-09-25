@@ -204,7 +204,7 @@ picked_up:
 	 */
 	if (!silent)
 		msg("%s%s (%c)",noterse("you now have "),
-			inv_name(obj, TRUE), pack_char(obj));
+			inv_name(obj, TRUE).c_str(), pack_char(obj));
 }
 
 /*
@@ -217,7 +217,6 @@ inventory(const List<Item> &list, ItemFilter type, const char *lstr)
 	unsigned char ch;
 	Item *obj;
 	int n_objs;
-	char inv_temp[MAXSTR];
 
 	n_objs = 0;
 	for (ch = 'a', obj = list.first(); obj != NULL; ch++, obj = list.after(obj))
@@ -235,8 +234,7 @@ inventory(const List<Item> &list, ItemFilter type, const char *lstr)
 		  !(type.is(ItemKind::Stick) && obj->o_enemy && obj->o_charges))
 			continue;
 		n_objs++;
-		sprintf(inv_temp, "%c) %%s", ch);
-		add_line(lstr, inv_temp, inv_name(obj, FALSE));
+		add_line(lstr, std::format("{}) {}", static_cast<char>(ch), inv_name(obj, FALSE)).c_str());
 	}
 	if (n_objs == 0)
 	{
@@ -465,7 +463,7 @@ drop(void)
 	bcopy(op->o_pos,hero);
 	if (op->o_type == ItemKind::Amulet)
 		game().player.has_amulet = FALSE;
-	msg("dropped %s", inv_name(op, TRUE));
+	msg("dropped %s", inv_name(op, TRUE).c_str());
 }
 
 /*

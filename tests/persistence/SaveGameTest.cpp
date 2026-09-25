@@ -29,8 +29,6 @@ class SaveGame : public ::testing::Test {
 protected:
 	void SetUp() override
 	{
-		if (prbuf == nullptr)
-			init_ds();
 		screen_display().set_animations(false);
 	}
 	void TearDown() override

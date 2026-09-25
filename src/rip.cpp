@@ -158,14 +158,14 @@ void
 pr_scores(int newrank, struct sc_ent *top10)
 {
 	int i, n;
-	char dthstr[30];
-	char texts[TOPSCORES][MAXSTR];
+	std::string dthstr;
+	std::string texts[TOPSCORES];
 	rogue::ui::ScoreLine lines[TOPSCORES];
 	const char *altmsg;
 
 	for (i=0,n=0;i<TOPSCORES;i++,top10++)
 	{
-		char *text = texts[n];
+		std::string &text = texts[n];
 
 		altmsg = NULL;
 		if (top10->sc_gold <=0 )
@@ -175,8 +175,7 @@ pr_scores(int newrank, struct sc_ent *top10)
 
 		if (is_alpha(top10->sc_fate))
 		{
-			sprintf(dthstr," killed by %s",
-				killname((0xff & top10->sc_fate), TRUE));
+			dthstr = " killed by " + killname((0xff & top10->sc_fate), TRUE);
 		}
 		else
 		{
@@ -186,24 +185,24 @@ pr_scores(int newrank, struct sc_ent *top10)
 					altmsg = " A total winner!";
 					break;
 				case 1:
-					strcpy(dthstr," quit");
+					dthstr = " quit";
 					break;
 				default:
-					strcpy(dthstr," wierded out");
+					dthstr = " wierded out";
 					break;
 			}
 		}
-		text[0] = '\0';
+		text.clear();
 		if ((signed)(strlen(top10->sc_name) + 10 +
 			strlen(he_man[top10->sc_rank-1])) < COLS)
 		{
 			if (top10->sc_rank > 1 && (strlen(top10->sc_name)))
-				sprintf(text, " \"%s\"",he_man[top10->sc_rank - 1]);
+				text = std::format(" \"{}\"", he_man[top10->sc_rank - 1]);
 		}
 		if (altmsg == NULL)
-			sprintf(text + strlen(text), "%s on level %d",dthstr,top10->sc_level);
+			text += std::format("{} on level {}", dthstr, top10->sc_level);
 		else
-			strcat(text, altmsg);
+			text += altmsg;
 		lines[n].gold = top10->sc_gold;
 		lines[n].name = top10->sc_name;
 		lines[n].text = text;
@@ -248,10 +247,8 @@ death(char monst)
 	game().player.purse -= game().player.purse / 10;
 
 	display().curtain_down();
-	//@ killname() leaves the death reason in prbuf
-	killname(monst, TRUE);
 	year = md_localtime()->year;
-	display().draw_tombstone(game().options.name, prbuf, game().player.purse, year);
+	display().draw_tombstone(game().options.name, killname(monst, TRUE), game().player.purse, year);
 	display().curtain_up();
 	display().write_at(LINES-1, 0, "");
 	score(game().player.purse, 0, monst);
@@ -269,7 +266,6 @@ total_winner(void)
 	int worth = 0;
 	unsigned char c;
 	int oldpurse;
-	char buf[132];  //@ as printw() had
 	rogue::Items &items = game().items;
 
 	display().draw_winner(game().options.terse);
@@ -364,12 +360,12 @@ total_winner(void)
 	}
 	if (worth < 0)
 		worth = 0;
-	snprintf(buf, sizeof buf, "%c) %5d  %s", c, worth, inv_name(obj, FALSE));
-	display().write_at(c - 'a' + 1, 0, buf);
+	display().write_at(c - 'a' + 1, 0,
+		std::format("{}) {:5}  {}", static_cast<char>(c), worth, inv_name(obj, FALSE)));
 	game().player.purse += worth;
 	}
-	snprintf(buf, sizeof buf, "   %5u  Gold Pieces          ", oldpurse);
-	display().write_at(c - 'a' + 1, 0, buf);
+	display().write_at(c - 'a' + 1, 0,
+		std::format("   {:5}  Gold Pieces          ", static_cast<unsigned>(oldpurse)));
 	score(game().player.purse, 2, 0);
 	md_exit(EXIT_SUCCESS);
 }
@@ -378,13 +374,12 @@ total_winner(void)
  * killname:
  *	Convert a code to a monster name
  */
-char *
+std::string
 killname(unsigned char monst, bool doart)
 {
 	const char *sp;
 	bool article;
 
-	sp = prbuf;
 	article = TRUE;
 	switch (monst)
 	{
@@ -414,10 +409,7 @@ killname(unsigned char monst, bool doart)
 		}
 	}
 	if (doart && article)
-	sprintf(prbuf, "a%s ", vowelstr(sp));
-	else
-	prbuf[0] = '\0';
-	strcat(prbuf, sp);
-	return prbuf;
+		return std::format("a{} {}", vowelstr(sp), sp);
+	return sp;
 }
 

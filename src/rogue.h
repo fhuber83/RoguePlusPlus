@@ -8,6 +8,7 @@
  * Modern headers first: extern.h and this file define macros such as max(),
  * pack and when that would break standard library headers.
  */
+#include <format>
 #include <optional>
 #include <string>
 #include <vector>
@@ -555,10 +556,8 @@ extern struct monster	monsters[];
  * extern int lastscore, is_me;
  */
 
-//@ init.c: scratch buffers and the experience level table
-extern char *tbuf, *prbuf;
-extern long *e_levels;
-extern char *ring_buf;
+//@ init.c: the experience level table
+extern const long e_levels[20];
 //@ extern char *_top, *_base;  //@ not found
 /*@
  * Deprecated:
@@ -581,8 +580,6 @@ void	init_colors(void);
 void	init_names(void);
 void	init_stones(void);
 void	init_materials(void);
-void	init_ds(void);
-void	free_ds(void);
 char	*getsyl(void);
 char	rchr(const char *string);
 
@@ -601,7 +598,7 @@ void	wait_for(unsigned char ch);
 void	show_win(char *message);
 void	str_attr(const char *str);
 void	SIG2(void);
-char	*io_unctrl(unsigned char ch);
+std::string	io_unctrl(unsigned char ch);
 const char	*noterse(const char *str);
 
 //@ list.c
@@ -676,7 +673,7 @@ void	rndmove(Creature *who, coord *newmv);
 void	score(int amount, int flags, char monst);
 void	death(char monst);
 void	total_winner(void);
-char	*killname(unsigned char monst, bool doart);
+std::string	killname(unsigned char monst, bool doart);
 
 //@ save.c
 void	save_game(void);

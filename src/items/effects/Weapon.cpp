@@ -23,7 +23,7 @@ static struct init_weps {
 };
 
 static int	fallpos(Item *obj, coord *newpos);
-static const char	*short_name(Item *obj);
+static std::string	short_name(Item *obj);
 
 /*
  * missile:
@@ -122,7 +122,7 @@ do_motion(Item *obj, int ydelta, int xdelta)
 }
 
 static
-const char *
+std::string
 short_name(Item *obj)
 {
 	switch (obj->o_type) {
@@ -134,7 +134,10 @@ short_name(Item *obj)
 		case ItemKind::Amulet:
 		case ItemKind::Stick:
 		case ItemKind::Ring:
-			return strchr(inv_name(obj, TRUE), ' ') + 1;
+		{
+			std::string name = inv_name(obj, TRUE);
+			return name.substr(name.find(' ') + 1);
+		}
 		default:
 			return "bizzare thing";
 	}
@@ -172,7 +175,7 @@ fall(Item *obj, bool pr)
 		break;
 	}
 	if (pr)
-		msg("the %s vanishes%s.", short_name(obj),
+		msg("the %s vanishes%s.", short_name(obj).c_str(),
 								  noterse(" as it hits the ground"));
 	discard(obj);
 }
@@ -222,14 +225,13 @@ hit_monster(int y, int x, Item *obj)
  * num:
  *	Figure out the plus number for armor/weapons
  */
-char *
+std::string
 num(int n1, int n2, char type)
 {
-	static char numbuf[10];
+	std::string numbuf = std::format("{:+}", n1);
 
-	sprintf(numbuf, "%s%d", n1 < 0 ? "" : "+", n1);
 	if (type == WEAPON)
-		sprintf(&numbuf[strlen(numbuf)], ",%s%d", n2 < 0 ? "" : "+", n2);
+		numbuf += std::format(",{:+}", n2);
 	return numbuf;
 }
 
@@ -241,7 +243,7 @@ void
 wield(void)
 {
 	Item *obj, *oweapon;
-	char *sp;
+	std::string sp;
 	rogue::Player &player = game().player;
 
 	oweapon = player.weapon;
@@ -269,7 +271,7 @@ bad:
 	sp = inv_name(obj, TRUE);
 	player.weapon = obj;
 	ifterse2("now wielding %s (%c)", "you are now wielding %s (%c)",
-		sp, pack_char(obj));
+		sp.c_str(), pack_char(obj));
 }
 
 /*

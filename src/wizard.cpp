@@ -69,7 +69,7 @@ whatis(void)
 	 */
 	if (obj->o_enemy)
 		obj->o_flags.set(ISREVEAL);
-	msg(inv_name(obj, FALSE));
+	msg(inv_name(obj, FALSE).c_str());
 }
 
 #ifdef WIZARD

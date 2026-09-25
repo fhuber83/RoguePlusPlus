@@ -10,7 +10,7 @@ void
 wear()
 {
 	Item *obj;
-	char *sp;
+	std::string sp;
 
 	if (game().player.armor != NULL) {
 		msg("you are already wearing some%s.",
@@ -28,7 +28,7 @@ wear()
 	obj->o_flags.set(ISKNOW);
 	sp = inv_name(obj, TRUE);
 	game().player.armor = obj;
-	msg("you are now wearing %s", sp);
+	msg("you are now wearing %s", sp.c_str());
 }
 
 /*
@@ -48,7 +48,7 @@ take_off()
 	if (!can_drop(game().player.armor))
 		return;
 	game().player.armor = NULL;
-	msg("you used to be wearing %c) %s", pack_char(obj), inv_name(obj, TRUE));
+	msg("you used to be wearing %c) %s", pack_char(obj), inv_name(obj, TRUE).c_str());
 }
 
 /*

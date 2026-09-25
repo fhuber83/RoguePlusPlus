@@ -33,7 +33,7 @@ int ring_eat(int hand);
  * ring_num:
  *	Print ring bonuses.
  */
-const char *ring_num(Item *obj);
+std::string ring_num(const Item *obj);
 
 }  // namespace items::effects
 }  // namespace rogue

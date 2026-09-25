@@ -270,7 +270,7 @@ execcom()
 #endif
 		case Command::Illegal:
 			game().message.remember = FALSE;
-			msg("illegal command '%s'", io_unctrl(ch));
+			msg("illegal command '%s'", io_unctrl(ch).c_str());
 			turn.count = 0;
 			game().message.remember = TRUE;
 		}

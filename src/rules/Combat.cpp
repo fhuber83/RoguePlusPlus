@@ -9,7 +9,7 @@
 namespace rogue::rules {
 
 static bool	roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl);
-static char	*prname(const char *who, bool upper);
+static std::string	prname(const char *who, bool upper);
 static void	hit(const char *er, const char *ee);
 static void	miss(const char *er, const char *ee);
 static void	thunk(Item *weap, const char *mname, const char *does, const char *did);
@@ -199,7 +199,9 @@ attack(Creature *mp)
 			 * Violet fungi stops the poor guy from moving
 			 */
 			player.body.t_flags.set(ISHELD);
-			sprintf(game().player.flytrap_damage,"%dd1",++player.fung_hit);
+			//@ was sprintf(), which could run past the buffer; now cut to fit
+			*std::format_to_n(player.flytrap_damage, sizeof player.flytrap_damage - 1,
+				"{}d1", ++player.fung_hit).out = '\0';
 			break;
 		case 'L':
 		{
@@ -245,21 +247,16 @@ attack(Creature *mp)
 
 					oc = steal->o_count--;
 					steal->o_count = 1;
-					msg(she_stole, inv_name(steal, TRUE));
+					msg(she_stole, inv_name(steal, TRUE).c_str());
 					steal->o_count = oc;
 				}
 				else
 				{
-					/*@
-					 * inv_name() must run before discard(): it reads steal's
-					 * fields into prbuf, and a discarded pool slot is not
-					 * guaranteed to keep its contents (see MODERNIZATION.md
-					 * on the entity pool).
-					 */
-					const char *name = inv_name(steal, TRUE);
+					//@ inv_name() must run before discard() frees steal
+					std::string name = inv_name(steal, TRUE);
 					detach(pack, steal);
 					discard(steal);
-					msg(she_stole, name);
+					msg(she_stole, name.c_str());
 				}
 			}
 		}
@@ -433,22 +430,20 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
  * prname:
  *	The print name of a combatant
  */
-static char *
+static std::string
 prname(const char *who, bool upper)
 {
-	*tbuf = '\0';
+	std::string name;
+
 	if (who == 0)
-		strcpy(tbuf, you);
+		name = you;
 	else if (game().player.body.t_flags.test(ISBLIND))
-		strcpy(tbuf, it);
+		name = it;
 	else
-	{
-		strcpy(tbuf, "the ");
-		strcat(tbuf, who);
-	}
-	if (upper)
-		*tbuf = toupper(*tbuf);
-	return tbuf;
+		name = std::string("the ") + who;
+	if (upper && !name.empty())
+		name[0] = toupper(name[0]);
+	return name;
 }
 
 /*
@@ -460,7 +455,7 @@ hit(const char *er, const char *ee)
 {
 	const char *s = "";
 
-	addmsg(prname(er, TRUE));
+	addmsg("%s", prname(er, TRUE).c_str());
 	switch (game().options.brief() ? 1 : rnd(4))
 	{
 		case 0: s = " scored an excellent hit on "; break;
@@ -469,7 +464,7 @@ hit(const char *er, const char *ee)
 		case 3: s = (er == 0 ? " swing and hit " : " swings and hits ");
 		break;
 	}
-	msg("%s%s",s,prname(ee, FALSE));
+	msg("%s%s",s,prname(ee, FALSE).c_str());
 }
 
 /*
@@ -482,7 +477,7 @@ miss(const char *er, const char *ee)
 	const char *s = "";
 
 
-	addmsg(prname(er, TRUE));
+	addmsg("%s", prname(er, TRUE).c_str());
 	switch (game().options.brief() ? 1 : rnd(4))
 	{
 		case 0: s = (er == 0 ? " swing and miss" : " swings and misses"); break;
@@ -491,7 +486,7 @@ miss(const char *er, const char *ee)
 		case 3: s = (er == 0 ? " don't hit" : " doesn't hit");
 		break;
 	}
-	msg("%s %s",s,prname(ee, FALSE));
+	msg("%s %s",s,prname(ee, FALSE).c_str());
 }
 
 /*

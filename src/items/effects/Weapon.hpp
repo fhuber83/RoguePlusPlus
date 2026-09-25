@@ -48,7 +48,7 @@ bool hit_monster(int y, int x, Item *obj);
  * num:
  *	Figure out the plus number for armor/weapons.
  */
-char *num(int n1, int n2, char type);
+std::string num(int n1, int n2, char type);
 
 /*
  * wield:

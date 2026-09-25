@@ -22,8 +22,6 @@ main(int argc, char **argv)
 	//@ Allow non-ASCII output in <curses.h>
 	setlocale(LC_ALL, "");
 
-	init_ds();
-
 	if (rogue::persistence::load_options(ENVFILE, game().options) == rogue::persistence::LoadResult::BadFormat)
 		fatal("rogue.opt: incorrect file format\n");
 	/*

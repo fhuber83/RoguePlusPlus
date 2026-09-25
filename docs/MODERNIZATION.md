@@ -236,6 +236,12 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
   - From saves edited into awkward states (hasted with `NoHaste` running, confused, blind, held with a monster on the flytrap alias, all of them together), both runs restoring the same file and B saving again after 15 or 40 more keys: 10 identical, 8 of them saved with the state still on and several with its fuse about to run out.
   - The first rounds found the repeated `look(TRUE)` (seed 3, a monster woke differently on level 13) and the save swallowed by a `--More--`. No live save had a monster after a floor item; `SaveGameTest` covers that one. `rogue_tests` passes.
 
+## Idiom cleanup (in progress)
+
+- **9.1 Syntax macros.** `when X:`/`otherwise:` are `case X:`/`default:` now, each case ending in the `break;` the macros used to put before the next label. A case that already ends in `return`, `break`, `continue` or `goto` gets none, and one-line cases keep theirs on the same line. `on(x, F)` is `x.t_flags.test(F)` (`p->t_flags.test(F)` for `on(*p, F)`), `shint` is `int` and the `byte` typedef is `unsigned char`. The unused `until()` is gone. The headers that noted they need `extern.h` for `byte` don't any more.
+  - The labels next to `#ifdef DEBUG`/`WIZARD` were rewritten by hand so that each configuration gets its breaks. Those files compile with `-DDEBUG` and `-DWIZARD` with the same errors as before (`debug` needs `WIZARD`, which doesn't build, see the notes).
+  - Verified: the objects of `rogue_game`, built without optimisation (the default flags), are identical to `main`'s, all 42 of them (`.text`, `.rodata` and `.data` compared with `objdump`). At `-O2`, 40 are identical and `Potion.cpp`/`Wand.cpp` differ only in how GCC lays out the blocks of `th_effect()` and `do_zap()`, where the `break`s now sit on other lines. No replays needed. `rogue_tests` passes.
+
 ## Target architecture
 
 ```
@@ -303,7 +309,7 @@ Each phase is a series of small commits that each build and play.
      - **Steps.** 8.3a: no behaviour change; move the statics into `Game`, let `Display` report a tile's style, and add a pool check (every used slot is referenced exactly once: a level list, a pack, or a worn item). 8.3b: `persistence/SaveGame`, `Game` to JSON and back; unit tests that save, load, save gives identical JSON, from new games, deep levels, packs, worn rings, guesses and running fuses. 8.3c: `S` asks for the file (default `savefile=`), writes it through a temporary file and exits; `-r` or a file name restores, redraws map, status and last message, and plays on. 8.3d: resume equivalence; for keys P then K, the screens after K match between one run and a run that saves after P, quits, restores and plays K, over several seeds and awkward save points (mid-fight, hasted, confused, held by a flytrap, a monster after gold, inside a maze, mid-macro).
 9. **Idiom cleanup.**
    - `std::string`/`std::format` instead of `sprintf` into `prbuf`.
-   - Remove `when`/`otherwise`/`on()`/`ce()`-style macros and `shint`/`byte` typedefs.
+   - *Done:* remove `when`/`otherwise`/`on()`/`until()` and `shint`/`byte` (9.1). `ce()` went in phase 3.
    - Remove the `//@` port annotations once the code they describe is gone.
 
 ## Notes for whoever continues

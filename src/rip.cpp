@@ -267,7 +267,7 @@ total_winner(void)
 {
 	Item *obj;
 	int worth = 0;
-	byte c;
+	unsigned char c;
 	int oldpurse;
 	char buf[132];  //@ as printw() had
 	rogue::Items &items = game().items;
@@ -281,54 +281,59 @@ total_winner(void)
 	{
 	switch (obj->o_type)
 	{
-		when ItemKind::Food:
+		case ItemKind::Food:
 			worth = 2 * obj->o_count;
-		when ItemKind::Weapon:
+			break;
+		case ItemKind::Weapon:
 			switch (obj->o_which)
 			{
-				when MACE: worth = 8;
-				when SWORD: worth = 15;
-				when CROSSBOW: worth = 30;
-				when ARROW: worth = 1;
-				when DAGGER: worth = 2;
-				when TWOSWORD: worth = 75;
-				when DART: worth = 1;
-				when BOW: worth = 15;
-				when BOLT: worth = 1;
-				when SPEAR: worth = 5;
+				case MACE: worth = 8; break;
+				case SWORD: worth = 15; break;
+				case CROSSBOW: worth = 30; break;
+				case ARROW: worth = 1; break;
+				case DAGGER: worth = 2; break;
+				case TWOSWORD: worth = 75; break;
+				case DART: worth = 1; break;
+				case BOW: worth = 15; break;
+				case BOLT: worth = 1; break;
+				case SPEAR: worth = 5;
 				break;
 			}
 			worth *= 3 * (obj->o_hplus + obj->o_dplus) + obj->o_count;
 			obj->o_flags.set(ISKNOW);
-		when ItemKind::Armor:
+			break;
+		case ItemKind::Armor:
 			switch (obj->o_which)
 			{
-				when LEATHER: worth = 20;
-				when RING_MAIL: worth = 25;
-				when STUDDED_LEATHER: worth = 20;
-				when SCALE_MAIL: worth = 30;
-				when CHAIN_MAIL: worth = 75;
-				when SPLINT_MAIL: worth = 80;
-				when BANDED_MAIL: worth = 90;
-				when PLATE_MAIL: worth = 150;
+				case LEATHER: worth = 20; break;
+				case RING_MAIL: worth = 25; break;
+				case STUDDED_LEATHER: worth = 20; break;
+				case SCALE_MAIL: worth = 30; break;
+				case CHAIN_MAIL: worth = 75; break;
+				case SPLINT_MAIL: worth = 80; break;
+				case BANDED_MAIL: worth = 90; break;
+				case PLATE_MAIL: worth = 150;
 				break;
 			}
 			worth += (9 - obj->o_ac) * 100;
 			worth += (10 * (a_class[obj->o_which] - obj->o_ac));
 			obj->o_flags.set(ISKNOW);
-		when ItemKind::Scroll:
+			break;
+		case ItemKind::Scroll:
 			worth = items.s_magic[obj->o_which].mi_worth;
 			worth *= obj->o_count;
 			if (!items.s_know[obj->o_which])
 				worth /= 2;
 			items.s_know[obj->o_which] = TRUE;
-		when ItemKind::Potion:
+			break;
+		case ItemKind::Potion:
 			worth = items.p_magic[obj->o_which].mi_worth;
 			worth *= obj->o_count;
 			if (!items.p_know[obj->o_which])
 				worth /= 2;
 			items.p_know[obj->o_which] = TRUE;
-		when ItemKind::Ring:
+			break;
+		case ItemKind::Ring:
 			worth = items.r_magic[obj->o_which].mi_worth;
 			if (obj->o_which == R_ADDSTR || obj->o_which == R_ADDDAM ||
 				obj->o_which == R_PROTECT || obj->o_which == R_ADDHIT)
@@ -342,17 +347,19 @@ total_winner(void)
 				worth /= 2;
 			obj->o_flags.set(ISKNOW);
 			items.r_know[obj->o_which] = TRUE;
-		when ItemKind::Stick:
+			break;
+		case ItemKind::Stick:
 			worth = items.ws_magic[obj->o_which].mi_worth;
 			worth += 20 * obj->o_charges;
 			if (!obj->o_flags.test(ISKNOW))
 				worth /= 2;
 			obj->o_flags.set(ISKNOW);
 			items.ws_know[obj->o_which] = TRUE;
-			when ItemKind::Amulet:
+				break;
+			case ItemKind::Amulet:
 			worth = 1000;
 			break;
-	otherwise:	//@ the other kinds of item: nothing
+	default:	//@ the other kinds of item: nothing
 		break;
 	}
 	if (worth < 0)
@@ -372,7 +379,7 @@ total_winner(void)
  *	Convert a code to a monster name
  */
 char *
-killname(byte monst, bool doart)
+killname(unsigned char monst, bool doart)
 {
 	const char *sp;
 	bool article;
@@ -381,18 +388,23 @@ killname(byte monst, bool doart)
 	article = TRUE;
 	switch (monst)
 	{
-	when 'a':
+	case 'a':
 		sp = "arrow";
-	when 'b':
+		break;
+	case 'b':
 		sp = "bolt";
-	when 'd':
+		break;
+	case 'd':
 		sp = "dart";
-	when 's':
+		break;
+	case 's':
 		sp = "starvation";
 		article = FALSE;
-	when 'f':
+		break;
+	case 'f':
 		sp = "fall";
-	otherwise:
+		break;
+	default:
 		if (ismonster(monst))
 			sp = monsters[monst-'A'].m_name;
 		else

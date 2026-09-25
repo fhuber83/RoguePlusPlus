@@ -11,7 +11,7 @@
  *	Print the name of a trap
  */
 const char *
-tr_name(byte type)
+tr_name(unsigned char type)
 {
 	switch (type)
 	{
@@ -40,7 +40,7 @@ void
 look(bool wakeup)
 {
 	int x, y;
-	byte ch, pch;
+	unsigned char ch, pch;
 	int index;
 	Creature *tp;
 	rogue::Turn &turn = game().turn;
@@ -49,7 +49,7 @@ look(bool wakeup)
 	struct room *rp;
 	int ey, ex;
 	int passcount = 0;
-	byte pfl, *fp;
+	unsigned char pfl, *fp;
 	int sy, sx, sumhero = 0, diffhero = 0;
 
 	rp = proom;
@@ -60,7 +60,7 @@ look(bool wakeup)
 	 * if the hero has moved
 	 */
 	if (!(player.old_pos == hero)) {
-		if (!on(player.body,ISBLIND)) {
+		if (!player.body.t_flags.test(ISBLIND)) {
 			for (x = player.old_pos.x - 1; x <= (player.old_pos.x + 1); x++)
 				for (y = player.old_pos.y - 1; y <= (player.old_pos.y + 1); y++) {
 					if ((y == hero.y && x == hero.x) || offmap(y,x))
@@ -98,7 +98,7 @@ look(bool wakeup)
 		if (y > 0 && y < maxrow) for (x = sx; x <= ex; x++) {
 			if (x <= 0 || x >= COLS)
 				continue;
-			if (!on(player.body, ISBLIND)) {
+			if (!player.body.t_flags.test(ISBLIND)) {
 				if (y == hero.y && x == hero.x)
 					continue;
 			} else if (y != hero.y || x != hero.x)
@@ -133,7 +133,7 @@ look(bool wakeup)
 			}
 
 			if ((tp = moat(y,x)) != NULL) {
-				if (on(player.body, SEEMONST) && on(*tp, ISINVIS)) {
+				if (player.body.t_flags.test(SEEMONST) && tp->t_flags.test(ISINVIS)) {
 					if (turn.door_stop && !turn.first_move)
 						turn.running = FALSE;
 					continue;
@@ -141,7 +141,7 @@ look(bool wakeup)
 					if (wakeup)
 						wake_monster(y, x);
 					if (tp->t_oldch != ' ' ||
-						(!rp->r_flags.test(RoomFlag::Dark) && !on(player.body, ISBLIND)))
+						(!rp->r_flags.test(RoomFlag::Dark) && !player.body.t_flags.test(ISBLIND)))
 							tp->t_oldch = level.map[index];
 					if (see_monst(tp))
 						ch = tp->t_disguise;
@@ -158,28 +158,35 @@ look(bool wakeup)
 
 			if (turn.door_stop && !turn.first_move && turn.running) {
 				switch (turn.run_dir) {
-				when 'h':
+				case 'h':
 					if (x == ex)
 						continue;
-				when 'j':
+					break;
+				case 'j':
 					if (y == sy)
 						continue;
-				when 'k':
+					break;
+				case 'k':
 					if (y == ey)
 						continue;
-				when 'l':
+					break;
+				case 'l':
 					if (x == sx)
 						continue;
-				when 'y':
+					break;
+				case 'y':
 					if ((y + x) - sumhero >= 1)
 						continue;
-				when 'u':
+					break;
+				case 'u':
 					if ((y - x) - diffhero >= 1)
 						continue;
-				when 'n':
+					break;
+				case 'n':
 					if ((y + x) - sumhero <= -1)
 						continue;
-				when 'b':
+					break;
+				case 'b':
 					if ((y - x) - diffhero <= -1)
 						continue;
 					break;
@@ -347,7 +354,7 @@ bool
 add_haste(bool potion)
 {
 	rogue::Player &player = game().player;
-	if (on(player.body, ISHASTE))
+	if (player.body.t_flags.test(ISHASTE))
 	{
 		player.no_command += rnd(8);
 		player.body.t_flags.unset(ISRUN);
@@ -437,7 +444,7 @@ get_dir()
 		}
 	while (find_dir(ch, &turn.delta) == 0);
 	msg("");
-	if (on(game().player.body, ISHUH) && rnd(5) == 0)
+	if (game().player.body.t_flags.test(ISHUH) && rnd(5) == 0)
 		do {
 			turn.delta.y = rnd(3) - 1;
 			turn.delta.x = rnd(3) - 1;
@@ -446,21 +453,21 @@ get_dir()
 }
 
 bool
-find_dir(byte ch, coord *cp)
+find_dir(unsigned char ch, coord *cp)
 {
 	bool gotit;
 
 	gotit = TRUE;
 	switch (ch) {
-		when 'h': case'H': cp->y =  0; cp->x = -1;
-		when 'j': case'J': cp->y =  1; cp->x =  0;
-		when 'k': case'K': cp->y = -1; cp->x =  0;
-		when 'l': case'L': cp->y =  0; cp->x =  1;
-		when 'y': case'Y': cp->y = -1; cp->x = -1;
-		when 'u': case'U': cp->y = -1; cp->x =  1;
-		when 'b': case'B': cp->y =  1; cp->x = -1;
-		when 'n': case'N': cp->y =  1; cp->x =  1;
-		otherwise: gotit = FALSE;
+		case 'h': case'H': cp->y =  0; cp->x = -1; break;
+		case 'j': case'J': cp->y =  1; cp->x =  0; break;
+		case 'k': case'K': cp->y = -1; cp->x =  0; break;
+		case 'l': case'L': cp->y =  0; cp->x =  1; break;
+		case 'y': case'Y': cp->y = -1; cp->x = -1; break;
+		case 'u': case'U': cp->y = -1; cp->x =  1; break;
+		case 'b': case'B': cp->y =  1; cp->x = -1; break;
+		case 'n': case'N': cp->y =  1; cp->x =  1; break;
+		default: gotit = FALSE;
 	}
 	return gotit;
 }
@@ -469,7 +476,7 @@ find_dir(byte ch, coord *cp)
  * sign:
  *	Return the sign of the number
  */
-shint
+int
 sign(int nm)
 {
 	if (nm < 0)
@@ -511,7 +518,7 @@ call_it(bool know, char **guess)
  *	Returns true if it is ok to step on ch
  */
 bool
-step_ok(byte ch)
+step_ok(unsigned char ch)
 {
 	switch (ch)
 	{
@@ -541,51 +548,57 @@ goodch(Item *obj)
 	if (obj->o_flags.test(ISCURSED))
 		ch = BMAGIC;
 	switch (obj->o_type) {
-	when ItemKind::Armor:
+	case ItemKind::Armor:
 		if (obj->o_ac > a_class[obj->o_which])
 			ch = BMAGIC;
-	when ItemKind::Weapon:
+		break;
+	case ItemKind::Weapon:
 		if (obj->o_hplus < 0 || obj->o_dplus < 0)
 			ch = BMAGIC;
-	when ItemKind::Scroll:
+		break;
+	case ItemKind::Scroll:
 		switch (obj->o_which) {
-		when S_SLEEP:
+		case S_SLEEP:
 		case S_CREATE:
 		case S_AGGR:
 			ch = BMAGIC;
 			break;
 		}
-	when ItemKind::Potion:
+		break;
+	case ItemKind::Potion:
 		switch (obj->o_which) {
-		when P_CONFUSE:
+		case P_CONFUSE:
 		case P_PARALYZE:
 		case P_POISON:
 		case P_BLIND:
 			ch = BMAGIC;
 			break;
 		}
-	when ItemKind::Stick:
+		break;
+	case ItemKind::Stick:
 		switch (obj->o_which) {
-		when WS_HASTE_M:
+		case WS_HASTE_M:
 		case WS_TELTO:
 			ch = BMAGIC;
 			break;
 		}
-	when ItemKind::Ring:
+		break;
+	case ItemKind::Ring:
 		switch (obj->o_which) {
-		when R_PROTECT:
+		case R_PROTECT:
 		case R_ADDSTR:
 		case R_ADDDAM:
 		case R_ADDHIT:
 			if (obj->o_ac < 0)
 				ch = BMAGIC;
-		when R_AGGR:
+			break;
+		case R_AGGR:
 		case R_TELEPORT:
 			ch = BMAGIC;
 			break;
 		}
 		break;
-	otherwise:	//@ the other kinds of item: nothing
+	default:	//@ the other kinds of item: nothing
 		break;
 	}
 	return ch;
@@ -600,7 +613,7 @@ help(struct h_list *helpscr)
 	int hcount = 0;
 	int hrow, hcol;
 	int isfull;
-	byte answer = 0;
+	unsigned char answer = 0;
 
 	display().open_page();
 	while (*helpscr->h_desc && answer != ESCAPE)
@@ -674,7 +687,7 @@ offmap(int y, int x)
 	return (y < 1 || y >= maxrow || x < 0 || x >= COLS) ;
 }
 
-byte
+unsigned char
 winat(int y, int x)
 {
 	return(moat(y,x) != NULL ? moat(y,x)->t_disguise : chat(y,x));
@@ -688,10 +701,10 @@ void
 search()
 {
 	int y, x;
-	byte *fp;
+	unsigned char *fp;
 	int ey, ex;
 
-	if (on(game().player.body, ISBLIND))
+	if (game().player.body.t_flags.test(ISBLIND))
 		return;
 	ey = hero.y + 1;
 	ex = hero.x + 1;
@@ -786,27 +799,31 @@ call()
 		return;
 	switch (obj->o_type)
 	{
-	when ItemKind::Ring:
+	case ItemKind::Ring:
 		guess = (char **)items.r_guess;
 		know = items.r_know;
 		elsewise = (*guess[obj->o_which] != '\0' ?
 			guess[obj->o_which] : items.r_stones[obj->o_which]);
-	when ItemKind::Potion:
+		break;
+	case ItemKind::Potion:
 		guess = (char **)items.p_guess;
 		know = items.p_know;
 		elsewise = (*guess[obj->o_which] != '\0' ?
 			guess[obj->o_which] : items.p_colors[obj->o_which]);
-	when ItemKind::Scroll:
+		break;
+	case ItemKind::Scroll:
 		guess = (char **)items.s_guess;
 		know = items.s_know;
 		elsewise = (*guess[obj->o_which] != '\0' ?
 			guess[obj->o_which] : items.s_names[obj->o_which].storage);
-	when ItemKind::Stick:
+		break;
+	case ItemKind::Stick:
 		guess = (char **)items.ws_guess;
 		know = items.ws_know;
 		elsewise = (*guess[obj->o_which] != '\0' ?
 			guess[obj->o_which] : items.ws_made[obj->o_which]);
-	otherwise:
+		break;
+	default:
 		msg("you can't call that anything");
 		return;
 	}

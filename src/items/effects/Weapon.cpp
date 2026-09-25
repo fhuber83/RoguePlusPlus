@@ -84,7 +84,7 @@ missile(int ydelta, int xdelta)
 void
 do_motion(Item *obj, int ydelta, int xdelta)
 {
-	byte under = '@';
+	unsigned char under = '@';
 
 	/*
 	 * Come fly with us ...
@@ -182,7 +182,7 @@ fall(Item *obj, bool pr)
  *	Set up the initial goodies for a weapon
  */
 void
-init_weapon(Item *weap, byte type)
+init_weapon(Item *weap, unsigned char type)
 {
 	struct init_weps *iwp;
 

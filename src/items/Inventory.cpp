@@ -4,10 +4,10 @@ namespace rogue::items {
 
 static
 Item *
-pack_obj(byte ch, byte *chp)
+pack_obj(unsigned char ch, unsigned char *chp)
 {
 	Item *obj;
-	byte och;
+	unsigned char och;
 
 	for (obj = pack.first(), och = 'a'; obj != NULL; obj = pack.after(obj), och++)
 		if (ch == och)
@@ -28,7 +28,7 @@ add_pack(Item *obj, bool silent)
 	Item *op, *lp = NULL;
 	Creature *mp;
 	bool exact, from_floor;
-	byte floor;
+	unsigned char floor;
 
 	if (obj == NULL)
 	{
@@ -211,10 +211,10 @@ picked_up:
  * inventory:
  *	List what is in the pack
  */
-byte
+unsigned char
 inventory(const List<Item> &list, ItemFilter type, const char *lstr)
 {
-	byte ch;
+	unsigned char ch;
 	Item *obj;
 	int n_objs;
 	char inv_temp[MAXSTR];
@@ -252,7 +252,7 @@ inventory(const List<Item> &list, ItemFilter type, const char *lstr)
  *	Add something to characters pack.
  */
 void
-pick_up(byte ch)
+pick_up(unsigned char ch)
 {
 	Item *obj;
 
@@ -302,10 +302,10 @@ Item *
 get_item(const char *purpose, ItemFilter type)
 {
 	Item *obj;
-	byte ch;
-	byte och;
+	unsigned char ch;
+	unsigned char och;
 	rogue::Turn &turn = game().turn;	//@ lch and wasthing were statics here
-	byte gi_state;	/* get item sub state */
+	unsigned char gi_state;	/* get item sub state */
 	int once_only = FALSE;
 
 	if (((!strncmp(game().options.menu,"sel",3) && strcmp(purpose,"eat")
@@ -382,11 +382,11 @@ get_item(const char *purpose, ItemFilter type)
  * pack_char:
  *	Return which character would address a pack object
  */
-byte
+unsigned char
 pack_char(Item *obj)
 {
 	Item *item;
-	byte c;
+	unsigned char c;
 
 	c = 'a';
 	for (item = pack.first(); item != NULL; item = pack.after(item))
@@ -404,7 +404,7 @@ pack_char(Item *obj)
 void
 money(int value)
 {
-	byte floor;
+	unsigned char floor;
 
 	floor = proom->r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
 	game().player.purse += value;
@@ -423,7 +423,7 @@ money(int value)
 void
 drop(void)
 {
-	byte ch;
+	unsigned char ch;
 	Item *nobj, *op;
 
 	ch = chat(hero.y, hero.x);

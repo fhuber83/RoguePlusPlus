@@ -14,9 +14,9 @@ namespace rogue::world {
 #define FRONTIER 'F'
 #define NOTHING ' '
 
-static shint frcnt, ny, nx, topy, topx;
-static shint maxx, maxy;
-static shint *fr_y, *fr_x;
+static int frcnt, ny, nx, topy, topx;
+static int maxx, maxy;
+static int *fr_y, *fr_x;
 
 static void	new_frontier(int y, int x);
 static void	add_frnt(int y, int x);
@@ -29,7 +29,7 @@ void
 draw_maze(struct room *rp)
 {
 	int y, x;
-	shint fy[MAXFRNT], fx[MAXFRNT];
+	int fy[MAXFRNT], fx[MAXFRNT];
 	int psgcnt;
 	coord spos;
 
@@ -146,10 +146,10 @@ con_frnt()
 	splat(ny, nx);
 	switch(which)
 	{
-		when 0: which = 1; ydelt = -1;
-		when 1: which = 0; ydelt = 1;
-		when 2: which = 3; xdelt = -1;
-		when 3: which = 2; xdelt = 1;
+		case 0: which = 1; ydelt = -1; break;
+		case 1: which = 0; ydelt = 1; break;
+		case 2: which = 3; xdelt = -1; break;
+		case 3: which = 2; xdelt = 1;
 		break;
 	}
 	y = ny + ydelt;

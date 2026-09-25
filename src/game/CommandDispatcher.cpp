@@ -25,7 +25,7 @@ command()
 
 	if (resuming)
 		ntimes = 1;	//@ the save was made after this roll
-	else if (on(player.body, ISHASTE))
+	else if (player.body.t_flags.test(ISHASTE))
 		ntimes = rnd(2) + 2;
 	else
 		ntimes = 1;
@@ -51,9 +51,10 @@ command()
 			{
 				switch (player.rings[ntimes]->o_which)
 				{
-				when R_SEARCH:
+				case R_SEARCH:
 					search();
-				when R_TELEPORT:
+					break;
+				case R_TELEPORT:
 					if (rnd(50) == 17)
 						teleport();
 					break;
@@ -64,11 +65,11 @@ command()
 }
 
 //@ No need to declare in rogue.h
-static byte
+static unsigned char
 com_char()
 {
 	bool same;
-	byte ch;
+	unsigned char ch;
 	rogue::Turn &turn = game().turn;
 
 	same = (turn.fast_mode == turn.fast_state);
@@ -78,9 +79,9 @@ com_char()
 	else
 		turn.fast_mode = !turn.fast_state;
 	switch (ch) {
-		when '\b': ch = 'h';
-		when '+': ch = 't';
-		when '-': ch = 'z';
+		case '\b': ch = 'h'; break;
+		case '+': ch = 't'; break;
+		case '-': ch = 'z';
 		break;
 	}
 	if (game().message.end && !turn.running)
@@ -93,11 +94,11 @@ com_char()
  * Read a command, setting thing up according to prefix like devices
  * Return the command character to be executed.
  */
-static byte
+static unsigned char
 get_prefix()
 {
 	int junk;
-	byte retch, ch;
+	unsigned char retch, ch;
 	rogue::Turn &turn = game().turn;
 
 	turn.after = TRUE;
@@ -130,21 +131,26 @@ get_prefix()
 						if ((junk += ch - '0') > 0 && junk < 10000)
 							turn.count = junk;
 						show_count();
-					when 'f':
+						break;
+					case 'f':
 						turn.fast_mode = !turn.fast_mode;
-					when 'g':
+						break;
+					case 'g':
 						turn.do_take = FALSE;
-					when 'a':
+						break;
+					case 'a':
 						retch = turn.last_ch;
 						turn.count = turn.last_count;
 						turn.do_take = turn.last_take;
 						turn.again = TRUE;
-					when ' ':	/* Spaces are ignored */
-					when ESCAPE:
+						break;
+					case ' ':	/* Spaces are ignored */ break;
+					case ESCAPE:
 						turn.door_stop = FALSE;
 						turn.count = 0;
 						show_count();
-					otherwise:
+						break;
+					default:
 						retch = ch;
 				}
 			}
@@ -154,7 +160,7 @@ get_prefix()
 		turn.fast_mode = FALSE;
 	//@ Which commands a count repeats is in game/Command.cpp
 	if (command_of(retch) == Command::Move && turn.fast_mode && !turn.running) {
-		if (!on(game().player.body, ISBLIND)) {
+		if (!game().player.body.t_flags.test(ISBLIND)) {
 			turn.door_stop = TRUE;
 			turn.first_move = TRUE;
 		}
@@ -196,49 +202,55 @@ execcom()
 		case Command::Move:
 			find_dir(ch, &mv);
 			do_move(mv.y, mv.x);
-		when Command::Run:
+			break;
+		case Command::Run:
 			do_run(tolower(ch));
-		when Command::Throw:
+			break;
+		case Command::Throw:
 			if (get_dir())
 				missile(turn.delta.y, turn.delta.x);
 			else
 				turn.after = FALSE;
-		when Command::Quit: quit();
-		when Command::Inventory: inventory(pack, ItemFilter::all(), "");
-		when Command::Drop: drop();
-		when Command::Quaff: quaff();
-		when Command::Read: read_scroll();
-		when Command::Eat: eat();
-		when Command::Wield: wield();
-		when Command::Wear: wear();
-		when Command::TakeOff: take_off();
-		when Command::PutOnRing: ring_on();
-		when Command::RemoveRing: ring_off();
-		when Command::Call: call();
-		when Command::Descend: d_level();
-		when Command::Ascend: u_level();
-		when Command::HelpObjects: help(helpobjs);
-		when Command::HelpCommands: help(helpcoms);
-		when Command::Search: search();
-		when Command::Zap:
+			break;
+		case Command::Quit: quit(); break;
+		case Command::Inventory: inventory(pack, ItemFilter::all(), ""); break;
+		case Command::Drop: drop(); break;
+		case Command::Quaff: quaff(); break;
+		case Command::Read: read_scroll(); break;
+		case Command::Eat: eat(); break;
+		case Command::Wield: wield(); break;
+		case Command::Wear: wear(); break;
+		case Command::TakeOff: take_off(); break;
+		case Command::PutOnRing: ring_on(); break;
+		case Command::RemoveRing: ring_off(); break;
+		case Command::Call: call(); break;
+		case Command::Descend: d_level(); break;
+		case Command::Ascend: u_level(); break;
+		case Command::HelpObjects: help(helpobjs); break;
+		case Command::HelpCommands: help(helpcoms); break;
+		case Command::Search: search(); break;
+		case Command::Zap:
 			if (get_dir())
 				do_zap();
 			else
 				turn.after = FALSE;
-		when Command::Discoveries: discovered();
-		when Command::ToggleBrief:
+			break;
+		case Command::Discoveries: discovered(); break;
+		case Command::ToggleBrief:
 			msg((game().options.expert ^= 1)
 				? "Ok, I'll be brief"
 				: "Goodie, I can use big words again!");
-		when Command::Macro: do_macro(game().options.macro, MACROSZ);
-		when Command::TypeMacro: turn.typeahead = game().options.macro;
-		when Command::RepeatMessage: msg(game().message.last);
-		when Command::Version:
+			break;
+		case Command::Macro: do_macro(game().options.macro, MACROSZ); break;
+		case Command::TypeMacro: turn.typeahead = game().options.macro; break;
+		case Command::RepeatMessage: msg(game().message.last); break;
+		case Command::Version:
 			msg("Rogue version %d.%d (Mr. Mctesq was here), dungeon %u", REV, VER,
 				rogue::rng().seed());
-		when Command::Save: save_game();
-		when Command::Rest: doctor();
-		when Command::IdentifyTrap:
+			break;
+		case Command::Save: save_game(); break;
+		case Command::Rest: doctor(); break;
+		case Command::IdentifyTrap:
 			if (get_dir()) {
 				coord lookat;
 
@@ -250,12 +262,13 @@ execcom()
 					msg("you found %s",
 						tr_name(flat(lookat.y, lookat.x) & F_TMASK));
 			}
-		when Command::Options: msg("i don't have any options, oh my!");
-		when Command::Redraw: msg("the screen looks fine to me (jll was here)");
+			break;
+		case Command::Options: msg("i don't have any options, oh my!"); break;
+		case Command::Redraw: msg("the screen looks fine to me (jll was here)"); break;
 #ifdef WIZARD
-		when Command::CreateObject: create_obj();
+		case Command::CreateObject: create_obj(); break;
 #endif
-		when Command::Illegal:
+		case Command::Illegal:
 			game().message.remember = FALSE;
 			msg("illegal command '%s'", io_unctrl(ch));
 			turn.count = 0;

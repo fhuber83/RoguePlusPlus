@@ -39,8 +39,8 @@ struct Creature {
 	coord t_pos;				/* Position */
 	char t_turn;				/* If slowed, is it a turn to move */
 	char t_type;				/* What it is */
-	byte t_disguise;			/* What mimic looks like */
-	byte t_oldch;				/* Character that was where it was */
+	unsigned char t_disguise;			/* What mimic looks like */
+	unsigned char t_oldch;				/* Character that was where it was */
 	coord *t_dest;				/* Where it is running to */
 	CreatureFlags t_flags;		/* State word */
 	struct stats t_stats;		/* Physical description */

@@ -90,10 +90,6 @@ const int maxrow = MAXLINES - 2;
 /*
  * All the fun defines
  */
-#define shint		int		/* short integer (for very small #s) */
-#define when		break;case
-#define otherwise	break;default
-#define until(expr)	while(!(expr))
 #define hero		game().player.body.t_pos
 #define pstats		game().player.body.t_stats
 #define pack		game().player.body.t_pack
@@ -103,7 +99,6 @@ const int maxrow = MAXLINES - 2;
 #define detach(a,b)	(a).remove(b)
 #define free_list(a)	list_free(a)
 #define max(a,b)	((a) > (b) ? (a) : (b))
-#define on(thing,flag)	((thing).t_flags.test(flag))
 #define GOLDCALC	(rnd(50 + 10 * game().level.depth) + 2)
 #define ISRING(h,r)	(game().player.rings[h] != NULL && game().player.rings[h]->o_which == r)
 #define ISWEARING(r)	(ISRING(LEFT, r) || ISRING(RIGHT, r))
@@ -287,7 +282,7 @@ const int maxrow = MAXLINES - 2;
  * @ this was unused in original. Now improved and put to good use
  */
 struct h_list {
-	byte h_chstr[6];  //@ either (ch) or (ch,sep,ch2) appended with ": "
+	unsigned char h_chstr[6];  //@ either (ch) or (ch,sep,ch2) appended with ": "
 	const char *h_desc;
 };
 
@@ -314,7 +309,7 @@ typedef unsigned int str_t;
 
 struct magic_item {
 	const char *mi_name;
-	shint mi_prob;
+	int mi_prob;
 	short mi_worth;
 };
 
@@ -343,7 +338,7 @@ struct room {
 	coord r_gold;			/* Where the gold is */
 	int r_goldval;			/* How much the gold is worth */
 	RoomFlags r_flags;		/* Info about the room */
-	shint r_nexits;			/* Number of exits */
+	int r_nexits;			/* Number of exits */
 	coord r_exit[12];			/* Where the exits are */
 };
 
@@ -353,11 +348,11 @@ struct room {
 struct stats {
 	str_t s_str;			/* Strength */
 	long s_exp;				/* Experience */
-	shint s_lvl;			/* Level of mastery */
-	shint s_arm;			/* Armor class */
-	shint s_hpt;			/* Hit points */
+	int s_lvl;			/* Level of mastery */
+	int s_arm;			/* Armor class */
+	int s_hpt;			/* Hit points */
 	const char *s_dmg;			/* String describing damage done */
-	shint s_maxhp;			/* Max hit points */
+	int s_maxhp;			/* Max hit points */
 };
 
 /*@
@@ -413,7 +408,7 @@ inline constexpr rogue::CreatureFlag ISFLY = rogue::CreatureFlag::Flying;
  */
 struct monster {
 	const char *m_name;			/* What to call the monster */
-	shint m_carry;			/* Probability of carrying something */
+	int m_carry;			/* Probability of carrying something */
 	CreatureFlags m_flags;		/* Things about the monster */
 	struct stats m_stats;		/* Initial stats */
 };
@@ -602,11 +597,11 @@ void	endmsg(void);
 void	more(const char *msg);
 void	putmsg(char *msg);
 void	status(void);
-void	wait_for(byte ch);
+void	wait_for(unsigned char ch);
 void	show_win(char *message);
 void	str_attr(const char *str);
 void	SIG2(void);
-char	*io_unctrl(byte ch);
+char	*io_unctrl(unsigned char ch);
 const char	*noterse(const char *str);
 
 //@ list.c
@@ -658,20 +653,20 @@ Item	*find_obj(int y, int x);
 bool	add_haste(bool potion);
 bool	is_current(Item *obj);
 bool	get_dir(void);
-bool	find_dir(byte ch, coord *cp);
-bool	step_ok(byte ch);
+bool	find_dir(unsigned char ch, coord *cp);
+bool	step_ok(unsigned char ch);
 bool	offmap(int y, int x);
-const char	*tr_name(byte type);
+const char	*tr_name(unsigned char type);
 const char	*vowelstr(const char *str);
 char	goodch(Item *obj);
-shint	sign(int nm);
-byte	winat(int y, int x);
+int	sign(int nm);
+unsigned char	winat(int y, int x);
 int	spread(int nm);
 int	DISTANCE(int y1, int x1, int y2, int x2);
 int	INDEX(int y, int x);
 
 //@ move.c
-void	do_run(byte ch);
+void	do_run(unsigned char ch);
 void	do_move(int dy, int dx);
 void	door_open(struct room *rp);
 void	descend(const char *mesg);
@@ -681,7 +676,7 @@ void	rndmove(Creature *who, coord *newmv);
 void	score(int amount, int flags, char monst);
 void	death(char monst);
 void	total_winner(void);
-char	*killname(byte monst, bool doart);
+char	*killname(unsigned char monst, bool doart);
 
 //@ save.c
 void	save_game(void);

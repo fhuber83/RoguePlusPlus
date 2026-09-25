@@ -12,7 +12,7 @@ static void	conn(int r1, int r2);
 static void	door(struct room *rm, coord *cp);
 static void	passnum(void);
 static void	numpass(int y, int x);
-static void	psplat(shint y, shint x);
+static void	psplat(int y, int x);
 
 /*
  * conn:
@@ -312,7 +312,7 @@ add_pass()
  *	Assign a number to each passageway
  */
 static int pnum;
-static byte newpnum;
+static unsigned char newpnum;
 
 void
 passnum()
@@ -338,9 +338,9 @@ passnum()
 void
 numpass(int y, int x)
 {
-	byte *fp;
+	unsigned char *fp;
 	struct room *rp;
-	byte ch;
+	unsigned char ch;
 
 	if (offmap(y,x))
 		return;
@@ -372,7 +372,7 @@ numpass(int y, int x)
 }
 
 void
-psplat(shint y, shint x)
+psplat(int y, int x)
 {
 	int idx;
 

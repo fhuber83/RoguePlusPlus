@@ -42,14 +42,14 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 	/*
 	 * Let him know it was really a mimic (if it was one).
 	 */
-	if (tp->t_type == 'X' && tp->t_disguise != 'X' && !on(player.body, ISBLIND)) {
+	if (tp->t_type == 'X' && tp->t_disguise != 'X' && !player.body.t_flags.test(ISBLIND)) {
 		mn = tp->t_disguise = 'X';
 		if (thrown)
 			return FALSE;
 		msg("wait! That's a Xeroc!");
 	}
 	mname = monsters[mn-'A'].m_name;
-	if (on(player.body, ISBLIND))
+	if (player.body.t_flags.test(ISBLIND))
 		mname = it;
 	if (roll_em(&player.body, tp, weap, thrown)||(weap && weap->o_type == ItemKind::Potion)) {
 		bool did_huh = FALSE;
@@ -71,7 +71,7 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 				player.weapon = NULL;
 			}
 		}
-		if (on(player.body, CANHUH)) {
+		if (player.body.t_flags.test(CANHUH)) {
 			did_huh = TRUE;
 			tp->t_flags.set(ISHUH);
 			player.body.t_flags.unset(CANHUH);
@@ -79,7 +79,7 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 		}
 		if (tp->t_stats.s_hpt <= 0)
 			killed(tp, TRUE);
-		else if (did_huh && !on(player.body, ISBLIND))
+		else if (did_huh && !player.body.t_flags.test(ISBLIND))
 			msg("the %s appears confused", mname);
 		return TRUE;
 	}
@@ -108,19 +108,19 @@ attack(Creature *mp)
 	 */
 	game().turn.running = FALSE;
 	game().turn.count = player.quiet = 0;
-	if (mp->t_type == 'X' && !on(player.body, ISBLIND))
+	if (mp->t_type == 'X' && !player.body.t_flags.test(ISBLIND))
 		mp->t_disguise = 'X';
 	mname = monsters[mp->t_type-'A'].m_name;
-	if (on(player.body, ISBLIND))
+	if (player.body.t_flags.test(ISBLIND))
 		mname = it;
 	if (roll_em(mp, &player.body, NULL, FALSE)) {
 		hit(mname, NULL);
 		if (pstats.s_hpt <= 0)
 			death(mp->t_type);	/* Bye bye life ... */
-		if (!on(*mp, ISCANC))
+		if (!mp->t_flags.test(ISCANC))
 			switch (mp->t_type)
 		{
-		when 'A':
+		case 'A':
 			/*
 			 * If a rust monster hits, you lose armor, unless
 			 * that armor is leather or there is a magic ring
@@ -136,14 +136,15 @@ attack(Creature *mp)
 					player.armor->o_ac++;
 				}
 			}
-		when 'I':
+			break;
+		case 'I':
 			/*
 			 * When an Ice Monster hits you, you get unfrozen faster
 			 */
 			if (player.no_command > 1)
 				player.no_command--;
 			break;
-		when 'R':
+		case 'R':
 			/*
 			 * Rattlesnakes have poisonous bites
 			 */
@@ -158,7 +159,8 @@ attack(Creature *mp)
 				else
 					msg("a bite momentarily weakens you");
 			}
-		when 'W':
+			break;
+		case 'W':
 		case 'V':
 			/*
 			 * Wraiths might drain energy levels, and Vampires
@@ -191,13 +193,15 @@ attack(Creature *mp)
 				death(mp->t_type);
 			msg("you suddenly feel weaker");
 			}
-		when 'F':
+			break;
+		case 'F':
 			/*
 			 * Violet fungi stops the poor guy from moving
 			 */
 			player.body.t_flags.set(ISHELD);
 			sprintf(game().player.flytrap_damage,"%dd1",++player.fung_hit);
-		when 'L':
+			break;
+		case 'L':
 		{
 			/*
 			 * Leperachaun steals some gold
@@ -214,7 +218,8 @@ attack(Creature *mp)
 			if (player.purse != lastpurse)
 			msg("your purse feels lighter");
 		}
-		when 'N':
+			break;
+		case 'N':
 		{
 			Item *obj, *steal;
 			int nobj;
@@ -258,7 +263,8 @@ attack(Creature *mp)
 				}
 			}
 		}
-		otherwise:
+			break;
+		default:
 			break;
 		}
 	}
@@ -391,7 +397,7 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 	 * If the creature being attacked is not running (alseep or held)
 	 * then the attacker gets a plus four bonus to hit.
 	 */
-	if (!on(*thdef, ISRUN))
+	if (!thdef->t_flags.test(ISRUN))
 		hplus += 4;
 	def_arm = def->s_arm;
 	if (def == &pstats)
@@ -433,7 +439,7 @@ prname(const char *who, bool upper)
 	*tbuf = '\0';
 	if (who == 0)
 		strcpy(tbuf, you);
-	else if (on(game().player.body, ISBLIND))
+	else if (game().player.body.t_flags.test(ISBLIND))
 		strcpy(tbuf, it);
 	else
 	{
@@ -457,10 +463,10 @@ hit(const char *er, const char *ee)
 	addmsg(prname(er, TRUE));
 	switch (game().options.brief() ? 1 : rnd(4))
 	{
-		when 0: s = " scored an excellent hit on ";
-		when 1: s = " hit ";
-		when 2: s = (er == 0 ? " have injured " : " has injured ");
-		when 3: s = (er == 0 ? " swing and hit " : " swings and hits ");
+		case 0: s = " scored an excellent hit on "; break;
+		case 1: s = " hit "; break;
+		case 2: s = (er == 0 ? " have injured " : " has injured "); break;
+		case 3: s = (er == 0 ? " swing and hit " : " swings and hits ");
 		break;
 	}
 	msg("%s%s",s,prname(ee, FALSE));
@@ -479,10 +485,10 @@ miss(const char *er, const char *ee)
 	addmsg(prname(er, TRUE));
 	switch (game().options.brief() ? 1 : rnd(4))
 	{
-		when 0: s = (er == 0 ? " swing and miss" : " swings and misses");
-		when 1: s = (er == 0 ? " miss" : " misses");
-		when 2: s = (er == 0 ? " barely miss" : " barely misses");
-		when 3: s = (er == 0 ? " don't hit" : " doesn't hit");
+		case 0: s = (er == 0 ? " swing and miss" : " swings and misses"); break;
+		case 1: s = (er == 0 ? " miss" : " misses"); break;
+		case 2: s = (er == 0 ? " barely miss" : " barely misses"); break;
+		case 3: s = (er == 0 ? " don't hit" : " doesn't hit");
 		break;
 	}
 	msg("%s %s",s,prname(ee, FALSE));
@@ -587,7 +593,7 @@ thunk(Item *weap, const char *mname, const char *does, const char *did)
 		addmsg("the %s %s ", w_names[weap->o_which], does);
 	else
 		addmsg("you %s ", did);
-	if (on(game().player.body, ISBLIND))
+	if (game().player.body.t_flags.test(ISBLIND))
 		msg(it);
 	else
 		msg("the %s", mname);
@@ -645,7 +651,7 @@ is_magic(Item *obj)
 	case ItemKind::Ring:
 	case ItemKind::Amulet:
 		return TRUE;
-	otherwise:	//@ the other kinds of item: nothing
+	default:	//@ the other kinds of item: nothing
 		break;
 	}
 	return FALSE;
@@ -666,10 +672,11 @@ killed(Creature *tp, bool pr)
 	 */
 	switch (tp->t_type)
 	{
-	when 'F':
+	case 'F':
 		game().player.body.t_flags.unset(ISHELD);
 		f_restor();
-	when 'L':;
+		break;
+	case 'L':;
 		Item *gold;
 
 		if ((gold = new_item()) == NULL)
@@ -688,7 +695,7 @@ killed(Creature *tp, bool pr)
 	if (pr)
 	{
 	addmsg("you have defeated ");
-	if (on(game().player.body, ISBLIND))
+	if (game().player.body.t_flags.test(ISBLIND))
 		msg(it);
 	else
 		msg("the %s", monsters[type-'A'].m_name);

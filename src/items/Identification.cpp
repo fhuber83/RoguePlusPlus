@@ -22,7 +22,7 @@ inv_name(Item *obj, bool drop)
 	pb = prbuf;
 	switch (obj->o_type)
 	{
-	when ItemKind::Scroll:
+	case ItemKind::Scroll:
 		if (obj->o_count == 1) {
 			strcpy(pb, "A scroll ");
 			pb = &prbuf[9];
@@ -36,7 +36,8 @@ inv_name(Item *obj, bool drop)
 			sprintf(pb, "called %s", items.s_guess[which]);
 		else
 			chopmsg(pb, "titled '%.17s'","titled '%s'", &items.s_names[which]);
-	when ItemKind::Potion:
+		break;
+	case ItemKind::Potion:
 		if (obj->o_count == 1)
 		{
 			strcpy(pb, "A potion ");
@@ -60,7 +61,8 @@ inv_name(Item *obj, bool drop)
 				items.p_colors[which]);
 		else
 			sprintf(prbuf, "%d %s potions", obj->o_count, items.p_colors[which]);
-	when ItemKind::Food:
+		break;
+	case ItemKind::Food:
 		if (which == 1)
 			if (obj->o_count == 1)
 				sprintf(pb, "A%s %s", vowelstr(game().options.fruit), game().options.fruit);
@@ -71,7 +73,8 @@ inv_name(Item *obj, bool drop)
 				strcpy(pb, "Some food");
 			else
 				sprintf(pb, "%d rations of food", obj->o_count);
-	when ItemKind::Weapon:
+		break;
+	case ItemKind::Weapon:
 		if (obj->o_count > 1)
 			sprintf(pb, "%d ", obj->o_count);
 		else
@@ -90,16 +93,19 @@ inv_name(Item *obj, bool drop)
 			strcat(pb, monsters[obj->o_enemy-'A'].m_name);
 			strcat(pb, " slaying");
 		}
-	when ItemKind::Armor:
+		break;
+	case ItemKind::Armor:
 		if (obj->o_flags.test(ISKNOW))
 			chopmsg(pb, "%s %s","%s %s [armor class %d]",
 				num(a_class[which] - obj->o_ac, 0, ARMOR),
 				a_names[which], -(obj->o_ac-11));
 		else
 			sprintf(pb, "%s", a_names[which]);
-	when ItemKind::Amulet:
+		break;
+	case ItemKind::Amulet:
 		strcpy(pb, "The Amulet of Yendor");
-	when ItemKind::Stick:
+		break;
+	case ItemKind::Stick:
 		sprintf(pb, "A%s %s ", vowelstr(items.ws_type[which]),
 		items.ws_type[which]);
 		pb = &prbuf[strlen(prbuf)];
@@ -112,7 +118,8 @@ inv_name(Item *obj, bool drop)
 				items.ws_made[which]);
 		else
 			sprintf(pb = &prbuf[2], "%s %s", items.ws_made[which], items.ws_type[which]);
-	when ItemKind::Ring:
+		break;
+	case ItemKind::Ring:
 		if (items.r_know[which])
 			chopmsg(pb, "A%s ring of %s", "A%s ring of %s(%s)", ring_num(obj),
 				items.r_magic[which].mi_name, items.r_stones[which]);
@@ -122,15 +129,17 @@ inv_name(Item *obj, bool drop)
 		else
 			sprintf(pb, "A%s %s ring", vowelstr(items.r_stones[which]),
 				items.r_stones[which]);
+		break;
 #ifdef DEBUG
-	when ItemKind::Gold:
+	case ItemKind::Gold:
 		sprintf(pb, "Gold at %d,%d", obj->o_pos.y, obj->o_pos.x);
-	otherwise:
+		break;
+	default:
 		debug("Picked up someting bizzare %s", io_unctrl(glyph_of(obj->o_type)));
 		sprintf(pb, "Something bizarre %c(%d)", glyph_of(obj->o_type),
 			static_cast<int>(obj->o_type));
 #else
-	otherwise:	//@ the other kinds of item: nothing
+	default:	//@ the other kinds of item: nothing
 #endif
 		break;
 	}
@@ -219,7 +228,7 @@ print_disc(ItemKind type)
 		know = items.ws_know;
 		guess = items.ws_guess;
 		break;
-	otherwise:	//@ the other kinds of item: nothing
+	default:	//@ the other kinds of item: nothing
 		break;
 	}
 	set_order(order, maxnum);
@@ -266,11 +275,11 @@ set_order(short *order, int numthings)
  *
  * VARARGS1
  */
-byte
+unsigned char
 add_line(const char *use, const char *fmt, const char *arg)
 {
 	char buf[132];  //@ as printw() had
-	byte retchar = ' ';
+	unsigned char retchar = ' ';
 	if (line_cnt == 0)
 	{
 		display().open_page();
@@ -311,7 +320,7 @@ add_line(const char *use, const char *fmt, const char *arg)
  * end_line:
  *	End the list of lines
  */
-byte
+unsigned char
 end_line(const char *use)
 {
 	int retchar;
@@ -339,12 +348,12 @@ nothing(ItemKind type)
 	sp = &prbuf[strlen(prbuf)];
 	switch (type)
 	{
-		when ItemKind::Potion: tystr = "potion";
-		when ItemKind::Scroll: tystr = "scroll";
-		when ItemKind::Ring: tystr = "ring";
-		when ItemKind::Stick: tystr = "stick";
+		case ItemKind::Potion: tystr = "potion"; break;
+		case ItemKind::Scroll: tystr = "scroll"; break;
+		case ItemKind::Ring: tystr = "ring"; break;
+		case ItemKind::Stick: tystr = "stick"; break;
 		//@ not in original, avoid possibly uninitialized use of tystr
-		otherwise: tystr = "item";
+		default: tystr = "item";
 	}
 	sprintf(sp, " about any %ss", tystr);
 	return prbuf;

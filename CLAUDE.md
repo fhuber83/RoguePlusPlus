@@ -32,7 +32,7 @@ At runtime the game reads `rogue.opt` (options) and writes `rogue.scr` (scores, 
 ## Conventions
 
 - New code goes in `namespace rogue`, in `.hpp`/`.cpp` files under a module directory (`src/core/`, …), and is included as `"core/Random.hpp"`. `src/` is on the include path only for quoted includes (`-iquote`), so project headers never hide system headers.
-- Legacy headers define many lowercase macros (`on`, `pack`, `hero`, `max`, `max_hp`, `attach`, `detach`, `when`, …). Include standard and modern headers **before** `rogue.h`/`extern.h`, as `rogue.h` does for `core/` and `ui/`. Never name members after those macros. That's why `Flags` has `unset()` rather than `clear()`.
+- Legacy headers define many lowercase macros (`pack`, `hero`, `max`, `max_hp`, `attach`, `detach`, `chat`, …). Include standard and modern headers **before** `rogue.h`/`extern.h`, as `rogue.h` does for `core/` and `ui/`. Never name members after those macros. That's why `Flags` has `unset()` rather than `clear()`.
 - All randomness goes through `rogue::rng()` (the game's `game().random`, or the `rnd()`/`roll()` wrappers). Never use `rand()` or the clock, or seeds stop reproducing.
 - **`//@` and `/*@` comments** in legacy files mark changes made by the Linux port and this project. Everything else there is original 1980s code.
 - Keep string handling `const`-correct. Buffers the game really writes to (`prbuf`, `flytrap_damage`, `s_names`, `guesses`, …) are `char[]`. Everything else is `const char *`.

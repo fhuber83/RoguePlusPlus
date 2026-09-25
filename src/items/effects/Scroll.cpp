@@ -13,7 +13,7 @@ read_scroll()
 {
 	Item *obj;
 	int y, x;
-	byte ch;
+	unsigned char ch;
 	Item *op;
 	Creature *mo;
 	int index;
@@ -36,20 +36,22 @@ read_scroll()
 	if (obj == player.weapon)
 		player.weapon = NULL;
 	switch (obj->o_which){
-	when S_CONFUSE:
+	case S_CONFUSE:
 		/*
 		 * Scroll of monster confusion.  Give him that power.
 		 */
 		player.body.t_flags.set(CANHUH);
 		msg("your hands begin to glow red");
-	when S_ARMOR:
+		break;
+	case S_ARMOR:
 		if (player.armor != NULL) {
 			player.armor->o_ac--;
 			player.armor->o_flags.unset(ISCURSED);
 			ifterse0("your armor glows faintly",
 				"your armor glows faintly for a moment");
 		}
-	when S_HOLD:
+		break;
+	case S_HOLD:
 		/*
 		 * Hold monster scroll.  Stop all monsters within two spaces
 		 * from chasing after the hero.
@@ -62,7 +64,8 @@ read_scroll()
 						mo->t_flags.unset(ISRUN);
 						mo->t_flags.set(ISHELD);
 					}
-	when S_SLEEP:
+		break;
+	case S_SLEEP:
 		/*
 		 * Scroll which makes you fall asleep
 		 */
@@ -70,7 +73,8 @@ read_scroll()
 		player.no_command += rnd(SLEEPTIME) + 4;
 		player.body.t_flags.unset(ISRUN);
 		msg("you fall asleep");
-	when S_CREATE:
+		break;
+	case S_CREATE:
 		{
 		coord mp;
 
@@ -80,7 +84,8 @@ read_scroll()
 			ifterse0("you hear a faint cry of anguish",
 				"you hear a faint cry of anguish in the distance");
 		}
-	when S_IDENT:
+		break;
+	case S_IDENT:
 		/*
 		 * Identify, let the rogue figure something out
 		 */
@@ -89,7 +94,8 @@ read_scroll()
 		if (! strcmp(game().options.menu,"on") || !strcmp(game().options.menu,"sel"))
 			more(" More ");
 		whatis();
-	when S_MAP:
+		break;
+	case S_MAP:
 		/*
 		 * Scroll of magic mapping.
 		 */
@@ -129,7 +135,8 @@ read_scroll()
 							(ch == DOOR && display().tile_at({x, y}) != DOOR)
 								? TileStyle::Inverse : TileStyle::Normal);
 			}
-	when S_GFIND:
+		break;
+	case S_GFIND:
 		/*
 		 * Scroll of food detection
 		 */
@@ -149,7 +156,8 @@ read_scroll()
 			msg("your nose tingles as you sense food");
 		} else
 			ifterse0("you hear a growling noise close by","you hear a growling noise very close to you");
-	when S_TELEP:
+		break;
+	case S_TELEP:
 		/*
 		 * Scroll of teleportation:
 		 * Make him dissapear and reappear
@@ -162,7 +170,8 @@ read_scroll()
 		if (cur_room != proom)
 			items.s_know[S_TELEP] = TRUE;
 		}
-	when S_ENCH:
+		break;
+	case S_ENCH:
 		if (player.weapon == NULL || player.weapon->o_type != ItemKind::Weapon)
 		msg("you feel a strange sense of loss");
 		else
@@ -174,13 +183,15 @@ read_scroll()
 			player.weapon->o_dplus++;
 		ifterse1("your %s glows blue","your %s glows blue for a moment", w_names[player.weapon->o_which]);
 		}
-	when S_SCARE:
+		break;
+	case S_SCARE:
 		/*
 		 * Reading it is a mistake and produces laughter at the
 		 * poor rogue's boo boo.
 		 */
 			msg(laugh, game().options.brief() ? "" : in_dist);
-	when S_REMOVE:
+		break;
+	case S_REMOVE:
 		if (player.armor != NULL)
 			player.armor->o_flags.unset(ISCURSED);
 		if (player.weapon != NULL)
@@ -190,7 +201,8 @@ read_scroll()
 		if (player.rings[RIGHT] != NULL)
 			player.rings[RIGHT]->o_flags.unset(ISCURSED);
 		ifterse0("somebody is watching over you","you feel as if somebody is watching over you");
-	when S_AGGR:
+		break;
+	case S_AGGR:
 		/*
 		 * This scroll aggravates all the monsters on the current
 		 * level and sets them running towards the hero
@@ -198,9 +210,11 @@ read_scroll()
 		aggravate();
 		ifterse("you hear a humming noise",
 					"you hear a high pitched humming noise");
-	when S_NOP:
+		break;
+	case S_NOP:
 		msg("this scroll seems to be blank");
-	when S_VORPAL:
+		break;
+	case S_VORPAL:
 		/*
 		 * Extra Vorpal Enchant Weapon
 		 *     Give weapon +1,+1
@@ -249,7 +263,8 @@ read_scroll()
 				 */
 			}
 		}
-	otherwise:
+		break;
+	default:
 		msg("what a puzzling scroll!");
 		return;
 	}

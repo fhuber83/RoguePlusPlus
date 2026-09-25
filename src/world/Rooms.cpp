@@ -22,7 +22,7 @@ struct room *
 roomin(coord *cp)
 {
 	struct room *rp;
-	byte *fp;
+	unsigned char *fp;
 
 	for	(rp = game().level.rooms; rp	<= &game().level.rooms[MAXROOMS-1]; rp++)
 		if (cp->x < rp->r_pos.x + rp->r_max.x && rp->r_pos.x <= cp->x
@@ -60,7 +60,7 @@ cansee(int y, int x)
 	struct room *rer;
 	coord tp;
 
-	if (on(game().player.body, ISBLIND))
+	if (game().player.body.t_flags.test(ISBLIND))
 		return	FALSE;
 	if (DISTANCE(y, x, hero.y, hero.x) < LAMPDIST)
 		return	TRUE;
@@ -104,7 +104,7 @@ enter_room(coord *cp)
 		return;
 	}
 	door_open(rp);
-	if (!rp->r_flags.test(RoomFlag::Dark) && !on(game().player.body,ISBLIND) && !rp->r_flags.test(RoomFlag::Maze))
+	if (!rp->r_flags.test(RoomFlag::Dark) && !game().player.body.t_flags.test(ISBLIND) && !rp->r_flags.test(RoomFlag::Maze))
 		for (y = rp->r_pos.y; y < rp->r_max.y + rp->r_pos.y; y++) {
 			for (x = rp->r_pos.x; x < rp->r_max.x + rp->r_pos.x; x++) {
 				/*
@@ -131,12 +131,12 @@ leave_room(coord *cp)
 {
 	int y, x;
 	struct room *rp;
-	byte floor;
-	byte ch;
+	unsigned char floor;
+	unsigned char ch;
 
 	rp = proom;
 	proom = &game().level.passages[flat(cp->y, cp->x) & F_PNUM];
-	floor = (rp->r_flags.test(RoomFlag::Dark) && !on(game().player.body, ISBLIND)) ? ' ' : FLOOR;
+	floor = (rp->r_flags.test(RoomFlag::Dark) && !game().player.body.t_flags.test(ISBLIND)) ? ' ' : FLOOR;
 	if (rp->r_flags.test(RoomFlag::Maze))
 		floor = PASSAGE;
 	for (y = rp->r_pos.y + 1; y < rp->r_max.y + rp->r_pos.y - 1; y++)
@@ -160,7 +160,7 @@ leave_room(coord *cp)
 				 */
 				if (ismonster(ch))
 				{
-					if (on(game().player.body, SEEMONST)) {
+					if (game().player.body.t_flags.test(SEEMONST)) {
 						display().draw_tile({x, y}, ch, TileStyle::Inverse);
 						break;
 					} else

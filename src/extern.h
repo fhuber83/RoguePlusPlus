@@ -125,7 +125,6 @@ typedef struct md_tm TM;
  *  MANX C compiler funnies
  *  @ moved from rogue.h
  */
-typedef unsigned char byte;
 
 
 /*
@@ -134,10 +133,10 @@ typedef unsigned char byte;
 //@ mach_dep.c originals
 void	setup(), flush_type(), credits(), start_terminal();
 char	*newmem(unsigned int nbytes);
-byte	readchar();
+unsigned char	readchar();
 
 //@ new functions
-byte	swap_bits(byte data, unsigned i, unsigned j, unsigned width);
+unsigned char	swap_bits(unsigned char data, unsigned i, unsigned j, unsigned width);
 long	md_time(void);
 TM  	*md_localtime(void);
 void	md_nanosleep(long nanoseconds);

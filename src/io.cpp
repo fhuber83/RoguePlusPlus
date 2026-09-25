@@ -191,7 +191,7 @@ putmsg(char *msg)
  *	@ same purpose but different behavior, so not using the curses version
  */
 char *
-io_unctrl(byte ch)
+io_unctrl(unsigned char ch)
 {
 	static char chstr[9];		/* Defined in curses library */
 
@@ -245,7 +245,7 @@ status(void)
  *	Sit around until the guy types the right key
  */
 void
-wait_for(byte ch)
+wait_for(unsigned char ch)
 {
 	/*@
 	 * stdio and ncurses will map all stream line endings to '\n'

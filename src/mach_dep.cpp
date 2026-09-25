@@ -7,14 +7,14 @@
 #include	"rogue.h"
 
 
-byte swap_bits(
-	byte data,
+unsigned char swap_bits(
+	unsigned char data,
 	unsigned i,      // positions of bit sequences to swap
 	unsigned j,
 	unsigned length  // number of consecutive bits in each sequence
 )
 {
-	byte x = ((data >> i) ^ (data >> j)) & ((1U << length) - 1);
+	unsigned char x = ((data >> i) ^ (data >> j)) & ((1U << length) - 1);
 	return data ^ ((x << i) | (x << j));
 }
 
@@ -119,7 +119,7 @@ credits()
  */
 static const struct xlate {
 	int keycode;
-	byte keyis;
+	unsigned char keyis;
 } xtab[] = {
 	{rogue::ui::key::Enter,	'\n'}, //@ Keypad Enter
 	{rogue::ui::key::Home,	'y'},
@@ -148,7 +148,7 @@ static const struct xlate {
 /*@
  * Map a key to an 8-bit command character using the translation table
  */
-static byte
+static unsigned char
 xlate_ch(int ch)
 {
 	for (const struct xlate *x = xtab; x < xtab + (sizeof xtab) / sizeof *xtab; x++)
@@ -156,18 +156,18 @@ xlate_ch(int ch)
 		if (ch == x->keycode)
 			return x->keyis;
 	}
-	return (byte)ch;
+	return (unsigned char)ch;
 }
 
 /*
  * readchar:
  *	Return the next input character, from the macro or from the keyboard.
  */
-byte
+unsigned char
 readchar()
 {
 	int xch;
-	byte ch;
+	unsigned char ch;
 
 	if (*game().turn.typeahead) {
 		SIG2();

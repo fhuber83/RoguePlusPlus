@@ -58,7 +58,7 @@ void
 quit()
 {
 	coord here;
-	byte answer;
+	unsigned char answer;
 	static bool qstate = FALSE;
 
 	/*

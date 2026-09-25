@@ -69,11 +69,11 @@ struct Turn {
 	bool bailout = false;			/* The hero is nowhere: fall through */
 	/* What the last command was, for repeating it (command.cpp) */
 	int last_count = 0;
-	byte last_ch = 0;
-	byte last_take = 0;
-	byte do_take = 0;
+	unsigned char last_ch = 0;
+	unsigned char last_take = 0;
+	unsigned char do_take = 0;
 	/* What get_item() last gave, so a repeat takes it again */
-	byte last_item_key = 0;			/* lch: its pack letter */
+	unsigned char last_item_key = 0;			/* lch: its pack letter */
 	Item *last_item = nullptr;		/* wasthing: the item itself */
 };
 
@@ -121,8 +121,8 @@ struct Level {
 	 * What is at each square, and its F_* flags. Both were allocated in
 	 * init_ds(). Index them with INDEX(y, x), or use chat()/flat().
 	 */
-	byte map[(MAXLINES-3)*MAXCOLS] = {};	/* _level */
-	byte flags[(MAXLINES-3)*MAXCOLS] = {};	/* _flags */
+	unsigned char map[(MAXLINES-3)*MAXCOLS] = {};	/* _level */
+	unsigned char flags[(MAXLINES-3)*MAXCOLS] = {};	/* _flags */
 	List<Item> objects;				/* lvl_obj: list of objects on this level */
 	List<Creature> monsters;		/* mlist: list of monsters on the level */
 

@@ -4,8 +4,7 @@
  * Monsters: choosing which kind shows up, making one, wandering monsters,
  * waking one up, and finding the one on a square.
  *
- * Included by rogue.h after extern.h (byte) and entities/Creature.hpp
- * (Creature).
+ * Included by rogue.h after entities/Creature.hpp (Creature).
  */
 
 namespace rogue {
@@ -31,7 +30,7 @@ char pick_mons();
  * new_monster:
  *	Pick a new monster and add it to the list.
  */
-void new_monster(Creature *tp, byte type, coord *cp);
+void new_monster(Creature *tp, unsigned char type, coord *cp);
 
 /*
  * f_restor:

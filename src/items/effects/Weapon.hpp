@@ -4,7 +4,7 @@
  * Weapons: throwing one, wielding one, and what happens to an item that
  * lands on the floor.
  *
- * Included by rogue.h after extern.h (byte) and entities/Item.hpp (Item).
+ * Included by rogue.h after entities/Item.hpp (Item).
  */
 
 namespace rogue {
@@ -36,7 +36,7 @@ void fall(Item *obj, bool pr);
  * init_weapon:
  *	Set up the initial goodies for a weapon.
  */
-void init_weapon(Item *weap, byte type);
+void init_weapon(Item *weap, unsigned char type);
 
 /*
  * hit_monster:

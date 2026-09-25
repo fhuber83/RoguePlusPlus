@@ -22,7 +22,7 @@ new_level(void)
 {
 	int rm, i;
 	Creature *tp;
-	byte *fp;
+	unsigned char *fp;
 	int index;
 	coord stairs;
 	rogue::Player &player = game().player;
@@ -105,7 +105,7 @@ new_level(void)
 	display().draw_tile(hero, PLAYER);
 	bcopy(player.old_pos,hero);
 	player.old_room = proom;
-	if (on(player.body, SEEMONST))
+	if (player.body.t_flags.test(SEEMONST))
 		turn_see(FALSE);
 }
 
@@ -375,7 +375,7 @@ do_rooms(void)
 			if ((gold = new_item()) != NULL) {
 				gold->o_goldval = rp->r_goldval = GOLDCALC;
 				while (1) {
-					byte gch;
+					unsigned char gch;
 
 					rnd_pos(rp, &rp->r_gold);
 					gch =  chat(rp->r_gold.y, rp->r_gold.x);
@@ -395,7 +395,7 @@ do_rooms(void)
 		 */
 		if (rnd(100) < (rp->r_goldval > 0 ? 80 : 25)) {
 			if ((tp = new_creature()) != NULL) {
-				byte mch;
+				unsigned char mch;
 
 				do {
 					rnd_pos(rp, &mp);

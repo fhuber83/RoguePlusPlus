@@ -60,7 +60,7 @@ randmonster(bool wander)
  *	Pick a new monster and add it to the list
  */
 void
-new_monster(Creature *tp, byte type, coord *cp)
+new_monster(Creature *tp, unsigned char type, coord *cp)
 {
 	struct monster *mp;
 	int lev_add;
@@ -91,15 +91,15 @@ new_monster(Creature *tp, byte type, coord *cp)
 	{
 		switch (rnd(game().level.depth > 25 ? 9 : 8))
 		{
-		when 0: tp->t_disguise = GOLD;
-		when 1: tp->t_disguise = POTION;
-		when 2: tp->t_disguise = SCROLL;
-		when 3: tp->t_disguise = STAIRS;
-		when 4: tp->t_disguise = WEAPON;
-		when 5: tp->t_disguise = ARMOR;
-		when 6: tp->t_disguise = RING;
-		when 7: tp->t_disguise = STICK;
-		when 8: tp->t_disguise = AMULET;
+		case 0: tp->t_disguise = GOLD; break;
+		case 1: tp->t_disguise = POTION; break;
+		case 2: tp->t_disguise = SCROLL; break;
+		case 3: tp->t_disguise = STAIRS; break;
+		case 4: tp->t_disguise = WEAPON; break;
+		case 5: tp->t_disguise = ARMOR; break;
+		case 6: tp->t_disguise = RING; break;
+		case 7: tp->t_disguise = STICK; break;
+		case 8: tp->t_disguise = AMULET;
 		break;
 		}
 	}
@@ -178,7 +178,7 @@ wake_monster(int y, int x)
 {
 	Creature *tp;
 	struct room *rp;
-	byte ch;
+	unsigned char ch;
 	int dst;
 
 	if ((tp = moat(y, x)) == NULL)
@@ -187,21 +187,21 @@ wake_monster(int y, int x)
 	/*
 	 * Every time he sees mean monster, it might start chasing him
 	 */
-	if (!on(*tp, ISRUN) && rnd(3) != 0 && on(*tp, ISMEAN) && !on(*tp, ISHELD)
+	if (!tp->t_flags.test(ISRUN) && rnd(3) != 0 && tp->t_flags.test(ISMEAN) && !tp->t_flags.test(ISHELD)
 		&& !ISWEARING(R_STEALTH))
 	{
 		tp->t_dest = &hero;
 		tp->t_flags.set(ISRUN);
 	}
-	if (ch == 'M' && !on(game().player.body, ISBLIND) && !on(*tp, ISFOUND)
-		&& !on(*tp, ISCANC) && on(*tp, ISRUN))
+	if (ch == 'M' && !game().player.body.t_flags.test(ISBLIND) && !tp->t_flags.test(ISFOUND)
+		&& !tp->t_flags.test(ISCANC) && tp->t_flags.test(ISRUN))
 	{
 		rp = proom;
 		dst = DISTANCE(y, x, hero.y, hero.x);
 		if ((rp != NULL && !rp->r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
 			tp->t_flags.set(ISFOUND);
 			if (!save(VS_MAGIC)) {
-				if (on(game().player.body, ISHUH))
+				if (game().player.body.t_flags.test(ISHUH))
 					lengthen(Event::Unconfuse, rnd(20) + HUHDURATION);
 				else
 					fuse(Event::Unconfuse, rnd(20) + HUHDURATION);
@@ -213,7 +213,7 @@ wake_monster(int y, int x)
 	/*
 	 * Let greedy ones guard gold
 	 */
-	if (on(*tp, ISGREED) && !on(*tp, ISRUN)) {
+	if (tp->t_flags.test(ISGREED) && !tp->t_flags.test(ISRUN)) {
 		tp->t_flags.set(ISRUN);
 		if (proom->r_goldval)
 			tp->t_dest = &proom->r_gold;

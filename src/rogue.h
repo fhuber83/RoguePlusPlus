@@ -430,6 +430,7 @@ extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
 #include "items/effects/Armor.hpp"
 #include "items/effects/Weapon.hpp"
 #include "rules/Daemons.hpp"
+#include "game/CommandDispatcher.hpp"
 
 using rogue::items::new_thing;
 using rogue::items::inv_name;
@@ -484,6 +485,9 @@ using rogue::rules::unsee;
 using rogue::rules::sight;
 using rogue::rules::nohaste;
 using rogue::rules::stomach;
+using rogue::command;
+using rogue::show_count;
+using rogue::execcom;
 
 /*
  * External variables
@@ -542,11 +546,6 @@ bool	diag_ok(coord *sp, coord *ep);
 bool	cansee(int y, int x);
 struct room	*roomin(coord *cp);
 coord	*find_dest(Creature *tp);
-
-//@ command.c
-void	command(void);
-void	show_count(void);
-void	execcom(void);
 
 //@ env.h
 bool	setenv_from_file(const char *envfile);

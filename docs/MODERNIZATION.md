@@ -189,7 +189,14 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
   - Public: `new_level()` and `rnd_room()`, brought into the global namespace by `rogue.h`. `do_passages()` and `draw_maze()` are only called inside `world/` and get no `using`. Everything else (`put_things()`, `do_rooms()`, `draw_room()`, `conn()`, `door()`, `passnum()`, `numpass()`, `psplat()`, and the maze helpers `new_frontier()`, `add_frnt()`, `con_frnt()`, `splat()`, `maze_at()`, `inrange()`) was only used in its own file and is now `static`; their prototypes are gone from `rogue.h`. `add_pass()` (unused, `WIZARD` only) is left as it was.
   - Verified: descending A/B replays against the 7.5b tree (covering 7.6a and 7.6b together), 6 seeds x 406 captures down to level 7, all identical. Mazes only appear below level 10, so a second replay pressed only `>` and Space, 8 seeds x 60 captures down to level 20. At 0.15 s between keys some frames of the level-change animation differed, a different one per seed; at 0.6 s all 8 seeds were identical. An instrumented scratch copy counted 95 `draw_maze()` calls in those dives. `rogue_tests` passes.
 
-## Target architecture
+## Persistence (in progress)
+
+- **8.1 Options loader.** `env.cpp` (`setenv_from_file()`, its `peekc()`/`putenv_struct()` helpers and file statics) is replaced by `src/persistence/OptionsFile.{hpp,cpp}`, `namespace rogue::persistence`. `parse_options(text)` splits the text into `OptionSetting`s (label, value) or returns `OptionsError::BadFormat`; `apply_option()` stores one in `rogue::Options`, cut to that option's length; `load_options(path, options)` does both for a file and returns `Loaded`, `Missing` or `BadFormat`. `main.cpp` calls `fatal()` with the old message on `BadFormat`. `env.cpp` is deleted.
+  - The format is the original's, quirks included, since it is what players' `rogue.opt` files are written in: `=` or `-` separates, blank runs collapse to their first character, `#` comments only where a label starts, ^Z is a newline, an empty value takes the next line, a label may span lines, and the file may not end inside a label or before a value. The header lists the rules; `tests/persistence/OptionsFileTest.cpp` has a test for each.
+  - The old parser wrote one byte past its label and value buffers (`blabel[11]`, `bstring[25]`) when either ran long, so it kept 11 and 25 characters rather than 10 and 24. The new one keeps the same lengths, without the overflow. A file with a format error is no longer applied up to the error, but that was never visible, since `fatal()` exits.
+  - The unreachable `lcase()` of `menu` and `screen` after the parse loop is gone (it sat after a `while (1)` with no `break`), so `screen=BW` still doesn't select monochrome.
+  - Verified: a differential fuzz of the old `setenv_from_file()` (linked from the 7.6b library) against `load_options()`, printing every option after loading random files: 20,000 files with short labels and values and 40,000 with long ones, mixing known labels in random case, `=`/`-`, blanks, CR, `#`, ^Z, NUL and non-ASCII bytes. All identical, including the `fatal()` exits. A smoke run with a `rogue.opt` greets the rogue by its name. `rogue_tests` passes: 21 tests in `OptionsFileTest.cpp`, which take over the two file tests from `GameTest.cpp`.
+
 
 ```
 src/
@@ -245,7 +252,7 @@ Each phase is a series of small commits that each build and play.
    5. *Done:* Monster catalog and AI (`monsters.cpp`, `slime.cpp`, `chase.cpp`) become `entities::MonsterCatalog` (7.5a) and `entities::MonsterAI` (7.5b).
    6. *Done:* Level generation (`new_leve.cpp`, `rooms.cpp`, `passages.cpp`, `maze.cpp`) becomes `world::Rooms` (7.6a), `world::LevelGenerator`, `world::Passages` and `world::Maze` (7.6b).
 8. **Persistence.**
-   - Options loader.
+   - *Done:* Options loader, `persistence::OptionsFile` (8.1).
    - High scores as a real file format.
    - Save/restore: the original was a raw memory dump and is currently disabled. Replace it with serialization of `Game`.
 9. **Idiom cleanup.**

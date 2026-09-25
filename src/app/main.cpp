@@ -10,6 +10,7 @@
 
 #include <cstdlib>
 
+#include "persistence/OptionsFile.hpp"
 #include "rogue.h"
 
 //@ Starts the terminal, or exits with the reason it could not
@@ -31,7 +32,8 @@ main(int argc, char **argv)
 
 	init_ds();
 
-	setenv_from_file(ENVFILE);
+	if (rogue::persistence::load_options(ENVFILE, game().options) == rogue::persistence::LoadResult::BadFormat)
+		fatal("rogue.opt: incorrect file format\n");
 	/*
 	 * Parse the screen environment variable.  if the string starts with
 	 * "bw", then we force black and white mode.

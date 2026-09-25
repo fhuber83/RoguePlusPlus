@@ -16,9 +16,9 @@
 namespace rogue {
 
 /*
- * Player settings: read from rogue.opt (see env.cpp), the name prompt and
- * the in-game toggles. The character buffers keep their original sizes,
- * which env.cpp relies on.
+ * Player settings: read from rogue.opt (see persistence/OptionsFile), the
+ * name prompt and the in-game toggles. The character buffers keep their
+ * original sizes.
  */
 struct Options {
 	char name[24] = "Rodney";		/* whoami: the rogue's name */

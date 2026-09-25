@@ -575,7 +575,6 @@ extern char *ring_buf;
  */
 
 //@ env.h
-bool	setenv_from_file(const char *envfile);
 
 //@ init.c
 void	init_player(void);

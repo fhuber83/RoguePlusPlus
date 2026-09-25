@@ -83,6 +83,9 @@ public:
 	virtual void draw_tile(Coord pos, std::uint8_t glyph, TileStyle style = TileStyle::Normal) = 0;
 	/// The glyph last drawn at a map position: the hero's view of the level.
 	virtual std::uint8_t tile_at(Coord pos) const = 0;
+	/// A style that draws the tile at a map position as it is now (Normal
+	/// if none does). Where two styles look the same, either may come back.
+	virtual TileStyle tile_style_at(Coord pos) const = 0;
 
 	// Status lines
 

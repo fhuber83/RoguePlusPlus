@@ -19,6 +19,8 @@ public:
 
 	/// Monochrome screens get no colours: only plain, reverse and underline.
 	void set_monochrome(bool monochrome) { monochrome_ = monochrome; }
+	/// Without animations the curtain and wipe draw at once (for tests).
+	void set_animations(bool animations) { animations_ = animations; }
 
 	void draw_message(std::string_view text) override;
 	void clear_message() override;
@@ -27,6 +29,7 @@ public:
 	void hide_more() override;
 	void draw_tile(Coord pos, std::uint8_t glyph, TileStyle style = TileStyle::Normal) override;
 	std::uint8_t tile_at(Coord pos) const override;
+	TileStyle tile_style_at(Coord pos) const override;
 	void draw_status(const Status &status) override;
 	void draw_clock(int hour, int minute) override;
 	void draw_count(int count) override;
@@ -50,6 +53,7 @@ public:
 	void bell() override;
 
 private:
+	void animation_pause(int ms) const;
 	void text(std::string_view s);
 	void text_at(int row, int col, std::string_view s);
 	void draw_prompt();
@@ -63,6 +67,7 @@ private:
 
 	Screen &screen_;
 	bool monochrome_ = false;
+	bool animations_ = true;
 
 	// What curtain_down() drew, for curtain_up()
 	Screen::Snapshot curtain_{};

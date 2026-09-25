@@ -9,6 +9,8 @@
  * pack and when that would break standard library headers.
  */
 #include <optional>
+#include <string>
+#include <vector>
 
 #include "core/Coord.hpp"
 #include "core/Dice.hpp"

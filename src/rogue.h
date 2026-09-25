@@ -430,6 +430,7 @@ extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
 #include "items/effects/Armor.hpp"
 #include "items/effects/Weapon.hpp"
 #include "rules/Daemons.hpp"
+#include "rules/Combat.hpp"
 #include "game/CommandDispatcher.hpp"
 
 using rogue::items::new_thing;
@@ -485,6 +486,15 @@ using rogue::rules::unsee;
 using rogue::rules::sight;
 using rogue::rules::nohaste;
 using rogue::rules::stomach;
+using rogue::rules::fight;
+using rogue::rules::attack;
+using rogue::rules::swing;
+using rogue::rules::check_level;
+using rogue::rules::save_throw;
+using rogue::rules::save;
+using rogue::rules::is_magic;
+using rogue::rules::raise_level;
+using rogue::rules::killed;
 using rogue::command;
 using rogue::show_count;
 using rogue::execcom;
@@ -549,24 +559,6 @@ coord	*find_dest(Creature *tp);
 
 //@ env.h
 bool	setenv_from_file(const char *envfile);
-
-//@ fight.c
-bool	fight(coord *mp, char mn, Item *weap, bool thrown);
-bool	swing(int at_lvl, int op_arm, int wplus);
-bool	roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl);
-bool	save_throw(int which, Creature *tp);
-bool	save(int which);
-bool	is_magic(Item *obj);
-void	attack(Creature *mp);
-void	check_level(void);
-void	hit(const char *er, const char *ee);
-void	miss(const char *er, const char *ee);
-void	raise_level(void);
-void	thunk(Item *weap, const char *mname, const char *does, const char *did);
-void	remove_monster(coord *mp, Creature *tp, bool waskill);
-void	killed(Creature *tp, bool pr);
-int	str_plus(str_t str);
-int	add_dam(str_t str);
 
 //@ init.c
 void	init_player(void);

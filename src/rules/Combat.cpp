@@ -6,6 +6,17 @@
 
 #include "rogue.h"
 
+namespace rogue::rules {
+
+static bool	roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl);
+static char	*prname(const char *who, bool upper);
+static void	hit(const char *er, const char *ee);
+static void	miss(const char *er, const char *ee);
+static void	thunk(Item *weap, const char *mname, const char *does, const char *did);
+static void	remove_monster(coord *mp, Creature *tp, bool waskill);
+static int	str_plus(str_t str);
+static int	add_dam(str_t str);
+
 /*
  * fight:
  *	The player attacks the monster.
@@ -308,7 +319,7 @@ check_level(void)
  * roll_em:
  *	Roll several attacks
  */
-bool
+static bool
 roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 {
 	rogue::Player &player = game().player;
@@ -412,12 +423,11 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 	return did_hit;
 }
 
-//@ No need to declare in rogue.h
 /*
  * prname:
  *	The print name of a combatant
  */
-char *
+static char *
 prname(const char *who, bool upper)
 {
 	*tbuf = '\0';
@@ -439,7 +449,7 @@ prname(const char *who, bool upper)
  * hit:
  *	Print a message to indicate a succesful hit
  */
-void
+static void
 hit(const char *er, const char *ee)
 {
 	const char *s = "";
@@ -460,7 +470,7 @@ hit(const char *er, const char *ee)
  * miss:
  *	Print a message to indicate a poor swing
  */
-void
+static void
 miss(const char *er, const char *ee)
 {
 	const char *s = "";
@@ -511,7 +521,7 @@ save(int which)
  * str_plus:
  *	Compute bonus/penalties for strength on the "to hit" roll
  */
-int
+static int
 str_plus(str_t str)
 {
 	int add = 4;
@@ -533,7 +543,7 @@ str_plus(str_t str)
  * add_dam:
  *	Compute additional damage done for exceptionally high or low strength
  */
-int
+static int
 add_dam(str_t str)
 {
 	int add = 6;
@@ -570,7 +580,7 @@ raise_level(void)
  * thunk:
  *	A missile hit or missed a monster
  */
-void
+static void
 thunk(Item *weap, const char *mname, const char *does, const char *did)
 {
 	if (weap->o_type == ItemKind::Weapon)
@@ -588,7 +598,7 @@ thunk(Item *weap, const char *mname, const char *does, const char *did)
  * remove_monster:
  *	Remove a monster from the screen
  */
-void
+static void
 remove_monster(coord *mp, Creature *tp, bool waskill)
 {
 	Item *obj, *nexti;
@@ -686,3 +696,5 @@ killed(Creature *tp, bool pr)
 	 */
 	check_level();
 }
+
+}  // namespace rogue::rules

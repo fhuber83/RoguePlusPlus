@@ -173,6 +173,9 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
     - The key translation table in `mach_dep.cpp` (`xtab`: arrows, F1-F9 and so on to command characters) stays where it is. `readchar()` applies it to every key the game reads, including direction prompts, `--More--` and item menus, not just commands. `com_char()`'s aliases (backspace for `h`, `+` for `t`, `-` for `z`) stay there too.
     - Under `WIZARD`, `get_prefix()` used to let a count repeat `^D`, which has never been a command. Only `C` (`CreateObject`) is repeatable now.
   - Verified: A/B tmux replays against the 7.2 build, 4 seeds x 159 captures. They run every command, plus illegal keys, count prefixes, `f`/`g`/`a`, `Escape` and the control keys. A second replay (2 seeds x 14 captures) covers quitting through to the score list. All identical. `tests/game/CommandTest.cpp` covers the key table, `takes_turn()` and `repeatable()`. `rogue_tests` passes.
+- **7.4 Combat.** `fight.cpp` moves to `src/rules/Combat.{hpp,cpp}`, `namespace rogue::rules`, line for line apart from the namespace, the same way as 7.1. `fight.cpp` is deleted.
+  - Only the nine functions called from other files are public and brought into the global namespace by `rogue.h`: `fight()`, `attack()`, `swing()`, `check_level()`, `save_throw()`, `save()`, `is_magic()`, `raise_level()` and `killed()`. The helpers used only inside the file are now `static`: `roll_em()`, `hit()`, `miss()`, `thunk()`, `remove_monster()`, `str_plus()`, `add_dam()` and `prname()`. Their prototypes are gone from `rogue.h`.
+  - Verified: descending A/B replays (scratch copies of the 7.3 and 7.4 trees with `d_level()`'s stairs check patched out), 6 seeds x 406 captures down to level 7. They include the rogue hitting, missing and killing, monster hits and misses, two deaths and two experience level-ups. All identical. `rogue_tests` passes.
 
 ## Target architecture
 
@@ -226,7 +229,7 @@ Each phase is a series of small commits that each build and play.
       4. Effects, one commit per kind, `items::effects::*`: *done:* potions (7.1d), scrolls (7.1e), wands (7.1f), rings (7.1g), armor and weapons (7.1h). 7.1 is complete.
    2. *Done:* Scheduler (`daemon.cpp`, `daemons.cpp`) becomes `rules::Scheduler` and `rules/Daemons`; the function-pointer slots become typed events (7.2).
    3. *Done:* Commands (`command.cpp`) becomes `game/CommandDispatcher` over a `Command` enum and key table in `game/Command` (7.3).
-   4. Combat (`fight.cpp`) becomes `rules::Combat`. After items, since it reads their internals and calls `th_effect()`.
+   4. *Done:* Combat (`fight.cpp`) becomes `rules::Combat` (7.4).
    5. Monster catalog and AI (`monsters.cpp`, `slime.cpp`, `chase.cpp`) become `entities::MonsterCatalog`/`MonsterAI`. After combat, since `do_chase()` calls `attack()` and `slime_split()` calls `new_monster()`.
    6. Level generation (`new_leve.cpp`, `rooms.cpp`, `passages.cpp`, `maze.cpp`) becomes `world::LevelGenerator`. Last, since it spawns both items and monsters.
 8. **Persistence.**

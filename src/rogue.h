@@ -432,6 +432,7 @@ extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
 #include "rules/Daemons.hpp"
 #include "rules/Combat.hpp"
 #include "entities/MonsterCatalog.hpp"
+#include "entities/MonsterAI.hpp"
 #include "game/CommandDispatcher.hpp"
 
 using rogue::items::new_thing;
@@ -504,6 +505,15 @@ using rogue::entities::wanderer;
 using rogue::entities::give_pack;
 using rogue::entities::wake_monster;
 using rogue::entities::moat;
+using rogue::entities::runners;
+using rogue::entities::start_run;
+using rogue::entities::see_monst;
+using rogue::entities::diag_ok;
+using rogue::entities::cansee;
+using rogue::entities::roomin;
+using rogue::entities::find_dest;
+using rogue::entities::slime_split;
+using rogue::entities::plop_monster;
 using rogue::command;
 using rogue::show_count;
 using rogue::execcom;
@@ -554,17 +564,6 @@ extern char *ring_buf;
  * @ curses.c has its own header
  * @ mach_dep.c functions are declared in extern.h
  */
-
-//@ chase.c
-void	runners(void);
-void	do_chase(Creature *th);
-void	chase(Creature *tp, coord *ee);
-void	start_run(coord *runner);
-bool	see_monst(Creature *mp);
-bool	diag_ok(coord *sp, coord *ep);
-bool	cansee(int y, int x);
-struct room	*roomin(coord *cp);
-coord	*find_dest(Creature *tp);
 
 //@ env.h
 bool	setenv_from_file(const char *envfile);
@@ -705,10 +704,6 @@ void	leave_room(coord *cp);
 //@ save.c
 void	save_game(void);
 void	restore(char *savefile);
-
-//@ slime.c
-void	slime_split(Creature *tp);
-bool	plop_monster(int r, int c, coord *cp);
 
 //@ strings.c
 bool	is_alpha(char ch);

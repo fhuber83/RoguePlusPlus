@@ -178,6 +178,10 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
   - Verified: descending A/B replays (scratch copies of the 7.3 and 7.4 trees with `d_level()`'s stairs check patched out), 6 seeds x 406 captures down to level 7. They include the rogue hitting, missing and killing, monster hits and misses, two deaths and two experience level-ups. All identical. `rogue_tests` passes.
 - **7.5a Monster catalog.** `monsters.cpp` moves to `src/entities/MonsterCatalog.{hpp,cpp}`, `namespace rogue::entities`, the same way as 7.1. That covers `randmonster()`, `pick_mons()`, `new_monster()`, `f_restor()`, `wanderer()`, `give_pack()`, `wake_monster()`, `moat()`, the private `exp_add()` and the `vorp_mons`/`lvl_mons`/`wand_mons` strings. All eight public functions are called from other files and are brought into the global namespace by `rogue.h`. `monsters.cpp` is deleted. The `monsters[]` table itself stays in `extern.cpp` with the other fixed tables. The namespace isn't `rogue::monsters`, because that would hide the global `monsters[]` table.
   - Verified: descending A/B replays against the 7.4 tree, 6 seeds x 406 captures down to level 7, all identical. `rogue_tests` passes.
+- **7.5b Monster AI.** `chase.cpp` and `slime.cpp` move together to `src/entities/MonsterAI.{hpp,cpp}`, `namespace rogue::entities`, line for line, with `chase.cpp`'s code followed by `slime.cpp`'s. Both files are deleted. This closes out 7.5.
+  - Public, and brought into the global namespace by `rogue.h`: `runners()`, `start_run()`, `see_monst()`, `diag_ok()`, `cansee()`, `roomin()`, `find_dest()`, `slime_split()` and `plop_monster()`. `do_chase()`, `chase()` and the `ch_ret` scratch coordinate were only used inside `chase.cpp` and are now `static`, and their prototypes are gone from `rogue.h`.
+  - `roomin()`, `cansee()` and `diag_ok()` are level geometry rather than monster behaviour, and callers all over use them. They move with the chase code for now and should go to `world/` with 7.6.
+  - Verified: descending A/B replays against the 7.5a tree, 6 seeds x 406 captures. Seed 7 dies to an orc, and at the default 0.15 s between keys some runs differed in one frame of the tombstone curtain animation, a different frame each time. At 0.6 s between keys, two runs were identical. All other seeds were identical. Slime splitting wasn't reached. `rogue_tests` passes.
 
 ## Target architecture
 
@@ -232,7 +236,7 @@ Each phase is a series of small commits that each build and play.
    2. *Done:* Scheduler (`daemon.cpp`, `daemons.cpp`) becomes `rules::Scheduler` and `rules/Daemons`; the function-pointer slots become typed events (7.2).
    3. *Done:* Commands (`command.cpp`) becomes `game/CommandDispatcher` over a `Command` enum and key table in `game/Command` (7.3).
    4. *Done:* Combat (`fight.cpp`) becomes `rules::Combat` (7.4).
-   5. Monster catalog and AI (`monsters.cpp`, `slime.cpp`, `chase.cpp`) become `entities::MonsterCatalog`/`MonsterAI`. After combat, since `do_chase()` calls `attack()` and `slime_split()` calls `new_monster()`.
+   5. *Done:* Monster catalog and AI (`monsters.cpp`, `slime.cpp`, `chase.cpp`) become `entities::MonsterCatalog` (7.5a) and `entities::MonsterAI` (7.5b).
    6. Level generation (`new_leve.cpp`, `rooms.cpp`, `passages.cpp`, `maze.cpp`) becomes `world::LevelGenerator`. Last, since it spawns both items and monsters.
 8. **Persistence.**
    - Options loader.

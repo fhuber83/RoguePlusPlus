@@ -196,7 +196,14 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
   - The old parser wrote one byte past its label and value buffers (`blabel[11]`, `bstring[25]`) when either ran long, so it kept 11 and 25 characters rather than 10 and 24. The new one keeps the same lengths, without the overflow. A file with a format error is no longer applied up to the error, but that was never visible, since `fatal()` exits.
   - The unreachable `lcase()` of `menu` and `screen` after the parse loop is gone (it sat after a `while (1)` with no `break`), so `screen=BW` still doesn't select monochrome.
   - Verified: a differential fuzz of the old `setenv_from_file()` (linked from the 7.6b library) against `load_options()`, printing every option after loading random files: 20,000 files with short labels and values and 40,000 with long ones, mixing known labels in random case, `=`/`-`, blanks, CR, `#`, ^Z, NUL and non-ASCII bytes. All identical, including the `fatal()` exits. A smoke run with a `rogue.opt` greets the rogue by its name. `rogue_tests` passes: 21 tests in `OptionsFileTest.cpp`, which take over the two file tests from `GameTest.cpp`.
+- **8.2 High scores.** `rip.cpp`'s `get_scores()`/`put_scores()` wrote the `struct sc_ent` records to `rogue.scr` as raw memory. They now go through `src/persistence/HighScores.{hpp,cpp}`, `namespace rogue::persistence`: `parse_scores(bytes)`/`format_scores(entries)` and `load_scores(path)`/`save_scores(path, entries)` over `ScoreEntry` (name, gold, depth, experience, fate, cause). `rip.cpp` keeps `sc_ent`, `add_scores()`, `pr_scores()` and the "No scorefile" prompt unchanged.
+  - The file is JSON (`{"format": "rogue++ scores", "version": 1, "scores": [...]}`), written with nlohmann/json 3.12, fetched with FetchContent (or found installed) and linked privately into `rogue_game`, so only `HighScores.cpp` includes it. The same library is meant for saved games (8.3).
+  - `fate` is the number the game reads back; `cause` ("killed by a kestrel", "quit", ...) is written for people and ignored when read. Names are byte strings (`rogue.opt` can hold any byte, and the screen draws them as CP437), so each byte is written as the code point of the same value: ASCII reads as itself, nothing is lost, and the file is always valid UTF-8.
+  - Reading: blank contents are an empty list (the "Create" answer makes an empty file). Contents starting with `{` must be a valid score document, with integers that fit an `int` and an `experience` of 1 to 21 (the score list shows `he_man[experience - 1]`). Anything else is read as the original records (a multiple of 56 bytes, at most ten). Entries without gold are dropped, the rest sorted richest first and cut to ten, so a hand-edited file can't break `add_scores()`.
+  - An old binary file is rewritten as JSON the next time the scores are shown. A file that can't be read is left alone: the game shows an empty list plus "The score file can't be read, so this score is not kept." Writes go to `<file>.tmp`, renamed over the file.
+  - Verified: the old build (7.6b, stairs check patched out) played ten seeds into one binary `rogue.scr` (8 entries: quits, a fall, a hobgoblin, a slime). On copies of it, old and new `-s` showed identical screens, and the new build's second `-s`, now reading the JSON it wrote, was identical too. Then each build (both stairs-patched) played eight more seeds into its own copy, filling the top ten and pushing entries off it; the old binary file and the new JSON file ended with the same ten entries, and their `-s` screens were identical. A junk score file stays untouched and shows the message. `rogue_tests` passes, with 13 new tests in `tests/persistence/HighScoresTest.cpp`.
 
+## Target architecture
 
 ```
 src/
@@ -253,7 +260,7 @@ Each phase is a series of small commits that each build and play.
    6. *Done:* Level generation (`new_leve.cpp`, `rooms.cpp`, `passages.cpp`, `maze.cpp`) becomes `world::Rooms` (7.6a), `world::LevelGenerator`, `world::Passages` and `world::Maze` (7.6b).
 8. **Persistence.**
    - *Done:* Options loader, `persistence::OptionsFile` (8.1).
-   - High scores as a real file format.
+   - *Done:* High scores as a real file format, JSON in `persistence::HighScores` (8.2).
    - Save/restore: the original was a raw memory dump and is currently disabled. Replace it with serialization of `Game`.
 9. **Idiom cleanup.**
    - `std::string`/`std::format` instead of `sprintf` into `prbuf`.
@@ -263,7 +270,7 @@ Each phase is a series of small commits that each build and play.
 ## Notes for whoever continues
 
 - The three reads of a discarded pool slot noted in 6.4/6.5 (`inv_name(steal)` after `discard(steal)`, `t_dest` into picked-up gold, `runners()` re-chasing a removed monster) are fixed. Audited every other `discard()` call site (`list.cpp`, `weapons.cpp`, `fight.cpp`, `pack.cpp`, `potions.cpp`, `misc.cpp`, `scrolls.cpp`): each either reads the freed item's fields before discarding it, reassigns the pointer to a live object first, or captures the next list pointer before detaching. Nothing else relies on a freed slot keeping its contents, so this is no longer a blocker for moving the pool to `std::unique_ptr` ownership.
-- `score()` writes `sc_name[38]` to `rogue.scr` with uninitialized bytes after the name. Harmless, but compare score files by the name up to its NUL. Phase 8 replaces the format.
+- `rogue.scr` is JSON since 8.2. Files written by builds before 8.2 are binary `sc_ent` records with uninitialized bytes after the name; compare those by the name up to its NUL.
 
 - `faststate` ("Fast Play") used to be toggled by Scroll Lock and is now always `FALSE`. Reintroduce it as a real option or key if wanted.
 - `save_game()` prints "saving games is disabled" and `restore()` exits with a message. Phase 8 brings real saving.

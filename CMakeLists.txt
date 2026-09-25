@@ -16,6 +16,16 @@ FIND_PACKAGE(Curses REQUIRED)
 
 SET(ROGUE_WARNINGS -Wall -Wextra -Wpedantic)
 
+# nlohmann/json for the score file (and later saved games); uses an installed
+# copy if there is one
+INCLUDE(FetchContent)
+FETCHCONTENT_DECLARE(nlohmann_json
+	URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
+	DOWNLOAD_EXTRACT_TIMESTAMP ON
+	SYSTEM
+	FIND_PACKAGE_ARGS 3.12 NAMES nlohmann_json)
+FETCHCONTENT_MAKEAVAILABLE(nlohmann_json)
+
 # Game library: everything except the program entry point
 FILE(GLOB_RECURSE ROGUE_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 LIST(FILTER ROGUE_SOURCES EXCLUDE REGEX "/src/app/")
@@ -28,6 +38,7 @@ TARGET_COMPILE_OPTIONS(rogue_game PUBLIC "-iquote${CMAKE_CURRENT_SOURCE_DIR}/src
 TARGET_COMPILE_DEFINITIONS(rogue_game PUBLIC MINROG ROGUE_CHARSET=3)
 TARGET_COMPILE_OPTIONS(rogue_game PRIVATE ${ROGUE_WARNINGS})
 TARGET_LINK_LIBRARIES(rogue_game PUBLIC ${CURSES_LIBRARIES})
+TARGET_LINK_LIBRARIES(rogue_game PRIVATE nlohmann_json::nlohmann_json)
 
 ADD_EXECUTABLE(rogue++ src/app/main.cpp)
 TARGET_COMPILE_OPTIONS(rogue++ PRIVATE ${ROGUE_WARNINGS})
@@ -35,7 +46,6 @@ TARGET_LINK_LIBRARIES(rogue++ PRIVATE rogue_game)
 
 IF(ROGUE_BUILD_TESTS)
 	ENABLE_TESTING()
-	INCLUDE(FetchContent)
 	FETCHCONTENT_DECLARE(googletest
 		URL https://github.com/google/googletest/archive/refs/tags/v1.17.0.tar.gz
 		DOWNLOAD_EXTRACT_TIMESTAMP ON

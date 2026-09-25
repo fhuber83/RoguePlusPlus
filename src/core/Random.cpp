@@ -1,6 +1,7 @@
 #include "core/Random.hpp"
 
 #include <chrono>
+#include <sstream>
 
 namespace rogue {
 
@@ -41,6 +42,30 @@ Random::from_clock()
 {
 	const auto ticks = std::chrono::system_clock::now().time_since_epoch().count();
 	return static_cast<Seed>(ticks ^ (ticks >> 32));
+}
+
+std::string
+Random::state() const
+{
+	std::ostringstream out;
+	out << engine_;
+	return out.str();
+}
+
+bool
+Random::restore(Seed seed, std::string_view state)
+{
+	std::istringstream in{std::string(state)};
+	std::mt19937 engine;
+	in >> engine;
+	if (in.fail())
+		return false;
+	in >> std::ws;
+	if (!in.eof())
+		return false;
+	seed_ = seed;
+	engine_ = engine;
+	return true;
 }
 
 }  // namespace rogue

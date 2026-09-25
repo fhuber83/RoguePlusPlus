@@ -97,6 +97,22 @@ Scheduler::time_left(Event event) const
 	return wire == nullptr ? 0 : wire->time;
 }
 
+std::array<Scheduler::Slot, Scheduler::max_actions>
+Scheduler::slots() const
+{
+	std::array<Slot, max_actions> out;
+	for (int i = 0; i < max_actions; i++)
+		out[i] = Slot{actions[i].event, actions[i].time};
+	return out;
+}
+
+void
+Scheduler::set_slots(const std::array<Slot, max_actions> &slots)
+{
+	for (int i = 0; i < max_actions; i++)
+		actions[i] = Action{slots[i].event, slots[i].time};
+}
+
 void start_daemon(Event event) { game().scheduler.start_daemon(event); }
 void fuse(Event event, int time) { game().scheduler.fuse(event, time); }
 void lengthen(Event event, int xtime) { game().scheduler.lengthen(event, xtime); }

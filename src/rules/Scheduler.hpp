@@ -12,6 +12,8 @@
  * Needs no legacy header, so tests can include it directly.
  */
 
+#include <array>
+
 namespace rogue::rules {
 
 // Everything that can be scheduled. The comment names the function it runs.
@@ -52,6 +54,16 @@ public:
 	// Turns until the first fuse holding event goes off; -1 for a daemon, 0
 	// when the event is not scheduled.
 	int time_left(Event event) const;
+
+	// A slot as saved games hold it: its event and the turns left, or -1
+	// for a daemon.
+	struct Slot {
+		Event event = Event::None;
+		int time = 0;
+		friend bool operator==(const Slot &, const Slot &) = default;
+	};
+	std::array<Slot, max_actions> slots() const;
+	void set_slots(const std::array<Slot, max_actions> &slots);
 
 	/*
 	 * do_daemons:

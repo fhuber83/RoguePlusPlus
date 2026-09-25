@@ -97,3 +97,20 @@ TEST(Scheduler, FullTableDropsNewEvents)
 	s.start_daemon(Event::Doctor);
 	EXPECT_FALSE(s.is_set(Event::Doctor));
 }
+
+TEST(Scheduler, SlotsRoundTrip)
+{
+	Scheduler a;
+	a.start_daemon(Event::Doctor);
+	a.fuse(Event::Unconfuse, 7);
+	a.extinguish(Event::Doctor);	// leaves a free slot before the fuse
+	a.fuse(Event::Sight, 3);
+	auto slots = a.slots();
+	EXPECT_EQ(slots[0].event, Event::Sight);
+	EXPECT_EQ(slots[1], (Scheduler::Slot{Event::Unconfuse, 7}));
+
+	Scheduler b;
+	b.set_slots(slots);
+	EXPECT_EQ(b.slots(), slots);
+	EXPECT_EQ(b.time_left(Event::Unconfuse), 7);
+}

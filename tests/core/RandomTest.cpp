@@ -74,3 +74,28 @@ TEST(Random, RollIsWithinDiceBounds)
 	EXPECT_EQ(r.roll(0, 6), 0);
 	EXPECT_EQ(r.roll(2, 0), 2);  // as original: rnd(0)+1 per die
 }
+
+TEST(Random, StateContinuesTheSequence)
+{
+	Random a{42};
+	for (int i = 0; i < 1000; i++)
+		a.below(100);
+	std::string state = a.state();
+
+	Random b{7};
+	ASSERT_TRUE(b.restore(42, state));
+	EXPECT_EQ(b.seed(), 42u);
+	for (int i = 0; i < 1000; i++)
+		EXPECT_EQ(a.below(1000), b.below(1000));
+}
+
+TEST(Random, RestoreRejectsJunk)
+{
+	Random a{5};
+	int next = Random{5}.below(1000);
+	EXPECT_FALSE(a.restore(9, "not a state"));
+	EXPECT_FALSE(a.restore(9, a.state() + " 12"));
+	EXPECT_FALSE(a.restore(9, a.state().substr(0, 100)));
+	EXPECT_EQ(a.seed(), 5u);
+	EXPECT_EQ(a.below(1000), next);
+}

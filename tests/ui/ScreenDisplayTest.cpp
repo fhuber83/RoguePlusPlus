@@ -184,6 +184,32 @@ TEST(ScreenDisplay, TileStylesPickTheAttribute)
 	EXPECT_EQ(s.at(2, 3).style, rogue::ui::Style{rogue::ui::Color::Blue});
 }
 
+// Redrawing a tile in the style read back gives the same cell, for every
+// glyph and style, in colour and in monochrome.
+TEST(ScreenDisplay, TileStylesAreReadBack)
+{
+	using rogue::ui::TileStyle;
+	for (bool monochrome : {false, true}) {
+		Screen s;
+		ScreenDisplay d(s);
+		d.set_monochrome(monochrome);
+		for (TileStyle style : {TileStyle::Normal, TileStyle::Inverse, TileStyle::Bolt, TileStyle::FrostBolt})
+			for (int glyph = 0; glyph < 256; glyph++) {
+				if (glyph == '\n')
+					continue;	// Screen::put() starts a new line
+				d.draw_tile({5, 5}, glyph, style);
+				rogue::ui::Cell drawn = s.at(5, 5);
+				d.draw_tile({6, 5}, glyph, d.tile_style_at({5, 5}));
+				EXPECT_EQ(s.at(5, 6), drawn) << glyph << " " << int(style) << " " << monochrome;
+			}
+	}
+	Screen s;
+	ScreenDisplay d(s);
+	d.draw_tile({1, 2}, 'K', TileStyle::Inverse);
+	EXPECT_EQ(d.tile_style_at({1, 2}), TileStyle::Inverse);
+	EXPECT_EQ(d.tile_style_at({-1, 2}), TileStyle::Normal);
+}
+
 TEST(ScreenDisplay, MapGlyphsGetTheirColours)
 {
 		Screen s;

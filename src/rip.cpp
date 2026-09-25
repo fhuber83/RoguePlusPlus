@@ -5,6 +5,9 @@
  * rip.c	1.4 (A.I. Design)	12/14/84
  */
 
+#include <vector>
+
+#include "persistence/HighScores.hpp"
 #include "rogue.h"
 
 //@ moved from rogue.h
@@ -19,7 +22,7 @@ struct sc_ent {
 
 static FILE *file;
 
-static void	get_scores(struct sc_ent *top10);
+static bool	get_scores(struct sc_ent *top10, bool *legacy);
 static void	put_scores(struct sc_ent *top10);
 static void	pr_scores(int newrank, struct sc_ent *top10);
 static int	add_scores(struct sc_ent *newscore, struct sc_ent *oldlist);
@@ -68,7 +71,8 @@ reread:
 		}
 	}
 	display().write("\n");
-	get_scores(top_ten);
+	bool legacy = false;
+	bool readable = get_scores(top_ten, &legacy);
 
 	if (game().noscore != TRUE)
 	{
@@ -80,44 +84,73 @@ reread:
 		rank = add_scores(&his_score, top_ten);
 	}
 	fclose(file);
-	if (rank > 0) {
-		if ((file = fopen(game().options.score_file, "w")) != NULL) {
-			put_scores(top_ten);
-			fclose(file);
-		}
-	}
+	//@ an unreadable file is left alone; an old binary one is rewritten as JSON
+	if (readable && (rank > 0 || legacy))
+		put_scores(top_ten);
 	pr_scores(rank, top_ten);
+	if (!readable)
+		display().write("The score file can't be read, so this score is not kept.\n");
 	wait_msg("exit");
 	display().write("\n");
 #endif //WIZARD
 }
 
 #ifndef WIZARD
+/*@
+ * get_scores:
+ *	Fill top10 from the score file (persistence/HighScores); the entries
+ *	after the last have no gold. Returns false, with an empty list, if the
+ *	file can't be read. *legacy is set for a file in the original format.
+ */
 static
-void
-get_scores(struct sc_ent *top10)
+bool
+get_scores(struct sc_ent *top10, bool *legacy)
 {
-	int i, retcode = 1;
-
-	for(i=0; i<TOPSCORES; i++,top10++) {
-		if (retcode > 0)
-			retcode = fread(top10, sizeof(struct sc_ent), 1, file);
-		if (retcode <= 0)
-			top10->sc_gold = 0;
+	for (int i = 0; i < TOPSCORES; i++)
+		top10[i] = sc_ent{};
+	auto list = rogue::persistence::load_scores(game().options.score_file);
+	if (!list)
+		return false;
+	*legacy = list->format == rogue::persistence::ScoresFormat::Legacy;
+	int i = 0;
+	for (const rogue::persistence::ScoreEntry &e : list->entries) {
+		snprintf(top10[i].sc_name, sizeof top10[i].sc_name, "%s", e.name.c_str());
+		top10[i].sc_gold = e.gold;
+		top10[i].sc_level = e.depth;
+		top10[i].sc_rank = e.experience;
+		top10[i].sc_fate = e.fate;
+		i++;
 	}
+	return true;
 }
 
+/*@
+ * put_scores:
+ *	Write the entries with gold to the score file, with the cause of each
+ *	fate in words.
+ */
 static
 void
 put_scores(struct sc_ent *top10)
 {
-	int i;
+	std::vector<rogue::persistence::ScoreEntry> entries;
 
-	for (i=0;(i<TOPSCORES) && top10->sc_gold;i++,top10++)
+	for (int i = 0; i < TOPSCORES && top10[i].sc_gold; i++)
 	{
-		if (fwrite(top10, sizeof(struct sc_ent), 1, file) <= 0)
-			return;
+		const sc_ent &sc = top10[i];
+		rogue::persistence::ScoreEntry e;
+		e.name = sc.sc_name;
+		e.gold = sc.sc_gold;
+		e.depth = sc.sc_level;
+		e.experience = sc.sc_rank;
+		e.fate = sc.sc_fate;
+		if (is_alpha(sc.sc_fate))
+			e.cause = std::string("killed by ") + killname(0xff & sc.sc_fate, TRUE);
+		else
+			e.cause = sc.sc_fate == 2 ? "a total winner" : sc.sc_fate == 1 ? "quit" : "weirded out";
+		entries.push_back(std::move(e));
 	}
+	rogue::persistence::save_scores(game().options.score_file, entries);
 }
 
 static

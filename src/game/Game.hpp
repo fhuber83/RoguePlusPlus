@@ -16,9 +16,9 @@
 namespace rogue {
 
 /*
- * Player settings: read from rogue.opt (see env.cpp), the name prompt and
- * the in-game toggles. The character buffers keep their original sizes,
- * which env.cpp relies on.
+ * Player settings: read from rogue.opt (see persistence/OptionsFile), the
+ * name prompt and the in-game toggles. The character buffers keep their
+ * original sizes.
  */
 struct Options {
 	char name[24] = "Rodney";		/* whoami: the rogue's name */
@@ -72,6 +72,9 @@ struct Turn {
 	byte last_ch = 0;
 	byte last_take = 0;
 	byte do_take = 0;
+	/* What get_item() last gave, so a repeat takes it again */
+	byte last_item_key = 0;			/* lch: its pack letter */
+	Item *last_item = nullptr;		/* wasthing: the item itself */
 };
 
 /*
@@ -192,12 +195,24 @@ struct Game {
 	Turn turn;
 	bool playing = true;			/* True until he quits */
 	bool noscore = false;			/* Was a wizard sometime */
+	int wander_rolls = 0;			/* between: rollwand() calls since it last rolled */
 
 	Game() = default;
 	// It points into itself (guesses, worn items in the pool, level lists)
 	Game(const Game &) = delete;
 	Game &operator=(const Game &) = delete;
 };
+
+/*
+ * How the pool is referenced, as a list of problems (none when all is well):
+ * each item in use is in exactly one of the level's objects, the rogue's
+ * pack or a monster's pack; each creature in use is on the level's monster
+ * list once; worn items are in the pack; a monster's t_dest is the hero, a
+ * room's or passage's gold, or a floor item; rooms are rooms or passages;
+ * and the count of things in use is right. Holds between commands, which is
+ * when a game is saved.
+ */
+std::vector<std::string> pool_problems(const Game &g);
 
 // The game being played.
 Game &game();

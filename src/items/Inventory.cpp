@@ -304,8 +304,7 @@ get_item(const char *purpose, ItemFilter type)
 	Item *obj;
 	byte ch;
 	byte och;
-	static byte lch;
-	static Item *wasthing = NULL;
+	rogue::Turn &turn = game().turn;	//@ lch and wasthing were statics here
 	byte gi_state;	/* get item sub state */
 	int once_only = FALSE;
 
@@ -317,14 +316,14 @@ get_item(const char *purpose, ItemFilter type)
 	if (pack.empty())
 		msg("you aren't carrying anything");
 	else {
-		ch = lch;
+		ch = turn.last_item_key;
 		for (;;) {
 			/*
 			 * if we are doing something AGAIN, and the pack hasn't
 			 * changed then don't ask just give him the same thing
 			 * he got on the last command.
 			 */
-			if (gi_state && wasthing == pack_obj(ch, &och))
+			if (gi_state && turn.last_item == pack_obj(ch, &och))
 				goto skip;
 			if (once_only) {
 				ch = '*';
@@ -348,7 +347,7 @@ get_item(const char *purpose, ItemFilter type)
 				}
 				if (ch == ' ')
 					continue;
-				lch = ch;
+				turn.last_item_key = ch;
 			}
 			/*
 			 * Give the poor player a chance to abort the command
@@ -369,8 +368,8 @@ get_item(const char *purpose, ItemFilter type)
 				 * thing from the pack later this flag will get set.
 				 */
 				if (strcmp(purpose, "identify")) {
-					lch = ch;
-					wasthing = obj;
+					turn.last_item_key = ch;
+					turn.last_item = obj;
 				}
 				return obj;
 		   }

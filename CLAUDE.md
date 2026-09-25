@@ -8,23 +8,24 @@ RoguePlusPlus is a C++ port of the classic PC game "Rogue", based on the PC Rogu
 
 ## Build & run
 
-Requirements: CMake ≥ 4.0, a C++23 compiler (GCC 15 is used), pkg-config, and ncursesw.
+Requirements: CMake ≥ 4.0, a C++23 compiler (GCC 15 is used), pkg-config, and ncursesw. nlohmann/json 3.12 is used if installed, otherwise fetched.
 
 ```sh
-cmake -S . -B build             # first configure fetches GoogleTest (ROGUE_BUILD_TESTS=OFF to skip)
+cmake -S . -B build             # first configure fetches nlohmann/json and GoogleTest (ROGUE_BUILD_TESTS=OFF skips GoogleTest)
 cmake --build build
 ctest --test-dir build          # all unit tests
 ./build/rogue_tests --gtest_filter='Dice.*'   # a single suite or test
 ./build/rogue++                 # new game
 ./build/rogue++ -d 4242         # reproducible dungeon from a seed (`v` in game shows the seed)
 ./build/rogue++ -s              # show scores
+./build/rogue++ -r              # restore the game saved with S
 ```
 
 Targets: `rogue_game` is a static library built from every `src/**/*.cpp` except `src/app/`. `rogue++` links `src/app/main.cpp` against it. `rogue_tests` builds from `tests/**/*.cpp`, and tests may include any game header. Sources are globbed with `CONFIGURE_DEPENDS`. All targets use `-Wall -Wextra -Wpedantic` and **must stay warning-free**.
 
 Smoke test without a real terminal: `tmux new-session -d -s rg -x 80 -y 25 ./build/rogue++`, then `tmux send-keys -t rg ...` and `tmux capture-pane -p -t rg`. The game needs an 80×25 screen. After the name prompt, wait about 2.5 s for the curtain animation to finish.
 
-At runtime the game reads `rogue.opt` (options) and writes `rogue.scr` (scores) in the current working directory. Saving is disabled: `save_game()` and `restore()` are stubs.
+At runtime the game reads `rogue.opt` (options) and writes `rogue.scr` (scores, JSON; an old binary one is read and rewritten as JSON) in the current working directory. `S` saves the game (JSON, default `rogue.sav`, the `savefile` option) and exits; `./build/rogue++ -r` (or `rogue++ <file>`) restores it and deletes the file.
 
 ## Conventions
 
@@ -49,6 +50,7 @@ At runtime the game reads `rogue.opt` (options) and writes `rogue.scr` (scores) 
   - `glyphs.h` has the glyph codes (CP437 bytes), key constants and string/screen sizes shared by game and UI. Item kinds are `ItemKind` (`entities/Item.hpp`); `glyph_of()`/`kind_of_glyph()` convert between a kind and its map glyph. **Game files must not draw or read the terminal any other way, and must never include `<curses.h>`.**
 - **Machine layer**: `mach_dep.cpp` holds time, sleep, `readchar`, `newmem`, `fatal`/`md_exit`, and the credits screen.
 - **Game loop**: `app/main.cpp` parses arguments, seeds `rng()`, and sets up the game with `init_*()` → `new_level()`, then starts daemons and fuses (`rules/Scheduler` keeps `rules::Event` slots in `game().scheduler` and `fire()` maps each event to its function; `rules/Daemons` holds the callbacks `doctor`/`stomach`/`swander`/…). `playit()` (in `playit.cpp`, formerly `main.c`) loops over `command()` in `game/CommandDispatcher.cpp`, which reads a key, looks up its `Command` (`game/Command.hpp`: the key table, which commands use up a turn and which a count repeats) and switches on it. Combat is in `rules/Combat`, making monsters in `entities/MonsterCatalog`, monster movement (chasing, slimes) in `entities/MonsterAI`, rooms at play time (entering/leaving, `roomin`, `cansee`, `diag_ok`) in `world/Rooms`, and level generation in `world/LevelGenerator` (with `world/Passages` and `world/Maze`). The remaining domain files are `list` (the pool allocation), `items/` (catalog, identification, inventory, and per-kind effects in `items/effects/`), and endings/scores in `rip`.
+- **Persistence** (`src/persistence/`): `OptionsFile` reads `rogue.opt` into `game().options` (`parse_options`/`apply_option`/`load_options`). `HighScores` reads and writes the score file (`load_scores`/`save_scores`, JSON through nlohmann/json, which only this module includes); `rip.cpp` keeps the top-ten logic and the score screen. `SaveGame` writes all of `Game` plus the screen's map (`MapView`) as JSON and loads it back, checked with `pool_problems()`; it has `static_assert`s on the struct sizes, so a new field in `Game` must be saved.
 - **Testing the UI headlessly**: `tests/ui/` drives `Screen`, `ScreenDisplay` and `ScreenInput` with fake `Terminal`s.
 
 ## Compile-time macros

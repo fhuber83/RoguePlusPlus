@@ -2,6 +2,8 @@
 
 #include <cstdint>
 #include <random>
+#include <string>
+#include <string_view>
 
 namespace rogue {
 
@@ -29,6 +31,13 @@ public:
 
 	// A seed derived from the current time, for new games.
 	static Seed from_clock();
+
+	// The engine's whole state as text, for saved games.
+	std::string state() const;
+
+	// Continue where state() was taken, remembering seed as the game's seed.
+	// Returns false, changing nothing, if the text isn't such a state.
+	bool restore(Seed seed, std::string_view state);
 
 private:
 	Seed seed_ = 0;

@@ -19,10 +19,6 @@ constexpr int CurtainTime = 1500;
 
 constexpr Style Bright{Color::White};
 
-void pause_ms(int ms)
-{
-	std::this_thread::sleep_for(std::chrono::milliseconds(ms));
-}
 
 constexpr const char *hunger_names[] = {"      ", "Hungry", "Weak", "Faint", "?"};
 
@@ -99,23 +95,48 @@ void ScreenDisplay::draw_covered()
 
 // Map
 
+namespace {
+
+Ink ink_of(TileStyle style)
+{
+	switch (style) {
+	case TileStyle::Normal: return Ink::Normal;
+	case TileStyle::Inverse: return Ink::Reverse;
+	case TileStyle::Bolt: return Ink::Red;
+	case TileStyle::FrostBolt: return Ink::Blue;
+	}
+	return Ink::Normal;
+}
+
+} // namespace
+
 void ScreenDisplay::draw_tile(Coord pos, std::uint8_t glyph, TileStyle style)
 {
-	Ink base = Ink::Normal;
-	switch (style) {
-	case TileStyle::Normal: base = Ink::Normal; break;
-	case TileStyle::Inverse: base = Ink::Reverse; break;
-	case TileStyle::Bolt: base = Ink::Red; break;
-	case TileStyle::FrostBolt: base = Ink::Blue; break;
-	}
 	if (!screen_.set_cursor(pos.y, pos.x))
 		return;
-	screen_.put(glyph, glyph_style(glyph, style_for(base)));
+	screen_.put(glyph, glyph_style(glyph, style_for(ink_of(style))));
+}
+
+void ScreenDisplay::animation_pause(int ms) const
+{
+	if (animations_)
+		std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }
 
 std::uint8_t ScreenDisplay::tile_at(Coord pos) const
 {
 	return Screen::contains(pos.y, pos.x) ? screen_.at(pos.y, pos.x).ch : ' ';
+}
+
+TileStyle ScreenDisplay::tile_style_at(Coord pos) const
+{
+	if (!Screen::contains(pos.y, pos.x))
+		return TileStyle::Normal;
+	const Cell &cell = screen_.at(pos.y, pos.x);
+	for (TileStyle style : {TileStyle::Normal, TileStyle::Inverse, TileStyle::Bolt, TileStyle::FrostBolt})
+		if (cell.style == glyph_style(cell.ch, style_for(ink_of(style))))
+			return style;
+	return TileStyle::Normal;
 }
 
 // Status lines
@@ -411,15 +432,15 @@ void ScreenDisplay::curtain_down()
 	ink(Ink::Green);
 	frame(0, 0, Screen::Rows - 1, Screen::Cols - 1, true);
 	screen_.refresh();
-	pause_ms(delay);  // not in original
+	animation_pause(delay);  // not in original
 	ink(Ink::Yellow);
 	for (int r = 1; r < Screen::Rows - 1; r++) {
 		screen_.line(r, 1, PASSAGE, Screen::Cols - 2, false);
 		screen_.refresh();
-		pause_ms(delay);
+		animation_pause(delay);
 	}
 	curtain_ = screen_.snapshot();
-	pause_ms(delay);  // not in original, optional
+	animation_pause(delay);  // not in original, optional
 	screen_.set_cursor(0, 0);
 	ink(Ink::Normal);
 	screen_.erase();
@@ -437,7 +458,7 @@ void ScreenDisplay::curtain_up()
 	for (int line = Screen::Rows - 1; line >= 0; line--) {
 		screen_.restore_row(shown, line);
 		screen_.refresh();
-		pause_ms(delay);
+		animation_pause(delay);
 	}
 }
 
@@ -454,7 +475,7 @@ void ScreenDisplay::wipe()
 	for (r = 0,c = 0,ec = Screen::Cols-1; r < 10; r++,c += cinc,er--,ec -= cinc) {
 		frame(r, c, er, ec, true);
 		screen_.refresh();
-		pause_ms(delay);
+		animation_pause(delay);
 		for (j = r+1; j <= er-1; j++) {
 			screen_.line(j, c+1, ' ', cinc-1, false);
 			screen_.line(j, ec-cinc+1, ' ', cinc-1, false);

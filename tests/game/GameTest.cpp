@@ -1,8 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <cstdio>
-#include <cstring>
-#include <filesystem>
 #include <vector>
 
 #include "rogue.h"
@@ -30,45 +27,6 @@ TEST(Options, BriefWhenTerseOrExpert)
 	o.terse = false;
 	o.expert = true;
 	EXPECT_TRUE(o.brief());
-}
-
-// setenv_from_file() fills game().options from a rogue.opt file.
-TEST(Options, ReadFromFile)
-{
-	auto path = std::filesystem::temp_directory_path() / "rogue_options_test.opt";
-	FILE *f = std::fopen(path.c_str(), "w");
-	ASSERT_NE(f, nullptr);
-	std::fputs("# comment\nname = Optimus\nfruit=Kumquat\nmenu=sel\n"
-		"scorefile=my.scr\nfruit_is_not_a_label=x\n", f);
-	std::fclose(f);
-
-	game().options = {};
-	ASSERT_TRUE(setenv_from_file(path.c_str()));
-	std::filesystem::remove(path);
-
-	EXPECT_STREQ(game().options.name, "Optimus");
-	EXPECT_STREQ(game().options.fruit, "Kumquat");
-	EXPECT_STREQ(game().options.menu, "sel");
-	EXPECT_STREQ(game().options.score_file, "my.scr");
-	EXPECT_STREQ(game().options.macro, "v");
-	game().options = {};
-}
-
-// Long values are cut to the size of their buffer.
-TEST(Options, LongValuesAreTruncated)
-{
-	auto path = std::filesystem::temp_directory_path() / "rogue_options_long.opt";
-	FILE *f = std::fopen(path.c_str(), "w");
-	ASSERT_NE(f, nullptr);
-	std::fputs("fruit=abcdefghijklmnopqrstuvwxyz\n", f);
-	std::fclose(f);
-
-	game().options = {};
-	ASSERT_TRUE(setenv_from_file(path.c_str()));
-	std::filesystem::remove(path);
-
-	EXPECT_LT(std::strlen(game().options.fruit), sizeof game().options.fruit);
-	game().options = {};
 }
 
 // Each game starts from the catalog odds and accumulates its own copy.

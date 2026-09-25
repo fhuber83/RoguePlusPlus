@@ -132,7 +132,7 @@ typedef unsigned char byte;
  * Function types
  */
 //@ mach_dep.c originals
-void	setup(), flush_type(), credits();
+void	setup(), flush_type(), credits(), start_terminal();
 char	*newmem(unsigned int nbytes);
 byte	readchar();
 

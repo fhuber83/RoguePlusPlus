@@ -34,6 +34,17 @@ setup()
 
 
 /*@
+ * start_terminal:
+ *	Start the terminal, or exit with the reason it could not.
+ */
+void
+start_terminal()
+{
+	if (auto started = rogue::ui::start_terminal(game().options.monochrome); !started)
+		fatal("%s", started.error().c_str());
+}
+
+/*@
  * Return Epoch time as an integer, with second resolution
  * Simple wrapper to <time.h> time()
  */

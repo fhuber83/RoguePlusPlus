@@ -3,22 +3,15 @@
  *	The main program, of course
  *
  *@ Moved from main.c. Command line:
- *@   rogue++ [-r | savefile]   restore a saved game (currently disabled)
+ *@   rogue++ [-r | savefile]   restore a saved game (-r: the savefile option)
  *@   rogue++ -s                show the scores
  *@   rogue++ -d <seed>         play the dungeon generated from <seed>
  */
 
 #include <cstdlib>
 
+#include "persistence/OptionsFile.hpp"
 #include "rogue.h"
-
-//@ Starts the terminal, or exits with the reason it could not
-static void
-start_terminal()
-{
-	if (auto started = rogue::ui::start_terminal(game().options.monochrome); !started)
-		fatal("%s", started.error().c_str());
-}
 
 int
 main(int argc, char **argv)
@@ -31,7 +24,8 @@ main(int argc, char **argv)
 
 	init_ds();
 
-	setenv_from_file(ENVFILE);
+	if (rogue::persistence::load_options(ENVFILE, game().options) == rogue::persistence::LoadResult::BadFormat)
+		fatal("rogue.opt: incorrect file format\n");
 	/*
 	 * Parse the screen environment variable.  if the string starts with
 	 * "bw", then we force black and white mode.

@@ -1,0 +1,15 @@
+#pragma once
+
+/*
+ * Build switches. CMake writes core/Config.hpp from core/Config.hpp.in; set
+ * them with its options (cmake -DROGUE_DEBUG_CHECKS=ON ...), not here.
+ */
+namespace rogue::config {
+
+// ROGUE_DEBUG_CHECKS: consistency checks that report through debug()
+inline constexpr bool debug_checks = @ROGUE_DEBUG_CHECKS_VALUE@;
+
+// ROGUE_ASCII: draw ASCII instead of Unicode glyphs
+inline constexpr bool ascii_glyphs = @ROGUE_ASCII_VALUE@;
+
+}  // namespace rogue::config

@@ -12,6 +12,7 @@
 #include <string>
 #include <utility>
 
+#include "core/Config.hpp"
 #include "ui/ScreenDisplay.hpp"
 #include "glyphs.h"
 
@@ -26,15 +27,8 @@ namespace {
 int want_lines = MAXLINES;
 int want_cols = MAXCOLS;
 
-/*
- * ASCII instead of Unicode glyphs. ROGUE_CHARSET=1 selects it at build
- * time; 3 (UNICODE, the default) and the retired 2 (raw CP437) do not.
- */
-#if defined(ROGUE_CHARSET) && ROGUE_CHARSET == 1
-bool ascii = true;
-#else
-bool ascii = false;
-#endif
+// ASCII instead of Unicode glyphs (the ROGUE_ASCII build switch)
+constexpr bool ascii = rogue::config::ascii_glyphs;
 
 /*
  * Number of colors we're working with, regardless if terminal has more colors

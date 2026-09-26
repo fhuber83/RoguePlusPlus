@@ -241,10 +241,8 @@ start_run(coord *runner)
 		tp->t_flags.unset(ISHELD);
 		tp->t_dest	= find_dest(tp);
 	}
-#ifdef DEBUG
-	else
+	else if constexpr (rogue::config::debug_checks)
 		debug("start_run: moat == NULL ???");
-#endif //DEBUG
 }
 
 /*

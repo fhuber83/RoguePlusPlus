@@ -275,11 +275,10 @@ do_zap()
 		fire_bolt(&hero, &turn.delta, name);
 		game().items.ws_know[which_one] = TRUE;
 		break;
-#ifdef DEBUG
 	default:
-		msg("what a bizarre schtick!");
+		if constexpr (rogue::config::debug_checks)
+			debug("what a bizarre schtick!");
 		break;
-#endif
 	}
 	if (--obj->o_charges < 0)
 		obj->o_charges = 0;

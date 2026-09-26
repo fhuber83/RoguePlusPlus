@@ -242,12 +242,6 @@ find_obj(int y, int x)
 	for (op = game().level.objects.first(); op != NULL; op = game().level.objects.after(op))
 		if (op->o_pos.y == y && op->o_pos.x == x)
 			return op;
-#ifdef DEBUG
-	debug("Non-object {:c} {},{}", chat(y, x), y, x);
-	return NULL;
-#else
-	/* NOTREACHED */
-#endif
 	return NULL;
 }
 
@@ -669,10 +663,9 @@ DISTANCE(int y1, int x1, int y2, int x2)
 int
 INDEX(int y, int x)
 {
-#ifdef DEBUG
-	if (offmap(y,x) && me())
-		fatal("BAD INDEX");
-#endif //DEBUG
+	if constexpr (rogue::config::debug_checks)
+		if (offmap(y,x))
+			fatal("BAD INDEX {},{}\n", y, x);
 	return((x * (maxrow-1)) + y - 1);
 }
 

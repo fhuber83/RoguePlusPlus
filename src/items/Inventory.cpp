@@ -493,9 +493,8 @@ can_drop(Item *op)
 
 		if (op != player.rings[hand = LEFT])
 			if (op != player.rings[hand = RIGHT]) {
-#ifdef DEBUG
-				debug("Candrop called with funny thing");
-#endif
+				if constexpr (rogue::config::debug_checks)
+					debug("Candrop called with funny thing");
 				return TRUE;
 			}
 		player.rings[hand] = NULL;

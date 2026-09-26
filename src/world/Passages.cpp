@@ -100,10 +100,8 @@ conn(int r1, int r2)
 		turn_delta.x = 0;
 		turn_distance = abs(spos.y - epos.y);
 	}
-#ifdef DEBUG
-	else
+	else if constexpr (rogue::config::debug_checks)
 		debug("error in connection tables");
-#endif
 	turn_spot = rnd(distance-1) + 1;
 	/*
 	 * Draw in the doors on either side of the passage or just put #'s

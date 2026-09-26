@@ -8,6 +8,19 @@ SET(CMAKE_CXX_EXTENSIONS OFF)
 SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 OPTION(ROGUE_BUILD_TESTS "Build the unit tests (fetches GoogleTest)" ON)
+OPTION(ROGUE_DEBUG_CHECKS "Consistency checks that report with debug() messages" OFF)
+OPTION(ROGUE_ASCII "Draw ASCII instead of Unicode glyphs" OFF)
+
+# The build switches as constants in core/Config.hpp (see core/Config.hpp.in)
+FOREACH(switch ROGUE_DEBUG_CHECKS ROGUE_ASCII)
+	IF(${switch})
+		SET(${switch}_VALUE true)
+	ELSE()
+		SET(${switch}_VALUE false)
+	ENDIF()
+ENDFOREACH()
+SET(ROGUE_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+CONFIGURE_FILE(src/core/Config.hpp.in "${ROGUE_GENERATED_DIR}/core/Config.hpp" @ONLY)
 
 SET(CURSES_NEED_WIDE true)
 
@@ -31,11 +44,11 @@ FILE(GLOB_RECURSE ROGUE_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/s
 LIST(FILTER ROGUE_SOURCES EXCLUDE REGEX "/src/app/")
 
 ADD_LIBRARY(rogue_game STATIC ${ROGUE_SOURCES})
-# src/ is a quote-only include path, so project headers never shadow system
-# headers such as <curses.h> (included by ui/curses/CursesTerminal.cpp).
+# src/ (and the generated headers) are quote-only include paths, so project
+# headers never shadow system headers such as <curses.h> (included by
+# ui/curses/CursesTerminal.cpp).
 TARGET_INCLUDE_DIRECTORIES(rogue_game PUBLIC ${CURSES_INCLUDE_DIRS})
-TARGET_COMPILE_OPTIONS(rogue_game PUBLIC "-iquote${CMAKE_CURRENT_SOURCE_DIR}/src")
-TARGET_COMPILE_DEFINITIONS(rogue_game PUBLIC MINROG ROGUE_CHARSET=3)
+TARGET_COMPILE_OPTIONS(rogue_game PUBLIC "-iquote${CMAKE_CURRENT_SOURCE_DIR}/src" "-iquote${ROGUE_GENERATED_DIR}")
 TARGET_COMPILE_OPTIONS(rogue_game PRIVATE ${ROGUE_WARNINGS})
 TARGET_LINK_LIBRARIES(rogue_game PUBLIC ${CURSES_LIBRARIES})
 TARGET_LINK_LIBRARIES(rogue_game PRIVATE nlohmann_json::nlohmann_json)

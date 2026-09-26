@@ -31,9 +31,8 @@ roomin(coord *cp)
 	fp = &flat(cp->y, cp->x);
 	if (*fp & F_PASS)
 		return	&game().level.passages[*fp &	F_PNUM];
-#ifdef DEBUG
-	debug("in some bizarre place ({}, {})", unc(*cp));
-#endif //DEBUG
+	if constexpr (rogue::config::debug_checks)
+		debug("in some bizarre place ({}, {})", unc(*cp));
 	game().turn.bailout = TRUE;
 	return NULL;
 }
@@ -98,9 +97,8 @@ enter_room(coord *cp)
 
 	rp = proom = roomin(cp);
 	if (game().turn.bailout || (rp->r_flags.test(RoomFlag::Gone) && !rp->r_flags.test(RoomFlag::Maze))) {
-#ifdef DEBUG
-		msg("in a gone room");
-#endif //DEBUG
+		if constexpr (rogue::config::debug_checks)
+			debug("in a gone room");
 		return;
 	}
 	door_open(rp);

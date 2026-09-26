@@ -12,6 +12,7 @@ Requirements: CMake ≥ 4.0, a C++23 compiler (GCC 15 is used), pkg-config, and 
 
 ```sh
 cmake -S . -B build             # first configure fetches nlohmann/json and GoogleTest (ROGUE_BUILD_TESTS=OFF skips GoogleTest)
+cmake -S . -B build-chk -DROGUE_DEBUG_CHECKS=ON   # with the consistency checks; -DROGUE_ASCII=ON draws ASCII
 cmake --build build
 ctest --test-dir build          # all unit tests
 ./build/rogue_tests --gtest_filter='Dice.*'   # a single suite or test
@@ -54,6 +55,6 @@ At runtime the game reads `rogue.opt` (options) and writes `rogue.scr` (scores, 
 - **Persistence** (`src/persistence/`): `OptionsFile` reads `rogue.opt` into `game().options` (`parse_options`/`apply_option`/`load_options`). `HighScores` reads and writes the score file (`load_scores`/`save_scores`, JSON through nlohmann/json, which only this module includes); `rip.cpp` keeps the top-ten logic and the score screen. `SaveGame` writes all of `Game` plus the screen's map (`MapView`) as JSON and loads it back, checked with `pool_problems()`; it has `static_assert`s on the struct sizes, so a new field in `Game` must be saved.
 - **Testing the UI headlessly**: `tests/ui/` drives `Screen`, `ScreenDisplay` and `ScreenInput` with fake `Terminal`s.
 
-## Compile-time macros
+## Build switches
 
-CMake sets `MINROG` (unused) and `ROGUE_CHARSET=3`. `ROGUE_CHARSET=1` draws ASCII instead of Unicode. Remaining optional switches: `DEBUG` (consistency checks; one error left, see the notes in `docs/MODERNIZATION.md`) and `ROGUE_DEBUG`.
+The CMake options `ROGUE_DEBUG_CHECKS` (consistency checks that report with `debug()` messages, and "Exited normally" at the end) and `ROGUE_ASCII` (ASCII instead of Unicode glyphs), both off by default, become `rogue::config::debug_checks` and `rogue::config::ascii_glyphs` in the generated `core/Config.hpp` (template `src/core/Config.hpp.in`). Code tests them with `if constexpr`, never `#ifdef`, so every build compiles both branches and warns about both. A check must not fire in normal play: replay a checks build against a default one (`tools/replay/`).

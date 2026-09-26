@@ -228,8 +228,7 @@ fatal_text(std::string_view text)
 void md_exit(int status)
 {
 	rogue::ui::stop_terminal();
-#ifdef ROGUE_DEBUG
-	printf("Exited normally\n");
-#endif
+	if constexpr (rogue::config::debug_checks)
+		std::fputs("Exited normally\n", stdout);
 	exit(status);
 }

@@ -124,19 +124,17 @@ inv_name(const Item *obj, bool drop)
 			name = std::format("A{} {} ring", vowelstr(items.r_stones[which]),
 				items.r_stones[which]);
 		break;
-#ifdef DEBUG
-	case ItemKind::Gold:
-		name = std::format("Gold at {},{}", obj->o_pos.y, obj->o_pos.x);
+	default:	// the other kinds of item: nothing, except to the checks
+		if constexpr (rogue::config::debug_checks) {
+			if (obj->o_type == ItemKind::Gold)
+				name = std::format("Gold at {},{}", obj->o_pos.y, obj->o_pos.x);
+			else {
+				debug("Picked up someting bizzare {}", io_unctrl(glyph_of(obj->o_type)));
+				name = std::format("Something bizarre {}({})", static_cast<char>(glyph_of(obj->o_type)),
+					static_cast<int>(obj->o_type));
+			}
+		}
 		break;
-	default:
-		debug("Picked up someting bizzare {}", io_unctrl(glyph_of(obj->o_type)));
-		name = std::format("Something bizarre {}({})", static_cast<char>(glyph_of(obj->o_type)),
-			static_cast<int>(obj->o_type));
-		break;
-#else
-	default:	// the other kinds of item: nothing
-		break;
-#endif
 	}
 	if (obj == game().player.armor)
 		name += " (being worn)";

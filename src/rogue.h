@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 
+#include "core/Config.hpp"
 #include "core/Coord.hpp"
 #include "core/Dice.hpp"
 #include "core/Flags.hpp"
@@ -40,10 +41,6 @@ const int maxrow = MAXLINES - 2;
  *  Options set for PC rogue
  */
 
-/*
- * if DEBUG is changed
- * might as well recompile everything
- */
 #define HELP
 #undef DEMO
 #define DEMOTIME 10
@@ -563,7 +560,7 @@ addmsg(std::format_string<Args...> fmt, Args &&...args)
 	add_msg(std::format(fmt, std::forward<Args>(args)...));
 }
 
-// A message from the consistency checks of DEBUG builds
+// A message from the consistency checks (rogue::config::debug_checks)
 template <class... Args>
 void
 debug(std::format_string<Args...> fmt, Args &&...args)

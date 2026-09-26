@@ -20,11 +20,11 @@ pick_one(struct magic_item *magic, int nitems)
 			break;
 	if (magic == end)
 	{
-#ifdef DEBUG
-		debug("bad pick_one: {} from {} items", i, nitems);
-		for (magic = start; magic < end; magic++)
-			debug("{}: {}%", magic->mi_name, magic->mi_prob);
-#endif
+		if constexpr (rogue::config::debug_checks) {
+			debug("bad pick_one: {} from {} items", i, nitems);
+			for (magic = start; magic < end; magic++)
+				debug("{}: {}%", magic->mi_name, magic->mi_prob);
+		}
 		magic = start;
 	}
 	return magic - start;
@@ -89,13 +89,13 @@ new_thing()
 		for (j = 0, k = rnd(100); j < MAXARMORS; j++)
 			if (k < a_chances[j])
 				break;
-#ifdef DEBUG
-		if (j == MAXARMORS)
-		{
-		debug("Picked a bad armor {}", k);
-		j = 0;
+		if constexpr (rogue::config::debug_checks) {
+			if (j == MAXARMORS)
+			{
+				debug("Picked a bad armor {}", k);
+				j = 0;
+			}
 		}
-#endif
 		cur->o_which = j;
 		cur->o_ac = a_class[j];
 		if ((k = rnd(100)) < 20)
@@ -132,12 +132,12 @@ new_thing()
 		cur->o_which = pick_one(items.ws_magic, MAXSTICKS);
 		fix_stick(cur);
 		break;
-#ifdef DEBUG
 	default:
-		debug("Picked a bad kind of object");
-		wait_for(' ');
+		if constexpr (rogue::config::debug_checks) {
+			debug("Picked a bad kind of object");
+			wait_for(' ');
+		}
 		break;
-#endif
 	}
 	return cur;
 }

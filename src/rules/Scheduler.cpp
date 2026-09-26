@@ -59,9 +59,8 @@ Scheduler::fuse(Event event, int time)
 
 	if (wire == nullptr)
 	{
-#ifdef DEBUG
-		debug("Ran out of fuse slots");
-#endif
+		if constexpr (rogue::config::debug_checks)
+			debug("Ran out of fuse slots");
 		return;
 	}
 	wire->event = event;

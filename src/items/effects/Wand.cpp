@@ -305,7 +305,7 @@ drain()
 	 */
 	cnt = 0;
 	if (chat(hero.y, hero.x) == DOOR)
-		corp = &game().level.passages[flat(hero.y, hero.x) & F_PNUM];
+		corp = &game().level.passages[flat(hero.y, hero.x).passage()];
 	else
 		corp = NULL;
 	inpass = proom->r_flags.test(RoomFlag::Gone);
@@ -313,7 +313,7 @@ drain()
 	for (mp = game().level.monsters.first(); mp != NULL; mp = game().level.monsters.after(mp))
 		if (mp->t_room == proom || mp->t_room == corp ||
 			(inpass && chat(mp->t_pos.y, mp->t_pos.x) == DOOR &&
-			&game().level.passages[flat(mp->t_pos.y, mp->t_pos.x) & F_PNUM] == proom))
+			&game().level.passages[flat(mp->t_pos.y, mp->t_pos.x).passage()] == proom))
 			*dp++ = mp;
 	if ((cnt = dp - drainee) == 0)
 	{

@@ -22,7 +22,7 @@ new_level(void)
 {
 	int rm, i;
 	Creature *tp;
-	unsigned char *fp;
+	MapFlags *fp;
 	int index;
 	coord stairs;
 	rogue::Player &player = game().player;
@@ -40,7 +40,7 @@ new_level(void)
 	 * Clean things off from last level
 	 */
 	setmem(level.map, ((MAXLINES-3)*MAXCOLS),' ');
-	setmem(level.flags, (MAXLINES-3)*MAXCOLS, F_REAL);
+	std::ranges::fill(level.flags, MapFlags(MapFlag::Real));
 	/*
 	 * Free up the monsters on the last level
 	 */
@@ -89,15 +89,15 @@ new_level(void)
 				index = INDEX(stairs.y, stairs.x);
 			} while (!isfloor(level.map[index]));
 			fp = &level.flags[index];
-			*fp &= ~F_REAL;
-			*fp |= rnd(kind_count<Trap>);
+			fp->unset(MapFlag::Real);
+			fp->set_trap(static_cast<Trap>(rnd(kind_count<Trap>)));
 		}
 	}
 	do {
 		rm = rnd_room();
 		rnd_pos(&level.rooms[rm], &hero);
 		index = INDEX(hero.y, hero.x);
-	} while (!(isfloor(level.map[index]) && (level.flags[index] & F_REAL)
+	} while (!(isfloor(level.map[index]) && level.flags[index].test(MapFlag::Real)
 				&& moat(hero.y, hero.x) == NULL));
 
 	game().message.end = 0;

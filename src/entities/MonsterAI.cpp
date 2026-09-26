@@ -97,7 +97,7 @@ over:
 			}
 		}
 		if (door) {
-			rer = &game().level.passages[flat(th->t_pos.y, th->t_pos.x) & F_PNUM];
+			rer = &game().level.passages[flat(th->t_pos.y, th->t_pos.x).passage()];
 			door = FALSE;
 			goto over;
 		}
@@ -176,7 +176,7 @@ over:
 	if (see_monst(th)) {
 		th->t_oldch = display().tile_at(ch_ret);
 		display().draw_tile(ch_ret, th->t_disguise,
-				(flat(ch_ret.y,ch_ret.x) & F_PASS) ? TileStyle::Inverse : TileStyle::Normal);
+				flat(ch_ret.y,ch_ret.x).test(MapFlag::Passage) ? TileStyle::Inverse : TileStyle::Normal);
 	}
 	else if (game().player.body.t_flags.test(SEEMONST))
 	{

@@ -167,7 +167,7 @@ void
 splat(int y, int x)
 {
 	chat(y, x) = PASSAGE;
-	flat(y, x) = F_MAZE|F_REAL;
+	flat(y, x) = MapFlag::Maze | MapFlag::Real;
 	if (x > maxx)
 		maxx = x;
 	if (y > maxy)

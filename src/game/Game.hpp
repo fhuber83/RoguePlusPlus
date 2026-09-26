@@ -118,11 +118,11 @@ struct Level {
 	struct room rooms[MAXROOMS] = {};	/* One for each room -- A level */
 	struct room passages[MAXPASS] = {};	/* One for each passage */
 	/*
-	 * What is at each square, and its F_* flags. Index them with INDEX(y, x),
+	 * What is at each square, and its MapFlags. Index them with INDEX(y, x),
 	 * or use chat()/flat().
 	 */
 	unsigned char map[(MAXLINES-3)*MAXCOLS] = {};	/* _level */
-	unsigned char flags[(MAXLINES-3)*MAXCOLS] = {};	/* _flags */
+	MapFlags flags[(MAXLINES-3)*MAXCOLS] = {};	/* _flags */
 	List<Item> objects;				/* lvl_obj: list of objects on this level */
 	List<Creature> monsters;		/* mlist: list of monsters on the level */
 

@@ -24,6 +24,7 @@
 #include "items/Kinds.hpp"
 #include "ui/Display.hpp"
 #include "ui/Input.hpp"
+#include "world/MapFlags.hpp"
 #include "world/Trap.hpp"
 
 #include "extern.h"
@@ -101,15 +102,6 @@ inline constexpr int STOMACHSIZE = 2000;
 inline constexpr int STARVETIME = 850;
 inline constexpr int BOLT_LENGTH = 6;
 inline constexpr int LAMPDIST = 3;
-
-/*
- * Flags for level map
- */
-#define F_PASS		0x040		/* is a passageway */
-#define F_MAZE		0x020		/* have seen this corridor before */
-#define F_REAL		0x010		/* what you see is what you get */
-#define F_PNUM		0x00f		/* passage number mask */
-#define F_TMASK		0x007		/* trap number mask */
 
 /*
  * Now we define the structures and types
@@ -213,6 +205,8 @@ using rogue::ArmorType;
 using rogue::Food;
 using rogue::Hand;
 using rogue::Trap;
+using rogue::MapFlag;
+using rogue::MapFlags;
 using rogue::ItemFilter;
 using rogue::glyph_of;
 using rogue::kind_of_glyph;

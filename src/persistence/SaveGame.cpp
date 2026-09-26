@@ -186,13 +186,20 @@ json room_json(const struct room &r)
 const char hex_digits[] = "0123456789abcdef";
 
 // The map rows of a column-major level grid (see INDEX()), as hex
-json grid_json(const unsigned char *grid)
+// A grid is saved as its bytes: the map's glyphs, or the MapFlags' bits
+unsigned char byte_of(unsigned char cell) { return cell; }
+unsigned char byte_of(MapFlags cell) { return cell.bits(); }
+void set_byte(unsigned char &cell, unsigned char b) { cell = b; }
+void set_byte(MapFlags &cell, unsigned char b) { cell = MapFlags::from_bits(b); }
+
+template <class Cell>
+json grid_json(const Cell *grid)
 {
 	json rows = json::array();
 	for (int y = 1; y < maxrow; y++) {
 		std::string row;
 		for (int x = 0; x < COLS; x++) {
-			unsigned char b = grid[INDEX(y, x)];
+			unsigned char b = byte_of(grid[INDEX(y, x)]);
 			row += hex_digits[b >> 4];
 			row += hex_digits[b & 0xf];
 		}
@@ -633,13 +640,14 @@ std::vector<unsigned char> hex_row(const json &v, const char *what)
 	return out;
 }
 
-void grid_from(unsigned char *grid, const json &j, const char *key)
+template <class Cell>
+void grid_from(Cell *grid, const json &j, const char *key)
 {
 	const json &rows = array_of(j, key, map_rows);
 	for (int y = 1; y < maxrow; y++) {
 		std::vector<unsigned char> row = hex_row(rows[y - 1], key);
 		for (int x = 0; x < COLS; x++)
-			grid[INDEX(y, x)] = row[x];
+			set_byte(grid[INDEX(y, x)], row[x]);
 	}
 }
 

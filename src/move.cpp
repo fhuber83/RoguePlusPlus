@@ -35,7 +35,7 @@ do_move(int dy, int dx)
 {
 	unsigned char ch;
 	Trap trap;
-	int fl;
+	MapFlags fl;
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
 
@@ -88,9 +88,9 @@ over:
 	 */
 	if ((chat(hero.y,hero.x) == DOOR) && (ch == FLOOR))
 		turn.running = FALSE;
-	if (!(fl & F_REAL) && ch == FLOOR) {
+	if (!fl.test(MapFlag::Real) && ch == FLOOR) {
 		chat(nh.y, nh.x) = ch = TRAP;
-		flat(nh.y, nh.x) |= F_REAL;
+		flat(nh.y, nh.x).set(MapFlag::Real);
 	}
 	else if (player.body.t_flags.test(ISHELD) && ch != 'F') {
 		msg("you are being held");
@@ -113,10 +113,10 @@ hit_bound:
 			case 'h':
 			case 'l':
 				b1 = (hero.y > 1 &&
-					((flat(hero.y - 1, hero.x) & F_PASS) ||
+					(flat(hero.y - 1, hero.x).test(MapFlag::Passage) ||
 					  chat(hero.y - 1, hero.x) == DOOR));
 				b2 = (hero.y < maxrow - 1 &&
-					((flat(hero.y + 1, hero.x) & F_PASS) ||
+					(flat(hero.y + 1, hero.x).test(MapFlag::Passage) ||
 					  chat(hero.y + 1, hero.x) == DOOR));
 				if (!(b1 ^ b2))
 					break;
@@ -132,10 +132,10 @@ hit_bound:
 			case 'j':
 			case 'k':
 				b1 = (hero.x > 1 &&
-					((flat(hero.y, hero.x - 1) & F_PASS)
+					(flat(hero.y, hero.x - 1).test(MapFlag::Passage)
 					|| chat(hero.y, hero.x - 1) == DOOR));
 				b2 = (hero.x < COLS-2 &&
-					((flat(hero.y, hero.x + 1) & F_PASS)
+					(flat(hero.y, hero.x + 1).test(MapFlag::Passage)
 					|| chat(hero.y, hero.x + 1) == DOOR));
 				if (!(b1 ^ b2))
 					break;
@@ -154,7 +154,7 @@ hit_bound:
 		break;
 	case DOOR:
 		turn.running = FALSE;
-		if (flat(hero.y, hero.x) & F_PASS)
+		if (flat(hero.y, hero.x).test(MapFlag::Passage))
 			enter_room(&nh);
 		goto move_stuff;
 	case TRAP:
@@ -165,7 +165,7 @@ hit_bound:
 	case PASSAGE:
 		goto move_stuff;
 	case FLOOR:
-		if (!(fl & F_REAL))
+		if (!fl.test(MapFlag::Real))
 			be_trapped(&hero);
 		goto move_stuff;
 	default:
@@ -178,10 +178,10 @@ hit_bound:
 				turn.take = ch;
 move_stuff:
 			display().draw_tile(hero, chat(hero.y, hero.x));
-			if ((fl & F_PASS) && (chat(player.old_pos.y, player.old_pos.x) == DOOR
-					|| (flat(player.old_pos.y, player.old_pos.x) & F_MAZE)))
+			if (fl.test(MapFlag::Passage) && (chat(player.old_pos.y, player.old_pos.x) == DOOR
+					|| flat(player.old_pos.y, player.old_pos.x).test(MapFlag::Maze)))
 				leave_room(&nh);
-			if ((fl & F_MAZE) && (flat(player.old_pos.y, player.old_pos.x) & F_MAZE) == 0)
+			if (fl.test(MapFlag::Maze) && !flat(player.old_pos.y, player.old_pos.x).test(MapFlag::Maze))
 				enter_room(&nh);
 			bcopy(hero,nh);
 		}
@@ -234,7 +234,7 @@ be_trapped(coord *tc)
 	game().turn.count = game().turn.running = FALSE;
 	index = INDEX(tc->y, tc->x);
 	game().level.map[index] = TRAP;
-	tr = static_cast<Trap>(game().level.flags[index] & F_TMASK);
+	tr = game().level.flags[index].trap();
 	player.was_trapped = TRUE;
 	switch (tr) {
 	case Trap::Door:

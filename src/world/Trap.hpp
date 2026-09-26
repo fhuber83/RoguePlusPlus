@@ -6,7 +6,7 @@ namespace rogue {
 
 /*
  * The kinds of trap. A trap's number is kept in the low bits of its square's
- * map flags (F_TMASK).
+ * MapFlags (MapFlags::trap()).
  */
 enum class Trap {
 	Door,		/* T_DOOR: a trapdoor to the next level */

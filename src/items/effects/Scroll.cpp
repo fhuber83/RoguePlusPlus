@@ -115,9 +115,9 @@ read_scroll()
 				case URWALL:
 				case LLWALL:
 				case LRWALL:
-					if (!(level.flags[index] & F_REAL)) {
+					if (!level.flags[index].test(MapFlag::Real)) {
 						ch = level.map[index] = DOOR;
-						level.flags[index] &= ~F_REAL;
+						level.flags[index].unset(MapFlag::Real);
 					}
 					/* fallthrough */
 				case DOOR:

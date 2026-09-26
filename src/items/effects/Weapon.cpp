@@ -164,8 +164,8 @@ fall(Item *obj, bool pr)
 		if (cansee(fpos.y, fpos.x))
 		{
 			display().draw_tile(fpos, glyph_of(obj->o_type),
-					((flat(obj->o_pos.y, obj->o_pos.x) & F_PASS) ||
-					 (flat(obj->o_pos.y, obj->o_pos.x) & F_MAZE))
+					(flat(obj->o_pos.y, obj->o_pos.x).test(MapFlag::Passage) ||
+					 flat(obj->o_pos.y, obj->o_pos.x).test(MapFlag::Maze))
 						? TileStyle::Inverse : TileStyle::Normal);
 			if (moat(fpos.y,fpos.x) != NULL)
 				moat(fpos.y,fpos.x)->t_oldch = glyph_of(obj->o_type);

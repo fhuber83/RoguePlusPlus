@@ -262,7 +262,7 @@ execcom()
 					msg("no trap there.");
 				else
 					msg("you found {}",
-						tr_name(static_cast<Trap>(flat(lookat.y, lookat.x) & F_TMASK)));
+						tr_name(flat(lookat.y, lookat.x).trap()));
 			}
 			break;
 		case Command::Options: msg("i don't have any options, oh my!"); break;

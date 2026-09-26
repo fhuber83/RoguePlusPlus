@@ -22,15 +22,15 @@ struct room *
 roomin(coord *cp)
 {
 	struct room *rp;
-	unsigned char *fp;
+	MapFlags *fp;
 
 	for	(rp = game().level.rooms; rp	<= &game().level.rooms[MAXROOMS-1]; rp++)
 		if (cp->x < rp->r_pos.x + rp->r_max.x && rp->r_pos.x <= cp->x
 		 && cp->y < rp->r_pos.y + rp->r_max.y && rp->r_pos.y <= cp->y)
 			return rp;
 	fp = &flat(cp->y, cp->x);
-	if (*fp & F_PASS)
-		return	&game().level.passages[*fp &	F_PNUM];
+	if (fp->test(MapFlag::Passage))
+		return	&game().level.passages[fp->passage()];
 	if constexpr (rogue::config::debug_checks)
 		debug("in some bizarre place ({}, {})", unc(*cp));
 	game().turn.bailout = TRUE;
@@ -133,7 +133,7 @@ leave_room(coord *cp)
 	unsigned char ch;
 
 	rp = proom;
-	proom = &game().level.passages[flat(cp->y, cp->x) & F_PNUM];
+	proom = &game().level.passages[flat(cp->y, cp->x).passage()];
 	floor = (rp->r_flags.test(RoomFlag::Dark) && !game().player.body.t_flags.test(ISBLIND)) ? ' ' : FLOOR;
 	if (rp->r_flags.test(RoomFlag::Maze))
 		floor = PASSAGE;

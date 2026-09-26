@@ -49,7 +49,7 @@ look(bool wakeup)
 	struct room *rp;
 	int ey, ex;
 	int passcount = 0;
-	unsigned char pfl, *fp;
+	MapFlags pfl, *fp;
 	int sy, sx, sumhero = 0, diffhero = 0;
 
 	rp = proom;
@@ -76,9 +76,9 @@ look(bool wakeup)
 						 * needs to be redrawn (passages once draw always
 						 * stay on) do it now.
 						 */
-						if (((*fp&F_MAZE) || (*fp&F_PASS)) && (ch!=PASSAGE)
+						if ((fp->test(MapFlag::Maze) || fp->test(MapFlag::Passage)) && (ch!=PASSAGE)
 							&& (ch != STAIRS) &&
-							((*fp & F_PNUM) == (pfl & F_PNUM)) )
+							(fp->passage() == pfl.passage()) )
 								display().draw_tile({x, y}, PASSAGE);
 					}
 				}
@@ -118,17 +118,17 @@ look(bool wakeup)
 				/*
 				 * Either hero or other in a passage
 				 */
-				if ((pfl & F_PASS) != (*fp & F_PASS)) {
+				if (pfl.test(MapFlag::Passage) != fp->test(MapFlag::Passage)) {
 					/*
 					 * Neither is in a maze
 					 */
-					if ( ! (pfl & F_MAZE) && ! (*fp & F_MAZE))
+					if ( ! pfl.test(MapFlag::Maze) && ! fp->test(MapFlag::Maze))
 						continue;
 				}
 				/*
 				 * Not in same passage
 				 */
-				else if ((*fp & F_PASS) && (*fp & F_PNUM) != (pfl & F_PNUM))
+				else if (fp->test(MapFlag::Passage) && fp->passage() != pfl.passage())
 					continue;
 			}
 
@@ -153,7 +153,7 @@ look(bool wakeup)
 			 * look right in Inverse
 			 */
 			display().draw_tile({x, y}, ch,
-					((ch!=PASSAGE) && (*fp & (F_PASS | F_MAZE)) && ch != ARMOR)
+					((ch!=PASSAGE) && fp->test(MapFlag::Passage | MapFlag::Maze) && ch != ARMOR)
 						? TileStyle::Inverse : TileStyle::Normal);
 
 			if (turn.door_stop && !turn.first_move && turn.running) {
@@ -221,8 +221,8 @@ look(bool wakeup)
 	 * was_trapped > TRUE: the rogue was teleported by a trap (be_trapped())
 	 */
 	display().draw_tile(hero, PLAYER,
-			((flat(hero.y,hero.x) & F_PASS) || (player.was_trapped > TRUE)
-					|| (flat(hero.y,hero.x) & F_MAZE))
+			(flat(hero.y,hero.x).test(MapFlag::Passage) || (player.was_trapped > TRUE)
+					|| flat(hero.y,hero.x).test(MapFlag::Maze))
 				? TileStyle::Inverse : TileStyle::Normal);
 	if (player.was_trapped) {
 		display().bell();
@@ -697,7 +697,7 @@ void
 search()
 {
 	int y, x;
-	unsigned char *fp;
+	MapFlags *fp;
 	int ey, ex;
 
 	if (game().player.body.t_flags.test(ISBLIND))
@@ -710,7 +710,7 @@ search()
 			if ((y == hero.y && x == hero.x) || offmap(y, x))
 				continue;
 			fp = &flat(y, x);
-			if (!(*fp & F_REAL))
+			if (!fp->test(MapFlag::Real))
 				switch (chat(y, x))
 				{
 					case VWALL:
@@ -722,16 +722,16 @@ search()
 						if (rnd(5) != 0)
 							break;
 						chat(y, x) = DOOR;
-						*fp |= F_REAL;
+						fp->set(MapFlag::Real);
 						game().turn.count = game().turn.running = FALSE;
 						break;
 					case FLOOR:
 						if (rnd(2) != 0)
 							break;
 						chat(y, x) = TRAP;
-						*fp |= F_REAL;
+						fp->set(MapFlag::Real);
 						game().turn.count = game().turn.running = FALSE;
-						msg("you found {}", tr_name(static_cast<Trap>(*fp & F_TMASK)));
+						msg("you found {}", tr_name(fp->trap()));
 						break;
 				}
 		}

@@ -278,7 +278,7 @@ door(struct room *rm, coord *cp)
 	if (rnd(10) + 1 < game().level.depth && rnd(5) == 0)
 	{
 		game().level.map[index] = (cp->y == rm->r_pos.y || cp->y == rm->r_pos.y + rm->r_max.y - 1) ? HWALL : VWALL;
-		game().level.flags[index] &= ~F_REAL;
+		game().level.flags[index].unset(MapFlag::Real);
 	}
 	else
 		game().level.map[index] = DOOR;
@@ -319,14 +319,14 @@ passnum()
 void
 numpass(int y, int x)
 {
-	unsigned char *fp;
+	MapFlags *fp;
 	struct room *rp;
 	unsigned char ch;
 
 	if (offmap(y,x))
 		return;
 	fp = &flat(y, x);
-	if (*fp & F_PNUM)
+	if (fp->passage())
 		return;
 	if (newpnum) {
 		pnum++;
@@ -336,13 +336,13 @@ numpass(int y, int x)
 	 * check to see if it is a door or secret door, i.e., a new exit,
 	 * or a numerable type of place
 	 */
-	if ((ch = chat(y, x)) == DOOR || (!(*fp & F_REAL) && ch != FLOOR)) {
+	if ((ch = chat(y, x)) == DOOR || (!fp->test(MapFlag::Real) && ch != FLOOR)) {
 		rp = &game().level.passages[pnum];
 		rp->r_exit[rp->r_nexits].y = y;
 		rp->r_exit[rp->r_nexits++].x = x;
-	} else if (!(*fp & F_PASS))
+	} else if (!fp->test(MapFlag::Passage))
 		return;
-	*fp |= pnum;
+	fp->set_passage(pnum);
 	/*
 	 * recurse on the surrounding places
 	 */
@@ -358,7 +358,7 @@ psplat(int y, int x)
 	int idx;
 
 	game().level.map[idx = INDEX(y, x)] = PASSAGE;
-	game().level.flags[idx] |= F_PASS;
+	game().level.flags[idx].set(MapFlag::Passage);
 }
 
 }  // namespace rogue::world

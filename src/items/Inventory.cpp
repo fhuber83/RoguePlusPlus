@@ -4,10 +4,10 @@ namespace rogue::items {
 
 static
 Item *
-pack_obj(byte ch, byte *chp)
+pack_obj(unsigned char ch, unsigned char *chp)
 {
 	Item *obj;
-	byte och;
+	unsigned char och;
 
 	for (obj = pack.first(), och = 'a'; obj != NULL; obj = pack.after(obj), och++)
 		if (ch == och)
@@ -28,7 +28,7 @@ add_pack(Item *obj, bool silent)
 	Item *op, *lp = NULL;
 	Creature *mp;
 	bool exact, from_floor;
-	byte floor;
+	unsigned char floor;
 
 	if (obj == NULL)
 	{
@@ -48,7 +48,7 @@ add_pack(Item *obj, bool silent)
 	 * increment the count.
 	 */
 
-	/*@
+	/*
 	 *  bug in original Rogue: it didn't check proom != NULL, as is the case
 	 *  when add_pack() is called from init_player(), which happens before
 	 *  any room even exist. proom is set in enter_room(), which is first
@@ -95,7 +95,7 @@ add_pack(Item *obj, bool silent)
 			detach(game().level.objects, obj);
 			display().draw_tile(hero, floor);
 			chat(hero.y, hero.x) = floor;
-			msg("the scroll turns to dust%s.", noterse(" as you pick it up"));
+			msg("the scroll turns to dust{}.", noterse(" as you pick it up"));
 			return;
 		}
 		else
@@ -150,7 +150,7 @@ add_pack(Item *obj, bool silent)
 		/*
 		 * Didn't find an exact match, just stick it here
 		 */
-		pack.insert_after(lp, obj);	//@ lp is NULL only when the pack is empty
+		pack.insert_after(lp, obj);	// lp is NULL only when the pack is empty
 	}
 	else
 	{
@@ -184,7 +184,7 @@ picked_up:
 		 *
 		 *  the following should do the same
 		 */
-		/*@
+		/*
 		 * Another bug in Rogue: missed NULL check for t_dest. Monsters could
 		 * be not chasing (sleeping, another room, Ice Monster, etc), so a
 		 * destination could possibly have never been assigned.
@@ -203,7 +203,7 @@ picked_up:
 	 * Notify the user
 	 */
 	if (!silent)
-		msg("%s%s (%c)",noterse("you now have "),
+		msg("{}{} ({:c})",noterse("you now have "),
 			inv_name(obj, TRUE), pack_char(obj));
 }
 
@@ -211,13 +211,12 @@ picked_up:
  * inventory:
  *	List what is in the pack
  */
-byte
+unsigned char
 inventory(const List<Item> &list, ItemFilter type, const char *lstr)
 {
-	byte ch;
+	unsigned char ch;
 	Item *obj;
 	int n_objs;
-	char inv_temp[MAXSTR];
 
 	n_objs = 0;
 	for (ch = 'a', obj = list.first(); obj != NULL; ch++, obj = list.after(obj))
@@ -235,12 +234,11 @@ inventory(const List<Item> &list, ItemFilter type, const char *lstr)
 		  !(type.is(ItemKind::Stick) && obj->o_enemy && obj->o_charges))
 			continue;
 		n_objs++;
-		sprintf(inv_temp, "%c) %%s", ch);
-		add_line(lstr, inv_temp, inv_name(obj, FALSE));
+		add_line(lstr, std::format("{}) {}", static_cast<char>(ch), inv_name(obj, FALSE)).c_str());
 	}
 	if (n_objs == 0)
 	{
-		msg(type.is_all() ? "you are empty handed" :
+		msg("{}", type.is_all() ? "you are empty handed" :
 					"you don't have anything appropriate");
 		return 0;
 	}
@@ -252,7 +250,7 @@ inventory(const List<Item> &list, ItemFilter type, const char *lstr)
  *	Add something to characters pack.
  */
 void
-pick_up(byte ch)
+pick_up(unsigned char ch)
 {
 	Item *obj;
 
@@ -265,7 +263,7 @@ pick_up(byte ch)
 		if ((obj = find_obj(hero.y, hero.x)) == NULL)
 		return;
 		money(obj->o_goldval);
-		/*@
+		/*
 		 * find_dest() can point a monster's t_dest straight at this gold's
 		 * o_pos. Redirect it to the hero before the gold's pool slot is
 		 * discarded, same as add_pack()'s "picked_up" redirect for other
@@ -302,10 +300,10 @@ Item *
 get_item(const char *purpose, ItemFilter type)
 {
 	Item *obj;
-	byte ch;
-	byte och;
-	rogue::Turn &turn = game().turn;	//@ lch and wasthing were statics here
-	byte gi_state;	/* get item sub state */
+	unsigned char ch;
+	unsigned char och;
+	rogue::Turn &turn = game().turn;
+	unsigned char gi_state;	/* get item sub state */
 	int once_only = FALSE;
 
 	if (((!strncmp(game().options.menu,"sel",3) && strcmp(purpose,"eat")
@@ -331,7 +329,7 @@ get_item(const char *purpose, ItemFilter type)
 			}
 			if (!game().options.brief())
 				addmsg("which object do you want to ");
-			msg("%s? (* for list): ",purpose);
+			msg("{}? (* for list): ",purpose);
 			/*
 			 * ignore any alt characters that may be typed
 			 */
@@ -358,7 +356,7 @@ get_item(const char *purpose, ItemFilter type)
 				return NULL;
 			}
 			if ((obj = pack_obj(ch, &och)) == NULL) {
-				ifterse1("range is 'a' to '%c'","please specify a letter between 'a' and '%c'", och-1);
+				ifterse("range is 'a' to '{:c}'","please specify a letter between 'a' and '{:c}'", och-1);
 				continue;
 			} else {
 				/*
@@ -382,11 +380,11 @@ get_item(const char *purpose, ItemFilter type)
  * pack_char:
  *	Return which character would address a pack object
  */
-byte
+unsigned char
 pack_char(Item *obj)
 {
 	Item *item;
-	byte c;
+	unsigned char c;
 
 	c = 'a';
 	for (item = pack.first(); item != NULL; item = pack.after(item))
@@ -404,7 +402,7 @@ pack_char(Item *obj)
 void
 money(int value)
 {
-	byte floor;
+	unsigned char floor;
 
 	floor = proom->r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
 	game().player.purse += value;
@@ -412,7 +410,7 @@ money(int value)
 	chat(hero.y, hero.x) = floor;
 	if (value > 0)
 	{
-		msg("you found %d gold pieces", value);
+		msg("you found {} gold pieces", value);
 	}
 }
 
@@ -423,7 +421,7 @@ money(int value)
 void
 drop(void)
 {
-	byte ch;
+	unsigned char ch;
 	Item *nobj, *op;
 
 	ch = chat(hero.y, hero.x);
@@ -443,7 +441,7 @@ drop(void)
 	{
 		if ((nobj = new_item()) == NULL)
 		{
-			msg("%sit appears to be stuck in your pack!",
+			msg("{}it appears to be stuck in your pack!",
 				noterse("can't drop it, "));
 			return;
 		}
@@ -465,7 +463,7 @@ drop(void)
 	bcopy(op->o_pos,hero);
 	if (op->o_type == ItemKind::Amulet)
 		game().player.has_amulet = FALSE;
-	msg("dropped %s", inv_name(op, TRUE));
+	msg("dropped {}", inv_name(op, TRUE));
 }
 
 /*

@@ -4,7 +4,7 @@
  * Naming and display of items: the inventory string for one item, and the
  * "discovered" screen listing what the player has identified so far.
  *
- * Included by rogue.h after extern.h (byte) and entities/Item.hpp (Item).
+ * Included by rogue.h after entities/Item.hpp (Item).
  */
 
 namespace rogue {
@@ -17,7 +17,7 @@ namespace items {
  * inv_name:
  *	Return the name of something as it would appear in an inventory.
  */
-char *inv_name(Item *obj, bool drop);
+std::string inv_name(const Item *obj, bool drop);
 
 /*
  * discovered:
@@ -30,8 +30,8 @@ void discovered();
  *	Build a paged list of lines (inventory, discoveries) through the
  *	display, one call per line. end_line closes the page.
  */
-byte add_line(const char *use, const char *fmt, const char *arg);
-byte end_line(const char *use);
+unsigned char add_line(const char *use, const char *line);
+unsigned char end_line(const char *use);
 
 }  // namespace items
 }  // namespace rogue

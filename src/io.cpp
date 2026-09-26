@@ -4,6 +4,8 @@
  * io.c		1.4		(A.I. Design) 12/10/84
  */
 
+#include	<algorithm>
+
 #include	"ui/Display.hpp"
 
 #include	"rogue.h"
@@ -16,30 +18,18 @@
 
 static void more_at(const char *msg, int col);
 
-/* VARARGS1 */
-/*@ nope, it was not vargars. But now it is */
+/*
+ * msg(), addmsg() and ifterse() are templates in rogue.h that format with
+ * std::format and pass the text on to these.
+ */
+
 void
-ifterse(const char *tfmt, const char *fmt, ...)
-{
-	va_list argp;
-	va_start(argp, fmt);
-
-	if (game().options.expert)
-		vmsg(tfmt, argp);
-	else
-		vmsg(fmt, argp);
-
-	va_end(argp);
-}
-
-//@ va_list variant of msg()
-void
-vmsg(const char *fmt, va_list argp)
+show_msg(std::string_view text)
 {
 	/*
 	 * if the string is "", just clear the line
 	 */
-	if (*fmt == '\0')
+	if (text.empty())
 	{
 		rogue::ui::display().clear_message();
 		game().message.end = 0;
@@ -48,37 +38,8 @@ vmsg(const char *fmt, va_list argp)
 	/*
 	 * otherwise add to the message and flush it out
 	 */
-	doadd(fmt, argp);
+	add_msg(text);
 	endmsg();
-}
-
-//@ varargs variant, now a wrapper for vmsg()
-void
-msg(const char *fmt, ...)
-{
-	va_list argp;
-	va_start(argp, fmt);
-
-	vmsg(fmt, argp);
-
-	va_end(argp);
-}
-/* VARARGS1
- * @ now for real
- */
-/*
- * addmsg:
- *	Add things to the current message
- */
-void
-addmsg(const char *fmt, ...)
-{
-	va_list argp;
-	va_start(argp, fmt);
-
-	doadd(fmt, argp);
-
-	va_end(argp);
 }
 
 /*
@@ -110,7 +71,7 @@ endmsg(void)
 
 /*
  *  More:  tag the end of a line and wait for a space
- *  @ The prompt goes after the current message. Drawing is the display's
+ *  The prompt goes after the current message. Drawing is the display's
  */
 void
 more(const char *msg)
@@ -118,7 +79,7 @@ more(const char *msg)
 	more_at(msg, game().message.end);
 }
 
-//@ more() for a message line text that ends in column col
+// more() for a message line text that ends in column col
 static void
 more_at(const char *msg, int col)
 {
@@ -131,21 +92,19 @@ more_at(const char *msg, int col)
 }
 
 
-/*@
-* arguments changed from fixed ints to va_list.
-* no need of a varargs version as this is only used internally by io.c
-* varargs-aware functions
-*/
 /*
- * doadd:
- *	Perform an add onto the message buffer
+ * add_msg:
+ *	Perform an add onto the message buffer, cut to fit
  */
 void
-doadd(const char *fmt, va_list argp)
+add_msg(std::string_view text)
 {
 	rogue::MessageLine &message = game().message;
+	size_t room = BUFSIZE - 1 - message.next_end;
+	size_t len = std::min(text.size(), room);
 
-	vsnprintf(&message.text[message.next_end], BUFSIZE - message.next_end, fmt, argp);
+	text.copy(&message.text[message.next_end], len);
+	message.text[message.next_end + len] = '\0';
 	message.next_end = strlen(message.text);
 }
 
@@ -187,27 +146,19 @@ putmsg(char *msg)
 /*
  * io_unctrl:
  *	Print a readable version of a certain character
- *	@ renamed to avoid conflict with <curses.h>
- *	@ same purpose but different behavior, so not using the curses version
  */
-char *
-io_unctrl(byte ch)
+std::string
+io_unctrl(unsigned char ch)
 {
-	static char chstr[9];		/* Defined in curses library */
-
 	if (is_space(ch))
-		strcpy(chstr," ");
+		return " ";
 	else if (!is_print(ch))
 		if (ch < ' ')
-			sprintf(chstr, "^%c", ch + '@');
+			return std::format("^{}", static_cast<char>(ch + '@'));
 		else
-			sprintf(chstr, "\\x%x",ch);
-	else {
-		chstr[0] = ch;
-		chstr[1] = 0;
-	}
-
-	return chstr;
+			return std::format("\\x{:x}", ch);
+	else
+		return std::string(1, static_cast<char>(ch));
 }
 
 /*
@@ -223,7 +174,7 @@ status(void)
 
 	SIG2();
 
-	/*@
+	/*
 	 * The armor class shown ignores rings of protection, as it always did
 	 */
 	ac = player.armor != NULL ? player.armor->o_ac : pstats.s_arm;
@@ -245,38 +196,22 @@ status(void)
  *	Sit around until the guy types the right key
  */
 void
-wait_for(byte ch)
+wait_for(unsigned char ch)
 {
-	/*@
-	 * stdio and ncurses will map all stream line endings to '\n'
-	 * Hooray ANSI! :)
-	 *
-	char c;
-
-	if (ch == '\n')
-		while ((c = readchar()) != '\n' && c != '\r')
-			continue;
-	else
-	 */
 	while (readchar() != ch)
 		continue;
 }
 
-/*@
- * Wait with a message until user press Enter
- * New function, used to block before leaving the game
+/*
+ * wait_msg:
+ *	Wait with a message until the user presses Enter
  */
 void
 wait_msg(const char *msg)
 {
-	char prompt[MAXSTR];
-
 	display().show_cursor(TRUE);
-	if (*msg)
-		snprintf(prompt, sizeof prompt, "[Press Enter to %s]", msg);
-	else
-		strcpy(prompt, "[Press Enter]");
-	display().write_at(LINES-1, 0, prompt);
+	display().write_at(LINES-1, 0,
+		*msg ? std::format("[Press Enter to {}]", msg) : "[Press Enter]");
 	flush_type();
 	wait_for('\n');
 	display().write_at(LINES-1, 0, "");
@@ -285,7 +220,6 @@ wait_msg(const char *msg)
 /*
  * show_win:
  *	Function used to display a window and wait before returning
- *	@ a window? looks like a single message to me!
  */
 void
 show_win(char *message)
@@ -330,11 +264,11 @@ str_attr(const char *str)
 }
 
 /*
- * key_state:
- *	@ Periodic status update: draws the clock in the bottom-right corner.
- *	@ The original also showed NUM LOCK/CAP LOCK and toggled "Fast Play" via
- *	@ Scroll Lock by reading keyboard LEDs through BIOS; terminals cannot
- *	@ report those, so faststate stays FALSE.
+ * SIG2:
+ *	Periodic status update: draws the clock in the bottom-right corner.
+ *	The original also showed NUM LOCK/CAP LOCK and toggled "Fast Play" via
+ *	Scroll Lock by reading keyboard LEDs through BIOS; terminals cannot
+ *	report those, so faststate stays FALSE.
  */
 void
 SIG2(void)
@@ -344,7 +278,7 @@ SIG2(void)
 	int showtime = FALSE;
 	long new_time = md_time();
 
-	/*@
+	/*
 	 * Do not update while a page (inventory, discoveries, ...) is shown
 	 */
 	if (display().page_open())

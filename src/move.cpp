@@ -11,14 +11,14 @@
  */
 static coord nh;
 
-static byte	be_trapped(coord *tc);
+static unsigned char	be_trapped(coord *tc);
 
 /*
  * do_run:
  *	Start the hero running
  */
 void
-do_run(byte ch)
+do_run(unsigned char ch)
 {
 	game().turn.running = TRUE;
 	game().turn.after = FALSE;
@@ -33,7 +33,7 @@ do_run(byte ch)
 void
 do_move(int dy, int dx)
 {
-	byte ch;
+	unsigned char ch;
 	int fl;
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
@@ -53,7 +53,7 @@ do_move(int dy, int dx)
 	/*
 	 * Do a confused move (maybe)
 	 */
-	if (on(player.body, ISHUH) && rnd(5) != 0)
+	if (player.body.t_flags.test(ISHUH) && rnd(5) != 0)
 		rndmove(&player.body,&nh);
 	else {
 over:
@@ -91,7 +91,7 @@ over:
 		chat(nh.y, nh.x) = ch = TRAP;
 		flat(nh.y, nh.x) |= F_REAL;
 	}
-	else if (on(player.body, ISHELD) && ch != 'F') {
+	else if (player.body.t_flags.test(ISHELD) && ch != 'F') {
 		msg("you are being held");
 		return;
 	}
@@ -104,7 +104,7 @@ over:
 	case LLWALL:
 	case LRWALL:
 hit_bound:
-		if (turn.running && isgone(proom) && !on(player.body, ISBLIND)) {
+		if (turn.running && isgone(proom) && !player.body.t_flags.test(ISBLIND)) {
 			bool	b1, b2;
 
 			switch (turn.run_dir)
@@ -197,23 +197,22 @@ void
 door_open(struct room *rp)
 {
 	int j, k;
-	byte ch;
+	unsigned char ch;
 	Creature *tp;
 
-	if (!rp->r_flags.test(RoomFlag::Gone) && !on(game().player.body, ISBLIND))
+	if (!rp->r_flags.test(RoomFlag::Gone) && !game().player.body.t_flags.test(ISBLIND))
 		for (j = rp->r_pos.y; j < rp->r_pos.y + rp->r_max.y; j++)
 			for (k = rp->r_pos.x; k < rp->r_pos.x + rp->r_max.x; k++) {
 				ch = winat(j, k);
 				/* move(j, k); Why do this,?????? */
 				if (ismonster(ch)) {
 					tp = wake_monster(j, k);
-					//@ this sanity check was not in original
 					if (tp == NULL)
 					{
 						continue;
 					}
 					if (tp->t_oldch == ' ' && !rp->r_flags.test(RoomFlag::Dark)
-						&& !on(game().player.body, ISBLIND))
+						&& !game().player.body.t_flags.test(ISBLIND))
 							tp->t_oldch = chat(j, k);
 				}
 			}
@@ -224,10 +223,10 @@ door_open(struct room *rp)
  *	The guy stepped on a trap.... Make him pay.
  */
 static
-byte
+unsigned char
 be_trapped(coord *tc)
 {
-	byte tr;
+	unsigned char tr;
 	int index;
 	rogue::Player &player = game().player;
 
@@ -237,17 +236,20 @@ be_trapped(coord *tc)
 	tr = game().level.flags[index] & F_TMASK;
 	player.was_trapped = TRUE;
 	switch (tr) {
-	when T_DOOR:
+	case T_DOOR:
 		descend("you fell into a trap!");
-	when T_BEAR:
+		break;
+	case T_BEAR:
 		player.no_move += BEARTIME;
 		msg("you are caught in a bear trap");
-	when T_SLEEP:
+		break;
+	case T_SLEEP:
 		player.no_command += SLEEPTIME;
 		player.body.t_flags.unset(ISRUN);
-		msg("a %smist envelops you and you fall asleep",
+		msg("a {}mist envelops you and you fall asleep",
 			noterse("strange white "));
-	when T_ARROW:
+		break;
+	case T_ARROW:
 		if (swing(pstats.s_lvl-1, pstats.s_arm, 1)) {
 			pstats.s_hpt -= roll(1, 6);
 			if (pstats.s_hpt <= 0) {
@@ -269,19 +271,17 @@ be_trapped(coord *tc)
 			}
 			msg("an arrow shoots past you");
 		}
-	when T_TELEP:
+		break;
+	case T_TELEP:
 		teleport();
 		display().draw_tile(*tc, TRAP); /* since the hero's leaving, look()
 						won't put it on for us */
-		/*@
-		 * I guess this increment is used solely to signal look() at move.c
-		 * about the teleport trap. However, since this increment violates
-		 * boolean logic conventions, `was_trapped++` had to be reverted the
-		 * real type that bool was typdef'd to in original code: unsigned char.
-		 * Either this or refactor the original detection for teleport traps.
+		/*
+		 * TRUE + 1 tells look() that this was a teleport trap
 		 */
 		player.was_trapped++;
-	when T_DART:
+		break;
+	case T_DART:
 		if (swing(pstats.s_lvl+1, pstats.s_arm, 1)) {
 			pstats.s_hpt -= roll(1, 4);
 			if (pstats.s_hpt <= 0) {
@@ -307,7 +307,7 @@ descend(const char *mesg)
 		msg(" ");
 	new_level();
 	msg("");
-	msg(mesg);
+	msg("{}", mesg);
 	if (!save(VS_LUCK)) {
 		msg("you are damaged by the fall");
 		if ((pstats.s_hpt -= roll(1,8)) <= 0)
@@ -323,7 +323,7 @@ void
 rndmove(Creature *who, coord *newmv)
 {
 	int x, y;
-	byte ch;
+	unsigned char ch;
 	Item *obj;
 
 	y = newmv->y = who->t_pos.y + rnd(3) - 1;

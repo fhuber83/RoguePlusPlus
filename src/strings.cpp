@@ -1,34 +1,6 @@
 #include "extern.h"
 
-//@ extern char ctp_[]; //@ not needed anymore. could not find definition
-
-/*@
- * Functions available in <ctype.h>
- *
-isalpha(x) {	return  x > 128 ? 0 : (ctp_[(x)+1]&0x03); }
-isupper(x) {	return  x > 128 ? 0 : (ctp_[(x)+1]&0x01); }
-islower(x) {	return  x > 128 ? 0 : (ctp_[(x)+1]&0x02); }
-isdigit(x) {	return  x > 128 ? 0 : (ctp_[(x)+1]&0x04); }
-isspace(x) {	return  x > 128 ? 0 : (ctp_[(x)+1]&0x10); }
-isprint(x) {	return  x > 128 ? 0 : (ctp_[(x)+1]&0xc7); }
-
-toascii(int x)
-{
-	return (x&127);
-}
-
-toupper(char chr)
-{
-	return(islower(chr)?((chr)-('a'-'A')):(chr));
-}
-
-tolower(char chr)
-{
-	return(isupper(chr)?((chr)+('a'-'A')):(chr));
-}
-*/
-
-//@ Locale-independent versions, as expected by Rogue
+// Locale-independent versions, as expected by Rogue
 bool is_alpha(char ch) { return (isascii(ch) && isalpha(ch)); }
 bool is_upper(char ch) { return (isascii(ch) && isupper(ch)); }
 bool is_lower(char ch) { return (isascii(ch) && islower(ch)); }
@@ -36,10 +8,9 @@ bool is_digit(char ch) { return (isascii(ch) && isdigit(ch)); }
 bool is_space(char ch) { return (isascii(ch) && isspace(ch)); }
 bool is_print(char ch) { return (isascii(ch) && isprint(ch)); }
 
-/*@
- * No exact match in signature and behavior from glibc or POSIX
- * Similar to <string.h> strncpy(), but not a drop-in equivalent.
- * snprintf() is perhaps a better replacement candidate.
+/*
+ * Copy at most count characters and terminate. Not strncpy(), which pads
+ * and may not terminate.
  */
 char *
 stccpy(char *s1, char *s2, int count)
@@ -59,7 +30,7 @@ stccpy(char *s1, char *s2, int count)
  * redo Lattice token parsing routines
  */
 
-//@ strip leading blanks
+// strip leading blanks
 char *
 stpblk(char *str)
 {

@@ -125,17 +125,17 @@ fire(Event event)
 {
 	switch (event)
 	{
-		case Event::Doctor: doctor();
-		when Event::Stomach: stomach();
-		when Event::Runners: runners();
-		when Event::Swander: swander();
-		when Event::RollWander: rollwand();
-		when Event::Unconfuse: unconfuse();
-		when Event::Unsee: unsee();
-		when Event::Sight: sight();
-		when Event::NoHaste: nohaste();
-		when Event::TurnSeeOff: turn_see(TRUE);
-		when Event::None: break;
+		case Event::Doctor: doctor(); break;
+		case Event::Stomach: stomach(); break;
+		case Event::Runners: runners(); break;
+		case Event::Swander: swander(); break;
+		case Event::RollWander: rollwand(); break;
+		case Event::Unconfuse: unconfuse(); break;
+		case Event::Unsee: unsee(); break;
+		case Event::Sight: sight(); break;
+		case Event::NoHaste: nohaste(); break;
+		case Event::TurnSeeOff: turn_see(TRUE); break;
+		case Event::None: break;
 	}
 }
 

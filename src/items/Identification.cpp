@@ -2,162 +2,157 @@
 
 namespace rogue::items {
 
-static void	chopmsg(char *s, const char *shmsg, const char *lnmsg, ...);
 static void	print_disc(ItemKind type);
 static void	set_order(short *order, int numthings);
-static char	*nothing(ItemKind type);
+static std::string	nothing(ItemKind type);
 
 /*
  * inv_name:
  *	Return the name of something as it would appear in an
  *	inventory.
  */
-char *
-inv_name(Item *obj, bool drop)
+std::string
+inv_name(const Item *obj, bool drop)
 {
 	int which = obj->o_which;
-	char *pb;
+	std::string name;
 	rogue::Items &items = game().items;
+	bool brief = game().options.brief();
 
-	pb = prbuf;
 	switch (obj->o_type)
 	{
-	when ItemKind::Scroll:
-		if (obj->o_count == 1) {
-			strcpy(pb, "A scroll ");
-			pb = &prbuf[9];
-		} else {
-			sprintf(pb, "%d scrolls ", obj->o_count);
-			pb = &prbuf[strlen(prbuf)];
-		}
-		if (items.s_know[which])
-			sprintf(pb, "of %s", items.s_magic[which].mi_name);
-		else if (*items.s_guess[which])
-			sprintf(pb, "called %s", items.s_guess[which]);
-		else
-			chopmsg(pb, "titled '%.17s'","titled '%s'", &items.s_names[which]);
-	when ItemKind::Potion:
+	case ItemKind::Scroll:
 		if (obj->o_count == 1)
-		{
-			strcpy(pb, "A potion ");
-			pb = &prbuf[9];
-		}
+			name = "A scroll ";
 		else
-		{
-			sprintf(pb, "%d potions ", obj->o_count);
-			pb = &pb[strlen(prbuf)];
-		}
-		if (items.p_know[which]) {
-			chopmsg(pb, "of %s", "of %s(%s)",
-				items.p_magic[which].mi_name, items.p_colors[which]);
-		}
-		else if (*items.p_guess[which]) {
-			chopmsg(pb, "called %s","called %s(%s)", items.p_guess[which],
-				items.p_colors[which]);
-		}
+			name = std::format("{} scrolls ", obj->o_count);
+		if (items.s_know[which])
+			name += std::format("of {}", items.s_magic[which].mi_name);
+		else if (*items.s_guess[which])
+			name += std::format("called {}", items.s_guess[which]);
+		else if (brief)
+			name += std::format("titled '{:.17}'", static_cast<const char *>(items.s_names[which].storage));
+		else
+			name += std::format("titled '{}'", static_cast<const char *>(items.s_names[which].storage));
+		break;
+	case ItemKind::Potion:
+		if (obj->o_count == 1)
+			name = "A potion ";
+		else
+			name = std::format("{} potions ", obj->o_count);
+		if (items.p_know[which])
+			name += brief ? std::format("of {}", items.p_magic[which].mi_name)
+				: std::format("of {}({})", items.p_magic[which].mi_name, items.p_colors[which]);
+		else if (*items.p_guess[which])
+			name += brief ? std::format("called {}", items.p_guess[which])
+				: std::format("called {}({})", items.p_guess[which], items.p_colors[which]);
 		else if (obj->o_count == 1)
-			sprintf(prbuf, "A%s %s potion", vowelstr(items.p_colors[which]),
+			name = std::format("A{} {} potion", vowelstr(items.p_colors[which]),
 				items.p_colors[which]);
 		else
-			sprintf(prbuf, "%d %s potions", obj->o_count, items.p_colors[which]);
-	when ItemKind::Food:
+			name = std::format("{} {} potions", obj->o_count, items.p_colors[which]);
+		break;
+	case ItemKind::Food:
 		if (which == 1)
 			if (obj->o_count == 1)
-				sprintf(pb, "A%s %s", vowelstr(game().options.fruit), game().options.fruit);
+				name = std::format("A{} {}", vowelstr(game().options.fruit),
+					static_cast<const char *>(game().options.fruit));
 			else
-				sprintf(pb, "%d %ss", obj->o_count, game().options.fruit);
+				name = std::format("{} {}s", obj->o_count,
+					static_cast<const char *>(game().options.fruit));
 		else
 			if (obj->o_count == 1)
-				strcpy(pb, "Some food");
+				name = "Some food";
 			else
-				sprintf(pb, "%d rations of food", obj->o_count);
-	when ItemKind::Weapon:
+				name = std::format("{} rations of food", obj->o_count);
+		break;
+	case ItemKind::Weapon:
 		if (obj->o_count > 1)
-			sprintf(pb, "%d ", obj->o_count);
+			name = std::format("{} ", obj->o_count);
 		else
-			sprintf(pb, "A%s ", vowelstr(w_names[which]));
-		pb = &prbuf[strlen(prbuf)];
+			name = std::format("A{} ", vowelstr(w_names[which]));
 		if (obj->o_flags.test(ISKNOW))
-			sprintf(pb, "%s %s", num(obj->o_hplus, obj->o_dplus, WEAPON),
+			name += std::format("{} {}", num(obj->o_hplus, obj->o_dplus, WEAPON),
 				w_names[which]);
 		else
-			sprintf(pb, "%s", w_names[which]);
+			name += w_names[which];
 		if (obj->o_count > 1)
-			strcat(pb, "s");
+			name += "s";
 		if (obj->o_enemy && obj->o_flags.test(ISREVEAL))
-		{
-			strcat(pb, " of ");
-			strcat(pb, monsters[obj->o_enemy-'A'].m_name);
-			strcat(pb, " slaying");
-		}
-	when ItemKind::Armor:
-		if (obj->o_flags.test(ISKNOW))
-			chopmsg(pb, "%s %s","%s %s [armor class %d]",
-				num(a_class[which] - obj->o_ac, 0, ARMOR),
-				a_names[which], -(obj->o_ac-11));
-		else
-			sprintf(pb, "%s", a_names[which]);
-	when ItemKind::Amulet:
-		strcpy(pb, "The Amulet of Yendor");
-	when ItemKind::Stick:
-		sprintf(pb, "A%s %s ", vowelstr(items.ws_type[which]),
-		items.ws_type[which]);
-		pb = &prbuf[strlen(prbuf)];
-		if (items.ws_know[which])
-			chopmsg(pb, "of %s%s", "of %s%s(%s)",
-				items.ws_magic[which].mi_name,
-				charge_str(obj), items.ws_made[which]);
-		else if (*items.ws_guess[which])
-			chopmsg(pb, "called %s", "called %s(%s)", items.ws_guess[which],
-				items.ws_made[which]);
-		else
-			sprintf(pb = &prbuf[2], "%s %s", items.ws_made[which], items.ws_type[which]);
-	when ItemKind::Ring:
-		if (items.r_know[which])
-			chopmsg(pb, "A%s ring of %s", "A%s ring of %s(%s)", ring_num(obj),
-				items.r_magic[which].mi_name, items.r_stones[which]);
-		else if (*items.r_guess[which])
-			chopmsg(pb, "A ring called %s", "A ring called %s(%s)",
-				items.r_guess[which], items.r_stones[which]);
-		else
-			sprintf(pb, "A%s %s ring", vowelstr(items.r_stones[which]),
-				items.r_stones[which]);
-#ifdef DEBUG
-	when ItemKind::Gold:
-		sprintf(pb, "Gold at %d,%d", obj->o_pos.y, obj->o_pos.x);
-	otherwise:
-		debug("Picked up someting bizzare %s", io_unctrl(glyph_of(obj->o_type)));
-		sprintf(pb, "Something bizarre %c(%d)", glyph_of(obj->o_type),
-			static_cast<int>(obj->o_type));
-#else
-	otherwise:	//@ the other kinds of item: nothing
-#endif
+			name += std::format(" of {} slaying", monsters[obj->o_enemy-'A'].m_name);
 		break;
+	case ItemKind::Armor:
+		if (!obj->o_flags.test(ISKNOW))
+			name = a_names[which];
+		else if (brief)
+			name = std::format("{} {}", num(a_class[which] - obj->o_ac, 0, ARMOR),
+				a_names[which]);
+		else
+			name = std::format("{} {} [armor class {}]", num(a_class[which] - obj->o_ac, 0, ARMOR),
+				a_names[which], -(obj->o_ac-11));
+		break;
+	case ItemKind::Amulet:
+		name = "The Amulet of Yendor";
+		break;
+	case ItemKind::Stick:
+		name = std::format("A{} {} ", vowelstr(items.ws_type[which]), items.ws_type[which]);
+		if (items.ws_know[which])
+			name += brief ? std::format("of {}{}", items.ws_magic[which].mi_name, charge_str(obj))
+				: std::format("of {}{}({})", items.ws_magic[which].mi_name,
+					charge_str(obj), items.ws_made[which]);
+		else if (*items.ws_guess[which])
+			name += brief ? std::format("called {}", items.ws_guess[which])
+				: std::format("called {}({})", items.ws_guess[which], items.ws_made[which]);
+		else {
+			/*
+			 * The original wrote this over the name from its third
+			 * character, keeping "A " even before a vowel ("A oak staff").
+			 */
+			name.resize(2);
+			name += std::format("{} {}", items.ws_made[which], items.ws_type[which]);
+		}
+		break;
+	case ItemKind::Ring:
+		if (items.r_know[which])
+			name = brief ? std::format("A{} ring of {}", ring_num(obj), items.r_magic[which].mi_name)
+				: std::format("A{} ring of {}({})", ring_num(obj),
+					items.r_magic[which].mi_name, items.r_stones[which]);
+		else if (*items.r_guess[which])
+			name = brief ? std::format("A ring called {}", items.r_guess[which])
+				: std::format("A ring called {}({})", items.r_guess[which], items.r_stones[which]);
+		else
+			name = std::format("A{} {} ring", vowelstr(items.r_stones[which]),
+				items.r_stones[which]);
+		break;
+#ifdef DEBUG
+	case ItemKind::Gold:
+		name = std::format("Gold at {},{}", obj->o_pos.y, obj->o_pos.x);
+		break;
+	default:
+		debug("Picked up someting bizzare {}", io_unctrl(glyph_of(obj->o_type)));
+		name = std::format("Something bizarre {}({})", static_cast<char>(glyph_of(obj->o_type)),
+			static_cast<int>(obj->o_type));
+		break;
+#else
+	default:	// the other kinds of item: nothing
+		break;
+#endif
 	}
 	if (obj == game().player.armor)
-		strcat(pb, " (being worn)");
+		name += " (being worn)";
 	if (obj == game().player.weapon)
-		strcat(pb, " (weapon in hand)");
+		name += " (weapon in hand)";
 	if (obj == game().player.rings[LEFT])
-		strcat(pb, " (on left hand)");
+		name += " (on left hand)";
 	else if (obj == game().player.rings[RIGHT])
-		strcat(pb, " (on right hand)");
-	if (drop && ismonster(prbuf[0]))
-		prbuf[0] = tolower(prbuf[0]);
-	else if (!drop && is_lower(*prbuf))
-		*prbuf = toupper(*prbuf);
-	return prbuf;
-}
-
-//@ changed original signature to use varargs
-static
-void
-chopmsg(char *s, const char *shmsg, const char *lnmsg, ...)
-{
-	va_list argp;
-	va_start(argp, lnmsg);
-	vsnprintf(s, MAXSTR, game().options.brief() ? shmsg : lnmsg, argp);
-	va_end(argp);
+		name += " (on right hand)";
+	if (!name.empty()) {
+		if (drop && ismonster(name[0]))
+			name[0] = tolower(name[0]);
+		else if (!drop && is_lower(name[0]))
+			name[0] = toupper(name[0]);
+	}
+	return name;
 }
 
 /*
@@ -170,11 +165,11 @@ void
 discovered(void)
 {
 	print_disc(ItemKind::Potion);
-	add_line(nullstr, " ", "");
+	add_line(nullstr, " ");
 	print_disc(ItemKind::Scroll);
-	add_line(nullstr, " ", "");
+	add_line(nullstr, " ");
 	print_disc(ItemKind::Ring);
-	add_line(nullstr, " ", "");
+	add_line(nullstr, " ");
 	print_disc(ItemKind::Stick);
 	end_line(nullstr);
 }
@@ -219,7 +214,7 @@ print_disc(ItemKind type)
 		know = items.ws_know;
 		guess = items.ws_guess;
 		break;
-	otherwise:	//@ the other kinds of item: nothing
+	default:	// the other kinds of item: nothing
 		break;
 	}
 	set_order(order, maxnum);
@@ -231,11 +226,11 @@ print_disc(ItemKind type)
 		{
 			obj.o_type = type;
 			obj.o_which = order[i];
-			add_line(nullstr, "%s", inv_name(&obj, FALSE));
+			add_line(nullstr, inv_name(&obj, FALSE).c_str());
 			num_found++;
 		}
 	if (num_found == 0)
-		add_line(nullstr, nothing(type), "");
+		add_line(nullstr, nothing(type).c_str());
 }
 
 /*
@@ -262,27 +257,23 @@ set_order(short *order, int numthings)
 
 /*
  * add_line:
- *	Add a line to the list of discoveries
- *
- * VARARGS1
+ *	Add a line to the list of discoveries; NULL ends the page
+ *	(end_line())
  */
-byte
-add_line(const char *use, const char *fmt, const char *arg)
+unsigned char
+add_line(const char *use, const char *line)
 {
-	char buf[132];  //@ as printw() had
-	byte retchar = ' ';
+	unsigned char retchar = ' ';
 	if (line_cnt == 0)
 	{
 		display().open_page();
 		display().clear_page();
 	}
-	if (line_cnt >= LINES - 1 || fmt == NULL)
+	if (line_cnt >= LINES - 1 || line == NULL)
 	{
 		if (*use)
-		{
-			snprintf(buf, sizeof buf, "-Select item to %s. Esc to cancel-", use);
-			display().write_at(LINES-1, 0, buf);
-		}
+			display().write_at(LINES-1, 0,
+				std::format("-Select item to {}. Esc to cancel-", use));
 		else
 			display().write_at(LINES-1, 0, "-Press space to continue-");
 		do
@@ -291,12 +282,11 @@ add_line(const char *use, const char *fmt, const char *arg)
 		display().clear_page();
 		line_cnt = 0;
 	}
-	if (fmt != NULL && !(line_cnt == 0 && *fmt == '\0'))
+	if (line != NULL && !(line_cnt == 0 && *line == '\0'))
 	{
 		coord end;
 
-		snprintf(buf, sizeof buf, fmt, arg);
-		end = display().write_at(line_cnt, 0, buf);
+		end = display().write_at(line_cnt, 0, line);
 		/*
 		 * if the line wrapped but nothing was printed on this
 		 * line you might as well use it for the next item
@@ -311,12 +301,12 @@ add_line(const char *use, const char *fmt, const char *arg)
  * end_line:
  *	End the list of lines
  */
-byte
+unsigned char
 end_line(const char *use)
 {
 	int retchar;
 
-	retchar = add_line(use, NULL, "");
+	retchar = add_line(use, NULL);
 	display().close_page();
 	line_cnt = 0;
 	return(retchar);
@@ -324,30 +314,25 @@ end_line(const char *use)
 
 /*
  * nothing:
- *	Set up prbuf so that message for "nothing found" is there
+ *	The message for "nothing found"
  */
 static
-char *
+std::string
 nothing(ItemKind type)
 {
-	char *sp;
 	const char *tystr;
 
-	sprintf(prbuf, "Haven't discovered anything");
-	if (game().options.terse)
-		sprintf(prbuf,"Nothing");
-	sp = &prbuf[strlen(prbuf)];
 	switch (type)
 	{
-		when ItemKind::Potion: tystr = "potion";
-		when ItemKind::Scroll: tystr = "scroll";
-		when ItemKind::Ring: tystr = "ring";
-		when ItemKind::Stick: tystr = "stick";
-		//@ not in original, avoid possibly uninitialized use of tystr
-		otherwise: tystr = "item";
+		case ItemKind::Potion: tystr = "potion"; break;
+		case ItemKind::Scroll: tystr = "scroll"; break;
+		case ItemKind::Ring: tystr = "ring"; break;
+		case ItemKind::Stick: tystr = "stick"; break;
+		// avoid possibly uninitialized use of tystr
+		default: tystr = "item";
 	}
-	sprintf(sp, " about any %ss", tystr);
-	return prbuf;
+	return std::format("{} about any {}s",
+		game().options.terse ? "Nothing" : "Haven't discovered anything", tystr);
 }
 
 }  // namespace rogue::items

@@ -10,7 +10,6 @@
 #include "persistence/HighScores.hpp"
 #include "rogue.h"
 
-//@ moved from rogue.h
 #define TOPSCORES	10
 struct sc_ent {
 	char sc_name[38];
@@ -41,7 +40,7 @@ score(int amount, int flags, char monst)
 	char response = ' ';
 
 
-	display().open_page();  //@ stops the clock, as is_saved did
+	display().open_page();  // stops the clock, as is_saved did
 
 	if (amount || flags || monst)
 	{
@@ -84,7 +83,7 @@ reread:
 		rank = add_scores(&his_score, top_ten);
 	}
 	fclose(file);
-	//@ an unreadable file is left alone; an old binary one is rewritten as JSON
+	// an unreadable file is left alone; an old binary one is rewritten as JSON
 	if (readable && (rank > 0 || legacy))
 		put_scores(top_ten);
 	pr_scores(rank, top_ten);
@@ -96,7 +95,7 @@ reread:
 }
 
 #ifndef WIZARD
-/*@
+/*
  * get_scores:
  *	Fill top10 from the score file (persistence/HighScores); the entries
  *	after the last have no gold. Returns false, with an empty list, if the
@@ -114,7 +113,7 @@ get_scores(struct sc_ent *top10, bool *legacy)
 	*legacy = list->format == rogue::persistence::ScoresFormat::Legacy;
 	int i = 0;
 	for (const rogue::persistence::ScoreEntry &e : list->entries) {
-		snprintf(top10[i].sc_name, sizeof top10[i].sc_name, "%s", e.name.c_str());
+		e.name.copy(top10[i].sc_name, sizeof top10[i].sc_name - 1);
 		top10[i].sc_gold = e.gold;
 		top10[i].sc_level = e.depth;
 		top10[i].sc_rank = e.experience;
@@ -124,7 +123,7 @@ get_scores(struct sc_ent *top10, bool *legacy)
 	return true;
 }
 
-/*@
+/*
  * put_scores:
  *	Write the entries with gold to the score file, with the cause of each
  *	fate in words.
@@ -158,25 +157,24 @@ void
 pr_scores(int newrank, struct sc_ent *top10)
 {
 	int i, n;
-	char dthstr[30];
-	char texts[TOPSCORES][MAXSTR];
+	std::string dthstr;
+	std::string texts[TOPSCORES];
 	rogue::ui::ScoreLine lines[TOPSCORES];
 	const char *altmsg;
 
 	for (i=0,n=0;i<TOPSCORES;i++,top10++)
 	{
-		char *text = texts[n];
+		std::string &text = texts[n];
 
 		altmsg = NULL;
 		if (top10->sc_gold <=0 )
 			break;
-		if (top10->sc_level >= 26)  //@ There is AMULETLEVEL, you know?
+		if (top10->sc_level >= 26)
 			altmsg = " Honored by the Guild";
 
 		if (is_alpha(top10->sc_fate))
 		{
-			sprintf(dthstr," killed by %s",
-				killname((0xff & top10->sc_fate), TRUE));
+			dthstr = " killed by " + killname((0xff & top10->sc_fate), TRUE);
 		}
 		else
 		{
@@ -186,24 +184,24 @@ pr_scores(int newrank, struct sc_ent *top10)
 					altmsg = " A total winner!";
 					break;
 				case 1:
-					strcpy(dthstr," quit");
+					dthstr = " quit";
 					break;
 				default:
-					strcpy(dthstr," wierded out");
+					dthstr = " wierded out";
 					break;
 			}
 		}
-		text[0] = '\0';
+		text.clear();
 		if ((signed)(strlen(top10->sc_name) + 10 +
 			strlen(he_man[top10->sc_rank-1])) < COLS)
 		{
 			if (top10->sc_rank > 1 && (strlen(top10->sc_name)))
-				sprintf(text, " \"%s\"",he_man[top10->sc_rank - 1]);
+				text = std::format(" \"{}\"", he_man[top10->sc_rank - 1]);
 		}
 		if (altmsg == NULL)
-			sprintf(text + strlen(text), "%s on level %d",dthstr,top10->sc_level);
+			text += std::format("{} on level {}", dthstr, top10->sc_level);
 		else
-			strcat(text, altmsg);
+			text += altmsg;
 		lines[n].gold = top10->sc_gold;
 		lines[n].name = top10->sc_name;
 		lines[n].text = text;
@@ -248,10 +246,8 @@ death(char monst)
 	game().player.purse -= game().player.purse / 10;
 
 	display().curtain_down();
-	//@ killname() leaves the death reason in prbuf
-	killname(monst, TRUE);
 	year = md_localtime()->year;
-	display().draw_tombstone(game().options.name, prbuf, game().player.purse, year);
+	display().draw_tombstone(game().options.name, killname(monst, TRUE), game().player.purse, year);
 	display().curtain_up();
 	display().write_at(LINES-1, 0, "");
 	score(game().player.purse, 0, monst);
@@ -267,9 +263,8 @@ total_winner(void)
 {
 	Item *obj;
 	int worth = 0;
-	byte c;
+	unsigned char c;
 	int oldpurse;
-	char buf[132];  //@ as printw() had
 	rogue::Items &items = game().items;
 
 	display().draw_winner(game().options.terse);
@@ -281,54 +276,59 @@ total_winner(void)
 	{
 	switch (obj->o_type)
 	{
-		when ItemKind::Food:
+		case ItemKind::Food:
 			worth = 2 * obj->o_count;
-		when ItemKind::Weapon:
+			break;
+		case ItemKind::Weapon:
 			switch (obj->o_which)
 			{
-				when MACE: worth = 8;
-				when SWORD: worth = 15;
-				when CROSSBOW: worth = 30;
-				when ARROW: worth = 1;
-				when DAGGER: worth = 2;
-				when TWOSWORD: worth = 75;
-				when DART: worth = 1;
-				when BOW: worth = 15;
-				when BOLT: worth = 1;
-				when SPEAR: worth = 5;
+				case MACE: worth = 8; break;
+				case SWORD: worth = 15; break;
+				case CROSSBOW: worth = 30; break;
+				case ARROW: worth = 1; break;
+				case DAGGER: worth = 2; break;
+				case TWOSWORD: worth = 75; break;
+				case DART: worth = 1; break;
+				case BOW: worth = 15; break;
+				case BOLT: worth = 1; break;
+				case SPEAR: worth = 5;
 				break;
 			}
 			worth *= 3 * (obj->o_hplus + obj->o_dplus) + obj->o_count;
 			obj->o_flags.set(ISKNOW);
-		when ItemKind::Armor:
+			break;
+		case ItemKind::Armor:
 			switch (obj->o_which)
 			{
-				when LEATHER: worth = 20;
-				when RING_MAIL: worth = 25;
-				when STUDDED_LEATHER: worth = 20;
-				when SCALE_MAIL: worth = 30;
-				when CHAIN_MAIL: worth = 75;
-				when SPLINT_MAIL: worth = 80;
-				when BANDED_MAIL: worth = 90;
-				when PLATE_MAIL: worth = 150;
+				case LEATHER: worth = 20; break;
+				case RING_MAIL: worth = 25; break;
+				case STUDDED_LEATHER: worth = 20; break;
+				case SCALE_MAIL: worth = 30; break;
+				case CHAIN_MAIL: worth = 75; break;
+				case SPLINT_MAIL: worth = 80; break;
+				case BANDED_MAIL: worth = 90; break;
+				case PLATE_MAIL: worth = 150;
 				break;
 			}
 			worth += (9 - obj->o_ac) * 100;
 			worth += (10 * (a_class[obj->o_which] - obj->o_ac));
 			obj->o_flags.set(ISKNOW);
-		when ItemKind::Scroll:
+			break;
+		case ItemKind::Scroll:
 			worth = items.s_magic[obj->o_which].mi_worth;
 			worth *= obj->o_count;
 			if (!items.s_know[obj->o_which])
 				worth /= 2;
 			items.s_know[obj->o_which] = TRUE;
-		when ItemKind::Potion:
+			break;
+		case ItemKind::Potion:
 			worth = items.p_magic[obj->o_which].mi_worth;
 			worth *= obj->o_count;
 			if (!items.p_know[obj->o_which])
 				worth /= 2;
 			items.p_know[obj->o_which] = TRUE;
-		when ItemKind::Ring:
+			break;
+		case ItemKind::Ring:
 			worth = items.r_magic[obj->o_which].mi_worth;
 			if (obj->o_which == R_ADDSTR || obj->o_which == R_ADDDAM ||
 				obj->o_which == R_PROTECT || obj->o_which == R_ADDHIT)
@@ -342,27 +342,29 @@ total_winner(void)
 				worth /= 2;
 			obj->o_flags.set(ISKNOW);
 			items.r_know[obj->o_which] = TRUE;
-		when ItemKind::Stick:
+			break;
+		case ItemKind::Stick:
 			worth = items.ws_magic[obj->o_which].mi_worth;
 			worth += 20 * obj->o_charges;
 			if (!obj->o_flags.test(ISKNOW))
 				worth /= 2;
 			obj->o_flags.set(ISKNOW);
 			items.ws_know[obj->o_which] = TRUE;
-			when ItemKind::Amulet:
+				break;
+			case ItemKind::Amulet:
 			worth = 1000;
 			break;
-	otherwise:	//@ the other kinds of item: nothing
+	default:	// the other kinds of item: nothing
 		break;
 	}
 	if (worth < 0)
 		worth = 0;
-	snprintf(buf, sizeof buf, "%c) %5d  %s", c, worth, inv_name(obj, FALSE));
-	display().write_at(c - 'a' + 1, 0, buf);
+	display().write_at(c - 'a' + 1, 0,
+		std::format("{}) {:5}  {}", static_cast<char>(c), worth, inv_name(obj, FALSE)));
 	game().player.purse += worth;
 	}
-	snprintf(buf, sizeof buf, "   %5u  Gold Pieces          ", oldpurse);
-	display().write_at(c - 'a' + 1, 0, buf);
+	display().write_at(c - 'a' + 1, 0,
+		std::format("   {:5}  Gold Pieces          ", static_cast<unsigned>(oldpurse)));
 	score(game().player.purse, 2, 0);
 	md_exit(EXIT_SUCCESS);
 }
@@ -371,28 +373,32 @@ total_winner(void)
  * killname:
  *	Convert a code to a monster name
  */
-char *
-killname(byte monst, bool doart)
+std::string
+killname(unsigned char monst, bool doart)
 {
 	const char *sp;
 	bool article;
 
-	sp = prbuf;
 	article = TRUE;
 	switch (monst)
 	{
-	when 'a':
+	case 'a':
 		sp = "arrow";
-	when 'b':
+		break;
+	case 'b':
 		sp = "bolt";
-	when 'd':
+		break;
+	case 'd':
 		sp = "dart";
-	when 's':
+		break;
+	case 's':
 		sp = "starvation";
 		article = FALSE;
-	when 'f':
+		break;
+	case 'f':
 		sp = "fall";
-	otherwise:
+		break;
+	default:
 		if (ismonster(monst))
 			sp = monsters[monst-'A'].m_name;
 		else
@@ -402,10 +408,7 @@ killname(byte monst, bool doart)
 		}
 	}
 	if (doart && article)
-	sprintf(prbuf, "a%s ", vowelstr(sp));
-	else
-	prbuf[0] = '\0';
-	strcat(prbuf, sp);
-	return prbuf;
+		return std::format("a{} {}", vowelstr(sp), sp);
+	return sp;
 }
 

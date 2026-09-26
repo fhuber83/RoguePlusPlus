@@ -4,8 +4,8 @@
  * Potions: quaffing one, throwing one at a monster, and the invisibility
  * and monster-sensing state they turn on.
  *
- * Included by rogue.h after extern.h (byte) and entities/Item.hpp
- * (Item)/Creature.hpp (Creature).
+ * Included by rogue.h after entities/Item.hpp (Item) and Creature.hpp
+ * (Creature).
  */
 
 namespace rogue {

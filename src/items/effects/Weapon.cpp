@@ -23,7 +23,7 @@ static struct init_weps {
 };
 
 static int	fallpos(Item *obj, coord *newpos);
-static const char	*short_name(Item *obj);
+static std::string	short_name(Item *obj);
 
 /*
  * missile:
@@ -84,7 +84,7 @@ missile(int ydelta, int xdelta)
 void
 do_motion(Item *obj, int ydelta, int xdelta)
 {
-	byte under = '@';
+	unsigned char under = '@';
 
 	/*
 	 * Come fly with us ...
@@ -122,7 +122,7 @@ do_motion(Item *obj, int ydelta, int xdelta)
 }
 
 static
-const char *
+std::string
 short_name(Item *obj)
 {
 	switch (obj->o_type) {
@@ -134,7 +134,10 @@ short_name(Item *obj)
 		case ItemKind::Amulet:
 		case ItemKind::Stick:
 		case ItemKind::Ring:
-			return strchr(inv_name(obj, TRUE), ' ') + 1;
+		{
+			std::string name = inv_name(obj, TRUE);
+			return name.substr(name.find(' ') + 1);
+		}
 		default:
 			return "bizzare thing";
 	}
@@ -172,7 +175,7 @@ fall(Item *obj, bool pr)
 		break;
 	}
 	if (pr)
-		msg("the %s vanishes%s.", short_name(obj),
+		msg("the {} vanishes{}.", short_name(obj),
 								  noterse(" as it hits the ground"));
 	discard(obj);
 }
@@ -182,7 +185,7 @@ fall(Item *obj, bool pr)
  *	Set up the initial goodies for a weapon
  */
 void
-init_weapon(Item *weap, byte type)
+init_weapon(Item *weap, unsigned char type)
 {
 	struct init_weps *iwp;
 
@@ -222,14 +225,13 @@ hit_monster(int y, int x, Item *obj)
  * num:
  *	Figure out the plus number for armor/weapons
  */
-char *
+std::string
 num(int n1, int n2, char type)
 {
-	static char numbuf[10];
+	std::string numbuf = std::format("{:+}", n1);
 
-	sprintf(numbuf, "%s%d", n1 < 0 ? "" : "+", n1);
 	if (type == WEAPON)
-		sprintf(&numbuf[strlen(numbuf)], ",%s%d", n2 < 0 ? "" : "+", n2);
+		numbuf += std::format(",{:+}", n2);
 	return numbuf;
 }
 
@@ -241,7 +243,7 @@ void
 wield(void)
 {
 	Item *obj, *oweapon;
-	char *sp;
+	std::string sp;
 	rogue::Player &player = game().player;
 
 	oweapon = player.weapon;
@@ -268,7 +270,7 @@ bad:
 
 	sp = inv_name(obj, TRUE);
 	player.weapon = obj;
-	ifterse2("now wielding %s (%c)", "you are now wielding %s (%c)",
+	ifterse("now wielding {} ({:c})", "you are now wielding {} ({:c})",
 		sp, pack_char(obj));
 }
 
@@ -314,7 +316,7 @@ fallpos(Item *obj, coord *newpos)
 }
 
 
-//@ pause for a tick, ie, 1/18.2 secs (about 55ms)
+// pause for a tick, ie, 1/18.2 secs (about 55ms)
 void
 tick_pause(void)
 {

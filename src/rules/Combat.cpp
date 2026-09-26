@@ -9,7 +9,7 @@
 namespace rogue::rules {
 
 static bool	roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl);
-static char	*prname(const char *who, bool upper);
+static std::string	prname(const char *who, bool upper);
 static void	hit(const char *er, const char *ee);
 static void	miss(const char *er, const char *ee);
 static void	thunk(Item *weap, const char *mname, const char *does, const char *did);
@@ -42,14 +42,14 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 	/*
 	 * Let him know it was really a mimic (if it was one).
 	 */
-	if (tp->t_type == 'X' && tp->t_disguise != 'X' && !on(player.body, ISBLIND)) {
+	if (tp->t_type == 'X' && tp->t_disguise != 'X' && !player.body.t_flags.test(ISBLIND)) {
 		mn = tp->t_disguise = 'X';
 		if (thrown)
 			return FALSE;
 		msg("wait! That's a Xeroc!");
 	}
 	mname = monsters[mn-'A'].m_name;
-	if (on(player.body, ISBLIND))
+	if (player.body.t_flags.test(ISBLIND))
 		mname = it;
 	if (roll_em(&player.body, tp, weap, thrown)||(weap && weap->o_type == ItemKind::Potion)) {
 		bool did_huh = FALSE;
@@ -58,7 +58,7 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 			thunk(weap, mname, "hits", "hit");
 		else
 			hit(NULL, mname);
-		//@ original missed NULL check for weap
+		// original missed NULL check for weap
 		if (weap && weap->o_type == ItemKind::Potion) {
 			th_effect(weap, tp);
 			if (!thrown) {
@@ -71,7 +71,7 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 				player.weapon = NULL;
 			}
 		}
-		if (on(player.body, CANHUH)) {
+		if (player.body.t_flags.test(CANHUH)) {
 			did_huh = TRUE;
 			tp->t_flags.set(ISHUH);
 			player.body.t_flags.unset(CANHUH);
@@ -79,8 +79,8 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 		}
 		if (tp->t_stats.s_hpt <= 0)
 			killed(tp, TRUE);
-		else if (did_huh && !on(player.body, ISBLIND))
-			msg("the %s appears confused", mname);
+		else if (did_huh && !player.body.t_flags.test(ISBLIND))
+			msg("the {} appears confused", mname);
 		return TRUE;
 	}
 	if (thrown)
@@ -108,19 +108,19 @@ attack(Creature *mp)
 	 */
 	game().turn.running = FALSE;
 	game().turn.count = player.quiet = 0;
-	if (mp->t_type == 'X' && !on(player.body, ISBLIND))
+	if (mp->t_type == 'X' && !player.body.t_flags.test(ISBLIND))
 		mp->t_disguise = 'X';
 	mname = monsters[mp->t_type-'A'].m_name;
-	if (on(player.body, ISBLIND))
+	if (player.body.t_flags.test(ISBLIND))
 		mname = it;
 	if (roll_em(mp, &player.body, NULL, FALSE)) {
 		hit(mname, NULL);
 		if (pstats.s_hpt <= 0)
 			death(mp->t_type);	/* Bye bye life ... */
-		if (!on(*mp, ISCANC))
+		if (!mp->t_flags.test(ISCANC))
 			switch (mp->t_type)
 		{
-		when 'A':
+		case 'A':
 			/*
 			 * If a rust monster hits, you lose armor, unless
 			 * that armor is leather or there is a magic ring
@@ -136,14 +136,15 @@ attack(Creature *mp)
 					player.armor->o_ac++;
 				}
 			}
-		when 'I':
+			break;
+		case 'I':
 			/*
 			 * When an Ice Monster hits you, you get unfrozen faster
 			 */
 			if (player.no_command > 1)
 				player.no_command--;
 			break;
-		when 'R':
+		case 'R':
 			/*
 			 * Rattlesnakes have poisonous bites
 			 */
@@ -152,13 +153,14 @@ attack(Creature *mp)
 				if (!ISWEARING(R_SUSTSTR))
 				{
 					chg_str(-1);
-					msg("you feel a bite in your leg%s",
+					msg("you feel a bite in your leg{}",
 						noterse(" and now feel weaker"));
 				}
 				else
 					msg("a bite momentarily weakens you");
 			}
-		when 'W':
+			break;
+		case 'W':
 		case 'V':
 			/*
 			 * Wraiths might drain energy levels, and Vampires
@@ -191,13 +193,17 @@ attack(Creature *mp)
 				death(mp->t_type);
 			msg("you suddenly feel weaker");
 			}
-		when 'F':
+			break;
+		case 'F':
 			/*
 			 * Violet fungi stops the poor guy from moving
 			 */
 			player.body.t_flags.set(ISHELD);
-			sprintf(game().player.flytrap_damage,"%dd1",++player.fung_hit);
-		when 'L':
+			// cut to fit
+			*std::format_to_n(player.flytrap_damage, sizeof player.flytrap_damage - 1,
+				"{}d1", ++player.fung_hit).out = '\0';
+			break;
+		case 'L':
 		{
 			/*
 			 * Leperachaun steals some gold
@@ -214,11 +220,12 @@ attack(Creature *mp)
 			if (player.purse != lastpurse)
 			msg("your purse feels lighter");
 		}
-		when 'N':
+			break;
+		case 'N':
 		{
 			Item *obj, *steal;
 			int nobj;
-			const char *she_stole = "she stole %s!";
+			constexpr const char *she_stole = "she stole {}!";
 
 			/*
 			 * Nymph's steal a magic item, look through the pack
@@ -245,20 +252,16 @@ attack(Creature *mp)
 				}
 				else
 				{
-					/*@
-					 * inv_name() must run before discard(): it reads steal's
-					 * fields into prbuf, and a discarded pool slot is not
-					 * guaranteed to keep its contents (see MODERNIZATION.md
-					 * on the entity pool).
-					 */
-					const char *name = inv_name(steal, TRUE);
+					// inv_name() must run before discard() frees steal
+					std::string name = inv_name(steal, TRUE);
 					detach(pack, steal);
 					discard(steal);
 					msg(she_stole, name);
 				}
 			}
 		}
-		otherwise:
+			break;
+		default:
 			break;
 		}
 	}
@@ -311,7 +314,7 @@ check_level(void)
 		max_hp += add;
 		if ((pstats.s_hpt += add) > max_hp)
 			pstats.s_hpt = max_hp;
-		msg("and achieve the rank of \"%s\"", he_man[i-1]);
+		msg("and achieve the rank of \"{}\"", he_man[i-1]);
 	}
 }
 
@@ -381,7 +384,7 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 		}
 	}
 
-	//@ New NULL check to prevent segfault on parsing
+	// New NULL check to prevent segfault on parsing
 	if (cp == NULL)
 	{
 		return FALSE;
@@ -391,7 +394,7 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 	 * If the creature being attacked is not running (alseep or held)
 	 * then the attacker gets a plus four bonus to hit.
 	 */
-	if (!on(*thdef, ISRUN))
+	if (!thdef->t_flags.test(ISRUN))
 		hplus += 4;
 	def_arm = def->s_arm;
 	if (def == &pstats)
@@ -427,22 +430,20 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
  * prname:
  *	The print name of a combatant
  */
-static char *
+static std::string
 prname(const char *who, bool upper)
 {
-	*tbuf = '\0';
+	std::string name;
+
 	if (who == 0)
-		strcpy(tbuf, you);
-	else if (on(game().player.body, ISBLIND))
-		strcpy(tbuf, it);
+		name = you;
+	else if (game().player.body.t_flags.test(ISBLIND))
+		name = it;
 	else
-	{
-		strcpy(tbuf, "the ");
-		strcat(tbuf, who);
-	}
-	if (upper)
-		*tbuf = toupper(*tbuf);
-	return tbuf;
+		name = std::string("the ") + who;
+	if (upper && !name.empty())
+		name[0] = toupper(name[0]);
+	return name;
 }
 
 /*
@@ -454,16 +455,16 @@ hit(const char *er, const char *ee)
 {
 	const char *s = "";
 
-	addmsg(prname(er, TRUE));
+	addmsg("{}", prname(er, TRUE));
 	switch (game().options.brief() ? 1 : rnd(4))
 	{
-		when 0: s = " scored an excellent hit on ";
-		when 1: s = " hit ";
-		when 2: s = (er == 0 ? " have injured " : " has injured ");
-		when 3: s = (er == 0 ? " swing and hit " : " swings and hits ");
+		case 0: s = " scored an excellent hit on "; break;
+		case 1: s = " hit "; break;
+		case 2: s = (er == 0 ? " have injured " : " has injured "); break;
+		case 3: s = (er == 0 ? " swing and hit " : " swings and hits ");
 		break;
 	}
-	msg("%s%s",s,prname(ee, FALSE));
+	msg("{}{}",s,prname(ee, FALSE));
 }
 
 /*
@@ -476,16 +477,16 @@ miss(const char *er, const char *ee)
 	const char *s = "";
 
 
-	addmsg(prname(er, TRUE));
+	addmsg("{}", prname(er, TRUE));
 	switch (game().options.brief() ? 1 : rnd(4))
 	{
-		when 0: s = (er == 0 ? " swing and miss" : " swings and misses");
-		when 1: s = (er == 0 ? " miss" : " misses");
-		when 2: s = (er == 0 ? " barely miss" : " barely misses");
-		when 3: s = (er == 0 ? " don't hit" : " doesn't hit");
+		case 0: s = (er == 0 ? " swing and miss" : " swings and misses"); break;
+		case 1: s = (er == 0 ? " miss" : " misses"); break;
+		case 2: s = (er == 0 ? " barely miss" : " barely misses"); break;
+		case 3: s = (er == 0 ? " don't hit" : " doesn't hit");
 		break;
 	}
-	msg("%s %s",s,prname(ee, FALSE));
+	msg("{} {}",s,prname(ee, FALSE));
 }
 
 /*
@@ -584,16 +585,15 @@ static void
 thunk(Item *weap, const char *mname, const char *does, const char *did)
 {
 	if (weap->o_type == ItemKind::Weapon)
-		addmsg("the %s %s ", w_names[weap->o_which], does);
+		addmsg("the {} {} ", w_names[weap->o_which], does);
 	else
-		addmsg("you %s ", did);
-	if (on(game().player.body, ISBLIND))
-		msg(it);
+		addmsg("you {} ", did);
+	if (game().player.body.t_flags.test(ISBLIND))
+		msg("{}", it);
 	else
-		msg("the %s", mname);
+		msg("the {}", mname);
 }
 
-//@ renamed from remove() to avoid conflict with <stdio.h>
 /*
  * remove_monster:
  *	Remove a monster from the screen
@@ -645,7 +645,7 @@ is_magic(Item *obj)
 	case ItemKind::Ring:
 	case ItemKind::Amulet:
 		return TRUE;
-	otherwise:	//@ the other kinds of item: nothing
+	default:	// the other kinds of item: nothing
 		break;
 	}
 	return FALSE;
@@ -658,7 +658,7 @@ is_magic(Item *obj)
 void
 killed(Creature *tp, bool pr)
 {
-	char type = tp->t_type;	//@ remove_monster() discards tp
+	char type = tp->t_type;	// remove_monster() discards tp
 
 	pstats.s_exp += tp->t_stats.s_exp;
 	/*
@@ -666,10 +666,11 @@ killed(Creature *tp, bool pr)
 	 */
 	switch (tp->t_type)
 	{
-	when 'F':
+	case 'F':
 		game().player.body.t_flags.unset(ISHELD);
 		f_restor();
-	when 'L':;
+		break;
+	case 'L':;
 		Item *gold;
 
 		if ((gold = new_item()) == NULL)
@@ -688,10 +689,10 @@ killed(Creature *tp, bool pr)
 	if (pr)
 	{
 	addmsg("you have defeated ");
-	if (on(game().player.body, ISBLIND))
-		msg(it);
+	if (game().player.body.t_flags.test(ISBLIND))
+		msg("{}", it);
 	else
-		msg("the %s", monsters[type-'A'].m_name);
+		msg("the {}", monsters[type-'A'].m_name);
 	}
 	/*
 	 * Do adjustments if he went up a level

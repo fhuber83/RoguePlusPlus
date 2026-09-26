@@ -18,11 +18,12 @@ fix_stick(Item *cur)
 	cur->o_charges = 3 + rnd(5);
 	switch (cur->o_which)
 	{
-	when WS_HIT:
+	case WS_HIT:
 		cur->o_hplus = 100;
 		cur->o_dplus = 3;
 		cur->o_damage = "1d8";
-	when WS_LIGHT:
+		break;
+	case WS_LIGHT:
 		cur->o_charges = 10 + rnd(10);
 		break;
 	}
@@ -64,11 +65,11 @@ do_zap()
 	}
 	switch (which_one)
 	{
-	when WS_LIGHT:
+	case WS_LIGHT:
 		/*
 		 * Reddy Kilowat wand.  Light up the room
 		 */
-		if (on(player.body,ISBLIND))
+		if (player.body.t_flags.test(ISBLIND))
 			msg("you feel a warm glow around you");
 		else
 		{
@@ -86,7 +87,8 @@ do_zap()
 			 */
 			enter_room(&hero);
 		}
-	when WS_DRAIN:
+		break;
+	case WS_DRAIN:
 		/*
 		 * Take away 1/2 of hero's hit points, then take it away
 		 * evenly from the monsters in the room (or next to hero
@@ -99,13 +101,14 @@ do_zap()
 		}
 		else
 			drain();
-	when WS_POLYMORPH:
+		break;
+	case WS_POLYMORPH:
 	case WS_TELAWAY:
 	case WS_TELTO:
 	case WS_CANCEL:
 	case MAXSTICKS:			/* Special case for vorpal weapon */
 	{
-		byte monster, oldch;
+		unsigned char monster, oldch;
 		int rm;
 		coord new_yx;
 
@@ -118,7 +121,7 @@ do_zap()
 		}
 		if ((tp = moat(y, x)) != NULL)
 		{
-			byte omonst;
+			unsigned char omonst;
 
 			omonst = monster = tp->t_type;
 			if (monster == 'F')
@@ -127,7 +130,7 @@ do_zap()
 			{
 				if (monster == obj->o_enemy)
 				{
-					msg("the %s vanishes in a puff of smoke",
+					msg("the {} vanishes in a puff of smoke",
 						monsters[monster-'A'].m_name);
 					killed(tp, FALSE);
 				}
@@ -174,7 +177,7 @@ do_zap()
 					tp->t_pos = new_yx;
 					if (see_monst(tp))
 						display().draw_tile(tp->t_pos, tp->t_disguise);
-					else if (on(player.body, SEEMONST))
+					else if (player.body.t_flags.test(SEEMONST))
 						display().draw_tile(tp->t_pos, tp->t_disguise, TileStyle::Inverse);
 				}
 				else /* it MUST BE at WS_TELTO */
@@ -191,7 +194,8 @@ do_zap()
 			tp->t_flags.set(ISRUN);
 		}
 	}
-	when WS_MISSILE:
+		break;
+	case WS_MISSILE:
 	{
 		Item bolt;
 
@@ -209,7 +213,8 @@ do_zap()
 		else
 		msg("the missle vanishes with a puff of smoke");
 	}
-	when WS_HIT:
+		break;
+	case WS_HIT:
 		turn.delta.y += hero.y;
 		turn.delta.x += hero.x;
 		if ((tp = moat(turn.delta.y, turn.delta.x)) != NULL)
@@ -226,7 +231,8 @@ do_zap()
 			}
 			fight(&turn.delta, tp->t_type, obj, FALSE);
 		}
-	when WS_HASTE_M:
+		break;
+	case WS_HASTE_M:
 	case WS_SLOW_M:
 		y = hero.y;
 		x = hero.x;
@@ -239,14 +245,14 @@ do_zap()
 		{
 			if (which_one == WS_HASTE_M)
 			{
-				if (on(*tp, ISSLOW))
+				if (tp->t_flags.test(ISSLOW))
 					tp->t_flags.unset(ISSLOW);
 				else
 					tp->t_flags.set(ISHASTE);
 			}
 			else
 			{
-				if (on(*tp, ISHASTE))
+				if (tp->t_flags.test(ISHASTE))
 					tp->t_flags.unset(ISHASTE);
 				else
 					tp->t_flags.set(ISSLOW);
@@ -256,7 +262,8 @@ do_zap()
 			turn.delta.x = x;
 			start_run(&turn.delta);
 		}
-	when WS_ELECT:
+		break;
+	case WS_ELECT:
 	case WS_FIRE:
 	case WS_COLD:
 		if (which_one == WS_ELECT)
@@ -267,11 +274,12 @@ do_zap()
 			name = "ice";
 		fire_bolt(&hero, &turn.delta, name);
 		game().items.ws_know[which_one] = TRUE;
-#ifdef DEBUG
-	otherwise:
-		msg("what a bizarre schtick!");
-#endif
 		break;
+#ifdef DEBUG
+	default:
+		msg("what a bizarre schtick!");
+		break;
+#endif
 	}
 	if (--obj->o_charges < 0)
 		obj->o_charges = 0;
@@ -334,14 +342,14 @@ drain()
 void
 fire_bolt(coord *start, coord *dir, const char *name)
 {
-	byte dirch = 0, ch;
+	unsigned char dirch = 0, ch;
 	Creature *tp;
 	bool hit_hero, used, changed;
 	int i, j;
 	coord pos;
 	struct {
 		coord s_pos;
-		byte s_under;
+		unsigned char s_under;
 	} spotpos[BOLT_LENGTH*2];
 	Item bolt;
 	bool is_frost;
@@ -354,9 +362,9 @@ fire_bolt(coord *start, coord *dir, const char *name)
 	bolt.o_dplus = 0;
 	w_names[FLAME] = name;
 	switch (dir->y + dir->x) {
-		when 0: dirch = '/';
-		when 1: case -1: dirch = (dir->y == 0 ? '-' : '|');
-		when 2: case -2: dirch = '\\';
+		case 0: dirch = '/'; break;
+		case 1: case -1: dirch = (dir->y == 0 ? '-' : '|'); break;
+		case 2: case -2: dirch = '\\';
 		break;
 	}
 	pos = *start;
@@ -385,7 +393,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 			dir->y = -dir->y;
 			dir->x = -dir->x;
 			i--;
-			msg("the %s bounces", name);
+			msg("the {} bounces", name);
 			break;
 		default:
 			if (!hit_hero && (tp = moat(pos.y, pos.x)) != NULL) {
@@ -406,7 +414,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 				} else if (ch != 'X' || tp->t_disguise == 'X') {
 					if (start == &hero)
 						start_run(&pos);
-					msg("the %s whizzes past the %s",
+					msg("the {} whizzes past the {}",
 						name, monsters[ch-'A'].m_name);
 				}
 			} else if (hit_hero && (pos == hero)) {
@@ -414,7 +422,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 				changed = !changed;
 				if (!save(VS_MAGIC)) {
 					if (is_frost) {
-						msg("You are frozen by a blast of frost%s.",
+						msg("You are frozen by a blast of frost{}.",
 							noterse(" from the Ice Monster"));
 						if (game().player.no_command < 20)
 							game().player.no_command += spread(7);
@@ -426,9 +434,9 @@ fire_bolt(coord *start, coord *dir, const char *name)
 					}
 					used = TRUE;
 					if (!is_frost)
-						msg("you are hit by the %s", name);
+						msg("you are hit by the {}", name);
 				} else
-					msg("the %s whizzes by you", name);
+					msg("the {} whizzes by you", name);
 			}
 			tick_pause();
 			display().draw_tile(pos, dirch, is_frost ? TileStyle::FrostBolt : TileStyle::Bolt);
@@ -446,16 +454,12 @@ fire_bolt(coord *start, coord *dir, const char *name)
  * charge_str:
  *	Return an appropriate string for a wand charge
  */
-char *
-charge_str(Item *obj)
+std::string
+charge_str(const Item *obj)
 {
-	static char buf[20];
-
 	if (!obj->o_flags.test(ISKNOW))
-		buf[0] = '\0';
-	else
-		sprintf(buf, " [%d charges]", obj->o_charges);
-	return buf;
+		return "";
+	return std::format(" [{} charges]", obj->o_charges);
 }
 
 }  // namespace rogue::items::effects

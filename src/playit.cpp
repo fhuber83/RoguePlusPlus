@@ -12,8 +12,6 @@
  * main.c	1.4 (A.I. Design) 11/28/84
  * All rights reserved
  * Copyright (C) 1983 by Mel Sibony, Jon Lane (AI Design update for the IBMPC)
- *
- *@ main() now lives in app/main.cpp
  */
 
 #include "rogue.h"
@@ -37,7 +35,7 @@ void
 playit(char *sname)
 {
 	if (sname) {
-		setup();			//@ first: the save has the terse and expert toggles
+		setup();			// first: the save has the terse and expert toggles
 		restore(sname);
 		display().show_cursor(FALSE);
 	} else {
@@ -58,7 +56,7 @@ void
 quit()
 {
 	coord here;
-	byte answer;
+	unsigned char answer;
 	static bool qstate = FALSE;
 
 	/*
@@ -69,7 +67,7 @@ quit()
 		leave();
 	qstate = TRUE;
 	game().message.end = 0;
-	here = display().write("");  //@ where the cursor was
+	here = display().write("");  // where the cursor was
 	display().clear_line(0);
 	if (!game().options.terse)
 		display().write_at(0, 0, "Do you wish to ");
@@ -78,8 +76,8 @@ quit()
 	answer = readchar();
 	if (answer == 'y' || answer == 'Y') {
 		display().clear_page();
-		sprintf(prbuf, "You quit with %u gold pieces\n", game().player.purse);
-		display().write_at(0, 0, prbuf);
+		display().write_at(0, 0, std::format("You quit with {} gold pieces\n",
+			static_cast<unsigned>(game().player.purse)));
 		score(game().player.purse, 1, 0);
 		fatal("");
 	} else {

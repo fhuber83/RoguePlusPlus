@@ -1,9 +1,7 @@
 /*
- *  Cursor motion stuff to simulate a "no refresh" version of curses
- *
- *  @ Now the ncurses backend of rogue::ui::Screen: it maps glyph codes to
- *  @ Unicode (or ASCII) and styles to curses colour pairs, and reads keys.
- *  @ It is the only file that includes the system <curses.h>.
+ *  The ncurses backend of rogue::ui::Screen: it maps glyph codes to
+ *  Unicode (or ASCII) and styles to curses colour pairs, and reads keys.
+ *  It is the only file that includes the system <curses.h>.
  */
 
 #include "ui/curses/CursesTerminal.hpp"
@@ -28,7 +26,7 @@ namespace {
 int want_lines = MAXLINES;
 int want_cols = MAXCOLS;
 
-/*@
+/*
  * ASCII instead of Unicode glyphs. ROGUE_CHARSET=1 selects it at build
  * time; 3 (UNICODE, the default) and the retired 2 (raw CP437) do not.
  */
@@ -53,9 +51,9 @@ bool change_colors = true;
 // if user wants to use default terminal foreground / background color
 bool use_terminal_fgbg = true;
 
-int key_mask = ~0;  //@ all bits until define_keys() knows better
+int key_mask = ~0;  // all bits until define_keys() knows better
 
-/*@
+/*
  * How each glyph code is shown. Codes not listed are printable ASCII shown
  * as themselves; anything else shows as '`' ("something went wrong!").
  *
@@ -143,7 +141,7 @@ wchar_t shown_as(const Cell &cell)
 	return cell.line ? look->line_ascii : look->ascii;
 }
 
-/*@
+/*
  * Numpad keys missing from the terminfo data of some common terminals
  * See define_keys()
  *
@@ -188,31 +186,31 @@ const struct {
 	{"\033[4~", KEY_END},
 };
 
-/*@
+/*
  * Curses key codes the game understands, as rogue::ui::key values
  */
 const struct {
 	int keycode;
 	int key;
 } keytab[] = {
-	{KEY_ENTER,	key::Enter}, //@ Keypad Enter
+	{KEY_ENTER,	key::Enter}, // Keypad Enter
 	{KEY_HOME,	key::Home},
-	{KEY_FIND,	key::Home},  //@ Keypad Home (7) in some terminals
-	{KEY_A1,	key::Home},  //@ Keypad upper left (7)
+	{KEY_FIND,	key::Home},  // Keypad Home (7) in some terminals
+	{KEY_A1,	key::Home},  // Keypad upper left (7)
 	{KEY_UP,	key::Up},
-	{KEY_PPAGE,	key::PageUp},  //@ Page Up
-	{KEY_A3,	key::PageUp},  //@ Keypad upper right (9)
+	{KEY_PPAGE,	key::PageUp},  // Page Up
+	{KEY_A3,	key::PageUp},  // Keypad upper right (9)
 	{KEY_BACKSPACE, key::Backspace},
 	{KEY_LEFT,	key::Left},
 	{KEY_RIGHT,	key::Right},
 	{KEY_END,	key::End},
-	{KEY_SELECT,	key::End},  //@ Keypad End (1) in some terminals
-	{KEY_C1,	key::End},  //@ Keypad lower left (1)
+	{KEY_SELECT,	key::End},  // Keypad End (1) in some terminals
+	{KEY_C1,	key::End},  // Keypad lower left (1)
 	{KEY_DOWN,	key::Down},
-	{KEY_NPAGE,	key::PageDown},  //@ Page Down
-	{KEY_C3,	key::PageDown},  //@ Keypad lower right (3)
-	{KEY_IC,	key::Insert},  //@ Insert
-	{KEY_DC,	key::Delete},  //@ Delete
+	{KEY_NPAGE,	key::PageDown},  // Page Down
+	{KEY_C3,	key::PageDown},  // Keypad lower right (3)
+	{KEY_IC,	key::Insert},  // Insert
+	{KEY_DC,	key::Delete},  // Delete
 	{KEY_F(1),	key::function(1)},
 	{KEY_F(2),	key::function(2)},
 	{KEY_F(3),	key::function(3)},
@@ -222,7 +220,7 @@ const struct {
 	{KEY_F(7),	key::function(7)},
 	{KEY_F(8),	key::function(8)},
 	{KEY_F(9),	key::function(9)},
-	{KEY_F(57),	key::AltF9}  //@ ALT+F9
+	{KEY_F(57),	key::AltF9}  // ALT+F9
 };
 
 void define_keys()
@@ -396,7 +394,7 @@ void resize_screen()
 {
 	if ((LINES != want_lines) || (COLS != want_cols))
 		if (resizeterm(want_lines, want_cols) == OK)
-			flushinp();  //@ eat up the generated KEY_RESIZE
+			flushinp();  // eat up the generated KEY_RESIZE
 }
 
 } // namespace
@@ -422,10 +420,10 @@ CursesTerminal::open(int rows, int cols)
 		return std::unexpected(std::move(error));
 	}
 	start_color();
-	cbreak();  //@ do not buffer input until ENTER
-	noecho();  //@ do not echo typed characters
-	nodelay(stdscr, FALSE); //@ use a blocking getch() (already the default)
-	keypad(stdscr, TRUE);   //@ enable directional arrows, keypad, home, etc
+	cbreak();  // do not buffer input until ENTER
+	noecho();  // do not echo typed characters
+	nodelay(stdscr, FALSE); // use a blocking getch() (already the default)
+	keypad(stdscr, TRUE);   // enable directional arrows, keypad, home, etc
 
 	resize_screen();
 	define_keys();
@@ -455,7 +453,7 @@ CursesTerminal::has_color() const
 	return colors > 0;
 }
 
-/*@
+/*
  * Paint one cell. mvwadd_wchnstr() neither advances the cursor nor wraps,
  * so the bottom-right corner can be written like any other cell.
  */
@@ -490,17 +488,13 @@ CursesTerminal::flush()
 	wrefresh(stdscr);
 }
 
-/*@
- * Originally in dos.asm, which used hardware port 0x61 (Keyboard
- * Controller) for direct PC Speaker access.
- */
 void
 CursesTerminal::bell()
 {
 	beep();
 }
 
-/*@
+/*
  * Read a key, waiting at most timeout_ms milliseconds (forever if negative).
  * wget_wch() refreshes the screen first.
  *

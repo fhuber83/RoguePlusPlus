@@ -57,7 +57,7 @@ swander(void)
 void
 rollwand(void)
 {
-	int &between = game().wander_rolls;	//@ was a static
+	int &between = game().wander_rolls;
 
 	if (++between >= 3 + rnd(3))
 	{
@@ -92,7 +92,7 @@ unsee(void)
 	Creature *th;
 
 	for (th = game().level.monsters.first(); th != NULL; th = game().level.monsters.after(th))
-		if (on(*th, ISINVIS) && see_monst(th) && th->t_oldch != '@')
+		if (th->t_flags.test(ISINVIS) && see_monst(th) && th->t_oldch != '@')
 			display().draw_tile(th->t_pos, th->t_oldch);
 	game().player.body.t_flags.unset(CANSEE);
 }
@@ -104,7 +104,7 @@ unsee(void)
 void
 sight(void)
 {
-	if (on(game().player.body, ISBLIND))
+	if (game().player.body.t_flags.test(ISBLIND))
 	{
 		extinguish(Event::Sight);
 		game().player.body.t_flags.unset(ISBLIND);
@@ -149,7 +149,7 @@ stomach(void)
 		game().turn.running = FALSE;
 		game().turn.count = 0;
 		player.hungry_state = 3;
-		msg("%syou faint from lack of food",noterse("you feel very weak. "));
+		msg("{}you faint from lack of food",noterse("you feel very weak. "));
 	}
 	else
 	{

@@ -272,12 +272,12 @@ init_names()
 {
 	rogue::Items &items = game().items;
 	 int nsyl;
-	 char *cp, *sp;
+	 const char *sp;
 	 int i, nwords;
 
 	for (i = 0; i < MAXSCROLLS; i++)
 	{
-	cp = prbuf;
+	std::string name;
 	nwords = rnd(game().options.terse?3:4) + 2;
 	while (nwords--)
 	{
@@ -285,24 +285,19 @@ init_names()
 		while (nsyl--)
 		{
 		sp = getsyl();
-		if (&cp[strlen(sp)] > &prbuf[MAXNAME-1])
+		if (name.size() + strlen(sp) > MAXNAME-1)
 		{
 			nwords = 0;
 			break;
 		}
-		while (*sp)
-			*cp++ = *sp++;
+		name += sp;
 		}
-		*cp++ = ' ';
+		name += ' ';
 	}
-	*--cp = '\0';
-	/*
-	 * I'm tired of thinking about this one so just in case .....
-	 */
-	prbuf[MAXNAME] = 0;
+	name.pop_back();
 	items.s_know[i] = FALSE;
 	items.s_guess[i] = (char *)&items.guesses[items.iguess++];
-	strcpy((char *)(&items.s_names[i]), prbuf);
+	strcpy(items.s_names[i].storage, name.c_str());
 	if (i > 0)
 		items.s_magic[i].mi_prob += items.s_magic[i-1].mi_prob;
 	}
@@ -412,55 +407,10 @@ init_materials()
 }
 
 /*
- * Declarations for allocated things
+ * The experience needed for each level: 10, doubling 18 times, then 0
+ * to end the table
  */
-long *e_levels;		/* Pointer to array of experience level */
-char *tbuf;			/* Temp buffer used in fighting */
-char *prbuf;		/* Printing buffer used everywhere */
-char *ring_buf;		/* Buffer used by ring code */
-//@ Deprecated:
-//@ char *end_mem;	/* Pointer to end of memory */
-
-
-/*
- *  Declarations for data space that must be saved and restored exaxtly
- */
-
-/*
- * init_ds()
- *   Allocate things data space
- */
-void
-init_ds(void)
-{
-	long *ep;
-
-	/*@
-	 * Do not change the relation between the allocated pointer and its
-	 * associated size constant! If the sizes need to be changed, do so by
-	 * altering the value in the #define'd constant. For example, prbuf is
-	 * expected to have a MAXSTR size, but MAXSTR can be re-#define'd to
-	 * another value. Also, for safety, never decrease its value.
-	 */
-
-	//@ data that is saved to and restored from saved game files:
-
-	//@ data discarded and re-created on new and restored games:
-	tbuf = newmem(MAXSTR);
-	prbuf = newmem(MAXSTR);
-	ring_buf = newmem(6);
-	e_levels = (long *)newmem(20 * sizeof (long));
-	for (ep = e_levels+1, *e_levels = 10L; ep < e_levels + 19; ep++)
-		*ep = *(ep-1) << 1;
-	*ep = 0L;
-}
-
-
-void
-free_ds()
-{
-	free(tbuf);
-	free(prbuf);
-	free(ring_buf);
-	free(e_levels);
-}
+const long e_levels[20] = {
+	10L, 20L, 40L, 80L, 160L, 320L, 640L, 1280L, 2560L, 5120L, 10240L,
+	20480L, 40960L, 81920L, 163840L, 327680L, 655360L, 1310720L, 2621440L, 0L,
+};

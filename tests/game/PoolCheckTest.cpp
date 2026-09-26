@@ -137,8 +137,6 @@ TEST_F(PoolCheck, TheCountIsRight)
 // New games and the levels below them start out consistent.
 TEST_F(PoolCheck, GeneratedLevels)
 {
-	if (prbuf == nullptr)
-		init_ds();				// the scratch buffers, allocated once
 	auto &screen_display = dynamic_cast<rogue::ui::ScreenDisplay &>(display());
 	screen_display.set_animations(false);	// new_level() wipes the screen
 	int things = 0;

@@ -4,7 +4,7 @@
  * An object: something lying on the floor or carried in a pack.
  *
  * Was the _o half of the legacy union thing. Included by rogue.h after the
- * legacy types it uses (coord, shint) and the glyph codes; game files include
+ * legacy types it uses (coord, int) and the glyph codes; game files include
  * rogue.h.
  */
 
@@ -30,7 +30,7 @@ enum class ItemKind : unsigned char {
 	Missile,	/* the magic missile a wand shoots ('*'), never picked up */
 };
 
-constexpr byte
+constexpr unsigned char
 glyph_of(ItemKind kind)
 {
 	switch (kind) {
@@ -51,7 +51,7 @@ glyph_of(ItemKind kind)
 
 // The kind of item a map glyph shows, if it shows one
 constexpr std::optional<ItemKind>
-kind_of_glyph(byte glyph)
+kind_of_glyph(unsigned char glyph)
 {
 	switch (glyph) {
 	case POTION:	return ItemKind::Potion;
@@ -96,8 +96,8 @@ enum class ItemFlag : unsigned short {
 	Cursed   = 0x0001,	/* ISCURSED: object is cursed */
 	Known    = 0x0002,	/* ISKNOW: player knows details about the object */
 	DidFlash = 0x0004,	/* DIDFLASH: has the vorpal weapon flashed */
-	Ego      = 0x0008,	/* ISEGO: weapon has control of player @ unused */
-	/*@
+	Ego      = 0x0008,	/* ISEGO: weapon has control of player (unused) */
+	/*
 	 * A scare monster scroll that was picked up once. The original set the
 	 * creature flag ISFOUND on it, which is the same bit as ISEGO.
 	 */
@@ -117,14 +117,14 @@ struct Item {
 	char o_launch;				/* What you need to launch it */
 	const char *o_damage;		/* Damage if used like sword */
 	const char *o_hurldmg;		/* Damage if thrown */
-	shint o_count;				/* Count for plural objects */
-	shint o_which;				/* Which object of a type it is */
-	shint o_hplus;				/* Plusses to hit */
-	shint o_dplus;				/* Plusses to damage */
+	int o_count;				/* Count for plural objects */
+	int o_which;				/* Which object of a type it is */
+	int o_hplus;				/* Plusses to hit */
+	int o_dplus;				/* Plusses to damage */
 	short o_ac;					/* Armor class (o_charges, o_goldval) */
 	ItemFlags o_flags;			/* Information about objects */
 	char o_enemy;				/* If it is enchanted, who it hates */
-	shint o_group;				/* Group number for this object */
+	int o_group;				/* Group number for this object */
 };
 
 }  // namespace rogue

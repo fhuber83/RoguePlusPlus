@@ -32,10 +32,9 @@ At runtime the game reads `rogue.opt` (options) and writes `rogue.scr` (scores, 
 ## Conventions
 
 - New code goes in `namespace rogue`, in `.hpp`/`.cpp` files under a module directory (`src/core/`, …), and is included as `"core/Random.hpp"`. `src/` is on the include path only for quoted includes (`-iquote`), so project headers never hide system headers.
-- Legacy headers define many lowercase macros (`on`, `pack`, `hero`, `max`, `max_hp`, `attach`, `detach`, `when`, …). Include standard and modern headers **before** `rogue.h`/`extern.h`, as `rogue.h` does for `core/` and `ui/`. Never name members after those macros. That's why `Flags` has `unset()` rather than `clear()`.
+- Legacy headers define many lowercase macros (`pack`, `hero`, `max`, `max_hp`, `attach`, `detach`, `chat`, …). Include standard and modern headers **before** `rogue.h`/`extern.h`, as `rogue.h` does for `core/` and `ui/`. Never name members after those macros. That's why `Flags` has `unset()` rather than `clear()`.
 - All randomness goes through `rogue::rng()` (the game's `game().random`, or the `rnd()`/`roll()` wrappers). Never use `rand()` or the clock, or seeds stop reproducing.
-- **`//@` and `/*@` comments** in legacy files mark changes made by the Linux port and this project. Everything else there is original 1980s code.
-- Keep string handling `const`-correct. Buffers the game really writes to (`prbuf`, `flytrap_damage`, `s_names`, `guesses`, …) are `char[]`. Everything else is `const char *`.
+- Keep string handling `const`-correct. Buffers the game really writes to (`flytrap_damage`, `s_names`, `guesses`, …) are `char[]`. Everything else is `const char *`. New text is built as `std::string` with `std::format` (include `<format>` before the legacy headers; `rogue.h` does); `msg()`, `addmsg()`, `ifterse()` and `fatal()` take a `std::format` string checked at compile time (`msg("the {} misses", name)`), so a format kept in a variable must be `constexpr`, text chosen at run time goes through `"{}"`, and a `char` or `unsigned char` meant as a letter needs `{:c}` (the default prints `unsigned char` as a number). An empty `msg()` clears the message line.
 
 ## Architecture (current, pre-modularization)
 
@@ -44,7 +43,7 @@ At runtime the game reads `rogue.opt` (options) and writes `rogue.scr` (scores, 
 - **Headers**:
   - `extern.h`: libc includes, POSIX feature macros, and libc "overrides": `#define access(f) access(f, F_OK)`, `stpchr`, `setmem`/`bcopy`. Remember these when a libc call behaves unexpectedly.
   - `rogue.h`: game constants, structs and prototypes. It includes `entities/Creature.hpp` and `entities/Item.hpp` (the split of the old `union thing`, with `CreatureFlags`/`ItemFlags` and `ItemKind`), then `game/Game.hpp`. Lists of creatures and items are `rogue::List<T>` (`entities/List.hpp`); walk them with `first()`/`after()`, which returns null for a detached entry as the old links did.
-  - `extern.cpp`/`init.cpp`: the fixed tables (monsters, weapon and armor names, the `*_base` odds that each game copies, help), common strings, scratch buffers (`prbuf`, `tbuf`, `ring_buf`) and the `init_*()` functions.
+  - `extern.cpp`/`init.cpp`: the fixed tables (monsters, weapon and armor names, the `*_base` odds that each game copies, help, `e_levels`), common strings and the `init_*()` functions.
 - **UI layer** (`src/ui/`): game code talks only to two interfaces, both reachable through `rogue.h`:
   - `display()` (`ui/Display.hpp`): the message line, status and clock, map tiles (`draw_tile`/`tile_at` with a `TileStyle`), pages (`open_page`/`write_at` with an `Ink`), and the title, tombstone, score and winner screens.
   - `input()` (`ui/Input.hpp`): `read_key` (characters or `ui::key` values) and `read_line`.

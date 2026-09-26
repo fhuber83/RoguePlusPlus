@@ -26,11 +26,11 @@ runners()
 	int dist;
 
 	for (tp = game().level.monsters.first(); tp != NULL; tp = game().level.monsters.after(tp)) {
-		if (!on(*tp, ISHELD) && on(*tp, ISRUN)) {
+		if (!tp->t_flags.test(ISHELD) && tp->t_flags.test(ISRUN)) {
 			dist = DISTANCE(hero.y, hero.x, tp->t_pos.y, tp->t_pos.x);
-			if	(!(on(*tp, ISSLOW) || (tp->t_type == 'S' && dist > 3)) || tp->t_turn)
+			if	(!(tp->t_flags.test(ISSLOW) || (tp->t_type == 'S' && dist > 3)) || tp->t_turn)
 				do_chase(tp);
-			/*@
+			/*
 			 * do_chase() can end in attack(), which removes tp from the
 			 * level (a Leprechaun or Nymph vanishes once it steals). Once
 			 * that happens tp is a freed pool slot and must not be read
@@ -39,12 +39,12 @@ runners()
 			 */
 			if (!game().level.monsters.contains(tp))
 				continue;
-			if (on(*tp, ISHASTE))
+			if (tp->t_flags.test(ISHASTE))
 				do_chase(tp);
 			if (!game().level.monsters.contains(tp))
 				continue;
 			dist = DISTANCE(hero.y, hero.x, tp->t_pos.y, tp->t_pos.x);
-			if (on(*tp, ISFLY) && dist > 3)
+			if (tp->t_flags.test(ISFLY) && dist > 3)
 				do_chase(tp);
 			if (!game().level.monsters.contains(tp))
 				continue;
@@ -68,7 +68,7 @@ do_chase(Creature *th)
 	coord target;				/* Temporary	destination for	chaser */
 
 	rer	= th->t_room;		/* Find room of chaser */
-	if (on(*th,	ISGREED) && rer->r_goldval == 0)
+	if (th->t_flags.test(ISGREED) && rer->r_goldval == 0)
 		th->t_dest = &hero;	/*	If gold	has been taken,	run after hero */
 	ree	= proom;
 	if (th->t_dest != &hero)	/*	Find room of chasee */
@@ -113,7 +113,7 @@ over:
 			 || abs(th->t_pos.y - hero.y) == abs(th->t_pos.x - hero.x))
 			&&	((dist=DISTANCE(th->t_pos.y, th->t_pos.x, hero.y, hero.x)) > 2
 			 && dist <= BOLT_LENGTH	* BOLT_LENGTH)
-			&&	!on(*th, ISCANC) && rnd(DRAGONSHOT) == 0)
+			&&	!th->t_flags.test(ISCANC) && rnd(DRAGONSHOT) == 0)
 		{
 			game().turn.running = FALSE;
 			game().turn.delta.y = sign(hero.y - th->t_pos.y);
@@ -134,7 +134,7 @@ over:
 	} else if (ch_ret == *th->t_dest) {
 		for (obj = game().level.objects.first(); obj != NULL; obj = game().level.objects.after(obj))
 			if	(th->t_dest == &obj->o_pos) {
-				byte oldchar;
+				unsigned char oldchar;
 
 				detach(game().level.objects, obj);
 				attach(th->t_pack, obj);
@@ -156,7 +156,7 @@ over:
 			   && game().level.map[INDEX(th->t_pos.y,th->t_pos.x)] == FLOOR)
 			display().draw_tile(th->t_pos, FLOOR);
 		else if (th->t_oldch == FLOOR && !cansee(th->t_pos.y, th->t_pos.x)
-				&& !on(game().player.body, SEEMONST))
+				&& !game().player.body.t_flags.test(SEEMONST))
 			display().draw_tile(th->t_pos, ' ');
 		else
 			display().draw_tile(th->t_pos, th->t_oldch);
@@ -178,7 +178,7 @@ over:
 		display().draw_tile(ch_ret, th->t_disguise,
 				(flat(ch_ret.y,ch_ret.x) & F_PASS) ? TileStyle::Inverse : TileStyle::Normal);
 	}
-	else if (on(game().player.body,	SEEMONST))
+	else if (game().player.body.t_flags.test(SEEMONST))
 	{
 		th->t_oldch = display().tile_at(ch_ret);
 		display().draw_tile(ch_ret, th->t_type, TileStyle::Inverse);
@@ -198,9 +198,9 @@ bool
 see_monst(Creature *mp)
 {
 	rogue::Player &player = game().player;
-	if (on(player.body, ISBLIND))
+	if (player.body.t_flags.test(ISBLIND))
 		return	FALSE;
-	if (on(*mp,	ISINVIS) && !on(player.body,	CANSEE))
+	if (mp->t_flags.test(ISINVIS) && !player.body.t_flags.test(CANSEE))
 		return	FALSE;
 	if (DISTANCE(mp->t_pos.y, mp->t_pos.x, hero.y, hero.x) >= LAMPDIST &&
 	  ((mp->t_room != proom || mp->t_room->r_flags.test(RoomFlag::Dark) ||
@@ -250,10 +250,7 @@ start_run(coord *runner)
 /*
  * chase:
  *	Find	the spot for the chaser(er) to move closer to the
- *	chasee(ee).	Returns	TRUE if	we want	to keep	on chasing later
- *	FALSE if we reach the goal.
- *
- *	@@ Wrong documentation: function is actually a void, there is no return
+ *	chasee(ee).
  */
 static void
 chase(Creature *tp, coord *ee)
@@ -262,7 +259,7 @@ chase(Creature *tp, coord *ee)
 	int	dist, thisdist;
 	Item *obj;
 	coord *er;
-	byte ch;
+	unsigned char ch;
 	int	plcnt =	1;
 
 	er = &tp->t_pos;
@@ -271,7 +268,7 @@ chase(Creature *tp, coord *ee)
 	 * are slightly confused all of the	time, and bats are
 	 * quite confused all the time
 	 */
-	if ((on(*tp, ISHUH)	&& rnd(5) != 0)	|| (tp->t_type == 'P' && rnd(5)	== 0)
+	if ((tp->t_flags.test(ISHUH)	&& rnd(5) != 0)	|| (tp->t_type == 'P' && rnd(5)	== 0)
 		|| (tp->t_type	== 'B' && rnd(2) == 0))
 	{
 		/*
@@ -446,7 +443,7 @@ new_slime(Creature *tp)
 	return ret;
 }
 
-/*@
+/*
  * Pick an appropriate spot around a central spot for a new monster to spawn
  * (r, c): row, col of central spot
  * cp: pointer to coordinate for the new monster, if any
@@ -462,7 +459,7 @@ plop_monster(int r, int c, coord *cp)
 {
 	int y, x, inv_odds = 0;
 	bool appear = FALSE;
-	byte ch;
+	unsigned char ch;
 
 	for (y = r-1; y <= r+1; y++)
 		for (x = c-1; x <= c+1; x++) {
@@ -477,7 +474,7 @@ plop_monster(int r, int c, coord *cp)
 			if (step_ok(ch = winat(y, x))) {
 				if (ch == SCROLL && find_obj(y, x)->o_which == S_SCARE)
 					continue;
-				/*@
+				/*
 				 * Get first available spot with 100% chance,
 				 * then randomly change to next available spot, if any,
 				 * with decreasing 1-to-n odds (50%, 33%, 25%, 20%,...)

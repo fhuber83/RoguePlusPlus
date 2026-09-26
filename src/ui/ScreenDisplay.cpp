@@ -1,7 +1,7 @@
 #include "ui/ScreenDisplay.hpp"
 
 #include <chrono>
-#include <cstdio>
+#include <format>
 #include <thread>
 
 #include "glyphs.h"
@@ -40,10 +40,9 @@ void ScreenDisplay::clear_message()
 	screen_.erase_to_eol();
 }
 
-/*@
+/*
  * More: tag the end of a line and wait for a space. The waiting is the
- * game's; this only draws. Originally more() in io.c, which read the covered
- * characters back with inch() and rewrote them as plain text.
+ * game's; this only draws.
  */
 void ScreenDisplay::show_more(std::string_view prompt, int col)
 {
@@ -141,29 +140,25 @@ TileStyle ScreenDisplay::tile_style_at(Coord pos) const
 
 // Status lines
 
-/*@
+/*
  * Rogue used a rudimentary custom sprintf() that didn't fully support
  * the (quite sophisticated) numeric formatting strings used on status.
- * As <stdio.h>'s sprintf() does, formatting was simplified so the output
- * matches the original.
+ * The formats here are simplified so that the output matches the original.
  */
 void ScreenDisplay::draw_status(const Status &s)
 {
-	char buf[40];
 	int row = screen_.row(), col = screen_.col();
 
 	ink(Ink::Yellow);
 
 	if (level_ != s.level) {
 		level_ = s.level;
-		std::snprintf(buf, sizeof buf, "Level:%-4d", s.level);
-		text_at(StatusRow, 0, buf);
+		text_at(StatusRow, 0, std::format("Level:{:<4}", s.level));
 	}
 	if (hp_ != s.hp || hp_max_ != s.hp_max) {
 		hp_ = s.hp;
 		hp_max_ = s.hp_max;
-		std::snprintf(buf, sizeof buf, "Hits:%d(%d) ", s.hp, s.hp_max);
-		text_at(StatusRow, 12, buf);
+		text_at(StatusRow, 12, std::format("Hits:{}({}) ", s.hp, s.hp_max));
 		/* just in case they get wraithed with 3 digit max hits */
 		if (s.hp < 100)
 			text(" ");
@@ -171,23 +166,19 @@ void ScreenDisplay::draw_status(const Status &s)
 	if (str_ != s.str || str_max_ != s.str_max) {
 		str_ = s.str;
 		str_max_ = s.str_max;
-		std::snprintf(buf, sizeof buf, "Str:%u(%u) ", s.str, s.str_max);
-		text_at(StatusRow, 26, buf);
+		text_at(StatusRow, 26, std::format("Str:{}({}) ", s.str, s.str_max));
 	}
 	if (gold_ != s.gold) {
 		gold_ = s.gold;
-		std::snprintf(buf, sizeof buf, "Gold:%-5u", static_cast<unsigned>(s.gold));
-		text_at(StatusRow, 40, buf);
+		text_at(StatusRow, 40, std::format("Gold:{:<5}", static_cast<unsigned>(s.gold)));
 	}
 	if (armor_ != s.armor) {
 		armor_ = s.armor;
-		std::snprintf(buf, sizeof buf, "Armor:%-2d", s.armor);
-		text_at(StatusRow, 52, buf);
+		text_at(StatusRow, 52, std::format("Armor:{:<2}", s.armor));
 	}
 	if (rank_ != s.rank) {
 		rank_ = std::string(s.rank);
-		std::snprintf(buf, sizeof buf, "%-12.*s", static_cast<int>(s.rank.size()), s.rank.data());
-		text_at(StatusRow, 62, buf);
+		text_at(StatusRow, 62, std::format("{:<12}", s.rank));
 	}
 	if (hunger_ != s.hunger) {
 		hunger_ = s.hunger;
@@ -206,23 +197,17 @@ void ScreenDisplay::draw_status(const Status &s)
 
 void ScreenDisplay::draw_clock(int hour, int minute)
 {
-	char buf[8];
 	int row = screen_.row(), col = screen_.col();
 
-	std::snprintf(buf, sizeof buf, "%2d:%02d", hour, minute);
 	ink(Ink::Bold);
-	text_at(HungerRow, ClockCol, buf);
+	text_at(HungerRow, ClockCol, std::format("{:2}:{:02}", hour, minute));
 	ink(Ink::Normal);
 	screen_.set_cursor(row, col);
 }
 
 void ScreenDisplay::draw_count(int count)
 {
-	char buf[8] = "    ";
-
-	if (count)
-		std::snprintf(buf, sizeof buf, "%-4d", count);
-	text_at(StatusRow, Screen::Cols - 4, buf);
+	text_at(StatusRow, Screen::Cols - 4, count ? std::format("{:<4}", count) : "    ");
 }
 
 // Pages
@@ -277,8 +262,8 @@ bool ScreenDisplay::show_cursor(bool visible)
 
 // Title and ending screens
 
-/*@
- * The credits screen, originally credits() in mach_dep.c
+/*
+ * The title screen, for credits() in mach_dep.cpp
  */
 void ScreenDisplay::draw_title()
 {
@@ -330,13 +315,11 @@ void ScreenDisplay::end_title()
 	ink(Ink::Normal);
 }
 
-/*@
- * Originally in death(), rip.c
+/*
+ * The tombstone, for death() in rip.cpp
  */
 void ScreenDisplay::draw_tombstone(std::string_view name, std::string_view killer, int gold, int year)
 {
-	char buf[40];
-
 	ink(Ink::Brown);
 	frame(7, (Screen::Cols - 28) / 2, 22, (Screen::Cols + 28) / 2, false);
 	ink(Ink::Normal);
@@ -355,19 +338,15 @@ void ScreenDisplay::draw_tombstone(std::string_view name, std::string_view kille
 
 	centered(15, "killed by");
 	centered(16, killer);
-	std::snprintf(buf, sizeof buf, "%u Au", static_cast<unsigned>(gold));
-	centered(18, buf);
-	std::snprintf(buf, sizeof buf, "%u", static_cast<unsigned>(year));
-	centered(19, buf);
+	centered(18, std::format("{} Au", static_cast<unsigned>(gold)));
+	centered(19, std::format("{}", static_cast<unsigned>(year)));
 }
 
-/*@
- * Originally pr_scores() in rip.c
+/*
+ * The score list, for pr_scores() in rip.cpp
  */
 void ScreenDisplay::draw_scores(std::span<const ScoreLine> lines, int highlight)
 {
-	char buf[40];
-
 	screen_.erase();
 	ink(Ink::Bright);
 	text_at(0, 0, "Guildmaster's Hall Of Fame:");
@@ -378,8 +357,7 @@ void ScreenDisplay::draw_scores(std::span<const ScoreLine> lines, int highlight)
 		const ScoreLine &line = lines[i];
 		bool mine = (i == highlight);
 		ink(mine ? Ink::Yellow : Ink::Brown);
-		std::snprintf(buf, sizeof buf, "%d ", line.gold);
-		text_at(4 + i, 0, buf);
+		text_at(4 + i, 0, std::format("{} ", line.gold));
 		screen_.set_cursor(4 + i, 6);
 		if (!mine)
 			ink(Ink::Red);
@@ -392,8 +370,8 @@ void ScreenDisplay::draw_scores(std::span<const ScoreLine> lines, int highlight)
 	text("\n\n\n\n");
 }
 
-/*@
- * Originally in total_winner(), rip.c
+/*
+ * The winner's screen, for total_winner() in rip.cpp
  */
 void ScreenDisplay::draw_winner(bool brief)
 {
@@ -420,9 +398,9 @@ void ScreenDisplay::draw_winner(bool brief)
 
 // Transitions
 
-/*@
+/*
  * Display a curtain down animation, keep the curtain and blank the screen
- * without showing it. Moved from curses.c
+ * without showing it
  */
 void ScreenDisplay::curtain_down()
 {
@@ -446,7 +424,7 @@ void ScreenDisplay::curtain_down()
 	screen_.erase();
 }
 
-/*@
+/*
  * Display a curtain up animation over what was drawn behind the curtain
  */
 void ScreenDisplay::curtain_up()
@@ -464,7 +442,6 @@ void ScreenDisplay::curtain_up()
 
 /*
  * Clear the screen in an interesting fashion
- * @ implode(), moved from curses.c
  */
 void ScreenDisplay::wipe()
 {
@@ -502,7 +479,7 @@ void ScreenDisplay::bell()
 
 // Helpers
 
-/*@
+/*
  * The styles of the original's text attribute table (set_attr() indexes),
  * one table for colour screens and one for monochrome ones
  */
@@ -532,10 +509,9 @@ Style ScreenDisplay::style_for(Ink ink) const
 	return Plain;
 }
 
-/*@
+/*
  * The colour a glyph gets on a colour screen: map glyphs have their own
- * colours in rooms (plain text) and in passages (standout). Moved here from
- * cur_addch() in curses.c
+ * colours in rooms (plain text) and in passages (standout)
  */
 Style ScreenDisplay::glyph_style(std::uint8_t ch, Style base) const
 {
@@ -588,7 +564,7 @@ Style ScreenDisplay::glyph_style(std::uint8_t ch, Style base) const
 			return Style{Color::Blue, Color::LightGrey};
 		}
 	} else if (base == Bright && ch == STAIRS) {
-		//@ I suspect STAIRS used with high() is a case that never happen...
+		// STAIRS in Bright may never happen
 		return Style{Color::Black, Color::Green, true};
 	}
 	return base;

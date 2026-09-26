@@ -11,6 +11,7 @@ that recovers. A real divergence persists, and shows in the final screens,
 which are compared last. The exit status is 1 if any final screen differs.
 """
 import argparse
+import os
 import re
 import sys
 
@@ -30,7 +31,13 @@ def main():
     a = ap.parse_args()
     bad = 0
     for seed in a.seeds:
-        ref = captures(f"{a.outdir}/{a.ref}-{seed}/caps.txt")
+        paths = [f"{a.outdir}/{n}-{seed}/caps.txt" for n in [a.ref] + a.names]
+        missing = [p for p in paths if not os.path.exists(p)]
+        if missing:
+            print(f"seed {seed}: no captures in {', '.join(missing)}")
+            bad += 1
+            continue
+        ref = captures(paths[0])
         for name in a.names:
             other = captures(f"{a.outdir}/{name}-{seed}/caps.txt")
             n = min(len(ref), len(other))

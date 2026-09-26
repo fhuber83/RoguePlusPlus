@@ -33,20 +33,21 @@ quaff(void)
 	 */
 	switch (obj->o_which)
 	{
-	when P_CONFUSE:
+	case P_CONFUSE:
 		items.p_know[P_CONFUSE] = TRUE;
-		if (!on(player.body, ISHUH))
+		if (!player.body.t_flags.test(ISHUH))
 			{
-			if (on(player.body, ISHUH))
+			if (player.body.t_flags.test(ISHUH))
 				lengthen(Event::Unconfuse, rnd(8)+HUHDURATION);
 			else
 				fuse(Event::Unconfuse, rnd(8)+HUHDURATION);
 			player.body.t_flags.set(ISHUH);
 			msg("wait, what's going on? Huh? What? Who?");
 		}
-	when P_POISON:
+		break;
+	case P_POISON:
 		{
-		const char *sick = "you feel %s sick.";
+		constexpr const char *sick = "you feel {} sick.";
 
 		items.p_know[P_POISON] = TRUE;
 		if (!ISWEARING(R_SUSTSTR))
@@ -57,20 +58,23 @@ quaff(void)
 		else
 			msg(sick, "momentarily");
 		}
-	when P_HEALING:
+		break;
+	case P_HEALING:
 		items.p_know[P_HEALING] = TRUE;
 		if ((pstats.s_hpt += roll(pstats.s_lvl, 4)) > max_hp)
 			pstats.s_hpt = ++max_hp;
 		sight();
 		msg("you begin to feel better");
-	when P_STRENGTH:
+		break;
+	case P_STRENGTH:
 		items.p_know[P_STRENGTH] = TRUE;
 		chg_str(1);
 		msg("you feel stronger. What bulging muscles!");
-	when P_MFIND:
+		break;
+	case P_MFIND:
 		fuse(Event::TurnSeeOff, HUHDURATION);
 		if (game().level.monsters.empty())
-			msg("you have a strange feeling%s.",
+			msg("you have a strange feeling{}.",
 				noterse(" for a moment"));
 		else
 		{
@@ -80,7 +84,8 @@ quaff(void)
 			}
 			msg("");
 		}
-	  when P_TFIND:
+		break;
+	case P_TFIND:
 		/*
 		 * Potion of magic detection.  Find everything interesting on
 		 * the level and show him where they are.  Also give hints as
@@ -119,26 +124,30 @@ quaff(void)
 				break;
 			}
 		}
-		msg("you have a strange feeling for a moment%s.",
+		msg("you have a strange feeling for a moment{}.",
 				noterse(", then it passes"));
-	when P_PARALYZE:
+		break;
+	case P_PARALYZE:
 		items.p_know[P_PARALYZE] = TRUE;
 		player.no_command = HOLDTIME;
 		player.body.t_flags.unset(ISRUN);
 		msg("you can't move");
-	when P_SEEINVIS:
-		if (!on(player.body, CANSEE)) {
+		break;
+	case P_SEEINVIS:
+		if (!player.body.t_flags.test(CANSEE)) {
 			fuse(Event::Unsee, SEEDURATION);
 			look(FALSE);
 			invis_on();
 		}
 		sight();
-		msg("this potion tastes like %s juice", game().options.fruit);
-	when P_RAISE:
+		msg("this potion tastes like {} juice", game().options.fruit);
+		break;
+	case P_RAISE:
 		items.p_know[P_RAISE] = TRUE;
 		msg("you suddenly feel much more skillful");
 		raise_level();
-	when P_XHEAL:
+		break;
+	case P_XHEAL:
 		items.p_know[P_XHEAL] = TRUE;
 		if ((pstats.s_hpt += roll(pstats.s_lvl, 8)) > max_hp)
 		{
@@ -148,11 +157,13 @@ quaff(void)
 		}
 		sight();
 		msg("you begin to feel much better");
-	when P_HASTE:
+		break;
+	case P_HASTE:
 		items.p_know[P_HASTE] = TRUE;
 		if (add_haste(TRUE))
 			msg("you feel yourself moving much faster");
-	when P_RESTORE:
+		break;
+	case P_RESTORE:
 		if (ISRING(LEFT, R_ADDSTR))
 			add_str(&pstats.s_str, -player.rings[LEFT]->o_ac);
 		if (ISRING(RIGHT, R_ADDSTR))
@@ -163,20 +174,23 @@ quaff(void)
 			add_str(&pstats.s_str, player.rings[LEFT]->o_ac);
 		if (ISRING(RIGHT, R_ADDSTR))
 			add_str(&pstats.s_str, player.rings[RIGHT]->o_ac);
-		msg("%syou feel warm all over",
+		msg("{}you feel warm all over",
 			noterse("hey, this tastes great.  It makes "));
-	when P_BLIND:
+		break;
+	case P_BLIND:
 		items.p_know[P_BLIND] = TRUE;
-		if (!on(player.body, ISBLIND))
+		if (!player.body.t_flags.test(ISBLIND))
 		{
 			player.body.t_flags.set(ISBLIND);
 			fuse(Event::Sight, SEEDURATION);
 			look(FALSE);
 		}
 		msg("a cloak of darkness falls around you");
-	when P_NOP:
+		break;
+	case P_NOP:
 		msg("this potion tastes extremely dull");
-	otherwise:
+		break;
+	default:
 		msg("what an odd tasting potion!");
 		return;
 	}
@@ -210,7 +224,7 @@ invis_on(void)
 
 	game().player.body.t_flags.set(CANSEE);
 	for (th = game().level.monsters.first(); th != NULL; th = game().level.monsters.after(th))
-	if (on(*th, ISINVIS) && see_monst(th))
+	if (th->t_flags.test(ISINVIS) && see_monst(th))
 	{
 		display().draw_tile(th->t_pos, th->t_disguise);
 	}
@@ -225,7 +239,7 @@ turn_see(bool turn_off)
 {
 	Creature *mp;
 	bool can_see, add_new;
-	byte was_there = ' ';
+	unsigned char was_there = ' ';
 
 	add_new = FALSE;
 	for (mp = game().level.monsters.first(); mp != NULL; mp = game().level.monsters.after(mp)) {
@@ -257,22 +271,26 @@ th_effect(Item *obj, Creature *tp)
 {
 	switch (obj->o_which)
 	{
-	when P_CONFUSE:
+	case P_CONFUSE:
 	case P_BLIND:
 		tp->t_flags.set(ISHUH);
-		msg("the %s appears confused", monsters[tp->t_type-'A'].m_name);
-	when P_PARALYZE:
+		msg("the {} appears confused", monsters[tp->t_type-'A'].m_name);
+		break;
+	case P_PARALYZE:
 		tp->t_flags.unset(ISRUN);
 		tp->t_flags.set(ISHELD);
-	when P_HEALING:
+		break;
+	case P_HEALING:
 	case P_XHEAL:
 		if ((tp->t_stats.s_hpt += rnd(8)) > tp->t_stats.s_maxhp)
 		tp->t_stats.s_hpt = ++tp->t_stats.s_maxhp;
-	when P_RAISE:
+		break;
+	case P_RAISE:
 		tp->t_stats.s_hpt += 8;
 		tp->t_stats.s_maxhp += 8;
 		tp->t_stats.s_lvl++;
-	when P_HASTE:
+		break;
+	case P_HASTE:
 		tp->t_flags.set(ISHASTE);
 		break;
 	}

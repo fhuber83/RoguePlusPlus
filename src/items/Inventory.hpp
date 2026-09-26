@@ -4,8 +4,8 @@
  * The pack: picking things up, dropping them, listing them and picking one
  * out for a command.
  *
- * Included by rogue.h after extern.h (byte), entities/Item.hpp (Item,
- * ItemFilter) and entities/List.hpp (List).
+ * Included by rogue.h after entities/Item.hpp (Item, ItemFilter) and
+ * entities/List.hpp (List).
  */
 
 namespace rogue {
@@ -27,7 +27,7 @@ void add_pack(Item *obj, bool silent);
  * pick_up:
  *	Add something to the character's pack, or gold to the purse.
  */
-void pick_up(byte ch);
+void pick_up(unsigned char ch);
 
 /*
  * get_item:
@@ -39,13 +39,13 @@ Item *get_item(const char *purpose, ItemFilter type);
  * inventory:
  *	List what is in a pack (or another item list) through a page.
  */
-byte inventory(const List<Item> &list, ItemFilter type, const char *lstr);
+unsigned char inventory(const List<Item> &list, ItemFilter type, const char *lstr);
 
 /*
  * pack_char:
  *	Return which character would address a pack object.
  */
-byte pack_char(Item *obj);
+unsigned char pack_char(Item *obj);
 
 /*
  * money:

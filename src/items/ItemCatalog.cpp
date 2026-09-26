@@ -7,7 +7,7 @@ namespace rogue::items {
  *	Pick an item out of a list of nitems possible magic items
  */
 static
-shint  //@ actually an offset, the element index in the array
+int  // actually an offset, the element index in the array
 pick_one(struct magic_item *magic, int nitems)
 {
 	struct magic_item *end;
@@ -23,9 +23,9 @@ pick_one(struct magic_item *magic, int nitems)
 #ifdef DEBUG
 		if (wizard)
 		{
-			msg("bad pick_one: %d from %d items", i, nitems);
+			msg("bad pick_one: {} from {} items", i, nitems);
 			for (magic = start; magic < end; magic++)
-				msg("%s: %d%%", magic->mi_name, magic->mi_prob);
+				msg("{}: {}%", magic->mi_name, magic->mi_prob);
 		}
 #endif
 		magic = start;
@@ -59,20 +59,23 @@ new_thing()
 	 */
 	switch (game().level.no_food > 3 ? 2 : pick_one(items.things, NUMTHINGS))
 	{
-	when 0:
+	case 0:
 		cur->o_type = ItemKind::Potion;
 		cur->o_which = pick_one(items.p_magic, MAXPOTIONS);
-	when 1:
+		break;
+	case 1:
 		cur->o_type = ItemKind::Scroll;
 		cur->o_which = pick_one(items.s_magic, MAXSCROLLS);
-	when 2:
+		break;
+	case 2:
 		game().level.no_food = 0;
 		cur->o_type = ItemKind::Food;
 		if (rnd(10) != 0)
 			cur->o_which = 0;
 		else
 			cur->o_which = 1;
-	when 3:
+		break;
+	case 3:
 		cur->o_type = ItemKind::Weapon;
 		cur->o_which = rnd(MAXWEAPONS);
 		init_weapon(cur, cur->o_which);
@@ -83,7 +86,8 @@ new_thing()
 		}
 		else if (k < 15)
 			cur->o_hplus += rnd(3) + 1;
-	when 4:
+		break;
+	case 4:
 		cur->o_type = ItemKind::Armor;
 		for (j = 0, k = rnd(100); j < MAXARMORS; j++)
 			if (k < a_chances[j])
@@ -91,7 +95,7 @@ new_thing()
 #ifdef DEBUG
 		if (j == MAXARMORS)
 		{
-		debug("Picked a bad armor %d", k);
+		debug("Picked a bad armor {}", k);
 		j = 0;
 		}
 #endif
@@ -104,12 +108,13 @@ new_thing()
 		}
 		else if (k < 28)
 			cur->o_ac -= rnd(3) + 1;
-	when 5:
+		break;
+	case 5:
 		cur->o_type = ItemKind::Ring;
 		cur->o_which = pick_one(items.r_magic, MAXRINGS);
 		switch (cur->o_which)
 		{
-		when R_ADDSTR:
+		case R_ADDSTR:
 		case R_PROTECT:
 		case R_ADDHIT:
 		case R_ADDDAM:
@@ -118,21 +123,24 @@ new_thing()
 				cur->o_ac = -1;
 				cur->o_flags.set(ISCURSED);
 			}
-		when R_AGGR:
+			break;
+		case R_AGGR:
 		case R_TELEPORT:
 			cur->o_flags.set(ISCURSED);
 			break;
 		}
-	when 6:
+		break;
+	case 6:
 		cur->o_type = ItemKind::Stick;
 		cur->o_which = pick_one(items.ws_magic, MAXSTICKS);
 		fix_stick(cur);
+		break;
 #ifdef DEBUG
-	otherwise:
+	default:
 		debug("Picked a bad kind of object");
 		wait_for(' ');
-#endif
 		break;
+#endif
 	}
 	return cur;
 }

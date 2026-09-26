@@ -7,14 +7,14 @@
 #include	"rogue.h"
 
 
-byte swap_bits(
-	byte data,
+unsigned char swap_bits(
+	unsigned char data,
 	unsigned i,      // positions of bit sequences to swap
 	unsigned j,
 	unsigned length  // number of consecutive bits in each sequence
 )
 {
-	byte x = ((data >> i) ^ (data >> j)) & ((1U << length) - 1);
+	unsigned char x = ((data >> i) ^ (data >> j)) & ((1U << length) - 1);
 	return data ^ ((x << i) | (x << j));
 }
 
@@ -33,7 +33,7 @@ setup()
 }
 
 
-/*@
+/*
  * start_terminal:
  *	Start the terminal, or exit with the reason it could not.
  */
@@ -41,12 +41,12 @@ void
 start_terminal()
 {
 	if (auto started = rogue::ui::start_terminal(game().options.monochrome); !started)
-		fatal("%s", started.error().c_str());
+		fatal("{}", started.error());
 }
 
-/*@
- * Return Epoch time as an integer, with second resolution
- * Simple wrapper to <time.h> time()
+/*
+ * md_time:
+ *	Return Epoch time as an integer, with second resolution
  */
 long
 md_time(void)
@@ -55,8 +55,9 @@ md_time(void)
 }
 
 
-/*@
- * Return current local time as a pointer to a struct
+/*
+ * md_localtime:
+ *	Return current local time as a pointer to a struct
  */
 TM *
 md_localtime()
@@ -74,8 +75,9 @@ md_localtime()
 }
 
 
-/*@
- * Sleep for nanoseconds
+/*
+ * md_nanosleep:
+ *	Sleep for nanoseconds
  */
 void
 md_nanosleep(long nanoseconds)
@@ -95,9 +97,9 @@ flush_type()
 	game().turn.typeahead = nullstr;
 }
 
-/*@
- * I wonder why this is here instead of main.c (or *anywhere* else)
- * Granted, the staff and companies to credit vary by platform, but still...
+/*
+ * credits:
+ *	Show the title screen and ask for the rogue's name
  */
 void
 credits()
@@ -114,14 +116,13 @@ credits()
 
 
 /*
- * Table for IBM extended key translation
- * @ moved from mach_dep.c to curses.c and back: keys as rogue::ui::key values
+ * Table for IBM extended key translation, from rogue::ui::key values
  */
 static const struct xlate {
 	int keycode;
-	byte keyis;
+	unsigned char keyis;
 } xtab[] = {
-	{rogue::ui::key::Enter,	'\n'}, //@ Keypad Enter
+	{rogue::ui::key::Enter,	'\n'}, // Keypad Enter
 	{rogue::ui::key::Home,	'y'},
 	{rogue::ui::key::Up,	'k'},
 	{rogue::ui::key::PageUp,	'u'},
@@ -142,13 +143,13 @@ static const struct xlate {
 	{rogue::ui::key::function(7),	'i'},
 	{rogue::ui::key::function(8),	'^'},
 	{rogue::ui::key::function(9),	CTRL('F')},
-	{rogue::ui::key::AltF9,	'F'}  //@ ALT+F9
+	{rogue::ui::key::AltF9,	'F'}  // ALT+F9
 };
 
-/*@
+/*
  * Map a key to an 8-bit command character using the translation table
  */
-static byte
+static unsigned char
 xlate_ch(int ch)
 {
 	for (const struct xlate *x = xtab; x < xtab + (sizeof xtab) / sizeof *xtab; x++)
@@ -156,22 +157,22 @@ xlate_ch(int ch)
 		if (ch == x->keycode)
 			return x->keyis;
 	}
-	return (byte)ch;
+	return (unsigned char)ch;
 }
 
 /*
  * readchar:
  *	Return the next input character, from the macro or from the keyboard.
  */
-byte
+unsigned char
 readchar()
 {
 	int xch;
-	byte ch;
+	unsigned char ch;
 
 	if (*game().turn.typeahead) {
 		SIG2();
-		display().flush();  //@ macros
+		display().flush();
 		return(*game().turn.typeahead++);
 	}
 	/*
@@ -180,8 +181,8 @@ readchar()
 	 */
 	do
 	{
-		SIG2();  /* Rogue spends a lot of time here @ you bet! */
-		display().flush();  //@ command input
+		SIG2();  /* Rogue spends a lot of time here */
+		display().flush();
 	}
 	while ((xch = input().read_key(250)) == rogue::ui::key::None);
 	ch = xlate_ch(xch);
@@ -191,11 +192,9 @@ readchar()
 }
 
 
-/*@
- * newmem - memory allocater
- *        - motto: use malloc() like any sane software or die in 1985
- *
- * Clients should call free() for allocated objects
+/*
+ * newmem:
+ *	Allocate memory, or exit. Callers free() what they get.
  */
 char *
 newmem(unsigned int nbytes)
@@ -207,38 +206,28 @@ newmem(unsigned int nbytes)
 }
 
 
-/*@
- * Originally the message would never be seen, as it used printw() after an
- * endwin(), and there was no other blocking call after it, so any  messages
- * would be cleared instantly after display.
- */
 /*
  *  fatal: exit with a message
- *  @ moved from main.c, changed to use varargs and actually print the message
+ *  fatal() formats it with std::format (extern.h) and calls this, which
+ *  prints it after closing the terminal
  */
 void
-fatal(const char *msg, ...)
+fatal_text(std::string_view text)
 {
-	va_list argp;
-
 	rogue::ui::stop_terminal();
 
-	va_start(argp, msg);
-	vprintf(msg, argp);
-	va_end(argp);
+	fwrite(text.data(), 1, text.size(), stdout);
 	md_exit(EXIT_SUCCESS);
 }
 
 
-/*@
- * The single point of exit for Rogue
- * renamed from exit() to avoid conflict with <stdlib.h>
- * moved from croot.c
+/*
+ * md_exit:
+ *	The single point of exit for Rogue
  */
 void md_exit(int status)
 {
 	rogue::ui::stop_terminal();
-	free_ds();
 #ifdef ROGUE_DEBUG
 	printf("Exited normally\n");
 #endif

@@ -186,13 +186,13 @@ json room_json(const struct room &r)
 const char hex_digits[] = "0123456789abcdef";
 
 // The map rows of a column-major level grid (see INDEX()), as hex
-json grid_json(const byte *grid)
+json grid_json(const unsigned char *grid)
 {
 	json rows = json::array();
 	for (int y = 1; y < maxrow; y++) {
 		std::string row;
 		for (int x = 0; x < COLS; x++) {
-			byte b = grid[INDEX(y, x)];
+			unsigned char b = grid[INDEX(y, x)];
 			row += hex_digits[b >> 4];
 			row += hex_digits[b & 0xf];
 		}
@@ -569,8 +569,8 @@ void creature_from(Game &g, Creature &c, const json &j)
 	c.t_pos = coord_of(j, "pos");
 	c.t_turn = num<char>(j, "turn");
 	c.t_type = num<char>(j, "type");
-	c.t_disguise = num<byte>(j, "disguise");
-	c.t_oldch = num<byte>(j, "oldch");
+	c.t_disguise = num<unsigned char>(j, "disguise");
+	c.t_oldch = num<unsigned char>(j, "oldch");
 	c.t_dest = dest_at(g, field(j, "dest"));
 	c.t_flags = CreatureFlags::from_bits(num<CreatureFlags::Bits>(j, "flags"));
 	c.t_stats = stats_from(g, field(j, "stats"));
@@ -619,26 +619,26 @@ int hex_value(char c)
 }
 
 // A row of COLS bytes as hex
-std::vector<byte> hex_row(const json &v, const char *what)
+std::vector<unsigned char> hex_row(const json &v, const char *what)
 {
 	if (!v.is_string() || v.get_ref<const std::string &>().size() != 2 * COLS)
 		fail(std::string(what) + " rows should be " + std::to_string(2 * COLS) + " hex digits");
 	const std::string &s = v.get_ref<const std::string &>();
-	std::vector<byte> out;
+	std::vector<unsigned char> out;
 	for (int x = 0; x < COLS; x++) {
 		int hi = hex_value(s[2 * x]), lo = hex_value(s[2 * x + 1]);
 		if (hi < 0 || lo < 0)
 			fail(std::string(what) + " rows should be hex digits");
-		out.push_back(static_cast<byte>(hi << 4 | lo));
+		out.push_back(static_cast<unsigned char>(hi << 4 | lo));
 	}
 	return out;
 }
 
-void grid_from(byte *grid, const json &j, const char *key)
+void grid_from(unsigned char *grid, const json &j, const char *key)
 {
 	const json &rows = array_of(j, key, map_rows);
 	for (int y = 1; y < maxrow; y++) {
-		std::vector<byte> row = hex_row(rows[y - 1], key);
+		std::vector<unsigned char> row = hex_row(rows[y - 1], key);
 		for (int x = 0; x < COLS; x++)
 			grid[INDEX(y, x)] = row[x];
 	}
@@ -831,10 +831,10 @@ void turn_from(Game &g, const json &j)
 		fail("\"typeahead\" is null");
 	t.bailout = flag(j, "bailout");
 	t.last_count = num<int>(j, "last_count");
-	t.last_ch = num<byte>(j, "last_ch");
-	t.last_take = num<byte>(j, "last_take");
-	t.do_take = num<byte>(j, "do_take");
-	t.last_item_key = num<byte>(j, "last_item_key");
+	t.last_ch = num<unsigned char>(j, "last_ch");
+	t.last_take = num<unsigned char>(j, "last_take");
+	t.do_take = num<unsigned char>(j, "do_take");
+	t.last_item_key = num<unsigned char>(j, "last_item_key");
 	t.last_item = item_at(g, field(j, "last_item"), "\"last_item\"", false);
 }
 
@@ -843,7 +843,7 @@ void screen_from(MapView &view, const json &j)
 	const json &glyphs = array_of(j, "glyphs", map_rows);
 	const json &styles = array_of(j, "styles", map_rows);
 	for (int r = 0; r < map_rows; r++) {
-		std::vector<byte> row = hex_row(glyphs[r], "\"glyphs\"");
+		std::vector<unsigned char> row = hex_row(glyphs[r], "\"glyphs\"");
 		if (!styles[r].is_string() || styles[r].get_ref<const std::string &>().size() != map_cols)
 			fail("\"styles\" rows should be " + std::to_string(map_cols) + " digits");
 		const std::string &s = styles[r].get_ref<const std::string &>();

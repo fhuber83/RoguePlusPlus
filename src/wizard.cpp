@@ -38,25 +38,29 @@ whatis(void)
 	}
 
 	switch (obj->o_type) {
-	when ItemKind::Scroll:
+	case ItemKind::Scroll:
 		items.s_know[obj->o_which] = TRUE;
 		*items.s_guess[obj->o_which] = '\0';
-	when ItemKind::Potion:
+		break;
+	case ItemKind::Potion:
 		items.p_know[obj->o_which] = TRUE;
 		*items.p_guess[obj->o_which] = '\0';
-	when ItemKind::Stick:
+		break;
+	case ItemKind::Stick:
 		items.ws_know[obj->o_which] = TRUE;
 		obj->o_flags.set(ISKNOW);
 		*items.ws_guess[obj->o_which] = '\0';
-	when ItemKind::Weapon:
+		break;
+	case ItemKind::Weapon:
 	case ItemKind::Armor:
 		obj->o_flags.set(ISKNOW);
-	when ItemKind::Ring:
+		break;
+	case ItemKind::Ring:
 		items.r_know[obj->o_which] = TRUE;
 		obj->o_flags.set(ISKNOW);
 		*items.r_guess[obj->o_which] = '\0';
 		break;
-	otherwise:	//@ the other kinds of item: nothing
+	default:	// the other kinds of item: nothing
 		break;
 	}
 	/*
@@ -65,7 +69,7 @@ whatis(void)
 	 */
 	if (obj->o_enemy)
 		obj->o_flags.set(ISREVEAL);
-	msg(inv_name(obj, FALSE));
+	msg("{}", inv_name(obj, FALSE));
 }
 
 #ifdef WIZARD
@@ -77,7 +81,7 @@ void
 create_obj(void)
 {
 	Item *obj;
-	byte ch, bless;
+	unsigned char ch, bless;
 
 	if ((obj = new_item()) == NULL)
 	{
@@ -86,18 +90,18 @@ create_obj(void)
 	}
 	msg("type of item: ");
 	switch (readchar()) {
-		when '!': obj->o_type = ItemKind::Potion;
-		when '?': obj->o_type = ItemKind::Scroll;
-		when '/': obj->o_type = ItemKind::Stick;
-		when '=': obj->o_type = ItemKind::Ring;
-		when ')': obj->o_type = ItemKind::Weapon;
-		when ']': obj->o_type = ItemKind::Armor;
-		when ',': obj->o_type = ItemKind::Amulet;
-		otherwise:
+		case '!': obj->o_type = ItemKind::Potion; break;
+		case '?': obj->o_type = ItemKind::Scroll; break;
+		case '/': obj->o_type = ItemKind::Stick; break;
+		case '=': obj->o_type = ItemKind::Ring; break;
+		case ')': obj->o_type = ItemKind::Weapon; break;
+		case ']': obj->o_type = ItemKind::Armor; break;
+		case ',': obj->o_type = ItemKind::Amulet; break;
+		default:
 			obj->o_type = ItemKind::Food;
 	}
 	game().message.end = 0;
-	msg("which %c do you want? (0-f)", glyph_of(obj->o_type));
+	msg("which {:c} do you want? (0-f)", glyph_of(obj->o_type));
 	obj->o_which = (is_digit((ch = readchar())) ? ch - '0' : ch - 'a' + 10);
 	obj->o_group = 0;
 	obj->o_count = 1;
@@ -140,7 +144,8 @@ create_obj(void)
 			if (bless == '-')
 				obj->o_flags.set(ISCURSED);
 			obj->o_ac = (bless == '-' ? -1 : rnd(2) + 1);
-		when R_AGGR:
+			break;
+		case R_AGGR:
 		case R_TELEPORT:
 			obj->o_flags.set(ISCURSED);
 			/* fallthrough */
@@ -189,7 +194,7 @@ teleport(void)
 	 * turn off ISHELD in case teleportation was done while fighting
 	 * a Fungi
 	 */
-	if (on(player.body, ISHELD)) {
+	if (player.body.t_flags.test(ISHELD)) {
 		player.body.t_flags.unset(ISHELD);
 		f_restor();
 	}
@@ -205,7 +210,7 @@ teleport(void)
 	if (!wizard)
 	{
 #endif //WIZARD
-	if (on(player.body, ISHUH))
+	if (player.body.t_flags.test(ISHUH))
 		lengthen(Event::Unconfuse, rnd(4)+2);
 	else
 		fuse(Event::Unconfuse, rnd(4)+2);
@@ -220,8 +225,7 @@ teleport(void)
 
 /*
  * show_map:
- *	Print out the map for the wizard
- *	@unused, which is a shame...
+ *	Print out the map for the wizard (unused)
  */
 static
 void

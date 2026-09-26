@@ -4,8 +4,8 @@
  * Combat: the rogue attacking a monster and a monster attacking him, saving
  * throws, killing a monster and gaining experience levels.
  *
- * Included by rogue.h after extern.h (byte), the legacy types (str_t) and
- * entities/Item.hpp (Item)/Creature.hpp (Creature).
+ * Included by rogue.h after the legacy types (str_t) and entities/Item.hpp
+ * (Item)/Creature.hpp (Creature).
  */
 
 namespace rogue {

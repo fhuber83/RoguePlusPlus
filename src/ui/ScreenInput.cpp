@@ -22,7 +22,7 @@ int ScreenInput::read_key(int timeout_ms)
  * It should do all the strange processing that is
  * needed to retrieve sensible data from the user
  *
- * @ Originally getinfo() in io.c, then curses.c. Changes from the original:
+ * Changes from the original getinfo():
  * - Aborted input is null-terminated (ESCAPE + '\0')
  * - Only printable ASCII chars are accepted
  */
@@ -75,14 +75,14 @@ int ScreenInput::read_line(char *buf, int size)
 		case '\n':
 			*str = 0;
 			screen_.show_cursor(wason);
-			ret = ch;  //@ any value different than ESCAPE or 1 would do.
+			ret = ch;  // any value different than ESCAPE or 1 would do.
 			break;
 		}
 	}
 	return ret;
 }
 
-/*@
+/*
  * Step back and blank the character under the cursor, in the current
  * style as curses' winsch() did
  */

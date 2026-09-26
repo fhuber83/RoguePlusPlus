@@ -164,7 +164,7 @@ attack(Creature *mp)
 		case 'V':
 			/*
 			 * Wraiths might drain energy levels, and Vampires
-			 * can steal max_hp
+			 * can steal maximum hit points
 			 */
 			if (rnd(100) < (mp->t_type == 'W' ? 15 : 30))
 			{

@@ -64,17 +64,6 @@ inline constexpr int MAXITEMS = 83;	/* Maximum number of randomly generated thin
 inline constexpr int BUFSIZE = 128;
 
 /*
- * All the fun defines
- */
-#define hero		game().player.body.t_pos
-#define pstats		game().player.body.t_stats
-#define pack		game().player.body.t_pack
-#define proom		game().player.body.t_room
-#define max_hp		game().player.body.t_stats.s_maxhp
-#define chat(y,x)	(game().level.map[INDEX(y,x)])
-#define flat(y,x)	(game().level.flags[INDEX(y,x)])
-
-/*
  * Various constants
  */
 inline constexpr int MORETIME = 150;

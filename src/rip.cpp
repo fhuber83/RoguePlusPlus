@@ -78,7 +78,7 @@ reread:
 		his_score.sc_gold = amount;
 		his_score.sc_fate = flags ? flags : monst;
 		his_score.sc_level = game().player.max_level;
-		his_score.sc_rank  = pstats.s_lvl;
+		his_score.sc_rank  = game().player.body.t_stats.s_lvl;
 		rank = add_scores(&his_score, top_ten);
 	}
 	fclose(file);
@@ -262,13 +262,14 @@ total_winner(void)
 	unsigned char c;
 	int oldpurse;
 	rogue::Items &items = game().items;
+	rogue::Player &player = game().player;
 
 	display().draw_winner(game().options.terse);
 	wait_for(' ');
 	display().clear_page();
 	display().write_at(0, 0, "   Worth  Item");
-	oldpurse = game().player.purse;
-	for (c = 'a', obj = pack.first(); obj != NULL; c++, obj = pack.after(obj))
+	oldpurse = player.purse;
+	for (c = 'a', obj = player.body.t_pack.first(); obj != NULL; c++, obj = player.body.t_pack.after(obj))
 	{
 	switch (obj->o_type)
 	{
@@ -358,11 +359,11 @@ total_winner(void)
 		worth = 0;
 	display().write_at(c - 'a' + 1, 0,
 		std::format("{}) {:5}  {}", static_cast<char>(c), worth, inv_name(obj, FALSE)));
-	game().player.purse += worth;
+	player.purse += worth;
 	}
 	display().write_at(c - 'a' + 1, 0,
 		std::format("   {:5}  Gold Pieces          ", static_cast<unsigned>(oldpurse)));
-	score(game().player.purse, 2, 0);
+	score(player.purse, 2, 0);
 	md_exit(EXIT_SUCCESS);
 }
 

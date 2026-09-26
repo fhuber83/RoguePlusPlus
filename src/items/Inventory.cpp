@@ -52,10 +52,10 @@ add_pack(Item *obj, bool silent)
 	 */
 
 	/*
-	 *  bug in original Rogue: it didn't check proom != NULL, as is the case
-	 *  when add_pack() is called from init_player(), which happens before
-	 *  any room even exist. proom is set in enter_room(), which is first
-	 *  called in new_level()
+	 *  bug in original Rogue: it didn't check that the rogue's room (t_room)
+	 *  is not NULL, as is the case when add_pack() is called from
+	 *  init_player(), which happens before any room even exist. t_room is
+	 *  set in enter_room(), which is first called in new_level()
 	 */
 	floor = (player.body.t_room != NULL && player.body.t_room->r_flags.test(RoomFlag::Gone)) ? PASSAGE : FLOOR;
 	if (obj->o_group)

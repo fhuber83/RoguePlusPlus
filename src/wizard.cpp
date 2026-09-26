@@ -18,7 +18,7 @@ whatis(void)
 	Item *obj;
 	rogue::Items &items = game().items;
 
-	if (pack.empty()) {
+	if (game().player.body.t_pack.empty()) {
 		msg("You don't have anything in your pack to identify");
 		return;
 	}
@@ -79,24 +79,24 @@ teleport(void)
 	coord c;
 	rogue::Player &player = game().player;
 
-	display().draw_tile(hero, chat(hero.y, hero.x));
+	display().draw_tile(player.body.t_pos, game().level.at(player.body.t_pos));
 	do
 	{
 		rm = rnd_room();
 		rnd_pos(&game().level.rooms[rm], &c);
 	} while (!(step_ok(winat(c.y, c.x))));
-	if (&game().level.rooms[rm] != proom)
+	if (&game().level.rooms[rm] != player.body.t_room)
 	{
-		leave_room(&hero);
-		bcopy(hero,c);
-		enter_room(&hero);
+		leave_room(&player.body.t_pos);
+		bcopy(player.body.t_pos,c);
+		enter_room(&player.body.t_pos);
 	}
 	else
 	{
-		bcopy(hero,c);
+		bcopy(player.body.t_pos,c);
 		look(TRUE);
 	}
-	display().draw_tile(hero, PLAYER);
+	display().draw_tile(player.body.t_pos, PLAYER);
 	/*
 	 * turn off ISHELD in case teleportation was done while fighting
 	 * a Fungi

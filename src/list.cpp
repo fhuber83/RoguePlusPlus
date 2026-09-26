@@ -83,7 +83,7 @@ discard(Item *item)
 	 */
 	for (Creature *mp : game().level.monsters)
 		if (mp->t_dest == &item->o_pos)
-			mp->t_dest = &hero;
+			mp->t_dest = &game().player.body.t_pos;
 	return discard_from(item, game().pool.items);
 }
 

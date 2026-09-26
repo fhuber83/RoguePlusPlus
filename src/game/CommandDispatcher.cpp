@@ -194,6 +194,8 @@ execcom()
 	coord mv;
 	int ch;
 	rogue::Turn &turn = game().turn;
+	rogue::Player &player = game().player;
+	rogue::Level &level = game().level;
 
 	do {
 		ch = get_prefix();
@@ -215,7 +217,7 @@ execcom()
 				turn.after = FALSE;
 			break;
 		case Command::Quit: quit(); break;
-		case Command::Inventory: inventory(pack, ItemFilter::all(), ""); break;
+		case Command::Inventory: inventory(player.body.t_pack, ItemFilter::all(), ""); break;
 		case Command::Drop: drop(); break;
 		case Command::Quaff: quaff(); break;
 		case Command::Read: read_scroll(); break;
@@ -256,13 +258,13 @@ execcom()
 			if (get_dir()) {
 				coord lookat;
 
-				lookat.y = hero.y + turn.delta.y;
-				lookat.x = hero.x + turn.delta.x;
-				if (chat(lookat.y, lookat.x) != TRAP)
+				lookat.y = player.body.t_pos.y + turn.delta.y;
+				lookat.x = player.body.t_pos.x + turn.delta.x;
+				if (level.at(lookat) != TRAP)
 					msg("no trap there.");
 				else
 					msg("you found {}",
-						tr_name(flat(lookat.y, lookat.x).trap()));
+						tr_name(level.flags_at(lookat).trap()));
 			}
 			break;
 		case Command::Options: msg("i don't have any options, oh my!"); break;

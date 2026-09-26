@@ -52,18 +52,18 @@ look(bool wakeup)
 	MapFlags pfl, *fp;
 	int sy, sx, sumhero = 0, diffhero = 0;
 
-	rp = proom;
-	index = INDEX(hero.y, hero.x);
+	rp = player.body.t_room;
+	index = INDEX(player.body.t_pos.y, player.body.t_pos.x);
 	pfl = level.flags[index];
 	pch = level.map[index];
 	/*
 	 * if the hero has moved
 	 */
-	if (!(player.old_pos == hero)) {
+	if (!(player.old_pos == player.body.t_pos)) {
 		if (!player.body.t_flags.test(ISBLIND)) {
 			for (x = player.old_pos.x - 1; x <= (player.old_pos.x + 1); x++)
 				for (y = player.old_pos.y - 1; y <= (player.old_pos.y + 1); y++) {
-					if ((y == hero.y && x == hero.x) || offmap(y,x))
+					if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || offmap(y,x))
 						continue;
 					ch = display().tile_at({x, y});
 					if (ch == FLOOR) {
@@ -83,25 +83,25 @@ look(bool wakeup)
 					}
 				}
 		}
-		player.old_pos = hero;
+		player.old_pos = player.body.t_pos;
 		player.old_room = rp;
 	}
-	ey = hero.y + 1;
-	ex = hero.x + 1;
-	sx = hero.x - 1;
-	sy = hero.y - 1;
+	ey = player.body.t_pos.y + 1;
+	ex = player.body.t_pos.x + 1;
+	sx = player.body.t_pos.x - 1;
+	sy = player.body.t_pos.y - 1;
 	if (turn.door_stop && !turn.first_move && turn.running) {
-		sumhero = hero.y + hero.x;
-		diffhero = hero.y - hero.x;
+		sumhero = player.body.t_pos.y + player.body.t_pos.x;
+		diffhero = player.body.t_pos.y - player.body.t_pos.x;
 	}
 	for (y = sy; y <= ey; y++)
 		if (y > 0 && y < maxrow) for (x = sx; x <= ex; x++) {
 			if (x <= 0 || x >= COLS)
 				continue;
 			if (!player.body.t_flags.test(ISBLIND)) {
-				if (y == hero.y && x == hero.x)
+				if (y == player.body.t_pos.y && x == player.body.t_pos.x)
 					continue;
-			} else if (y != hero.y || x != hero.x)
+			} else if (y != player.body.t_pos.y || x != player.body.t_pos.x)
 				continue;
 
 			index = INDEX(y, x);
@@ -193,11 +193,11 @@ look(bool wakeup)
 				}
 				switch (ch) {
 				case DOOR:
-					if (x == hero.x || y == hero.y)
+					if (x == player.body.t_pos.x || y == player.body.t_pos.y)
 						turn.running = FALSE;
 					break;
 				case PASSAGE:
-					if (x == hero.x || y == hero.y)
+					if (x == player.body.t_pos.x || y == player.body.t_pos.y)
 						passcount++;
 					break;
 				case FLOOR:
@@ -220,9 +220,9 @@ look(bool wakeup)
 	/*
 	 * was_trapped > TRUE: the rogue was teleported by a trap (be_trapped())
 	 */
-	display().draw_tile(hero, PLAYER,
-			(flat(hero.y,hero.x).test(MapFlag::Passage) || (player.was_trapped > TRUE)
-					|| flat(hero.y,hero.x).test(MapFlag::Maze))
+	display().draw_tile(player.body.t_pos, PLAYER,
+			(level.flags_at(player.body.t_pos).test(MapFlag::Passage) || (player.was_trapped > TRUE)
+					|| level.flags_at(player.body.t_pos).test(MapFlag::Maze))
 				? TileStyle::Inverse : TileStyle::Normal);
 	if (player.was_trapped) {
 		display().bell();
@@ -273,7 +273,7 @@ eat()
 		player.weapon = NULL;
 	if (--obj->o_count < 1)
 	{
-		pack.remove(obj);
+		player.body.t_pack.remove(obj);
 		discard(obj);
 	}
 	if (player.food_left < 0)
@@ -288,7 +288,7 @@ eat()
 	else
 		if (rnd(100) > 70)
 		{
-			pstats.s_exp++;
+			player.body.t_stats.s_exp++;
 			msg("yuk, this food tastes awful");
 			check_level();
 		}
@@ -307,17 +307,18 @@ void
 chg_str(int amt)
 {
 	str_t comp;
+	rogue::Player &player = game().player;
 
 	if (amt == 0)
 	return;
-	add_str(&pstats.s_str, amt);
-	comp = pstats.s_str;
-	if (game().player.wears(Hand::Left, Ring::AddStrength))
-		add_str(&comp, -game().player.rings[Hand::Left]->o_ac);
-	if (game().player.wears(Hand::Right, Ring::AddStrength))
-		add_str(&comp, -game().player.rings[Hand::Right]->o_ac);
-	if (comp > game().player.max_stats.s_str)
-		game().player.max_stats.s_str = comp;
+	add_str(&player.body.t_stats.s_str, amt);
+	comp = player.body.t_stats.s_str;
+	if (player.wears(Hand::Left, Ring::AddStrength))
+		add_str(&comp, -player.rings[Hand::Left]->o_ac);
+	if (player.wears(Hand::Right, Ring::AddStrength))
+		add_str(&comp, -player.rings[Hand::Right]->o_ac);
+	if (comp > player.max_stats.s_str)
+		player.max_stats.s_str = comp;
 }
 
 /*
@@ -686,7 +687,7 @@ offmap(int y, int x)
 unsigned char
 winat(int y, int x)
 {
-	return(moat(y,x) != NULL ? moat(y,x)->t_disguise : chat(y,x));
+	return(moat(y,x) != NULL ? moat(y,x)->t_disguise : game().level.at(y, x));
 }
 
 /*
@@ -699,19 +700,21 @@ search()
 	int y, x;
 	MapFlags *fp;
 	int ey, ex;
+	rogue::Player &player = game().player;
+	rogue::Level &level = game().level;
 
-	if (game().player.body.t_flags.test(ISBLIND))
+	if (player.body.t_flags.test(ISBLIND))
 		return;
-	ey = hero.y + 1;
-	ex = hero.x + 1;
-	for (y = hero.y - 1; y <= ey; y++)
-		for (x = hero.x - 1; x <= ex; x++)
+	ey = player.body.t_pos.y + 1;
+	ex = player.body.t_pos.x + 1;
+	for (y = player.body.t_pos.y - 1; y <= ey; y++)
+		for (x = player.body.t_pos.x - 1; x <= ex; x++)
 		{
-			if ((y == hero.y && x == hero.x) || offmap(y, x))
+			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || offmap(y, x))
 				continue;
-			fp = &flat(y, x);
+			fp = &level.flags_at(y, x);
 			if (!fp->test(MapFlag::Real))
-				switch (chat(y, x))
+				switch (level.at(y, x))
 				{
 					case VWALL:
 					case HWALL:
@@ -721,14 +724,14 @@ search()
 					case LRWALL:
 						if (rnd(5) != 0)
 							break;
-						chat(y, x) = DOOR;
+						level.at(y, x) = DOOR;
 						fp->set(MapFlag::Real);
 						game().turn.count = game().turn.running = FALSE;
 						break;
 					case FLOOR:
 						if (rnd(2) != 0)
 							break;
-						chat(y, x) = TRAP;
+						level.at(y, x) = TRAP;
 						fp->set(MapFlag::Real);
 						game().turn.count = game().turn.running = FALSE;
 						msg("you found {}", tr_name(fp->trap()));
@@ -745,7 +748,9 @@ search()
 void
 d_level()
 {
-	if (chat(hero.y, hero.x) != STAIRS)
+	rogue::Player &player = game().player;
+
+	if (game().level.at(player.body.t_pos) != STAIRS)
 		msg("I see no way down");
 	else {
 		game().level.depth++;
@@ -760,8 +765,10 @@ d_level()
 void
 u_level()
 {
-	if (chat(hero.y, hero.x) == STAIRS)
-		if (game().player.has_amulet) {
+	rogue::Player &player = game().player;
+
+	if (game().level.at(player.body.t_pos) == STAIRS)
+		if (player.has_amulet) {
 			game().level.depth--;
 			if (game().level.depth == 0)
 				total_winner();

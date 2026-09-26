@@ -103,7 +103,7 @@ TEST(Pool, DiscardSendsMonstersAfterTheHero)
 	game().level.monsters.push_front(mp);
 	mp->t_dest = &obj->o_pos;
 	discard(obj);
-	EXPECT_EQ(mp->t_dest, &hero);
+	EXPECT_EQ(mp->t_dest, &game().player.body.t_pos);
 	game().level = rogue::Level();
 	game().pool = rogue::Pool();
 }

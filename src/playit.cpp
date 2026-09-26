@@ -34,14 +34,16 @@ endit()
 void
 playit(char *sname)
 {
+	rogue::Player &player = game().player;
+
 	if (sname) {
 		setup();			// first: the save has the terse and expert toggles
 		restore(sname);
 		display().show_cursor(FALSE);
 	} else {
-		game().player.old_pos.x = hero.x;
-		game().player.old_pos.y = hero.y;
-		game().player.old_room = roomin(&hero);
+		player.old_pos.x = player.body.t_pos.x;
+		player.old_pos.y = player.body.t_pos.y;
+		player.old_room = roomin(&player.body.t_pos);
 	}
 	while (game().playing)
 		command();			/* Command execution */

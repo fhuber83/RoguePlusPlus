@@ -24,7 +24,9 @@ done
 
 for t in base new asan; do
 	misc="$dir/$t/src/misc.cpp"
-	sed -i 's/if (chat(hero.y, hero.x) != STAIRS)/if (false)/' "$misc"
+	# d_level()'s test, before and after phase 10.7 removed chat() and hero
+	sed -i -e 's/if (chat(hero.y, hero.x) != STAIRS)/if (false)/' \
+		-e 's/if (game().level.at(player.body.t_pos) != STAIRS)/if (false)/' "$misc"
 	grep -q 'if (false)' "$misc" || { echo "the stairs patch no longer applies to $misc" >&2; exit 1; }
 done
 

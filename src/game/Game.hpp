@@ -12,8 +12,7 @@ int INDEX(int y, int x);
  * Included by rogue.h after the legacy types it holds (Creature, Item,
  * struct room,
  * ...). Game files include rogue.h, not this header. Member names must not
- * collide with the lowercase macros of rogue.h and extern.h (hero, pack, max,
- * on, next, ...).
+ * collide with the lowercase macros of extern.h (access, bcopy, setmem, ...).
  */
 
 namespace rogue {
@@ -130,7 +129,7 @@ struct Level {
 	struct room passages[MAXPASS] = {};	/* One for each passage */
 	/*
 	 * What is at each square, and its MapFlags. Index them with INDEX(y, x),
-	 * or use chat()/flat().
+	 * or use at()/flags_at().
 	 */
 	unsigned char map[(MAXLINES-3)*MAXCOLS] = {};	/* _level */
 	MapFlags flags[(MAXLINES-3)*MAXCOLS] = {};	/* _flags */

@@ -65,7 +65,7 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 				if (weap->o_count > 1)
 					weap->o_count--;
 				else {
-					pack.remove(weap);
+					player.body.t_pack.remove(weap);
 					discard(weap);
 				}
 				player.weapon = NULL;
@@ -115,7 +115,7 @@ attack(Creature *mp)
 		mname = it;
 	if (roll_em(mp, &player.body, NULL, FALSE)) {
 		hit(mname, NULL);
-		if (pstats.s_hpt <= 0)
+		if (player.body.t_stats.s_hpt <= 0)
 			death(mp->t_type);	/* Bye bye life ... */
 		if (!mp->t_flags.test(ISCANC))
 			switch (mp->t_type)
@@ -172,24 +172,24 @@ attack(Creature *mp)
 
 			if (mp->t_type == 'W')
 			{
-				if (pstats.s_exp == 0)
+				if (player.body.t_stats.s_exp == 0)
 				death('W');		/* All levels gone */
-				if (--pstats.s_lvl == 0)
+				if (--player.body.t_stats.s_lvl == 0)
 				{
-				pstats.s_exp = 0;
-				pstats.s_lvl = 1;
+				player.body.t_stats.s_exp = 0;
+				player.body.t_stats.s_lvl = 1;
 				}
 				else
-				pstats.s_exp = e_levels[pstats.s_lvl-1]+1;
+				player.body.t_stats.s_exp = e_levels[player.body.t_stats.s_lvl-1]+1;
 				fewer = roll(1, 10);
 			}
 			else
 				fewer = roll(1, 5);
-			pstats.s_hpt -= fewer;
-			max_hp -= fewer;
-			if (pstats.s_hpt < 1)
-				pstats.s_hpt = 1;
-			if (max_hp < 1)
+			player.body.t_stats.s_hpt -= fewer;
+			player.body.t_stats.s_maxhp -= fewer;
+			if (player.body.t_stats.s_hpt < 1)
+				player.body.t_stats.s_hpt = 1;
+			if (player.body.t_stats.s_maxhp < 1)
 				death(mp->t_type);
 			msg("you suddenly feel weaker");
 			}
@@ -232,7 +232,7 @@ attack(Creature *mp)
 			 * and pick out one we like.
 			 */
 			steal = NULL;
-			for (nobj = 0, obj = pack.first(); obj != NULL; obj = pack.after(obj))
+			for (nobj = 0, obj = player.body.t_pack.first(); obj != NULL; obj = player.body.t_pack.after(obj))
 			if (obj != player.armor && obj != player.weapon
 				&& obj != player.rings[Hand::Left] && obj != player.rings[Hand::Right]
 				&& is_magic(obj) && rnd(++nobj) == 0)
@@ -254,7 +254,7 @@ attack(Creature *mp)
 				{
 					// inv_name() must run before discard() frees steal
 					std::string name = inv_name(steal, TRUE);
-					pack.remove(steal);
+					player.body.t_pack.remove(steal);
 					discard(steal);
 					msg(she_stole, name);
 				}
@@ -269,8 +269,8 @@ attack(Creature *mp)
 	{
 	if (mp->t_type == 'F')
 	{
-		pstats.s_hpt -= player.fung_hit;
-		if (pstats.s_hpt <= 0)
+		player.body.t_stats.s_hpt -= player.fung_hit;
+		if (player.body.t_stats.s_hpt <= 0)
 		death(mp->t_type);	/* Bye bye life ... */
 	}
 	miss(mname, NULL);
@@ -301,19 +301,20 @@ void
 check_level(void)
 {
 	int i, add, olevel;
+	rogue::Player &player = game().player;
 
 	for (i = 0; e_levels[i] != 0; i++)
-	if (e_levels[i] > pstats.s_exp)
+	if (e_levels[i] > player.body.t_stats.s_exp)
 		break;
 	i++;
-	olevel = pstats.s_lvl;
-	pstats.s_lvl = i;
+	olevel = player.body.t_stats.s_lvl;
+	player.body.t_stats.s_lvl = i;
 	if (i > olevel)
 	{
 		add = roll(i - olevel, 10);
-		max_hp += add;
-		if ((pstats.s_hpt += add) > max_hp)
-			pstats.s_hpt = max_hp;
+		player.body.t_stats.s_maxhp += add;
+		if ((player.body.t_stats.s_hpt += add) > player.body.t_stats.s_maxhp)
+			player.body.t_stats.s_hpt = player.body.t_stats.s_maxhp;
 		msg("and achieve the rank of \"{}\"", he_man[i-1]);
 	}
 }
@@ -397,7 +398,7 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 	if (!thdef->t_flags.test(ISRUN))
 		hplus += 4;
 	def_arm = def->s_arm;
-	if (def == &pstats)
+	if (def == &player.body.t_stats)
 	{
 		if (player.armor != NULL)
 			def_arm = player.armor->o_ac;
@@ -581,7 +582,9 @@ add_dam(str_t str)
 void
 raise_level(void)
 {
-	pstats.s_exp = e_levels[pstats.s_lvl-1] + 1L;
+	rogue::Player &player = game().player;
+
+	player.body.t_stats.s_exp = e_levels[player.body.t_stats.s_lvl-1] + 1L;
 	check_level();
 }
 
@@ -668,7 +671,7 @@ killed(Creature *tp, bool pr)
 {
 	char type = tp->t_type;	// remove_monster() discards tp
 
-	pstats.s_exp += tp->t_stats.s_exp;
+	game().player.body.t_stats.s_exp += tp->t_stats.s_exp;
 	/*
 	 * If the monster was a violet fungi, un-hold him
 	 */

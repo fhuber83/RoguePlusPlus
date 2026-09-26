@@ -149,6 +149,7 @@ wanderer(void)
 	struct room *rp;
 	Creature *tp;
 	coord cp;
+	rogue::Player &player = game().player;
 
 	/*
 	 * can we allocate a new monster
@@ -157,10 +158,10 @@ wanderer(void)
 		return;
 	do {
 		i = rnd_room();
-		if ((rp = &game().level.rooms[i]) == proom)
+		if ((rp = &game().level.rooms[i]) == player.body.t_room)
 			continue;
 		rnd_pos(rp, &cp);
-	} while (!(rp != proom && step_ok(winat(cp.y, cp.x))));
+	} while (!(rp != player.body.t_room && step_ok(winat(cp.y, cp.x))));
 	new_monster(tp, randmonster(TRUE), &cp);
 	start_run(&tp->t_pos);
 }
@@ -176,6 +177,7 @@ wake_monster(int y, int x)
 	struct room *rp;
 	unsigned char ch;
 	int dst;
+	rogue::Player &player = game().player;
 
 	if ((tp = moat(y, x)) == NULL)
 		return tp;
@@ -184,24 +186,24 @@ wake_monster(int y, int x)
 	 * Every time he sees mean monster, it might start chasing him
 	 */
 	if (!tp->t_flags.test(ISRUN) && rnd(3) != 0 && tp->t_flags.test(ISMEAN) && !tp->t_flags.test(ISHELD)
-		&& !game().player.wears(Ring::Stealth))
+		&& !player.wears(Ring::Stealth))
 	{
-		tp->t_dest = &hero;
+		tp->t_dest = &player.body.t_pos;
 		tp->t_flags.set(ISRUN);
 	}
-	if (ch == 'M' && !game().player.body.t_flags.test(ISBLIND) && !tp->t_flags.test(ISFOUND)
+	if (ch == 'M' && !player.body.t_flags.test(ISBLIND) && !tp->t_flags.test(ISFOUND)
 		&& !tp->t_flags.test(ISCANC) && tp->t_flags.test(ISRUN))
 	{
-		rp = proom;
-		dst = DISTANCE(y, x, hero.y, hero.x);
+		rp = player.body.t_room;
+		dst = DISTANCE(y, x, player.body.t_pos.y, player.body.t_pos.x);
 		if ((rp != NULL && !rp->r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
 			tp->t_flags.set(ISFOUND);
 			if (!save(SaveThrow::Magic)) {
-				if (game().player.body.t_flags.test(ISHUH))
+				if (player.body.t_flags.test(ISHUH))
 					lengthen(Event::Unconfuse, rnd(20) + huh_duration());
 				else
 					fuse(Event::Unconfuse, rnd(20) + huh_duration());
-				game().player.body.t_flags.set(ISHUH);
+				player.body.t_flags.set(ISHUH);
 				msg("the medusa's gaze has confused you");
 			}
 		}
@@ -211,10 +213,10 @@ wake_monster(int y, int x)
 	 */
 	if (tp->t_flags.test(ISGREED) && !tp->t_flags.test(ISRUN)) {
 		tp->t_flags.set(ISRUN);
-		if (proom->r_goldval)
-			tp->t_dest = &proom->r_gold;
+		if (player.body.t_room->r_goldval)
+			tp->t_dest = &player.body.t_room->r_gold;
 		else
-			tp->t_dest = &hero;
+			tp->t_dest = &player.body.t_pos;
 	}
 	return tp;
 }

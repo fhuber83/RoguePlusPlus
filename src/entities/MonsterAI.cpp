@@ -24,10 +24,11 @@ runners()
 {
 	Creature *tp;
 	int dist;
+	rogue::Player &player = game().player;
 
 	for (tp = game().level.monsters.first(); tp != NULL; tp = game().level.monsters.after(tp)) {
 		if (!tp->t_flags.test(ISHELD) && tp->t_flags.test(ISRUN)) {
-			dist = DISTANCE(hero.y, hero.x, tp->t_pos.y, tp->t_pos.x);
+			dist = DISTANCE(player.body.t_pos.y, player.body.t_pos.x, tp->t_pos.y, tp->t_pos.x);
 			if	(!(tp->t_flags.test(ISSLOW) || (tp->t_type == 'S' && dist > 3)) || tp->t_turn)
 				do_chase(tp);
 			/*
@@ -43,7 +44,7 @@ runners()
 				do_chase(tp);
 			if (!game().level.monsters.contains(tp))
 				continue;
-			dist = DISTANCE(hero.y, hero.x, tp->t_pos.y, tp->t_pos.x);
+			dist = DISTANCE(player.body.t_pos.y, player.body.t_pos.x, tp->t_pos.y, tp->t_pos.x);
 			if (tp->t_flags.test(ISFLY) && dist > 3)
 				do_chase(tp);
 			if (!game().level.monsters.contains(tp))
@@ -66,19 +67,21 @@ do_chase(Creature *th)
 	struct room	*oroom;
 	struct room	*rer, *ree;	/* room of chaser, room of chasee */
 	coord target;				/* Temporary	destination for	chaser */
+	rogue::Player &player = game().player;
+	rogue::Level &level = game().level;
 
 	rer	= th->t_room;		/* Find room of chaser */
 	if (th->t_flags.test(ISGREED) && rer->r_goldval == 0)
-		th->t_dest = &hero;	/*	If gold	has been taken,	run after hero */
-	ree	= proom;
-	if (th->t_dest != &hero)	/*	Find room of chasee */
+		th->t_dest = &player.body.t_pos;	/*	If gold	has been taken,	run after hero */
+	ree	= player.body.t_room;
+	if (th->t_dest != &player.body.t_pos)	/*	Find room of chasee */
 		ree = roomin(th->t_dest);
 	if (ree == NULL)
 		return;
 	/*
 	 * We don't	count doors as inside rooms for	this routine
 	 */
-	door = (chat(th->t_pos.y, th->t_pos.x) == DOOR);
+	door = (level.at(th->t_pos) == DOOR);
 
 
 	/*
@@ -97,7 +100,7 @@ over:
 			}
 		}
 		if (door) {
-			rer = &game().level.passages[flat(th->t_pos.y, th->t_pos.x).passage()];
+			rer = &level.passages[level.flags_at(th->t_pos).passage()];
 			door = FALSE;
 			goto over;
 		}
@@ -109,15 +112,15 @@ over:
 		 * it is within shooting distance, but	outside	of striking range.
 		 */
 		if ((th->t_type == 'D' || th->t_type == 'I')
-			&&	(th->t_pos.y ==	hero.y || th->t_pos.x == hero.x
-			 || abs(th->t_pos.y - hero.y) == abs(th->t_pos.x - hero.x))
-			&&	((dist=DISTANCE(th->t_pos.y, th->t_pos.x, hero.y, hero.x)) > 2
+			&&	(th->t_pos.y ==	player.body.t_pos.y || th->t_pos.x == player.body.t_pos.x
+			 || abs(th->t_pos.y - player.body.t_pos.y) == abs(th->t_pos.x - player.body.t_pos.x))
+			&&	((dist=DISTANCE(th->t_pos.y, th->t_pos.x, player.body.t_pos.y, player.body.t_pos.x)) > 2
 			 && dist <= BOLT_LENGTH	* BOLT_LENGTH)
 			&&	!th->t_flags.test(ISCANC) && rnd(DRAGONSHOT) == 0)
 		{
 			game().turn.running = FALSE;
-			game().turn.delta.y = sign(hero.y - th->t_pos.y);
-			game().turn.delta.x = sign(hero.x - th->t_pos.x);
+			game().turn.delta.y = sign(player.body.t_pos.y - th->t_pos.y);
+			game().turn.delta.x = sign(player.body.t_pos.x - th->t_pos.x);
 			fire_bolt(&th->t_pos,&game().turn.delta,th->t_type == 'D' ? "flame" : "frost");
 			return;
 		}
@@ -128,17 +131,17 @@ over:
 	 * or stop running
 	 */
 	chase(th, &target);
-	if (ch_ret == hero) {
+	if (ch_ret == player.body.t_pos) {
 		attack(th);
 		return;
 	} else if (ch_ret == *th->t_dest) {
-		for (obj = game().level.objects.first(); obj != NULL; obj = game().level.objects.after(obj))
+		for (obj = level.objects.first(); obj != NULL; obj = level.objects.after(obj))
 			if	(th->t_dest == &obj->o_pos) {
 				unsigned char oldchar;
 
-				game().level.objects.remove(obj);
+				level.objects.remove(obj);
 				th->t_pack.push_front(obj);
-				oldchar = chat(obj->o_pos.y, obj->o_pos.x) =
+				oldchar = level.at(obj->o_pos) =
 				th->t_room->r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
 				if (cansee(obj->o_pos.y, obj->o_pos.x))
 					display().draw_tile(obj->o_pos, oldchar);
@@ -153,10 +156,10 @@ over:
 	 */
 	if (th->t_oldch != '@') {
 		if	(th->t_oldch ==	' ' && cansee(th->t_pos.y, th->t_pos.x)
-			   && game().level.map[INDEX(th->t_pos.y,th->t_pos.x)] == FLOOR)
+			   && level.map[INDEX(th->t_pos.y,th->t_pos.x)] == FLOOR)
 			display().draw_tile(th->t_pos, FLOOR);
 		else if (th->t_oldch == FLOOR && !cansee(th->t_pos.y, th->t_pos.x)
-				&& !game().player.body.t_flags.test(SEEMONST))
+				&& !player.body.t_flags.test(SEEMONST))
 			display().draw_tile(th->t_pos, ' ');
 		else
 			display().draw_tile(th->t_pos, th->t_oldch);
@@ -176,9 +179,9 @@ over:
 	if (see_monst(th)) {
 		th->t_oldch = display().tile_at(ch_ret);
 		display().draw_tile(ch_ret, th->t_disguise,
-				flat(ch_ret.y,ch_ret.x).test(MapFlag::Passage) ? TileStyle::Inverse : TileStyle::Normal);
+				level.flags_at(ch_ret).test(MapFlag::Passage) ? TileStyle::Inverse : TileStyle::Normal);
 	}
-	else if (game().player.body.t_flags.test(SEEMONST))
+	else if (player.body.t_flags.test(SEEMONST))
 	{
 		th->t_oldch = display().tile_at(ch_ret);
 		display().draw_tile(ch_ret, th->t_type, TileStyle::Inverse);
@@ -202,8 +205,8 @@ see_monst(Creature *mp)
 		return	FALSE;
 	if (mp->t_flags.test(ISINVIS) && !player.body.t_flags.test(CANSEE))
 		return	FALSE;
-	if (DISTANCE(mp->t_pos.y, mp->t_pos.x, hero.y, hero.x) >= LAMPDIST &&
-	  ((mp->t_room != proom || mp->t_room->r_flags.test(RoomFlag::Dark) ||
+	if (DISTANCE(mp->t_pos.y, mp->t_pos.x, player.body.t_pos.y, player.body.t_pos.x) >= LAMPDIST &&
+	  ((mp->t_room != player.body.t_room || mp->t_room->r_flags.test(RoomFlag::Dark) ||
 	  mp->t_room->r_flags.test(RoomFlag::Maze))))
 		return FALSE;
 	/*
@@ -355,10 +358,11 @@ find_dest(Creature *tp)
 	Item *obj;
 	int prob;
 	struct room *rp;
+	rogue::Player &player = game().player;
 
-	if ((prob =	monsters[tp->t_type - 'A'].m_carry) <= 0 || tp->t_room == proom
+	if ((prob =	monsters[tp->t_type - 'A'].m_carry) <= 0 || tp->t_room == player.body.t_room
 	|| see_monst(tp))
-		return &hero;
+		return &player.body.t_pos;
 	rp = tp->t_room;
 	for (obj = game().level.objects.first(); obj != NULL; obj = game().level.objects.after(obj))
 	{
@@ -373,7 +377,7 @@ find_dest(Creature *tp)
 		return &obj->o_pos;
 	}
 	}
-	return &hero;
+	return &player.body.t_pos;
 }
 
 /*
@@ -401,7 +405,7 @@ slime_split(Creature *tp)
 	msg("The slime divides.  Ick!");
 	new_monster(nslime, 'S', &slimy);
 	if (cansee(slimy.y, slimy.x)) {
-		nslime->t_oldch = chat(slimy.y, slimy.x);
+		nslime->t_oldch = game().level.at(slimy);
 		display().draw_tile(slimy, 'S');
 	}
 	start_run(&slimy);
@@ -458,13 +462,14 @@ plop_monster(int r, int c, coord *cp)
 	int y, x, inv_odds = 0;
 	bool appear = FALSE;
 	unsigned char ch;
+	rogue::Player &player = game().player;
 
 	for (y = r-1; y <= r+1; y++)
 		for (x = c-1; x <= c+1; x++) {
 			/*
 			 * Don't put a monster in top of the player.
 			 */
-			if ((y == hero.y && x == hero.x) || offmap(y,x))
+			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || offmap(y,x))
 				continue;
 			/*
 			 * Or anything else nasty

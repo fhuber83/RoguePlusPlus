@@ -16,27 +16,28 @@ void
 doctor(void)
 {
 	int lv, ohp;
+	rogue::Player &player = game().player;
 
-	lv = pstats.s_lvl;
-	ohp = pstats.s_hpt;
-	game().player.quiet++;
+	lv = player.body.t_stats.s_lvl;
+	ohp = player.body.t_stats.s_hpt;
+	player.quiet++;
 	if (lv < 8)
 	{
-		if (game().player.quiet + (lv << 1) > 20)
-			pstats.s_hpt++;
+		if (player.quiet + (lv << 1) > 20)
+			player.body.t_stats.s_hpt++;
 	}
 	else
-	if (game().player.quiet >= 3)
-		pstats.s_hpt += rnd(lv - 7) + 1;
-	if (game().player.wears(Hand::Left, Ring::Regeneration))
-		pstats.s_hpt++;
-	if (game().player.wears(Hand::Right, Ring::Regeneration))
-		pstats.s_hpt++;
-	if (ohp != pstats.s_hpt)
+	if (player.quiet >= 3)
+		player.body.t_stats.s_hpt += rnd(lv - 7) + 1;
+	if (player.wears(Hand::Left, Ring::Regeneration))
+		player.body.t_stats.s_hpt++;
+	if (player.wears(Hand::Right, Ring::Regeneration))
+		player.body.t_stats.s_hpt++;
+	if (ohp != player.body.t_stats.s_hpt)
 	{
-		if (pstats.s_hpt > max_hp)
-			pstats.s_hpt = max_hp;
-		game().player.quiet = 0;
+		if (player.body.t_stats.s_hpt > player.body.t_stats.s_maxhp)
+			player.body.t_stats.s_hpt = player.body.t_stats.s_maxhp;
+		player.quiet = 0;
 	}
 }
 
@@ -104,12 +105,14 @@ unsee(void)
 void
 sight(void)
 {
-	if (game().player.body.t_flags.test(ISBLIND))
+	rogue::Player &player = game().player;
+
+	if (player.body.t_flags.test(ISBLIND))
 	{
 		extinguish(Event::Sight);
-		game().player.body.t_flags.unset(ISBLIND);
-		if (!proom->r_flags.test(RoomFlag::Gone))
-			enter_room(&hero);
+		player.body.t_flags.unset(ISBLIND);
+		if (!player.body.t_room->r_flags.test(RoomFlag::Gone))
+			enter_room(&player.body.t_pos);
 		msg("the veil of darkness lifts");
 	}
 }

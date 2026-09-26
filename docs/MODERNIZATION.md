@@ -10,6 +10,8 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
 | Fidelity | **Same rules, loosely.** Keep the game rules and feel. The RNG, the order of random calls and the save format may change. |
 | DOS legacy | **Removed.** This covers copy protection, fake DOS, the BIOS/INT emulation, the title picture loader and the keyboard LED checks. |
 | Language | **C++23** (GCC 15 / CMake 4). |
+| C idioms | **Gone by the end of phase 14.** No `#define` (constants are `constexpr`, compile-time checks `consteval`), no raw C strings, no raw pointers except at system APIs (curses, `main()`'s arguments). |
+| Ownership | **The pool owns, everything else refers.** Creatures and items stay owned by `unique_ptr` in the pool's slots (6.6). Stored links become handles (slot numbers and room indices), parameters become references or values. No `shared_ptr`: see "Where things stand after phase 9". |
 
 ## Done
 
@@ -254,6 +256,34 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
 - **9.4 No port annotations.** The `//@` and `/*@` markers (and the `@` notes inside original comments) that set the Linux port's and this project's changes apart from the 1980s code are gone; after phases 4–9 unmarked code is no longer original anyway. Notes that only told history ("moved from rogue.h", "was prbuf", "renamed from remove()"), commented-out code (the old `<ctype.h>` functions, `wait_for()`'s line-ending loop, the "not found" declarations in `rogue.h`) and asides went. Explanations stayed as plain comments, and the stale ones were fixed: `extern.h`'s header, `init_ds()` in `Game.hpp`, the source file names over `rogue.h`'s prototypes, `was_trapped`, `chase()`'s return value. `extern.h` no longer includes `<stdbool.h>`, which does nothing in C++.
   - Verified: the 42 objects of `rogue_game` have identical `.text` to the 9.3 commit's; `.rodata` differs only in `SaveGame.cpp` and `HighScores.cpp`, by the nlohmann/json path in its assertions (the two builds fetched it into different directories). `rogue_tests` passes (173 tests).
 
+## Where things stand after phase 9
+
+Measured on `main` after PR #8 (2026-09-26), with `grep` over `src/`. Counts include the uses inside `#ifdef WIZARD`/`DEBUG` blocks.
+
+| What | Count | Mostly in |
+|---|---|---|
+| `#define` | 241, 26 of them function-like | `rogue.h` 157, `glyphs.h` 45, `extern.h` 12, the rest local to one `.cpp` |
+| Macros standing for game state (`hero`, `pstats`, `pack`, `proom`, `max_hp`, `chat`, `flat`) | about 420 uses | everywhere |
+| Kind numbers (`P_*`, `S_*`, `R_*`, `WS_*`, weapons, armor, traps, `VS_*`) | 88 defines; `o_which` has 93 uses | `items/`, `rules/Combat` |
+| `TRUE`/`FALSE`, `NULL` | 265, 165 | everywhere |
+| Raw pointers in declarations | `Item *` 103, `Creature *` 74, `struct room *` 43, `coord *` 42 | everywhere |
+| Pointers kept in structs | `t_dest`, `t_room`, `old_room`, the worn armor, weapon and rings, `turn.last_item`, the entries of `List<T>` | `entities/`, `game/Game.hpp` |
+| Owning raw pointers | none: the pool's `Slots` own through `unique_ptr`; `newmem()` is unused | |
+| C strings | `const char *` 129, `char *` 19, `char` arrays 28, `str*`/`mem*` calls 54 | tables, `Options`, `MessageLine`, guesses, damage strings |
+| Files outside the modules | 12 `.cpp` files, about 3,600 lines, plus `rogue.h` (686) and `extern.h` (122) | `src/` |
+| `using rogue::...` lines in `rogue.h` | 100 | re-export module functions to the global namespace |
+| `#ifdef WIZARD` / `DEBUG` blocks | 32, none compiled by any build | |
+| Other C | `struct X` in 109 declarations, `(void)` parameter lists 69, `goto` 24, file-scope `static` 82, function-local `static` state 8 | |
+
+What that means for the plan:
+
+1. **Ownership is already modern; the pointers left are all observers.** Every creature and item is owned by exactly one `unique_ptr` in `game().pool` (6.6). `discard()` has to end a thing at once: a killed monster is gone even if a list, a pack or `t_dest` still points at it. `shared_ptr` would keep such a thing alive and hide the stale read that ASan catches now (6.5 and 6.6 fixed five). So the pointer work is not about ownership but about how a link says *which* thing: stored links become handles, parameters become references or values, and `Coord` goes by value.
+2. **The stored links have few shapes, and the save format already names them.** `t_dest` is the hero, a room's or passage's gold, or an item. `t_room` is a room or a passage. Worn things and `last_item` are items in the pool. Typed handles make these explicit in the code and shrink `persistence/SaveGame`.
+3. **The legacy macros block everything else.** Lowercase macros (`pack`, `max`, `hero`, `attach`, ...) force the "modern headers first" include order, constrain member names and would break any header moved into a namespace. They go first.
+4. **Code that no build compiles has already rotted.** `WIZARD` does not compile, and nothing could turn wizard mode on anyway: no option, key or password ever sets `wizard`. No build defines `DEBUG` either. A refactor can't check these blocks, so each phase would leave them further behind. Wizard mode goes (10.1), and the `DEBUG` checks have to compile in every build before the rest starts (10.2).
+5. **`o_which` holds a different kind of number for each kind of item.** A potion's is a `P_*`, a weapon's a weapon number, and they index different tables. Typing it per kind catches a potion number used on the scroll table.
+6. **Damage is text that is parsed at each use.** `o_damage`, `o_hurldmg` and `s_dmg` are strings like `"1d2/1d5"`, parsed on every attack (`rules/Combat` via `parse_attacks()`), and `s_dmg` of the venus flytrap points into `player.flytrap_damage`, which grows. As `Dice` values they are parsed once, and the fixed tables can be parsed at compile time (`consteval`), so a typo in a table is a compile error.
+
 ## Target architecture
 
 ```
@@ -324,6 +354,43 @@ Each phase is a series of small commits that each build and play.
    - *Done:* `msg()`/`addmsg()` and the other printf-style functions take `std::format` strings (9.3).
    - *Done:* remove `when`/`otherwise`/`on()`/`until()` and `shint`/`byte` (9.1). `ce()` went in phase 3.
    - *Done:* remove the `//@` port annotations (9.4).
+10. **Constants instead of macros.** When done, `grep -rn '#define' src` finds nothing. The feature macros that system headers need (`_XOPEN_SOURCE`, `NCURSES_WIDECHAR`) become compile definitions of the curses backend in CMake. Steps:
+    1. Wizard mode is deleted: the `#ifdef WIZARD` blocks, `create_obj()`, `get_num()`, `show_map()`, `add_pass()`, `Command::CreateObject` and the `wizard` flag. `whatis()` and `teleport()` stay, because the game uses them. `debug()` becomes a function for the `DEBUG` checks.
+    2. Build switches become constants. CMake writes `core/Config.hpp` from a template, with `inline constexpr bool debug_checks` and the charset. `#ifdef DEBUG`/`ROGUE_DEBUG` become `if constexpr`, which type-checks both branches in every build. First the errors of a `DEBUG` build get fixed. `MINROG` goes.
+    3. Numbers become `inline constexpr`, with a type: sizes and limits, times, file names (`std::string_view`), glyph codes (`unsigned char`), `ESCAPE`, and the `.cpp`-local defines. `sizeof a / sizeof *a` becomes `std::size()`. `CTRL()` becomes a `consteval` function. The 40-column paths (`COLS == 40`) become dead code once `COLS` is a constant, and go.
+    4. Kind numbers become `enum class`: `Potion`, `Scroll`, `Ring`, `Stick`, `WeaponType`, `ArmorType`, `Trap`, `SaveThrow`, `Hand`. Tables indexed by kind become a `KindTable<E, T>` (a `std::array` indexed by the enum). `Item` keeps `o_which` as a plain number, which the save format stores, and reads and writes it through `which<E>()`/`set_which()`.
+    5. Map flags (`F_*`) become `MapFlag` in a `Flags` set, with accessors for the passage number and the trap type that share its low bits.
+    6. Function-like macros become functions: `std::max` (and `std::max({...})` for `MAX` of four), `Player::wears(Ring)` for `ISRING`/`ISWEARING`, `Room::is_gone()`, `is_floor()`, `is_monster()`, `is_multiple()`, `gold_calc()`, `armor_class()`, the `spread()` times (`bear_time()`, ...), `List` methods for `attach`/`detach`/`free_list`, and `debug()`. `H_STR`/`H_CHSTR` become constructors of the help entry. `o_charges`/`o_goldval` become named accessors of `o_ac`. `unc()` goes. None of these macros evaluates an argument with side effects twice (checked), so the functions behave the same.
+    7. The game-state macros go: `hero`, `pstats`, `pack`, `proom`, `max_hp`, `chat` and `flat` become a bound `Player &`/`Level &` or accessors (`level.at(pos)`, `level.flags_at(pos)`). About 420 uses, one commit per module. After that, members may have any name.
+    8. `extern.h` goes: `true`/`false`, `nullptr`, plain assignment for `bcopy`, `std::fill` for `setmem`, `std::filesystem::exists` for `access`, `std::this_thread::sleep_for` for `msleep`, `[[maybe_unused]]` for `UNUSED`, and `#pragma once` for include guards. `was_trapped`, which counts past `TRUE`, becomes an enum (`none`, `sprung`, `teleported`). `mach_dep.cpp`'s declarations move to their own header, and `newmem()` goes.
+    - Verified mostly by object identity (the compare of 9.4): 10.1 and 10.3 to 10.6 should leave the code unchanged. 10.2 changes it only in debug builds, and 10.7/10.8 get replays.
+11. **Strings instead of `char *`.** When done, no `char *`, no `char` array and no `str*`/`mem*` call is left outside the curses backend. Steps:
+    1. Constant tables of text (monster names, weapon and armor names, ranks, help, potion colours, stones, woods, metals, syllables) become `constexpr` arrays of `std::string_view`.
+    2. Text the game changes becomes `std::string`: `Options` (and `persistence/OptionsFile`), `MessageLine`, the guesses and scroll titles (`struct array` goes), `o_text`, and the macro's `typeahead`. `Input::read_line()` returns a `std::string`.
+    3. Damage becomes `Dice` values, parsed once: an `Attacks` list for `s_dmg`, `o_damage` and `o_hurldmg`. The monster, weapon and player tables parse their strings with a `consteval` parser. The venus flytrap's growing damage becomes a number that makes its `Dice`. The save file keeps writing damage as text, so its format stays.
+    4. `strings.cpp` goes: `is_alpha()` and friends become `constexpr` ASCII helpers in `core/`, and `stccpy()`, `stpblk()`, `endblk()` and `lcase()` become `std::string` operations.
+    - Verified like 9.2 (a harness that prints every name and message from both builds), plus replays and the resume check.
+12. **References and handles instead of raw pointers.** When done, `T *` only appears at system APIs and inside `Slots`. Steps:
+    1. `Coord` goes by value. Out-parameters (`find_dir()`, `plop_monster()`, `fallpos()`, `rnd_pos()`, ...) return `std::optional<Coord>` instead.
+    2. Room links become `RoomRef` (a room or a passage and its index) for `t_room`, `old_room` and `proom`, with `Level::room(RoomRef)`.
+    3. Item and creature links become handles: `ItemId`/`CreatureId`, the slot number, with `Pool::item(id)` returning a reference. The worn armor, weapon and rings and `turn.last_item` become `std::optional<ItemId>`. `t_dest` becomes a `Destination`, a `std::variant` of the hero, a room's or passage's gold and an `ItemId`, with a `where()` that gives its position. `List<T>` holds handles and yields references. These are the shapes the save file already uses, so `SaveGame` gets simpler and the file format stays. Whether handles also carry a generation, so that a stale one is caught instead of finding the thing that reused the slot, is decided in this step (`pool_problems()` already shows none survive a command).
+    4. Parameters become references: a `Creature *`, `Item *` or `room *` that is never null becomes `T &`. Where null is a real case, the function takes or returns a `std::optional` handle, or a `rogue::Maybe<T>` (a non-owning optional reference, to become `std::optional<T &>` once the compiler has it).
+    5. The static buffers that functions return pointers into go: `md_localtime()` returns a value (or `std::chrono` replaces it), `getsyl()`'s buffer and `set_order()`'s static `Item` go.
+    - Verified by ASan/UBSan replays (a handle mix-up shows as divergence, a stale pointer as a report), the resume check and `pool_problems()` after every command of the replays.
+13. **The legacy files move into modules.** Each file moves into `namespace rogue`, with its own header, and its C syntax goes on the way: `struct X` in declarations, `typedef`, `(void)`, C casts, `int` used as `bool`, `goto` rewritten as loops or early returns, file-scope `static` into anonymous namespaces. The legacy structs become types of their module: `struct room` becomes `world::Room`, `stats` `entities::Stats`, `monster` `entities::MonsterKind`, `magic_item` `items::KindInfo`, `sc_ent` `persistence::ScoreEntry`, `TM` `std::chrono`, and their C arrays `std::array`. One step per file, the biggest split:
+    1. `misc.cpp` (860 lines): `look()` to `world/`, `eat()` and strength to `rules/`, `call()`, `help()` and the macro to `game/` commands, the helpers (`sign()`, `spread()`, `DISTANCE()`, `INDEX()`) to `core/`.
+    2. `move.cpp` to `game/Movement` and traps to `world/Traps`.
+    3. `io.cpp` to `game/Messages` (the message line) and `ui/` (status).
+    4. `init.cpp` and `extern.cpp`: each table goes to the module that uses it (monsters to `entities/MonsterCatalog`, items to `items/ItemCatalog`, help to `game/Help`, `e_levels` to `rules/`), and `init_*()` to `game/NewGame`.
+    5. `rip.cpp` to `game/Endings`, `save.cpp` to `persistence/`, `playit.cpp` to `game/GameLoop`, `list.cpp` to `game/Pool`, `wizard.cpp` (`whatis()` and `teleport()`, which are not wizard commands) to `items/` and `world/`, `mach_dep.cpp` to `platform/` (time, sleep, exit) and `ui/` (key translation, title).
+    6. `rules/Daemons` is split into `rules/Hunger`, `rules/Regeneration` and the wandering monsters, as the target architecture says.
+14. **The legacy headers go.** `rogue.h`'s 100 `using rogue::...` lines go, and every file includes the module headers it uses. `glyphs.h` becomes `core/Glyphs.hpp`. `rogue.h`, `extern.h` and `glyphs.h` are deleted, and `CLAUDE.md` loses the include-order and macro-name rules. A headless `Display`/`Input` pair drives scripted play tests, which the target architecture mentions and the replays have stood in for.
+
+Open questions, to settle before the phase that needs them:
+
+- **Fidelity:** the decisions allow the order of random calls to change. Phases 10 to 14 are meant to be pure refactors, so the plan keeps every replay identical. A step that can't do that stops and says so.
+- **Generation counters in handles (12.3):** safer, but a new field that the save doesn't need. Decide once the handles exist.
+- **One branch per phase:** each phase is one branch and one PR, with a commit per step, as phases 4 to 9 were.
 
 ## Notes for whoever continues
 
@@ -332,5 +399,5 @@ Each phase is a series of small commits that each build and play.
 
 - `faststate` ("Fast Play") used to be toggled by Scroll Lock and is now always `FALSE`. Reintroduce it as a real option or key if wanted.
 - Saves are JSON since 8.3 (`persistence/SaveGame`). A new field in `Game` or the structs it holds trips the size `static_assert`s in `SaveGame.cpp`: save and load it, then update the size. Test a change to saving with the resume-equivalence replay of 8.3d (`tools/replay/resume.py`).
-- `WIZARD` builds do not compile: `CTRL(D)` in `command.cpp` should be `CTRL('D')`, `rogue.h` defines `bool wizard;` in the header (it should be `extern`, while `extern.cpp` defines it only under `WIZARD`), and `create_obj()` passes a `short *` and `stdscr` to `get_num(int *)`.
+- `WIZARD` builds do not compile: `CTRL(D)` in `command.cpp` should be `CTRL('D')`, `rogue.h` defines `bool wizard;` in the header (it should be `extern`, while `extern.cpp` defines it only under `WIZARD`), and `create_obj()` passes a `short *` and `stdscr` to `get_num(int *)`. 10.1 deletes wizard mode.
 - The terminal must be 80×25. `COLS == 40` paths still exist for the old 40-column mode.

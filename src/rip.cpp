@@ -10,7 +10,7 @@
 #include "persistence/HighScores.hpp"
 #include "rogue.h"
 
-#define TOPSCORES	10
+constexpr int TOPSCORES = 10;
 struct sc_ent {
 	char sc_name[38];
 	int sc_rank;

@@ -10,66 +10,63 @@
  * Don't change the constants, since they are used for sizes in many
  * places in the program. 80 and 25 are also hard coded in many places.
  */
-#define MAXSTR  	80	/* maximum length of strings */
-#define MAXLINES	25	/* maximum number of screen lines used */
-#define MAXCOLS 	80	/* maximum number of screen columns used */
+inline constexpr int MAXSTR = 80;	/* maximum length of strings */
+inline constexpr int MAXLINES = 25;	/* maximum number of screen lines used */
+inline constexpr int MAXCOLS = 80;	/* maximum number of screen columns used */
 
-#ifndef CTRL
-#define CTRL(ch)	((ch) & 037)
-#endif
+// The key a control character is typed with: ctrl('R') is ^R
+consteval unsigned char
+ctrl(char ch)
+{
+	return static_cast<unsigned char>(ch & 037);
+}
 
 /*
  * Things that appear on the screens
  */
-#define PASSAGE		(0xb1)
-#define DOOR		(0xce)
-#define FLOOR		(0xfa)
-#define PLAYER		(0x01)
-#define TRAP		(0x04)
-#define STAIRS		(0xf0)
-#define GOLD		(0x0f)
-#define POTION		(0xad)
-#define SCROLL		(0x0d)
-#define MAGIC		'$'
-#define BMAGIC		'~'  // originally '+', which is the ASCII door
-#define FOOD		(0x05)
-#define STICK		(0xe7)
-#define ARMOR		(0x08)
-#define AMULET		(0x0c)
-#define RING		(0x09)
-#define WEAPON		(0x18)
+inline constexpr unsigned char PASSAGE = 0xb1;
+inline constexpr unsigned char DOOR = 0xce;
+inline constexpr unsigned char FLOOR = 0xfa;
+inline constexpr unsigned char PLAYER = 0x01;
+inline constexpr unsigned char TRAP = 0x04;
+inline constexpr unsigned char STAIRS = 0xf0;
+inline constexpr unsigned char GOLD = 0x0f;
+inline constexpr unsigned char POTION = 0xad;
+inline constexpr unsigned char SCROLL = 0x0d;
+inline constexpr unsigned char MAGIC = '$';
+inline constexpr unsigned char BMAGIC = '~';  // originally '+', which is the ASCII door
+inline constexpr unsigned char FOOD = 0x05;
+inline constexpr unsigned char STICK = 0xe7;
+inline constexpr unsigned char ARMOR = 0x08;
+inline constexpr unsigned char AMULET = 0x0c;
+inline constexpr unsigned char RING = 0x09;
+inline constexpr unsigned char WEAPON = 0x18;
 
-#define VWALL	(0xba)
-#define HWALL	(0xcd)
-#define ULWALL	(0xc9)
-#define URWALL	(0xbb)
-#define LLWALL	(0xc8)
-#define LRWALL	(0xbc)
+inline constexpr unsigned char VWALL = 0xba;
+inline constexpr unsigned char HWALL = 0xcd;
+inline constexpr unsigned char ULWALL = 0xc9;
+inline constexpr unsigned char URWALL = 0xbb;
+inline constexpr unsigned char LLWALL = 0xc8;
+inline constexpr unsigned char LRWALL = 0xbc;
 
 // single-width box glyphs
-#define HLINE	(0xc4)
-#define VLINE	(0xb3)
-#define CORNER	'+'  // unused
-#define ULCORNER	(0xda)
-#define URCORNER	(0xbf)
-#define LLCORNER	(0xc0)
-#define LRCORNER	(0xd9)
+inline constexpr unsigned char HLINE = 0xc4;
+inline constexpr unsigned char VLINE = 0xb3;
+inline constexpr unsigned char ULCORNER = 0xda;
+inline constexpr unsigned char URCORNER = 0xbf;
+inline constexpr unsigned char LLCORNER = 0xc0;
+inline constexpr unsigned char LRCORNER = 0xd9;
 
 // double-width box glyphs
-#define DHLINE	HWALL  // 205 in credits()
-#define DVLINE	VWALL
-#define DCORNER	'#'  // unused
-#define DULCORNER	ULWALL
-#define DURCORNER	URWALL
-#define DLLCORNER	LLWALL
-#define DLRCORNER	LRWALL
+inline constexpr unsigned char DHLINE = HWALL;
+inline constexpr unsigned char DVLINE = VWALL;
+inline constexpr unsigned char DULCORNER = ULWALL;
+inline constexpr unsigned char DURCORNER = URWALL;
+inline constexpr unsigned char DLLCORNER = LLWALL;
+inline constexpr unsigned char DLRCORNER = LRWALL;
 
 // only used on the title screen
-#define DVLEFT	(0xb9)
-#define DVRIGHT	(0xcc)
+inline constexpr unsigned char DVLEFT = 0xb9;
+inline constexpr unsigned char DVRIGHT = 0xcc;
 
-#define ESCAPE	(27)
-
-// same as ERR, but different semantics
-#define NOCHAR	(-1)
-
+inline constexpr unsigned char ESCAPE = 27;

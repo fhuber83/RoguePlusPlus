@@ -2,7 +2,7 @@
 
 namespace rogue::items::effects {
 
-#define NONE 100
+constexpr char NONE = 100;
 
 static struct init_weps {
 	const char *iw_dam;	/* Damage when wielded */

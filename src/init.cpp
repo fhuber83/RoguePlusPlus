@@ -117,7 +117,7 @@ static const char *rainbow[] = {
 	"yellow"
 };
 
-#define NCOLORS (sizeof rainbow / sizeof (char *))
+constexpr std::size_t NCOLORS = std::size(rainbow);
 
 static const char *c_set = "bcdfghjklmnpqrstvwxyz";
 static const char *v_set = "aeiou";
@@ -156,7 +156,7 @@ static STONE stones[] = {
 	{ "zircon",	 	 80}
 };
 
-#define NSTONES (sizeof stones / sizeof (STONE))
+constexpr std::size_t NSTONES = std::size(stones);
 
 static const char *wood[] = {
 	"avocado wood",
@@ -194,7 +194,7 @@ static const char *wood[] = {
 	"zebrawood"
 };
 
-#define NWOOD (sizeof wood / sizeof (char *))
+constexpr std::size_t NWOOD = std::size(wood);
 
 static const char *metal[] = {
 	"aluminum",
@@ -221,7 +221,7 @@ static const char *metal[] = {
 	"zinc"
 };
 
-#define NMETAL (sizeof metal / sizeof (char *))
+constexpr std::size_t NMETAL = std::size(metal);
 
 /*
  * init_things

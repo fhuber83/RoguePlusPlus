@@ -27,8 +27,6 @@ void
 setup()
 {
 	game().options.terse = FALSE;
-	if (COLS == 40)
-		game().options.terse = TRUE;
 	game().options.expert = game().options.terse;
 }
 
@@ -137,12 +135,12 @@ static const struct xlate {
 	{rogue::ui::key::function(1),	'?'},
 	{rogue::ui::key::function(2),	'/'},
 	{rogue::ui::key::function(3),	'a'},
-	{rogue::ui::key::function(4),	CTRL('R')},
+	{rogue::ui::key::function(4),	ctrl('R')},
 	{rogue::ui::key::function(5),	'c'},
 	{rogue::ui::key::function(6),	'D'},
 	{rogue::ui::key::function(7),	'i'},
 	{rogue::ui::key::function(8),	'^'},
-	{rogue::ui::key::function(9),	CTRL('F')},
+	{rogue::ui::key::function(9),	ctrl('F')},
 	{rogue::ui::key::AltF9,	'F'}  // ALT+F9
 };
 

@@ -31,53 +31,33 @@
  * ncurses globals of the same name. Only game files see these; the curses
  * backend uses ncurses' own.
  */
-const int LINES = MAXLINES;
-const int COLS = MAXCOLS;
+inline constexpr int LINES = MAXLINES;
+inline constexpr int COLS = MAXCOLS;
 // Last line used for the map
-const int maxrow = MAXLINES - 2;
+inline constexpr int maxrow = MAXLINES - 2;
 
 
 /*
  *  Options set for PC rogue
  */
-
-#define HELP
-#undef DEMO
-#define DEMOTIME 10
-/*
- * DEMO
- *      recompile:
- *          save.c
- *	    rip.c
- *          io.c
- *          main.c
- */
-#define REV 1
-#define VER 48
-
-/*
- * If CODECSUM is changed recompile extern.c
- */
-#define SCOREFILE "rogue.scr"
-#define SAVEFILE  "rogue.sav"
-#define ENVFILE	  "rogue.opt"
-#define IBM
-#define MACROSZ 41
+inline constexpr int REV = 1;		/* the version, 1.48 */
+inline constexpr int VER = 48;
+inline constexpr const char *ENVFILE = "rogue.opt";
+inline constexpr int MACROSZ = 41;
 
 /*
  * Maximum number of different things
  */
-#define MAXROOMS	9
-#define MAXTHINGS	9
-#define MAXOBJ		9
-#define MAXPACK		23
-#define MAXTRAPS	10
-#define AMULETLEVEL	26
-#define	NUMTHINGS	7	/* number of types of things */
-#define MAXPASS		13	/* upper limit on number of passages */
-#define MAXNAME		20  /* Maximum Length of a scroll */
-#define MAXITEMS	83  /* Maximum number of randomly generated things */
-#define BUFSIZE		128
+inline constexpr int MAXROOMS = 9;
+inline constexpr int MAXOBJ = 9;
+inline constexpr int MAXPACK = 23;
+inline constexpr int MAXTRAPS = 10;
+inline constexpr int AMULETLEVEL = 26;
+inline constexpr int NUMTHINGS = 7;	/* number of types of things */
+inline constexpr int MAXPASS = 13;	/* upper limit on number of passages */
+inline constexpr int MAXNAME = 20;	/* Maximum Length of a scroll */
+inline constexpr int MAXITEMS = 83;	/* Maximum number of randomly generated things */
+inline constexpr int BUFSIZE = 128;
 
 /*
  * All the fun defines
@@ -113,13 +93,13 @@ const int maxrow = MAXLINES - 2;
 #define HUHDURATION	spread(20)
 #define SEEDURATION	spread(300)
 #define HUNGERTIME	spread(1300)
-#define MORETIME	150
-#define STOMACHSIZE	2000
-#define STARVETIME	850
+inline constexpr int MORETIME = 150;
+inline constexpr int STOMACHSIZE = 2000;
+inline constexpr int STARVETIME = 850;
 #define LEFT		0
 #define RIGHT		1
-#define BOLT_LENGTH	6
-#define LAMPDIST	3
+inline constexpr int BOLT_LENGTH = 6;
+inline constexpr int LAMPDIST = 3;
 
 /*
  * Save against things

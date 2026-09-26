@@ -37,16 +37,16 @@ constexpr Binding bindings[] = {
 	{'s', Command::Search},
 	{'z', Command::Zap},
 	{'D', Command::Discoveries},
-	{CTRL('T'), Command::ToggleBrief},
+	{ctrl('T'), Command::ToggleBrief},
 	{'F', Command::Macro},
-	{CTRL('F'), Command::TypeMacro},
-	{CTRL('R'), Command::RepeatMessage},
+	{ctrl('F'), Command::TypeMacro},
+	{ctrl('R'), Command::RepeatMessage},
 	{'v', Command::Version},
 	{'S', Command::Save},
 	{'.', Command::Rest},
 	{'^', Command::IdentifyTrap},
 	{'o', Command::Options},
-	{CTRL('L'), Command::Redraw},
+	{ctrl('L'), Command::Redraw},
 };
 
 }  // namespace

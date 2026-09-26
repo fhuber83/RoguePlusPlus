@@ -842,7 +842,7 @@ do_macro(char *buf, int sz)
 	msg("F9 was {}, enter new macro: ",buf);
 	if (input().read_line(line.data(),sz-1) != ESCAPE)
 		do {
-			if (*cp != CTRL('F'))
+			if (*cp != ctrl('F'))
 				*buf++ = *cp;
 		} while (*cp++) ;
 	msg("");

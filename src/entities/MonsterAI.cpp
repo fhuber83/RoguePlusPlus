@@ -11,7 +11,7 @@ namespace rogue::entities {
 static void	do_chase(Creature *th);
 static void	chase(Creature *tp, coord *ee);
 
-#define	DRAGONSHOT  5	/* one chance in DRAGONSHOT that a dragon will flame */
+constexpr int DRAGONSHOT = 5;	/* one chance in DRAGONSHOT that a dragon will flame */
 
 static coord ch_ret;			/* Where chasing takes	you */
 

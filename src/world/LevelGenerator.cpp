@@ -9,9 +9,9 @@
 
 namespace rogue::world {
 
-#define TREAS_ROOM 20	/* one chance in TREAS_ROOM for a treasure room */
-#define MAXTREAS 10	/* maximum number of treasures in a treasure room */
-#define MINTREAS 2	/* minimum number of treasures in a treasure room */
+constexpr int TREAS_ROOM = 20;	/* one chance in TREAS_ROOM for a treasure room */
+constexpr int MAXTREAS = 10;	/* maximum number of treasures in a treasure room */
+constexpr int MINTREAS = 2;	/* minimum number of treasures in a treasure room */
 
 static void	treas_room(void);
 static void	put_things(void);
@@ -202,7 +202,7 @@ put_things(void)
  * treas_room:
  *	Add a treasure room
  */
-#define MAXTRIES 10	/* max number of tries to put down a monster */
+constexpr int MAXTRIES = 10;	/* max number of tries to put down a monster */
 
 static
 void
@@ -272,7 +272,7 @@ treas_room(void)
  * rooms.c	1.4 (A.I. Design)	12/16/84
  */
 
-#define GOLDGRP 1
+constexpr int GOLDGRP = 1;
 
 static void	draw_room(struct room *rp);
 static void	vert( struct room *rp, int startx);

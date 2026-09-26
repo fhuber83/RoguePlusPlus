@@ -158,7 +158,7 @@ TEST(Formatting, ControlCharacters)
 {
 	EXPECT_EQ(io_unctrl('a'), "a");
 	EXPECT_EQ(io_unctrl('\t'), " ");
-	EXPECT_EQ(io_unctrl(CTRL('R')), "^R");
+	EXPECT_EQ(io_unctrl(ctrl('R')), "^R");
 	EXPECT_EQ(io_unctrl(0x7f), "\\x7f");
 }
 

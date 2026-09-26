@@ -9,10 +9,10 @@
 
 namespace rogue::world {
 
-#define MAXFRNT 100
+constexpr int MAXFRNT = 100;
 
-#define FRONTIER 'F'
-#define NOTHING ' '
+constexpr unsigned char FRONTIER = 'F';
+constexpr unsigned char NOTHING = ' ';
 
 static int frcnt, ny, nx, topy, topx;
 static int maxx, maxy;

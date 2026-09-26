@@ -193,7 +193,7 @@ struct Game {
 	MessageLine message;
 	Turn turn;
 	bool playing = true;			/* True until he quits */
-	bool noscore = false;			/* Was a wizard sometime */
+	bool noscore = false;			/* Only show the scores (-s), add none */
 	int wander_rolls = 0;			/* between: rollwand() calls since it last rolled */
 
 	Game() = default;

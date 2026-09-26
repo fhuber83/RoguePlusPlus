@@ -41,7 +41,7 @@ const int maxrow = MAXLINES - 2;
  */
 
 /*
- * if DEBUG or WIZARD is changed
+ * if DEBUG is changed
  * might as well recompile everything
  */
 #define HELP
@@ -103,9 +103,6 @@ const int maxrow = MAXLINES - 2;
 #define unc(cp)		(cp).y, (cp).x
 #define isfloor(c)	((c) == FLOOR || (c) == PASSAGE)
 #define isgone(rp)	((rp)->r_flags.test(RoomFlag::Gone) && !(rp)->r_flags.test(RoomFlag::Maze))
-#ifdef WIZARD
-#define debug		if (wizard) msg
-#endif
 #define ismonster(ch)	(((ch) >= 'A') && ((ch) <= 'Z'))
 
 /*
@@ -522,10 +519,6 @@ using rogue::execcom;
 extern char nullstr[];
 extern const char *it, *you, *no_mem;
 
-#ifdef WIZARD
-bool wizard;
-#endif
-
 extern const char *a_names[], *he_man[], *intense, *w_names[];
 // a std::format string for msg()
 inline constexpr const char *flashmsg = "your {} gives off a flash{}";
@@ -568,6 +561,14 @@ void
 addmsg(std::format_string<Args...> fmt, Args &&...args)
 {
 	add_msg(std::format(fmt, std::forward<Args>(args)...));
+}
+
+// A message from the consistency checks of DEBUG builds
+template <class... Args>
+void
+debug(std::format_string<Args...> fmt, Args &&...args)
+{
+	show_msg(std::format(fmt, std::forward<Args>(args)...));
 }
 
 template <class... Args>
@@ -681,6 +682,3 @@ void	lcase(char *str);
 // wizard.cpp
 void	whatis(void);
 int	teleport(void);
-#ifdef WIZARD
-void	create_obj();
-#endif //WIZARD

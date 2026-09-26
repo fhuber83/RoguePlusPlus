@@ -31,10 +31,6 @@ command()
 		ntimes = 1;
 	while (ntimes--) {
 		status();
-#ifdef WIZARD
-		if (wizard)
-			game().noscore = TRUE;
-#endif
 		if (player.no_command) {
 			if (--player.no_command <= 0) {
 				msg("you can move again");
@@ -262,9 +258,6 @@ execcom()
 			break;
 		case Command::Options: msg("i don't have any options, oh my!"); break;
 		case Command::Redraw: msg("the screen looks fine to me (jll was here)"); break;
-#ifdef WIZARD
-		case Command::CreateObject: create_obj(); break;
-#endif
 		case Command::Illegal:
 			game().message.remember = FALSE;
 			msg("illegal command '{}'", io_unctrl(ch));

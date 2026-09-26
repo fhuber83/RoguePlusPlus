@@ -56,4 +56,4 @@ At runtime the game reads `rogue.opt` (options) and writes `rogue.scr` (scores, 
 
 ## Compile-time macros
 
-CMake sets `MINROG` (unused) and `ROGUE_CHARSET=3`. `ROGUE_CHARSET=1` draws ASCII instead of Unicode. Remaining optional switches: `WIZARD` (debug commands, currently does not compile, see the notes in `docs/MODERNIZATION.md`), `DEBUG` and `ROGUE_DEBUG`.
+CMake sets `MINROG` (unused) and `ROGUE_CHARSET=3`. `ROGUE_CHARSET=1` draws ASCII instead of Unicode. Remaining optional switches: `DEBUG` (consistency checks; one error left, see the notes in `docs/MODERNIZATION.md`) and `ROGUE_DEBUG`.

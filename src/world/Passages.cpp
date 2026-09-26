@@ -289,22 +289,6 @@ door(struct room *rm, coord *cp)
 	rm->r_exit[xit].x = cp->x;
 }
 
-#ifdef WIZARD
-/*
- * add_pass:
- *	Add the passages to the current window (wizard command)
- */
-void
-add_pass()
-{
-	int y, x, ch;
-
-	for (y = 1; y < maxrow; y++)
-		for (x = 0; x < COLS; x++)
-			if ((ch = chat(y, x)) == DOOR || ch == PASSAGE)
-				display().draw_tile({x, y}, ch);
-}
-#endif
 
 /*
  * passnum:

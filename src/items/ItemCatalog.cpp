@@ -21,12 +21,9 @@ pick_one(struct magic_item *magic, int nitems)
 	if (magic == end)
 	{
 #ifdef DEBUG
-		if (wizard)
-		{
-			msg("bad pick_one: {} from {} items", i, nitems);
-			for (magic = start; magic < end; magic++)
-				msg("{}: {}%", magic->mi_name, magic->mi_prob);
-		}
+		debug("bad pick_one: {} from {} items", i, nitems);
+		for (magic = start; magic < end; magic++)
+			debug("{}: {}%", magic->mi_name, magic->mi_prob);
 #endif
 		magic = start;
 	}

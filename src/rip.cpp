@@ -34,7 +34,6 @@ static int	add_scores(struct sc_ent *newscore, struct sc_ent *oldlist);
 void
 score(int amount, int flags, char monst)
 {
-#ifndef WIZARD
 	struct sc_ent his_score, top_ten[TOPSCORES];
 	int rank=0;
 	char response = ' ';
@@ -91,10 +90,8 @@ reread:
 		display().write("The score file can't be read, so this score is not kept.\n");
 	wait_msg("exit");
 	display().write("\n");
-#endif //WIZARD
 }
 
-#ifndef WIZARD
 /*
  * get_scores:
  *	Fill top10 from the score file (persistence/HighScores); the entries
@@ -232,7 +229,6 @@ add_scores(struct sc_ent *newscore, struct sc_ent *oldlist)
 	*insert = *newscore;
 	return retcode;
 }
-#endif //WIZARD
 
 /*
  * death:

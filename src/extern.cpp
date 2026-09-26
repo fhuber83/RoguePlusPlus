@@ -270,9 +270,6 @@ const char *he_man[] = {
 /* bool jump = FALSE;	*/		/* Show running as series of jumps */
 /* bool passgo = TRUE;	*/		/* Follow passages */
 /* bool slow_invent = FALSE; */		/* Inventory one line at a time */
-#ifdef WIZARD
-bool wizard = FALSE;			/* True if allows wizard commands */
-#endif
 /* char *release;	*/			/* Release number of rogue */
 /* WINDOW *hw;				 Used as a scratch window */
 

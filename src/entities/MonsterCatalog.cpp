@@ -162,10 +162,6 @@ wanderer(void)
 		rnd_pos(rp, &cp);
 	} while (!(rp != proom && step_ok(winat(cp.y, cp.x))));
 	new_monster(tp, randmonster(TRUE), &cp);
-#ifdef WIZARD
-	if (wizard)
-		msg("started a wandering {}", monsters[tp->t_type-'A'].m_name);
-#endif
 	start_run(&tp->t_pos);
 }
 

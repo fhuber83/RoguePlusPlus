@@ -48,9 +48,6 @@ enum class Command : unsigned char {
 	IdentifyTrap,	/* ^ */
 	Options,		/* o */
 	Redraw,			/* ^L */
-#ifdef WIZARD
-	CreateObject,	/* C */
-#endif
 };
 
 // The command a key gives: Command::Illegal when it gives none.

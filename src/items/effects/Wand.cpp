@@ -76,18 +76,18 @@ do_zap()
 		else
 		{
 			game().items.ws_know[Stick::Light] = TRUE;
-			if (proom->r_flags.test(RoomFlag::Gone))
+			if (player.body.t_room->r_flags.test(RoomFlag::Gone))
 				msg("the corridor glows and then fades");
 			else
 				msg("the room is lit by a shimmering blue light");
 		}
-		if (!proom->r_flags.test(RoomFlag::Gone))
+		if (!player.body.t_room->r_flags.test(RoomFlag::Gone))
 		{
-			proom->r_flags.unset(RoomFlag::Dark);
+			player.body.t_room->r_flags.unset(RoomFlag::Dark);
 			/*
 			 * Light the room and put the player back up
 			 */
-			enter_room(&hero);
+			enter_room(&player.body.t_pos);
 		}
 		break;
 	case Stick::DrainLife:
@@ -96,7 +96,7 @@ do_zap()
 		 * evenly from the monsters in the room (or next to hero
 		 * if he is in a passage)
 		 */
-		if (pstats.s_hpt < 2)
+		if (player.body.t_stats.s_hpt < 2)
 		{
 			msg("you are too weak to use it");
 			return;
@@ -114,8 +114,8 @@ do_zap()
 		int rm;
 		coord new_yx;
 
-		y = hero.y;
-		x = hero.x;
+		y = player.body.t_pos.y;
+		x = player.body.t_pos.x;
 		while (step_ok(winat(y, x)))
 		{
 			y += turn.delta.y;
@@ -146,7 +146,7 @@ do_zap()
 				pp = std::move(tp->t_pack);
 				game().level.monsters.remove(tp);
 				if (see_monst(tp))
-					display().draw_tile({x, y}, chat(y, x));
+					display().draw_tile({x, y}, game().level.at(y, x));
 				oldch = tp->t_oldch;
 				turn.delta.y = y;
 				turn.delta.x = x;
@@ -184,15 +184,15 @@ do_zap()
 				}
 				else /* it MUST BE at Stick::TeleportTo */
 				{
-					tp->t_pos.y = hero.y + turn.delta.y;
-					tp->t_pos.x = hero.x + turn.delta.x;
+					tp->t_pos.y = player.body.t_pos.y + turn.delta.y;
+					tp->t_pos.x = player.body.t_pos.x + turn.delta.x;
 				}
 				if (tp->t_type == 'F')
 					player.body.t_flags.unset(ISHELD);
 				if (tp->t_pos.y != y || tp->t_pos.x != x)
 					tp->t_oldch = display().tile_at(tp->t_pos);
 			}
-			tp->t_dest = &hero;
+			tp->t_dest = &player.body.t_pos;
 			tp->t_flags.set(ISRUN);
 		}
 	}
@@ -217,8 +217,8 @@ do_zap()
 	}
 		break;
 	case Stick::Striking:
-		turn.delta.y += hero.y;
-		turn.delta.x += hero.x;
+		turn.delta.y += player.body.t_pos.y;
+		turn.delta.x += player.body.t_pos.x;
 		if ((tp = moat(turn.delta.y, turn.delta.x)) != NULL)
 		{
 			if (rnd(20) == 0)
@@ -236,8 +236,8 @@ do_zap()
 		break;
 	case Stick::HasteMonster:
 	case Stick::SlowMonster:
-		y = hero.y;
-		x = hero.x;
+		y = player.body.t_pos.y;
+		x = player.body.t_pos.x;
 		while (step_ok(winat(y, x)))
 		{
 			y += turn.delta.y;
@@ -274,7 +274,7 @@ do_zap()
 			name = "flame";
 		else
 			name = "ice";
-		fire_bolt(&hero, &turn.delta, name);
+		fire_bolt(&player.body.t_pos, &turn.delta, name);
 		game().items.ws_know[which_one] = TRUE;
 		break;
 	default:
@@ -299,21 +299,23 @@ drain()
 	Creature **dp;
 	bool inpass;
 	Creature *drainee[40];
+	rogue::Player &player = game().player;
+	rogue::Level &level = game().level;
 
 	/*
 	 * First cnt how many things we need to spread the hit points among
 	 */
 	cnt = 0;
-	if (chat(hero.y, hero.x) == DOOR)
-		corp = &game().level.passages[flat(hero.y, hero.x).passage()];
+	if (level.at(player.body.t_pos) == DOOR)
+		corp = &level.passages[level.flags_at(player.body.t_pos).passage()];
 	else
 		corp = NULL;
-	inpass = proom->r_flags.test(RoomFlag::Gone);
+	inpass = player.body.t_room->r_flags.test(RoomFlag::Gone);
 	dp = drainee;
-	for (mp = game().level.monsters.first(); mp != NULL; mp = game().level.monsters.after(mp))
-		if (mp->t_room == proom || mp->t_room == corp ||
-			(inpass && chat(mp->t_pos.y, mp->t_pos.x) == DOOR &&
-			&game().level.passages[flat(mp->t_pos.y, mp->t_pos.x).passage()] == proom))
+	for (mp = level.monsters.first(); mp != NULL; mp = level.monsters.after(mp))
+		if (mp->t_room == player.body.t_room || mp->t_room == corp ||
+			(inpass && level.at(mp->t_pos) == DOOR &&
+			&level.passages[level.flags_at(mp->t_pos).passage()] == player.body.t_room))
 			*dp++ = mp;
 	if ((cnt = dp - drainee) == 0)
 	{
@@ -321,8 +323,8 @@ drain()
 		return;
 	}
 	*dp = NULL;
-	pstats.s_hpt /= 2;
-	cnt = pstats.s_hpt / cnt + 1;
+	player.body.t_stats.s_hpt /= 2;
+	cnt = player.body.t_stats.s_hpt / cnt + 1;
 	/*
 	 * Now zot all of the monsters
 	 */
@@ -348,6 +350,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 	bool hit_hero, used, changed;
 	int i, j;
 	coord pos;
+	rogue::Player &player = game().player;
 	struct {
 		coord s_pos;
 		unsigned char s_under;
@@ -369,7 +372,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 		break;
 	}
 	pos = *start;
-	hit_hero = (start != &hero);
+	hit_hero = (start != &player.body.t_pos);
 	used = FALSE;
 	changed = FALSE;
 	for (i = 0; i < BOLT_LENGTH && !used; i++) {
@@ -401,7 +404,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 				hit_hero = TRUE;
 				changed = !changed;
 				if (tp->t_oldch != '@')
-					tp->t_oldch = chat(pos.y, pos.x);
+					tp->t_oldch = game().level.at(pos);
 				if (!save_throw(SaveThrow::Magic, tp) || is_frost) {
 					bolt.o_pos = pos;
 					used = TRUE;
@@ -413,22 +416,22 @@ fire_bolt(coord *start, coord *dir, const char *name)
 							spotpos[i].s_under = display().tile_at(pos);
 					}
 				} else if (ch != 'X' || tp->t_disguise == 'X') {
-					if (start == &hero)
+					if (start == &player.body.t_pos)
 						start_run(&pos);
 					msg("the {} whizzes past the {}",
 						name, monsters[ch-'A'].m_name);
 				}
-			} else if (hit_hero && (pos == hero)) {
+			} else if (hit_hero && (pos == player.body.t_pos)) {
 				hit_hero = FALSE;
 				changed = !changed;
 				if (!save(SaveThrow::Magic)) {
 					if (is_frost) {
 						msg("You are frozen by a blast of frost{}.",
 							noterse(" from the Ice Monster"));
-						if (game().player.no_command < 20)
-							game().player.no_command += spread(7);
-					} else if ((pstats.s_hpt -= roll(6, 6)) <= 0) {
-						if (start == &hero)
+						if (player.no_command < 20)
+							player.no_command += spread(7);
+					} else if ((player.body.t_stats.s_hpt -= roll(6, 6)) <= 0) {
+						if (start == &player.body.t_pos)
 							death('b');
 						else
 							death(moat(start->y, start->x)->t_type);

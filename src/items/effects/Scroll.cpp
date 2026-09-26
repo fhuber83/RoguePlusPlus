@@ -57,9 +57,9 @@ read_scroll()
 		 * from chasing after the hero.
 		 */
 
-		for (x = hero.x - 3; x <= hero.x + 3; x++)
+		for (x = player.body.t_pos.x - 3; x <= player.body.t_pos.x + 3; x++)
 			if (x >= 0 && x < COLS)
-				for (y = hero.y - 3; y <= hero.y + 3; y++)
+				for (y = player.body.t_pos.y - 3; y <= player.body.t_pos.y + 3; y++)
 					if ((y > 0 && y < maxrow) && ((mo=moat(y, x)) != NULL)) {
 						mo->t_flags.unset(ISRUN);
 						mo->t_flags.set(ISHELD);
@@ -78,7 +78,7 @@ read_scroll()
 		{
 		coord mp;
 
-		if (plop_monster(hero.y, hero.x, &mp) && (mo=new_creature()) != NULL)
+		if (plop_monster(player.body.t_pos.y, player.body.t_pos.x, &mp) && (mo=new_creature()) != NULL)
 			new_monster(mo, randmonster(FALSE), &mp);
 		else
 			ifterse("you hear a faint cry of anguish",
@@ -165,9 +165,9 @@ read_scroll()
 		{
 		struct room *cur_room;
 
-		cur_room = proom;
+		cur_room = player.body.t_room;
 		teleport();
-		if (cur_room != proom)
+		if (cur_room != player.body.t_room)
 			items.s_know[Scroll::Teleportation] = TRUE;
 		}
 		break;
@@ -238,7 +238,7 @@ read_scroll()
 			if (player.weapon->o_enemy != 0) {
 				msg("your {} vanishes in a puff of smoke",
 				w_names[player.weapon->which<WeaponType>()]);
-				pack.remove(player.weapon);
+				player.body.t_pack.remove(player.weapon);
 				discard(player.weapon);
 				player.weapon = NULL;
 			} else {
@@ -278,7 +278,7 @@ read_scroll()
 	obj->o_count--;
 	else
 	{
-	pack.remove(obj);
+	player.body.t_pack.remove(obj);
 	discardit = TRUE;
 	}
 	call_it(items.s_know[obj->which<Scroll>()], &items.s_guess[obj->which<Scroll>()]);

@@ -3,6 +3,9 @@
 #include "core/Random.hpp"
 #include "rules/Scheduler.hpp"
 
+// The index of a map square in Level::map and Level::flags (misc.cpp)
+int INDEX(int y, int x);
+
 /*
  * The state of one game, gathered from the globals of the original sources.
  *
@@ -141,6 +144,13 @@ struct Level {
 		for (auto &p : passages)
 			p.r_flags = RoomFlag::Gone | RoomFlag::Dark;
 	}
+
+	// What is at a square (was chat())
+	unsigned char &at(int y, int x) { return map[INDEX(y, x)]; }
+	unsigned char &at(Coord pos) { return at(pos.y, pos.x); }
+	// A square's MapFlags (was flat())
+	MapFlags &flags_at(int y, int x) { return flags[INDEX(y, x)]; }
+	MapFlags &flags_at(Coord pos) { return flags_at(pos.y, pos.x); }
 };
 
 /*

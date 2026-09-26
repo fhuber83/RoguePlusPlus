@@ -50,7 +50,7 @@ missile(int ydelta, int xdelta)
 	 */
 	hack:
 	if (obj->o_count < 2) {
-		pack.remove(obj);
+		game().player.body.t_pack.remove(obj);
 		game().player.in_pack--;
 	} else {
 		/*
@@ -87,18 +87,19 @@ void
 do_motion(Item *obj, int ydelta, int xdelta)
 {
 	unsigned char under = '@';
+	rogue::Player &player = game().player;
 
 	/*
 	 * Come fly with us ...
 	 */
-	bcopy(obj->o_pos,hero);
+	bcopy(obj->o_pos,player.body.t_pos);
 	for (;;) {
 		int ch;
 
 		/*
 		 * Erase the old one
 		 */
-		if (under != '@' && !(obj->o_pos == hero) && cansee(obj->o_pos.y, obj->o_pos.x))
+		if (under != '@' && !(obj->o_pos == player.body.t_pos) && cansee(obj->o_pos.y, obj->o_pos.x))
 			display().draw_tile(obj->o_pos, under);
 		/*
 		 * Get the new position
@@ -112,7 +113,7 @@ do_motion(Item *obj, int ydelta, int xdelta)
 			 * If it alright.
 			 */
 			if (cansee(obj->o_pos.y, obj->o_pos.x)) {
-				under = chat(obj->o_pos.y, obj->o_pos.x);
+				under = game().level.at(obj->o_pos);
 				display().draw_tile(obj->o_pos, glyph_of(obj->o_type));
 				tick_pause();
 			} else
@@ -154,23 +155,24 @@ fall(Item *obj, bool pr)
 {
 	static coord fpos;
 	int index;
+	rogue::Level &level = game().level;
 
 	switch (fallpos(obj, &fpos))
 	{
 	case 1:
 		index = INDEX(fpos.y, fpos.x);
-		game().level.map[index] = glyph_of(obj->o_type);
+		level.map[index] = glyph_of(obj->o_type);
 		bcopy(obj->o_pos,fpos);
 		if (cansee(fpos.y, fpos.x))
 		{
 			display().draw_tile(fpos, glyph_of(obj->o_type),
-					(flat(obj->o_pos.y, obj->o_pos.x).test(MapFlag::Passage) ||
-					 flat(obj->o_pos.y, obj->o_pos.x).test(MapFlag::Maze))
+					(level.flags_at(obj->o_pos).test(MapFlag::Passage) ||
+					 level.flags_at(obj->o_pos).test(MapFlag::Maze))
 						? TileStyle::Inverse : TileStyle::Normal);
 			if (moat(fpos.y,fpos.x) != NULL)
 				moat(fpos.y,fpos.x)->t_oldch = glyph_of(obj->o_type);
 		}
-		game().level.objects.push_front(obj);
+		level.objects.push_front(obj);
 		return;
 	case 2:
 		pr = 0;
@@ -286,6 +288,7 @@ fallpos(Item *obj, coord *newpos)
 {
 	int y, x, cnt = 0, ch;
 	Item *onfloor;
+	rogue::Player &player = game().player;
 
 	for (y = obj->o_pos.y - 1; y <= obj->o_pos.y + 1; y++) {
 		for (x = obj->o_pos.x - 1; x <= obj->o_pos.x + 1; x++) {
@@ -294,9 +297,9 @@ fallpos(Item *obj, coord *newpos)
 			 * put the object there, set it in the level list
 			 * and re-draw the room if he can see it
 			 */
-			if ((y == hero.y && x == hero.x) || offmap(y,x))
+			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || offmap(y,x))
 				continue;
-			if ((ch = chat(y, x)) == FLOOR || ch == PASSAGE) {
+			if ((ch = game().level.at(y, x)) == FLOOR || ch == PASSAGE) {
 				if (rnd(++cnt) == 0) {
 					newpos->y = y;
 					newpos->x = x;

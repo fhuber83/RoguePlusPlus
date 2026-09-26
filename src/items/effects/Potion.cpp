@@ -61,8 +61,8 @@ quaff(void)
 		break;
 	case Potion::Healing:
 		items.p_know[Potion::Healing] = TRUE;
-		if ((pstats.s_hpt += roll(pstats.s_lvl, 4)) > max_hp)
-			pstats.s_hpt = ++max_hp;
+		if ((player.body.t_stats.s_hpt += roll(player.body.t_stats.s_lvl, 4)) > player.body.t_stats.s_maxhp)
+			player.body.t_stats.s_hpt = ++player.body.t_stats.s_maxhp;
 		sight();
 		msg("you begin to feel better");
 		break;
@@ -149,11 +149,11 @@ quaff(void)
 		break;
 	case Potion::ExtraHealing:
 		items.p_know[Potion::ExtraHealing] = TRUE;
-		if ((pstats.s_hpt += roll(pstats.s_lvl, 8)) > max_hp)
+		if ((player.body.t_stats.s_hpt += roll(player.body.t_stats.s_lvl, 8)) > player.body.t_stats.s_maxhp)
 		{
-			if (pstats.s_hpt > max_hp + pstats.s_lvl + 1)
-				++max_hp;
-			pstats.s_hpt = ++max_hp;
+			if (player.body.t_stats.s_hpt > player.body.t_stats.s_maxhp + player.body.t_stats.s_lvl + 1)
+				++player.body.t_stats.s_maxhp;
+			player.body.t_stats.s_hpt = ++player.body.t_stats.s_maxhp;
 		}
 		sight();
 		msg("you begin to feel much better");
@@ -165,15 +165,15 @@ quaff(void)
 		break;
 	case Potion::RestoreStrength:
 		if (player.wears(Hand::Left, Ring::AddStrength))
-			add_str(&pstats.s_str, -player.rings[Hand::Left]->o_ac);
+			add_str(&player.body.t_stats.s_str, -player.rings[Hand::Left]->o_ac);
 		if (player.wears(Hand::Right, Ring::AddStrength))
-			add_str(&pstats.s_str, -player.rings[Hand::Right]->o_ac);
-		if (pstats.s_str < player.max_stats.s_str)
-			pstats.s_str = player.max_stats.s_str;
+			add_str(&player.body.t_stats.s_str, -player.rings[Hand::Right]->o_ac);
+		if (player.body.t_stats.s_str < player.max_stats.s_str)
+			player.body.t_stats.s_str = player.max_stats.s_str;
 		if (player.wears(Hand::Left, Ring::AddStrength))
-			add_str(&pstats.s_str, player.rings[Hand::Left]->o_ac);
+			add_str(&player.body.t_stats.s_str, player.rings[Hand::Left]->o_ac);
 		if (player.wears(Hand::Right, Ring::AddStrength))
-			add_str(&pstats.s_str, player.rings[Hand::Right]->o_ac);
+			add_str(&player.body.t_stats.s_str, player.rings[Hand::Right]->o_ac);
 		msg("{}you feel warm all over",
 			noterse("hey, this tastes great.  It makes "));
 		break;
@@ -203,7 +203,7 @@ quaff(void)
 		obj->o_count--;
 	else
 	{
-		pack.remove(obj);
+		player.body.t_pack.remove(obj);
 		discardit = TRUE;
 	}
 

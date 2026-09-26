@@ -8,8 +8,9 @@ pack_obj(unsigned char ch, unsigned char *chp)
 {
 	Item *obj;
 	unsigned char och;
+	rogue::Player &player = game().player;
 
-	for (obj = pack.first(), och = 'a'; obj != NULL; obj = pack.after(obj), och++)
+	for (obj = player.body.t_pack.first(), och = 'a'; obj != NULL; obj = player.body.t_pack.after(obj), och++)
 		if (ch == och)
 			return obj;
 	*chp = och;
@@ -29,11 +30,13 @@ add_pack(Item *obj, bool silent)
 	Creature *mp;
 	bool exact, from_floor;
 	unsigned char floor;
+	rogue::Player &player = game().player;
+	rogue::Level &level = game().level;
 
 	if (obj == NULL)
 	{
 		from_floor = TRUE;
-		if ((obj = find_obj(hero.y, hero.x)) == NULL)
+		if ((obj = find_obj(player.body.t_pos.y, player.body.t_pos.x)) == NULL)
 			return;
 	}
 	else
@@ -54,10 +57,10 @@ add_pack(Item *obj, bool silent)
 	 *  any room even exist. proom is set in enter_room(), which is first
 	 *  called in new_level()
 	 */
-	floor = (proom != NULL && proom->r_flags.test(RoomFlag::Gone)) ? PASSAGE : FLOOR;
+	floor = (player.body.t_room != NULL && player.body.t_room->r_flags.test(RoomFlag::Gone)) ? PASSAGE : FLOOR;
 	if (obj->o_group)
 	{
-		for (op = pack.first(); op != NULL; op = pack.after(op))
+		for (op = player.body.t_pack.first(); op != NULL; op = player.body.t_pack.after(op))
 		{
 			if (op->o_group == obj->o_group)
 			{
@@ -67,9 +70,9 @@ add_pack(Item *obj, bool silent)
 				op->o_count += obj->o_count;
 				if (from_floor)
 				{
-					game().level.objects.remove(obj);
-					display().draw_tile(hero, floor);
-					chat(hero.y, hero.x) = floor;
+					level.objects.remove(obj);
+					display().draw_tile(player.body.t_pos, floor);
+					level.at(player.body.t_pos) = floor;
 				}
 				discard(obj);
 				obj = op;
@@ -80,7 +83,7 @@ add_pack(Item *obj, bool silent)
 	/*
 	 * Check if there is room
 	 */
-	if (game().player.in_pack >= MAXPACK-1)
+	if (player.in_pack >= MAXPACK-1)
 	{
 		msg("you can't carry anything else");
 		return;
@@ -92,9 +95,9 @@ add_pack(Item *obj, bool silent)
 	{
 		if (obj->o_flags.test(rogue::ItemFlag::Found))
 		{
-			game().level.objects.remove(obj);
-			display().draw_tile(hero, floor);
-			chat(hero.y, hero.x) = floor;
+			level.objects.remove(obj);
+			display().draw_tile(player.body.t_pos, floor);
+			level.at(player.body.t_pos) = floor;
 			msg("the scroll turns to dust{}.", noterse(" as you pick it up"));
 			return;
 		}
@@ -102,18 +105,18 @@ add_pack(Item *obj, bool silent)
 			obj->o_flags.set(rogue::ItemFlag::Found);
 	}
 
-	game().player.in_pack++;
+	player.in_pack++;
 	if (from_floor)
 	{
-		game().level.objects.remove(obj);
-		display().draw_tile(hero, floor);
-		chat(hero.y, hero.x) = floor;
+		level.objects.remove(obj);
+		display().draw_tile(player.body.t_pos, floor);
+		level.at(player.body.t_pos) = floor;
 	}
 	/*
 	 * Search for an object of the same type
 	 */
 	exact = FALSE;
-	for (op = pack.first(); op != NULL; op = pack.after(op))
+	for (op = player.body.t_pack.first(); op != NULL; op = player.body.t_pack.after(op))
 		if (obj->o_type == op->o_type)
 			break;
 	if (op == NULL)
@@ -121,7 +124,7 @@ add_pack(Item *obj, bool silent)
 		/*
 		 * Put it at the end of the pack since it is a new type
 		 */
-		for (op = pack.first(); op != NULL; op = pack.after(op))
+		for (op = player.body.t_pack.first(); op != NULL; op = player.body.t_pack.after(op))
 		{
 			if (op->o_type != ItemKind::Food)
 				break;
@@ -141,7 +144,7 @@ add_pack(Item *obj, bool silent)
 				break;
 			}
 			lp = op;
-			if ((op = pack.after(op)) == NULL)
+			if ((op = player.body.t_pack.after(op)) == NULL)
 				break;
 		}
 	}
@@ -150,7 +153,7 @@ add_pack(Item *obj, bool silent)
 		/*
 		 * Didn't find an exact match, just stick it here
 		 */
-		pack.insert_after(lp, obj);	// lp is NULL only when the pack is empty
+		player.body.t_pack.insert_after(lp, obj);	// lp is NULL only when the pack is empty
 	}
 	else
 	{
@@ -165,14 +168,14 @@ add_pack(Item *obj, bool silent)
 			obj = op;
 			goto picked_up;
 		}
-		pack.insert_before(op, obj);
+		player.body.t_pack.insert_before(op, obj);
 	}
 picked_up:
 	/*
 	 * If this was the object of something's desire, that monster will
 	 * get mad and run at the hero
 	 */
-	for (mp = game().level.monsters.first(); mp != NULL; mp = game().level.monsters.after(mp))
+	for (mp = level.monsters.first(); mp != NULL; mp = level.monsters.after(mp))
 	{
 		/*
 		 *  compiler bug: jll : 2-7-83
@@ -191,13 +194,13 @@ picked_up:
 		 */
 		if (mp->t_dest != NULL &&
 		   (mp->t_dest->x == obj->o_pos.x) && (mp->t_dest->y == obj->o_pos.y))
-			mp->t_dest = &hero;
+			mp->t_dest = &player.body.t_pos;
 	}
 
 	if (obj->o_type == ItemKind::Amulet)
 	{
-		game().player.has_amulet = TRUE;
-		game().player.saw_amulet = TRUE;
+		player.has_amulet = TRUE;
+		player.saw_amulet = TRUE;
 	}
 	/*
 	 * Notify the user
@@ -253,6 +256,7 @@ void
 pick_up(unsigned char ch)
 {
 	Item *obj;
+	rogue::Player &player = game().player;
 
 	switch (ch)
 	{
@@ -260,7 +264,7 @@ pick_up(unsigned char ch)
 	{
 		Creature *mp;
 
-		if ((obj = find_obj(hero.y, hero.x)) == NULL)
+		if ((obj = find_obj(player.body.t_pos.y, player.body.t_pos.x)) == NULL)
 		return;
 		money(obj->gold_value());
 		/*
@@ -272,10 +276,10 @@ pick_up(unsigned char ch)
 		for (mp = game().level.monsters.first(); mp != NULL; mp = game().level.monsters.after(mp))
 			if (mp->t_dest != NULL &&
 			   (mp->t_dest->x == obj->o_pos.x) && (mp->t_dest->y == obj->o_pos.y))
-				mp->t_dest = &hero;
+				mp->t_dest = &player.body.t_pos;
 		game().level.objects.remove(obj);
 		discard(obj);
-		proom->r_goldval = 0;
+		player.body.t_room->r_goldval = 0;
 		break;
 	}
 	default:
@@ -311,7 +315,7 @@ get_item(const char *purpose, ItemFilter type)
 		once_only = TRUE;
 
 	gi_state = game().turn.again;
-	if (pack.empty())
+	if (game().player.body.t_pack.empty())
 		msg("you aren't carrying anything");
 	else {
 		ch = turn.last_item_key;
@@ -339,7 +343,7 @@ get_item(const char *purpose, ItemFilter type)
 			gi_state = FALSE;
 			once_only = FALSE;
 			if (ch == '*') {
-				if ((ch = inventory(pack, type, purpose)) == 0) {
+				if ((ch = inventory(game().player.body.t_pack, type, purpose)) == 0) {
 					game().turn.after = FALSE;
 					return NULL;
 				}
@@ -385,9 +389,10 @@ pack_char(Item *obj)
 {
 	Item *item;
 	unsigned char c;
+	rogue::Player &player = game().player;
 
 	c = 'a';
-	for (item = pack.first(); item != NULL; item = pack.after(item))
+	for (item = player.body.t_pack.first(); item != NULL; item = player.body.t_pack.after(item))
 		if (item == obj)
 			return c;
 		else
@@ -403,11 +408,12 @@ void
 money(int value)
 {
 	unsigned char floor;
+	rogue::Player &player = game().player;
 
-	floor = proom->r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
-	game().player.purse += value;
-	display().draw_tile(hero, floor);
-	chat(hero.y, hero.x) = floor;
+	floor = player.body.t_room->r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
+	player.purse += value;
+	display().draw_tile(player.body.t_pos, floor);
+	game().level.at(player.body.t_pos) = floor;
 	if (value > 0)
 	{
 		msg("you found {} gold pieces", value);
@@ -423,8 +429,9 @@ drop(void)
 {
 	unsigned char ch;
 	Item *nobj, *op;
+	rogue::Player &player = game().player;
 
-	ch = chat(hero.y, hero.x);
+	ch = game().level.at(player.body.t_pos);
 	if (ch != FLOOR && ch != PASSAGE)
 	{
 		msg("there is something there already");
@@ -450,19 +457,19 @@ drop(void)
 		nobj->o_count = 1;
 		op = nobj;
 		if (op->o_group != 0)
-			game().player.in_pack++;
+			player.in_pack++;
 	}
 	else
-		pack.remove(op);
-	game().player.in_pack--;
+		player.body.t_pack.remove(op);
+	player.in_pack--;
 	/*
 	 * Link it into the level object list
 	 */
 	game().level.objects.push_front(op);
-	chat(hero.y, hero.x) = glyph_of(op->o_type);
-	bcopy(op->o_pos,hero);
+	game().level.at(player.body.t_pos) = glyph_of(op->o_type);
+	bcopy(op->o_pos,player.body.t_pos);
 	if (op->o_type == ItemKind::Amulet)
-		game().player.has_amulet = FALSE;
+		player.has_amulet = FALSE;
 	msg("dropped {}", inv_name(op, TRUE));
 }
 

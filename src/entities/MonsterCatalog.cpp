@@ -164,7 +164,7 @@ wanderer(void)
 	new_monster(tp, randmonster(TRUE), &cp);
 #ifdef WIZARD
 	if (wizard)
-		msg("started a wandering %s", monsters[tp->t_type-'A'].m_name);
+		msg("started a wandering {}", monsters[tp->t_type-'A'].m_name);
 #endif
 	start_run(&tp->t_pos);
 }

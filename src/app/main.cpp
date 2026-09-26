@@ -77,7 +77,7 @@ main(int argc, char **argv)
 		fuse(Event::Swander, WANDERTIME);
 		start_daemon(Event::Stomach);
 		start_daemon(Event::Runners);
-		msg("Hello %s%s.", game().options.name, noterse(".  Welcome to the Dungeons of Doom"));
+		msg("Hello {}{}.", game().options.name, noterse(".  Welcome to the Dungeons of Doom"));
 		display().curtain_up();
 	}
 	playit(savfile);

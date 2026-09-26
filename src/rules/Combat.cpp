@@ -80,7 +80,7 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 		if (tp->t_stats.s_hpt <= 0)
 			killed(tp, TRUE);
 		else if (did_huh && !player.body.t_flags.test(ISBLIND))
-			msg("the %s appears confused", mname);
+			msg("the {} appears confused", mname);
 		return TRUE;
 	}
 	if (thrown)
@@ -153,7 +153,7 @@ attack(Creature *mp)
 				if (!ISWEARING(R_SUSTSTR))
 				{
 					chg_str(-1);
-					msg("you feel a bite in your leg%s",
+					msg("you feel a bite in your leg{}",
 						noterse(" and now feel weaker"));
 				}
 				else
@@ -225,7 +225,7 @@ attack(Creature *mp)
 		{
 			Item *obj, *steal;
 			int nobj;
-			const char *she_stole = "she stole %s!";
+			constexpr const char *she_stole = "she stole {}!";
 
 			/*
 			 * Nymph's steal a magic item, look through the pack
@@ -247,7 +247,7 @@ attack(Creature *mp)
 
 					oc = steal->o_count--;
 					steal->o_count = 1;
-					msg(she_stole, inv_name(steal, TRUE).c_str());
+					msg(she_stole, inv_name(steal, TRUE));
 					steal->o_count = oc;
 				}
 				else
@@ -256,7 +256,7 @@ attack(Creature *mp)
 					std::string name = inv_name(steal, TRUE);
 					detach(pack, steal);
 					discard(steal);
-					msg(she_stole, name.c_str());
+					msg(she_stole, name);
 				}
 			}
 		}
@@ -314,7 +314,7 @@ check_level(void)
 		max_hp += add;
 		if ((pstats.s_hpt += add) > max_hp)
 			pstats.s_hpt = max_hp;
-		msg("and achieve the rank of \"%s\"", he_man[i-1]);
+		msg("and achieve the rank of \"{}\"", he_man[i-1]);
 	}
 }
 
@@ -455,7 +455,7 @@ hit(const char *er, const char *ee)
 {
 	const char *s = "";
 
-	addmsg("%s", prname(er, TRUE).c_str());
+	addmsg("{}", prname(er, TRUE));
 	switch (game().options.brief() ? 1 : rnd(4))
 	{
 		case 0: s = " scored an excellent hit on "; break;
@@ -464,7 +464,7 @@ hit(const char *er, const char *ee)
 		case 3: s = (er == 0 ? " swing and hit " : " swings and hits ");
 		break;
 	}
-	msg("%s%s",s,prname(ee, FALSE).c_str());
+	msg("{}{}",s,prname(ee, FALSE));
 }
 
 /*
@@ -477,7 +477,7 @@ miss(const char *er, const char *ee)
 	const char *s = "";
 
 
-	addmsg("%s", prname(er, TRUE).c_str());
+	addmsg("{}", prname(er, TRUE));
 	switch (game().options.brief() ? 1 : rnd(4))
 	{
 		case 0: s = (er == 0 ? " swing and miss" : " swings and misses"); break;
@@ -486,7 +486,7 @@ miss(const char *er, const char *ee)
 		case 3: s = (er == 0 ? " don't hit" : " doesn't hit");
 		break;
 	}
-	msg("%s %s",s,prname(ee, FALSE).c_str());
+	msg("{} {}",s,prname(ee, FALSE));
 }
 
 /*
@@ -585,13 +585,13 @@ static void
 thunk(Item *weap, const char *mname, const char *does, const char *did)
 {
 	if (weap->o_type == ItemKind::Weapon)
-		addmsg("the %s %s ", w_names[weap->o_which], does);
+		addmsg("the {} {} ", w_names[weap->o_which], does);
 	else
-		addmsg("you %s ", did);
+		addmsg("you {} ", did);
 	if (game().player.body.t_flags.test(ISBLIND))
-		msg(it);
+		msg("{}", it);
 	else
-		msg("the %s", mname);
+		msg("the {}", mname);
 }
 
 //@ renamed from remove() to avoid conflict with <stdio.h>
@@ -691,9 +691,9 @@ killed(Creature *tp, bool pr)
 	{
 	addmsg("you have defeated ");
 	if (game().player.body.t_flags.test(ISBLIND))
-		msg(it);
+		msg("{}", it);
 	else
-		msg("the %s", monsters[type-'A'].m_name);
+		msg("the {}", monsters[type-'A'].m_name);
 	}
 	/*
 	 * Do adjustments if he went up a level

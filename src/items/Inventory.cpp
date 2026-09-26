@@ -95,7 +95,7 @@ add_pack(Item *obj, bool silent)
 			detach(game().level.objects, obj);
 			display().draw_tile(hero, floor);
 			chat(hero.y, hero.x) = floor;
-			msg("the scroll turns to dust%s.", noterse(" as you pick it up"));
+			msg("the scroll turns to dust{}.", noterse(" as you pick it up"));
 			return;
 		}
 		else
@@ -203,8 +203,8 @@ picked_up:
 	 * Notify the user
 	 */
 	if (!silent)
-		msg("%s%s (%c)",noterse("you now have "),
-			inv_name(obj, TRUE).c_str(), pack_char(obj));
+		msg("{}{} ({:c})",noterse("you now have "),
+			inv_name(obj, TRUE), pack_char(obj));
 }
 
 /*
@@ -238,7 +238,7 @@ inventory(const List<Item> &list, ItemFilter type, const char *lstr)
 	}
 	if (n_objs == 0)
 	{
-		msg(type.is_all() ? "you are empty handed" :
+		msg("{}", type.is_all() ? "you are empty handed" :
 					"you don't have anything appropriate");
 		return 0;
 	}
@@ -329,7 +329,7 @@ get_item(const char *purpose, ItemFilter type)
 			}
 			if (!game().options.brief())
 				addmsg("which object do you want to ");
-			msg("%s? (* for list): ",purpose);
+			msg("{}? (* for list): ",purpose);
 			/*
 			 * ignore any alt characters that may be typed
 			 */
@@ -356,7 +356,7 @@ get_item(const char *purpose, ItemFilter type)
 				return NULL;
 			}
 			if ((obj = pack_obj(ch, &och)) == NULL) {
-				ifterse1("range is 'a' to '%c'","please specify a letter between 'a' and '%c'", och-1);
+				ifterse("range is 'a' to '{:c}'","please specify a letter between 'a' and '{:c}'", och-1);
 				continue;
 			} else {
 				/*
@@ -410,7 +410,7 @@ money(int value)
 	chat(hero.y, hero.x) = floor;
 	if (value > 0)
 	{
-		msg("you found %d gold pieces", value);
+		msg("you found {} gold pieces", value);
 	}
 }
 
@@ -441,7 +441,7 @@ drop(void)
 	{
 		if ((nobj = new_item()) == NULL)
 		{
-			msg("%sit appears to be stuck in your pack!",
+			msg("{}it appears to be stuck in your pack!",
 				noterse("can't drop it, "));
 			return;
 		}
@@ -463,7 +463,7 @@ drop(void)
 	bcopy(op->o_pos,hero);
 	if (op->o_type == ItemKind::Amulet)
 		game().player.has_amulet = FALSE;
-	msg("dropped %s", inv_name(op, TRUE).c_str());
+	msg("dropped {}", inv_name(op, TRUE));
 }
 
 /*

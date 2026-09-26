@@ -32,7 +32,7 @@ roomin(coord *cp)
 	if (*fp & F_PASS)
 		return	&game().level.passages[*fp &	F_PNUM];
 #ifdef DEBUG
-	debug("in some bizarre place (%d, %d)", unc(*cp));
+	debug("in some bizarre place ({}, {})", unc(*cp));
 #endif //DEBUG
 	game().turn.bailout = TRUE;
 	return NULL;

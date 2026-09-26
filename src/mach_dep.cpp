@@ -41,7 +41,7 @@ void
 start_terminal()
 {
 	if (auto started = rogue::ui::start_terminal(game().options.monochrome); !started)
-		fatal("%s", started.error().c_str());
+		fatal("{}", started.error());
 }
 
 /*@
@@ -214,18 +214,15 @@ newmem(unsigned int nbytes)
  */
 /*
  *  fatal: exit with a message
- *  @ moved from main.c, changed to use varargs and actually print the message
+ *  @ moved from main.c, changed to actually print the message
+ *  @ fatal() formats it with std::format (extern.h) and calls this
  */
 void
-fatal(const char *msg, ...)
+fatal_text(std::string_view text)
 {
-	va_list argp;
-
 	rogue::ui::stop_terminal();
 
-	va_start(argp, msg);
-	vprintf(msg, argp);
-	va_end(argp);
+	fwrite(text.data(), 1, text.size(), stdout);
 	md_exit(EXIT_SUCCESS);
 }
 

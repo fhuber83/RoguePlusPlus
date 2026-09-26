@@ -23,9 +23,9 @@ pick_one(struct magic_item *magic, int nitems)
 #ifdef DEBUG
 		if (wizard)
 		{
-			msg("bad pick_one: %d from %d items", i, nitems);
+			msg("bad pick_one: {} from {} items", i, nitems);
 			for (magic = start; magic < end; magic++)
-				msg("%s: %d%%", magic->mi_name, magic->mi_prob);
+				msg("{}: {}%", magic->mi_name, magic->mi_prob);
 		}
 #endif
 		magic = start;
@@ -95,7 +95,7 @@ new_thing()
 #ifdef DEBUG
 		if (j == MAXARMORS)
 		{
-		debug("Picked a bad armor %d", k);
+		debug("Picked a bad armor {}", k);
 		j = 0;
 		}
 #endif

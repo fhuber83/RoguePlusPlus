@@ -130,7 +130,7 @@ inv_name(const Item *obj, bool drop)
 		name = std::format("Gold at {},{}", obj->o_pos.y, obj->o_pos.x);
 		break;
 	default:
-		debug("Picked up someting bizzare %s", io_unctrl(glyph_of(obj->o_type)).c_str());
+		debug("Picked up someting bizzare {}", io_unctrl(glyph_of(obj->o_type)));
 		name = std::format("Something bizarre {}({})", static_cast<char>(glyph_of(obj->o_type)),
 			static_cast<int>(obj->o_type));
 		break;

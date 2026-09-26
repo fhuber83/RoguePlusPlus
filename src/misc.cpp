@@ -28,7 +28,7 @@ tr_name(unsigned char type)
 	case T_DART:
 		return "a poison dart trap";
 	}
-	msg("wierd trap: %d", type);
+	msg("wierd trap: {:d}", type);
 	return NULL;
 }
 
@@ -250,7 +250,7 @@ find_obj(int y, int x)
 		if (op->o_pos.y == y && op->o_pos.x == x)
 			return op;
 #ifdef DEBUG
-	debug("Non-object %c %d,%d", chat(y, x), y, x);
+	debug("Non-object {:c} {},{}", chat(y, x), y, x);
 	return NULL;
 #else
 	/* NOTREACHED */
@@ -297,7 +297,7 @@ eat()
 		player.food_left = STOMACHSIZE;
 	player.hungry_state = 0;
 	if (which == 1)
-		msg("my, that was a yummy %s", game().options.fruit);
+		msg("my, that was a yummy {}", game().options.fruit);
 	else
 		if (rnd(100) > 70)
 		{
@@ -507,7 +507,7 @@ call_it(bool know, char **guess)
 	else if (!know && **guess == '\0') {
 		char buf[MAXNAME+1];	//@ was prbuf
 
-		msg("%scall it? ",noterse("what do you want to "));
+		msg("{}call it? ",noterse("what do you want to "));
 		input().read_line(buf,MAXNAME);
 		if (*buf != ESCAPE)
 			strcpy(*guess, buf);
@@ -737,7 +737,7 @@ search()
 						chat(y, x) = TRAP;
 						*fp |= F_REAL;
 						game().turn.count = game().turn.running = FALSE;
-						msg("you found %s", tr_name(*fp & F_TMASK));
+						msg("you found {}", tr_name(*fp & F_TMASK));
 						break;
 				}
 		}
@@ -834,7 +834,7 @@ call()
 		msg("that has already been identified");
 		return;
 	}
-	msg("Was called \"%s\"", elsewise);
+	msg("Was called \"{}\"", elsewise);
 	char buf[MAXNAME+1];	//@ was prbuf
 
 	msg("what do you want to call it? ");
@@ -853,7 +853,7 @@ do_macro(char *buf, int sz)
 	std::vector<char> line(sz);	//@ was prbuf
 	char *cp = line.data();
 
-	msg("F9 was %s, enter new macro: ",buf);
+	msg("F9 was {}, enter new macro: ",buf);
 	if (input().read_line(line.data(),sz-1) != ESCAPE)
 		do {
 			if (*cp != CTRL('F'))

@@ -69,7 +69,7 @@ whatis(void)
 	 */
 	if (obj->o_enemy)
 		obj->o_flags.set(ISREVEAL);
-	msg(inv_name(obj, FALSE).c_str());
+	msg("{}", inv_name(obj, FALSE));
 }
 
 #ifdef WIZARD
@@ -101,7 +101,7 @@ create_obj(void)
 			obj->o_type = ItemKind::Food;
 	}
 	game().message.end = 0;
-	msg("which %c do you want? (0-f)", glyph_of(obj->o_type));
+	msg("which {:c} do you want? (0-f)", glyph_of(obj->o_type));
 	obj->o_which = (is_digit((ch = readchar())) ? ch - '0' : ch - 'a' + 10);
 	obj->o_group = 0;
 	obj->o_count = 1;

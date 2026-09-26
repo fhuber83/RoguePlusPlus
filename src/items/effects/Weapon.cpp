@@ -175,7 +175,7 @@ fall(Item *obj, bool pr)
 		break;
 	}
 	if (pr)
-		msg("the %s vanishes%s.", short_name(obj).c_str(),
+		msg("the {} vanishes{}.", short_name(obj),
 								  noterse(" as it hits the ground"));
 	discard(obj);
 }
@@ -270,8 +270,8 @@ bad:
 
 	sp = inv_name(obj, TRUE);
 	player.weapon = obj;
-	ifterse2("now wielding %s (%c)", "you are now wielding %s (%c)",
-		sp.c_str(), pack_char(obj));
+	ifterse("now wielding {} ({:c})", "you are now wielding {} ({:c})",
+		sp, pack_char(obj));
 }
 
 /*

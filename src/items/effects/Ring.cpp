@@ -59,8 +59,8 @@ ring_on()
 		break;
 	}
 
-	msg("%swearing %s (%c)", noterse("you are now "),
-		inv_name(obj, TRUE).c_str(), pack_char(obj));
+	msg("{}wearing {} ({:c})", noterse("you are now "),
+		inv_name(obj, TRUE), pack_char(obj));
 	return ;
 
 no_ring:
@@ -100,7 +100,7 @@ ring_off(void)
 	}
 	packchar = pack_char(obj);
 	if (can_drop(obj))
-		msg("was wearing %s(%c)", inv_name(obj, TRUE).c_str(), packchar);
+		msg("was wearing {}({:c})", inv_name(obj, TRUE), packchar);
 }
 
 /*

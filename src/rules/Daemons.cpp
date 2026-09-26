@@ -149,7 +149,7 @@ stomach(void)
 		game().turn.running = FALSE;
 		game().turn.count = 0;
 		player.hungry_state = 3;
-		msg("%syou faint from lack of food",noterse("you feel very weak. "));
+		msg("{}you faint from lack of food",noterse("you feel very weak. "));
 	}
 	else
 	{

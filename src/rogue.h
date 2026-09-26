@@ -67,12 +67,6 @@ const int maxrow = MAXLINES - 2;
 #define IBM
 #define MACROSZ 41
 
-#define ifterse0 ifterse
-#define ifterse1 ifterse
-#define ifterse2 ifterse
-#define ifterse3 ifterse
-#define ifterse4 ifterse
-
 /*
  * Maximum number of different things
  */
@@ -540,7 +534,9 @@ extern const char *it, *you, *no_mem;
 bool wizard;
 #endif
 
-extern const char *a_names[], *flashmsg, *he_man[], *intense, *w_names[];
+extern const char *a_names[], *he_man[], *intense, *w_names[];
+//@ a std::format string for msg(), so a constant here instead of in extern.cpp
+inline constexpr const char *flashmsg = "your {} gives off a flash{}";
 extern struct h_list helpcoms[], helpobjs[];
 extern int	a_chances[], a_class[];
 extern struct monster	monsters[];
@@ -584,11 +580,31 @@ char	*getsyl(void);
 char	rchr(const char *string);
 
 //@ io.c
-void	ifterse(const char *tfmt, const char *fmt, ...);
-void	msg(const char *fmt, ...);
-void	vmsg(const char *fmt, va_list argp);
-void	addmsg(const char *fmt, ...);
-void	doadd(const char *fmt, va_list argp);
+//@ msg(), addmsg() and ifterse() take std::format strings. An empty msg() clears the line.
+void	show_msg(std::string_view text);
+void	add_msg(std::string_view text);
+
+template <class... Args>
+void
+msg(std::format_string<Args...> fmt, Args &&...args)
+{
+	show_msg(std::format(fmt, std::forward<Args>(args)...));
+}
+
+template <class... Args>
+void
+addmsg(std::format_string<Args...> fmt, Args &&...args)
+{
+	add_msg(std::format(fmt, std::forward<Args>(args)...));
+}
+
+template <class... Args>
+void
+ifterse(std::format_string<Args...> tfmt, std::format_string<Args...> fmt, Args &&...args)
+{
+	msg(game().options.expert ? tfmt : fmt, std::forward<Args>(args)...);
+}
+
 void	wait_msg(const char *msg);
 void	endmsg(void);
 void	more(const char *msg);

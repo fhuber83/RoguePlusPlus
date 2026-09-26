@@ -350,7 +350,6 @@ const struct magic_item things_base[NUMTHINGS] = {
 char nullstr[] = "";
 
 const char *intense = " of intense white light";
-const char *flashmsg = "your %s gives off a flash%s";
 const char *it = "it";
 const char *you = "you";
 const char *no_mem = "Not enough Memory";

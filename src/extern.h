@@ -47,6 +47,11 @@
 //@ uintptr_t, uint16_t
 #include <stdint.h>
 
+//@ std::format() for fatal(), before the "overrides" below
+#include <format>
+#include <string_view>
+#include <utility>
+
 //@ is{alpha,digit,upper,...}() and to{upper,lower,...}() families
 #include <ctype.h>
 #ifndef isascii
@@ -76,9 +81,6 @@
 
 //@ time(), nanosleep()
 #include <time.h>
-
-//@ vsprintf()
-#include <stdarg.h>
 
 //@ bool type, originally typedef unsigned char
 #include <stdbool.h>
@@ -142,7 +144,15 @@ TM  	*md_localtime(void);
 void	md_nanosleep(long nanoseconds);
 
 //@ moved from main.c
-void	fatal(const char *msg, ...);
+//@ fatal() takes a std::format string and prints the text after closing the terminal
+void	fatal_text(std::string_view text);
+
+template <class... Args>
+void
+fatal(std::format_string<Args...> fmt, Args &&...args)
+{
+	fatal_text(std::format(fmt, std::forward<Args>(args)...));
+}
 
 //@ moved from croot.c
 void	md_exit(int status);

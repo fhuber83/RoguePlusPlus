@@ -237,15 +237,15 @@ execcom()
 			break;
 		case Command::Discoveries: discovered(); break;
 		case Command::ToggleBrief:
-			msg((game().options.expert ^= 1)
+			msg("{}", (game().options.expert ^= 1)
 				? "Ok, I'll be brief"
 				: "Goodie, I can use big words again!");
 			break;
 		case Command::Macro: do_macro(game().options.macro, MACROSZ); break;
 		case Command::TypeMacro: turn.typeahead = game().options.macro; break;
-		case Command::RepeatMessage: msg(game().message.last); break;
+		case Command::RepeatMessage: msg("{}", game().message.last); break;
 		case Command::Version:
-			msg("Rogue version %d.%d (Mr. Mctesq was here), dungeon %u", REV, VER,
+			msg("Rogue version {}.{} (Mr. Mctesq was here), dungeon {}", REV, VER,
 				rogue::rng().seed());
 			break;
 		case Command::Save: save_game(); break;
@@ -259,7 +259,7 @@ execcom()
 				if (chat(lookat.y, lookat.x) != TRAP)
 					msg("no trap there.");
 				else
-					msg("you found %s",
+					msg("you found {}",
 						tr_name(flat(lookat.y, lookat.x) & F_TMASK));
 			}
 			break;
@@ -270,7 +270,7 @@ execcom()
 #endif
 		case Command::Illegal:
 			game().message.remember = FALSE;
-			msg("illegal command '%s'", io_unctrl(ch).c_str());
+			msg("illegal command '{}'", io_unctrl(ch));
 			turn.count = 0;
 			game().message.remember = TRUE;
 		}

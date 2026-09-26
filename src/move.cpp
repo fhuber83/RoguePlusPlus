@@ -247,7 +247,7 @@ be_trapped(coord *tc)
 	case T_SLEEP:
 		player.no_command += SLEEPTIME;
 		player.body.t_flags.unset(ISRUN);
-		msg("a %smist envelops you and you fall asleep",
+		msg("a {}mist envelops you and you fall asleep",
 			noterse("strange white "));
 		break;
 	case T_ARROW:
@@ -312,7 +312,7 @@ descend(const char *mesg)
 		msg(" ");
 	new_level();
 	msg("");
-	msg(mesg);
+	msg("{}", mesg);
 	if (!save(VS_LUCK)) {
 		msg("you are damaged by the fall");
 		if ((pstats.s_hpt -= roll(1,8)) <= 0)

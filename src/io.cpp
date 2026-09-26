@@ -4,6 +4,8 @@
  * io.c		1.4		(A.I. Design) 12/10/84
  */
 
+#include	<algorithm>
+
 #include	"ui/Display.hpp"
 
 #include	"rogue.h"
@@ -16,30 +18,20 @@
 
 static void more_at(const char *msg, int col);
 
-/* VARARGS1 */
-/*@ nope, it was not vargars. But now it is */
+/*@
+ * msg(), addmsg() and ifterse() are templates in rogue.h that format with
+ * std::format and pass the text on to these. They were printf-style varargs.
+ */
+
+//@ msg()
 void
-ifterse(const char *tfmt, const char *fmt, ...)
-{
-	va_list argp;
-	va_start(argp, fmt);
-
-	if (game().options.expert)
-		vmsg(tfmt, argp);
-	else
-		vmsg(fmt, argp);
-
-	va_end(argp);
-}
-
-//@ va_list variant of msg()
-void
-vmsg(const char *fmt, va_list argp)
+show_msg(std::string_view text)
 {
 	/*
 	 * if the string is "", just clear the line
+	 *@ the formatted text; the original tested the format
 	 */
-	if (*fmt == '\0')
+	if (text.empty())
 	{
 		rogue::ui::display().clear_message();
 		game().message.end = 0;
@@ -48,37 +40,8 @@ vmsg(const char *fmt, va_list argp)
 	/*
 	 * otherwise add to the message and flush it out
 	 */
-	doadd(fmt, argp);
+	add_msg(text);
 	endmsg();
-}
-
-//@ varargs variant, now a wrapper for vmsg()
-void
-msg(const char *fmt, ...)
-{
-	va_list argp;
-	va_start(argp, fmt);
-
-	vmsg(fmt, argp);
-
-	va_end(argp);
-}
-/* VARARGS1
- * @ now for real
- */
-/*
- * addmsg:
- *	Add things to the current message
- */
-void
-addmsg(const char *fmt, ...)
-{
-	va_list argp;
-	va_start(argp, fmt);
-
-	doadd(fmt, argp);
-
-	va_end(argp);
 }
 
 /*
@@ -131,21 +94,20 @@ more_at(const char *msg, int col)
 }
 
 
-/*@
-* arguments changed from fixed ints to va_list.
-* no need of a varargs version as this is only used internally by io.c
-* varargs-aware functions
-*/
 /*
  * doadd:
  *	Perform an add onto the message buffer
+ *	@ now add_msg(), which takes the formatted text; cut to fit as vsnprintf() did
  */
 void
-doadd(const char *fmt, va_list argp)
+add_msg(std::string_view text)
 {
 	rogue::MessageLine &message = game().message;
+	size_t room = BUFSIZE - 1 - message.next_end;
+	size_t len = std::min(text.size(), room);
 
-	vsnprintf(&message.text[message.next_end], BUFSIZE - message.next_end, fmt, argp);
+	text.copy(&message.text[message.next_end], len);
+	message.text[message.next_end + len] = '\0';
 	message.next_end = strlen(message.text);
 }
 
@@ -263,14 +225,9 @@ wait_for(unsigned char ch)
 void
 wait_msg(const char *msg)
 {
-	char prompt[MAXSTR];
-
 	display().show_cursor(TRUE);
-	if (*msg)
-		snprintf(prompt, sizeof prompt, "[Press Enter to %s]", msg);
-	else
-		strcpy(prompt, "[Press Enter]");
-	display().write_at(LINES-1, 0, prompt);
+	display().write_at(LINES-1, 0,
+		*msg ? std::format("[Press Enter to {}]", msg) : "[Press Enter]");
 	flush_type();
 	wait_for('\n');
 	display().write_at(LINES-1, 0, "");

@@ -2,7 +2,7 @@
 
 namespace rogue::items::effects {
 
-const char *laugh = "you hear maniacal laughter%s.";
+static constexpr const char *laugh = "you hear maniacal laughter{}.";
 const char *in_dist = " in the distance";
 /*
  * read_scroll:
@@ -29,7 +29,7 @@ read_scroll()
 		msg("there is nothing on it to read");
 		return;
 	}
-	ifterse0("the scroll vanishes","as you read the scroll, it vanishes");
+	ifterse("the scroll vanishes","as you read the scroll, it vanishes");
 	/*
 	 * Calculate the effect it has on the poor guy.
 	 */
@@ -47,7 +47,7 @@ read_scroll()
 		if (player.armor != NULL) {
 			player.armor->o_ac--;
 			player.armor->o_flags.unset(ISCURSED);
-			ifterse0("your armor glows faintly",
+			ifterse("your armor glows faintly",
 				"your armor glows faintly for a moment");
 		}
 		break;
@@ -81,7 +81,7 @@ read_scroll()
 		if (plop_monster(hero.y, hero.x, &mp) && (mo=new_creature()) != NULL)
 			new_monster(mo, randmonster(FALSE), &mp);
 		else
-			ifterse0("you hear a faint cry of anguish",
+			ifterse("you hear a faint cry of anguish",
 				"you hear a faint cry of anguish in the distance");
 		}
 		break;
@@ -155,7 +155,7 @@ read_scroll()
 			items.s_know[S_GFIND] = TRUE;
 			msg("your nose tingles as you sense food");
 		} else
-			ifterse0("you hear a growling noise close by","you hear a growling noise very close to you");
+			ifterse("you hear a growling noise close by","you hear a growling noise very close to you");
 		break;
 	case S_TELEP:
 		/*
@@ -181,7 +181,7 @@ read_scroll()
 			player.weapon->o_hplus++;
 		else
 			player.weapon->o_dplus++;
-		ifterse1("your %s glows blue","your %s glows blue for a moment", w_names[player.weapon->o_which]);
+		ifterse("your {} glows blue","your {} glows blue for a moment", w_names[player.weapon->o_which]);
 		}
 		break;
 	case S_SCARE:
@@ -200,7 +200,7 @@ read_scroll()
 			player.rings[LEFT]->o_flags.unset(ISCURSED);
 		if (player.rings[RIGHT] != NULL)
 			player.rings[RIGHT]->o_flags.unset(ISCURSED);
-		ifterse0("somebody is watching over you","you feel as if somebody is watching over you");
+		ifterse("somebody is watching over you","you feel as if somebody is watching over you");
 		break;
 	case S_AGGR:
 		/*
@@ -236,7 +236,7 @@ read_scroll()
 			 * You aren't allowed to doubly vorpalize a weapon.
 			 */
 			if (player.weapon->o_enemy != 0) {
-				msg("your %s vanishes in a puff of smoke",
+				msg("your {} vanishes in a puff of smoke",
 				w_names[player.weapon->o_which]);
 				detach(pack, player.weapon);
 				discard(player.weapon);
@@ -256,7 +256,7 @@ read_scroll()
 						if (!save(VS_MAGIC)) {
 							cur_weapon->o_flags.set(ISEGO|ISREVEAL);
 							s_know[S_VORPAL] = TRUE;
-							msg("you feel a sudden desire to kill %ss.",
+							msg("you feel a sudden desire to kill {}s.",
 							monsters[cur_weapon->o_enemy-'A'].m_name);
 						}
 					}

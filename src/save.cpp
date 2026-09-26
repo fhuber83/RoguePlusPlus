@@ -41,7 +41,7 @@ save_game()
 	char file[MAXSTR];
 
 	game().turn.after = FALSE;
-	msg("save file (%s)? ", game().options.save_file);
+	msg("save file ({})? ", game().options.save_file);
 	if (input().read_line(file, sizeof file - 1) == ESCAPE) {
 		msg("");
 		return;
@@ -49,14 +49,14 @@ save_game()
 	if (*file == '\0')
 		strcpy(file, game().options.save_file);
 	if (auto problems = rogue::pool_problems(game()); !problems.empty()) {
-		msg("can't save: %s", problems.front().c_str());
+		msg("can't save: {}", problems.front());
 		return;
 	}
 	if (auto saved = rogue::persistence::write_save(file, game(), map_view()); !saved) {
-		msg("can't save: %s", saved.error().detail.c_str());
+		msg("can't save: {}", saved.error().detail);
 		return;
 	}
-	fatal("Saved the game in %s\n", file);
+	fatal("Saved the game in {}\n", file);
 }
 
 /*
@@ -71,9 +71,9 @@ restore(char *file)
 
 	start_terminal();
 	if (auto loaded = rogue::persistence::read_save(file, game(), view); !loaded)
-		fatal("Can't restore %s: %s\n", file, loaded.error().detail.c_str());
+		fatal("Can't restore {}: {}\n", file, loaded.error().detail);
 	if (std::remove(file) != 0)
-		fatal("Can't delete %s after restoring it, so the game is not restored\n", file);
+		fatal("Can't delete {} after restoring it, so the game is not restored\n", file);
 	for (int r = 0; r < rogue::persistence::map_rows; r++)
 		for (int x = 0; x < rogue::persistence::map_cols; x++)
 			display().draw_tile({x, r + 1}, view[r][x].glyph, view[r][x].style);

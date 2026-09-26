@@ -130,7 +130,7 @@ do_zap()
 			{
 				if (monster == obj->o_enemy)
 				{
-					msg("the %s vanishes in a puff of smoke",
+					msg("the {} vanishes in a puff of smoke",
 						monsters[monster-'A'].m_name);
 					killed(tp, FALSE);
 				}
@@ -393,7 +393,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 			dir->y = -dir->y;
 			dir->x = -dir->x;
 			i--;
-			msg("the %s bounces", name);
+			msg("the {} bounces", name);
 			break;
 		default:
 			if (!hit_hero && (tp = moat(pos.y, pos.x)) != NULL) {
@@ -414,7 +414,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 				} else if (ch != 'X' || tp->t_disguise == 'X') {
 					if (start == &hero)
 						start_run(&pos);
-					msg("the %s whizzes past the %s",
+					msg("the {} whizzes past the {}",
 						name, monsters[ch-'A'].m_name);
 				}
 			} else if (hit_hero && (pos == hero)) {
@@ -422,7 +422,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 				changed = !changed;
 				if (!save(VS_MAGIC)) {
 					if (is_frost) {
-						msg("You are frozen by a blast of frost%s.",
+						msg("You are frozen by a blast of frost{}.",
 							noterse(" from the Ice Monster"));
 						if (game().player.no_command < 20)
 							game().player.no_command += spread(7);
@@ -434,9 +434,9 @@ fire_bolt(coord *start, coord *dir, const char *name)
 					}
 					used = TRUE;
 					if (!is_frost)
-						msg("you are hit by the %s", name);
+						msg("you are hit by the {}", name);
 				} else
-					msg("the %s whizzes by you", name);
+					msg("the {} whizzes by you", name);
 			}
 			tick_pause();
 			display().draw_tile(pos, dirch, is_frost ? TileStyle::FrostBolt : TileStyle::Bolt);

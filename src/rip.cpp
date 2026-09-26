@@ -114,7 +114,7 @@ get_scores(struct sc_ent *top10, bool *legacy)
 	*legacy = list->format == rogue::persistence::ScoresFormat::Legacy;
 	int i = 0;
 	for (const rogue::persistence::ScoreEntry &e : list->entries) {
-		snprintf(top10[i].sc_name, sizeof top10[i].sc_name, "%s", e.name.c_str());
+		e.name.copy(top10[i].sc_name, sizeof top10[i].sc_name - 1);
 		top10[i].sc_gold = e.gold;
 		top10[i].sc_level = e.depth;
 		top10[i].sc_rank = e.experience;

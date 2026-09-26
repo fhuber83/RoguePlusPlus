@@ -47,7 +47,7 @@ quaff(void)
 		break;
 	case P_POISON:
 		{
-		const char *sick = "you feel %s sick.";
+		constexpr const char *sick = "you feel {} sick.";
 
 		items.p_know[P_POISON] = TRUE;
 		if (!ISWEARING(R_SUSTSTR))
@@ -74,7 +74,7 @@ quaff(void)
 	case P_MFIND:
 		fuse(Event::TurnSeeOff, HUHDURATION);
 		if (game().level.monsters.empty())
-			msg("you have a strange feeling%s.",
+			msg("you have a strange feeling{}.",
 				noterse(" for a moment"));
 		else
 		{
@@ -124,7 +124,7 @@ quaff(void)
 				break;
 			}
 		}
-		msg("you have a strange feeling for a moment%s.",
+		msg("you have a strange feeling for a moment{}.",
 				noterse(", then it passes"));
 		break;
 	case P_PARALYZE:
@@ -140,7 +140,7 @@ quaff(void)
 			invis_on();
 		}
 		sight();
-		msg("this potion tastes like %s juice", game().options.fruit);
+		msg("this potion tastes like {} juice", game().options.fruit);
 		break;
 	case P_RAISE:
 		items.p_know[P_RAISE] = TRUE;
@@ -174,7 +174,7 @@ quaff(void)
 			add_str(&pstats.s_str, player.rings[LEFT]->o_ac);
 		if (ISRING(RIGHT, R_ADDSTR))
 			add_str(&pstats.s_str, player.rings[RIGHT]->o_ac);
-		msg("%syou feel warm all over",
+		msg("{}you feel warm all over",
 			noterse("hey, this tastes great.  It makes "));
 		break;
 	case P_BLIND:
@@ -274,7 +274,7 @@ th_effect(Item *obj, Creature *tp)
 	case P_CONFUSE:
 	case P_BLIND:
 		tp->t_flags.set(ISHUH);
-		msg("the %s appears confused", monsters[tp->t_type-'A'].m_name);
+		msg("the {} appears confused", monsters[tp->t_type-'A'].m_name);
 		break;
 	case P_PARALYZE:
 		tp->t_flags.unset(ISRUN);

@@ -4,32 +4,15 @@
  * @(#)extern.h	5.1 (Berkeley) 5/11/82
  */
 
-/*@
- * Also standard library includes, defines and "overrides",
- * assembly function declarations, and a bunch of global variables.
- *
- * The plan is to gradually move all platform-agnostic vars to rogue.h,
- * and keep here only the declarations for mach_dep.c (as originally intended)
- *
- * Standard Library includes will also remain here, as original code did not
- * (explicitly) use any. After all, Rogue is pre-ANSI C.
- *
- * Assembly functions are be replaced either by standard library equivalents
- * or functions in mach_dep.
- *
- * When port is completed, maybe this will be renamed mach_dep.h to avoid
- * confusion with extern.c, which is the definition of global game vars
+/*
+ * Also the standard library includes, with a few libc "overrides" that the
+ * original code relies on, and the functions of mach_dep.cpp.
  */
 
-//@ header guard not in original, mainly for curses_common.h
 #ifndef EXTERN_H
 #define EXTERN_H
 
-/*@
- * Functions from libc and their "overrides"
- */
-
-/*@
+/*
  * Set SUSv4 compatibility (POSIX.1-2008 base and XSI extensions)
  *
  * Enable setenv() and getenv(), remove toascii() and isascii()
@@ -40,60 +23,50 @@
  * https://man7.org/linux/man-pages/man7/feature_test_macros.7.html
  * https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html
  */
-#undef  _XOPEN_SOURCE  //@ set to 600 by pkg-config ncurses{,w}
+#undef  _XOPEN_SOURCE  // set to 600 by pkg-config ncurses{,w}
 #define _XOPEN_SOURCE 700
 
 
-//@ uintptr_t, uint16_t
+// uintptr_t, uint16_t
 #include <stdint.h>
 
-//@ std::format() for fatal(), before the "overrides" below
+// std::format() for fatal(), before the "overrides" below
 #include <format>
 #include <string_view>
 #include <utility>
 
-//@ is{alpha,digit,upper,...}() and to{upper,lower,...}() families
+// is{alpha,digit,upper,...}() and to{upper,lower,...}() families
 #include <ctype.h>
 #ifndef isascii
-//@ Marked obsolescent in POSIX-2008, so not in <ctype.h> if C99 is used
+// Marked obsolescent in POSIX-2008, so not in <ctype.h> if C99 is used
 #define isascii(c)	(((c) & ~0x7f) == 0)
 #endif
 
-//@ str{len,cat,cpy,cmp,chr}() and possibly others
+// str{len,cat,cpy,cmp,chr}() and possibly others
 #include <string.h>
 #define bcopy(dest,source)	memmove(&(dest),&(source),sizeof(dest))
 #define stpchr	strchr
 #define setmem(dest,length,ch)	memset(dest,ch,length)
 
-//@ sprintf(), f{open,read,seek,write,close}(), remove(), putchar()
-//@ popen(), fgets(), pclose()
+// f{open,read,seek,write,close}(), remove(), putchar()
 #include <stdio.h>
 
-//@ exit(), atoi(), NULL, EXIT_*, malloc(), free(), abs(), setenv(), getenv()
+// exit(), atoi(), NULL, EXIT_*, malloc(), free(), abs(), setenv(), getenv()
 #include <stdlib.h>
 
-//@ errno, originally in begin.asm
+// errno
 #include <errno.h>
 
-//@ pause(), access(), sleep(), close()
+// pause(), access(), sleep(), close()
 #include <unistd.h>
 #define access(f)	access(f, F_OK)
 
-//@ time(), nanosleep()
+// time(), nanosleep()
 #include <time.h>
 
-//@ bool type, originally typedef unsigned char
-#include <stdbool.h>
-
-//@ setlocale()
+// setlocale()
 #include <locale.h>
 
-
-/*@
- * Project defines and typedefs
- */
-
-//@ moved from curses.h so it's close to 'bool' definition
 #ifndef TRUE
 #define TRUE 	1
 #define FALSE	0
@@ -102,14 +75,14 @@
 #define msleep(ms)	md_nanosleep(1000000L * ms)
 
 #ifdef __GNUC__
-//@ macro for dummy arguments in stub functions
+// for dummy arguments in stub functions
 #define UNUSED(arg) __attribute__((unused))arg
 #else
 #define UNUSED(arg) arg
 #endif
 
 
-/*@
+/*
  * Simplified version of <time.h> struct tm, to wrap and abstract it,
  * so local time source is opaque and easily replaceable.
  */
@@ -124,27 +97,17 @@ struct md_tm {
 typedef struct md_tm TM;
 
 /*
- *  MANX C compiler funnies
- *  @ moved from rogue.h
- */
-
-
-/*
  * Function types
  */
-//@ mach_dep.c originals
 void	setup(), flush_type(), credits(), start_terminal();
 char	*newmem(unsigned int nbytes);
 unsigned char	readchar();
-
-//@ new functions
 unsigned char	swap_bits(unsigned char data, unsigned i, unsigned j, unsigned width);
 long	md_time(void);
 TM  	*md_localtime(void);
 void	md_nanosleep(long nanoseconds);
 
-//@ moved from main.c
-//@ fatal() takes a std::format string and prints the text after closing the terminal
+// fatal() takes a std::format string and prints the text after closing the terminal
 void	fatal_text(std::string_view text);
 
 template <class... Args>
@@ -154,7 +117,6 @@ fatal(std::format_string<Args...> fmt, Args &&...args)
 	fatal_text(std::format(fmt, std::forward<Args>(args)...));
 }
 
-//@ moved from croot.c
 void	md_exit(int status);
 
 #endif //EXTERN_H

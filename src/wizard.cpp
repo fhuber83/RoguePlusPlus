@@ -60,7 +60,7 @@ whatis(void)
 		obj->o_flags.set(ISKNOW);
 		*items.r_guess[obj->o_which] = '\0';
 		break;
-	default:	//@ the other kinds of item: nothing
+	default:	// the other kinds of item: nothing
 		break;
 	}
 	/*
@@ -225,8 +225,7 @@ teleport(void)
 
 /*
  * show_map:
- *	Print out the map for the wizard
- *	@unused, which is a shame...
+ *	Print out the map for the wizard (unused)
  */
 static
 void

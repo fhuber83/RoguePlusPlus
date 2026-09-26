@@ -207,7 +207,6 @@ door_open(struct room *rp)
 				/* move(j, k); Why do this,?????? */
 				if (ismonster(ch)) {
 					tp = wake_monster(j, k);
-					//@ this sanity check was not in original
 					if (tp == NULL)
 					{
 						continue;
@@ -277,12 +276,8 @@ be_trapped(coord *tc)
 		teleport();
 		display().draw_tile(*tc, TRAP); /* since the hero's leaving, look()
 						won't put it on for us */
-		/*@
-		 * I guess this increment is used solely to signal look() at move.c
-		 * about the teleport trap. However, since this increment violates
-		 * boolean logic conventions, `was_trapped++` had to be reverted the
-		 * real type that bool was typdef'd to in original code: unsigned char.
-		 * Either this or refactor the original detection for teleport traps.
+		/*
+		 * TRUE + 1 tells look() that this was a teleport trap
 		 */
 		player.was_trapped++;
 		break;

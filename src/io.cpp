@@ -18,18 +18,16 @@
 
 static void more_at(const char *msg, int col);
 
-/*@
+/*
  * msg(), addmsg() and ifterse() are templates in rogue.h that format with
- * std::format and pass the text on to these. They were printf-style varargs.
+ * std::format and pass the text on to these.
  */
 
-//@ msg()
 void
 show_msg(std::string_view text)
 {
 	/*
 	 * if the string is "", just clear the line
-	 *@ the formatted text; the original tested the format
 	 */
 	if (text.empty())
 	{
@@ -73,7 +71,7 @@ endmsg(void)
 
 /*
  *  More:  tag the end of a line and wait for a space
- *  @ The prompt goes after the current message. Drawing is the display's
+ *  The prompt goes after the current message. Drawing is the display's
  */
 void
 more(const char *msg)
@@ -81,7 +79,7 @@ more(const char *msg)
 	more_at(msg, game().message.end);
 }
 
-//@ more() for a message line text that ends in column col
+// more() for a message line text that ends in column col
 static void
 more_at(const char *msg, int col)
 {
@@ -95,9 +93,8 @@ more_at(const char *msg, int col)
 
 
 /*
- * doadd:
- *	Perform an add onto the message buffer
- *	@ now add_msg(), which takes the formatted text; cut to fit as vsnprintf() did
+ * add_msg:
+ *	Perform an add onto the message buffer, cut to fit
  */
 void
 add_msg(std::string_view text)
@@ -149,8 +146,6 @@ putmsg(char *msg)
 /*
  * io_unctrl:
  *	Print a readable version of a certain character
- *	@ renamed to avoid conflict with <curses.h>
- *	@ same purpose but different behavior, so not using the curses version
  */
 std::string
 io_unctrl(unsigned char ch)
@@ -179,7 +174,7 @@ status(void)
 
 	SIG2();
 
-	/*@
+	/*
 	 * The armor class shown ignores rings of protection, as it always did
 	 */
 	ac = player.armor != NULL ? player.armor->o_ac : pstats.s_arm;
@@ -203,24 +198,13 @@ status(void)
 void
 wait_for(unsigned char ch)
 {
-	/*@
-	 * stdio and ncurses will map all stream line endings to '\n'
-	 * Hooray ANSI! :)
-	 *
-	char c;
-
-	if (ch == '\n')
-		while ((c = readchar()) != '\n' && c != '\r')
-			continue;
-	else
-	 */
 	while (readchar() != ch)
 		continue;
 }
 
-/*@
- * Wait with a message until user press Enter
- * New function, used to block before leaving the game
+/*
+ * wait_msg:
+ *	Wait with a message until the user presses Enter
  */
 void
 wait_msg(const char *msg)
@@ -236,7 +220,6 @@ wait_msg(const char *msg)
 /*
  * show_win:
  *	Function used to display a window and wait before returning
- *	@ a window? looks like a single message to me!
  */
 void
 show_win(char *message)
@@ -281,11 +264,11 @@ str_attr(const char *str)
 }
 
 /*
- * key_state:
- *	@ Periodic status update: draws the clock in the bottom-right corner.
- *	@ The original also showed NUM LOCK/CAP LOCK and toggled "Fast Play" via
- *	@ Scroll Lock by reading keyboard LEDs through BIOS; terminals cannot
- *	@ report those, so faststate stays FALSE.
+ * SIG2:
+ *	Periodic status update: draws the clock in the bottom-right corner.
+ *	The original also showed NUM LOCK/CAP LOCK and toggled "Fast Play" via
+ *	Scroll Lock by reading keyboard LEDs through BIOS; terminals cannot
+ *	report those, so faststate stays FALSE.
  */
 void
 SIG2(void)
@@ -295,7 +278,7 @@ SIG2(void)
 	int showtime = FALSE;
 	long new_time = md_time();
 
-	/*@
+	/*
 	 * Do not update while a page (inventory, discoveries, ...) is shown
 	 */
 	if (display().page_open())

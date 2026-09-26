@@ -4,7 +4,7 @@
  * save.c	1.32	(A.I. Design)	12/13/84
  */
 
-/*@
+/*
  * The original saved and restored a raw dump of the game's memory. Games are
  * now saved as JSON by persistence/SaveGame (see there for what is in them).
  * As in the original, saving ends the program and restoring deletes the save,
@@ -19,7 +19,7 @@
 
 using rogue::persistence::MapView;
 
-//@ The map as the screen shows it: what the rogue remembers of the level
+// The map as the screen shows it: what the rogue remembers of the level
 static MapView
 map_view()
 {

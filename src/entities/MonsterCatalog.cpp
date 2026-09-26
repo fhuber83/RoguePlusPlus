@@ -14,7 +14,7 @@ static int	exp_add(Creature *tp);
  * List of monsters in rough order of vorpalness
  */
 
-/*@
+/*
  * Note:  vorp_mons was not present in the original v1.48 code.  It is used to
  * select a target for the Vorpalize Weapon scroll.
  * Previously, lvl_mons was used, which contains spaces.  When a space
@@ -241,8 +241,7 @@ give_pack(Creature *tp)
  * pick_mons:
  *	Choose a sort of monster for the enemy of a vorpally enchanted weapon
  *
- *	@ Fixed:  lvl_mons renamed to vorp_mons, to prevent this function from
- *	  returning space characters.  See comment for vorp_mons above.
+ *	Picks from vorp_mons, which has no spaces; see the comment there.
  */
 char
 pick_mons(void)

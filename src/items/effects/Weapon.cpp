@@ -316,7 +316,7 @@ fallpos(Item *obj, coord *newpos)
 }
 
 
-//@ pause for a tick, ie, 1/18.2 secs (about 55ms)
+// pause for a tick, ie, 1/18.2 secs (about 55ms)
 void
 tick_pause(void)
 {

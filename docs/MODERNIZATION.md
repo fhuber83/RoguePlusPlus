@@ -236,7 +236,7 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
   - From saves edited into awkward states (hasted with `NoHaste` running, confused, blind, held with a monster on the flytrap alias, all of them together), both runs restoring the same file and B saving again after 15 or 40 more keys: 10 identical, 8 of them saved with the state still on and several with its fuse about to run out.
   - The first rounds found the repeated `look(TRUE)` (seed 3, a monster woke differently on level 13) and the save swallowed by a `--More--`. No live save had a monster after a floor item; `SaveGameTest` covers that one. `rogue_tests` passes.
 
-## Idiom cleanup (in progress)
+## Idiom cleanup (done)
 
 - **9.1 Syntax macros.** `when X:`/`otherwise:` are `case X:`/`default:` now, each case ending in the `break;` the macros used to put before the next label. A case that already ends in `return`, `break`, `continue` or `goto` gets none, and one-line cases keep theirs on the same line. `on(x, F)` is `x.t_flags.test(F)` (`p->t_flags.test(F)` for `on(*p, F)`), `shint` is `int` and the `byte` typedef is `unsigned char`. The unused `until()` is gone. The headers that noted they need `extern.h` for `byte` don't any more.
   - The labels next to `#ifdef DEBUG`/`WIZARD` were rewritten by hand so that each configuration gets its breaks. Those files compile with `-DDEBUG` and `-DWIZARD` with the same errors as before (`debug` needs `WIZARD`, which doesn't build, see the notes).
@@ -251,6 +251,8 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
   - One difference: `msg()` clears the line when the formatted text is empty. The original tested the format, so `msg("%s", "")` went through `endmsg()`. Only `descend("")` gives an empty text, and it used to pass `""` as the format, which cleared the line too.
   - The rest of `snprintf` went as well: the status line, clock, count, tombstone and score list in `ScreenDisplay`, the `wait_msg()` prompt, and the score name copy in `rip.cpp`. The `debug()` formats (`DEBUG`/`WIZARD` only) are converted but not compiled, see the notes. No `printf`-style formatting is left, apart from the `ROGUE_DEBUG` exit line.
   - Verified: replays (`tools/replay/`) of the 9.2 commit, this tree and its ASan/UBSan build. 12 seeds × 600 random keys: every capture of this tree is identical, and the ASan build differs in one animation frame that recovers. 8 dives × 300 keys: the final screens are identical, and the differing frames are level wipes caught mid-animation; replaying the 9.2 build against itself differs as often (5–19 frames per seed). No sanitizer reports. The resume check gave 7 identical seeds on this tree and its ASan build; the rogue had died before the save in the other five. `fatal()` output was checked by hand (`-d` without a seed). `tests/game/MessageTest.cpp` covers formatting, `{:c}`/`{:d}`, the buffer limit, capitalisation, clearing and `ifterse()`. `rogue_tests` passes (173 tests).
+- **9.4 No port annotations.** The `//@` and `/*@` markers (and the `@` notes inside original comments) that set the Linux port's and this project's changes apart from the 1980s code are gone; after phases 4–9 unmarked code is no longer original anyway. Notes that only told history ("moved from rogue.h", "was prbuf", "renamed from remove()"), commented-out code (the old `<ctype.h>` functions, `wait_for()`'s line-ending loop, the "not found" declarations in `rogue.h`) and asides went. Explanations stayed as plain comments, and the stale ones were fixed: `extern.h`'s header, `init_ds()` in `Game.hpp`, the source file names over `rogue.h`'s prototypes, `was_trapped`, `chase()`'s return value. `extern.h` no longer includes `<stdbool.h>`, which does nothing in C++.
+  - Verified: the 42 objects of `rogue_game` have identical `.text` to the 9.3 commit's; `.rodata` differs only in `SaveGame.cpp` and `HighScores.cpp`, by the nlohmann/json path in its assertions (the two builds fetched it into different directories). `rogue_tests` passes (173 tests).
 
 ## Target architecture
 
@@ -317,11 +319,11 @@ Each phase is a series of small commits that each build and play.
      - **File.** JSON with nlohmann/json, `{"format": "rogue++ save", "version": 1, ...}`; another version is refused. Map, flags and screen rows are hex strings, one per row. Nothing is done against hand-editing (cheating can't be stopped in a local game), but invalid values are rejected on load.
      - **Decisions.** Saving ends the session, as in the original. Restoring deletes the save file, as in the original. The game's own options come from the save (name, fruit, terse/expert); file paths, `menu`, `screen` and the macro come from the current `rogue.opt`. Typeahead left from a macro is saved as its remaining keys.
      - **Steps.** 8.3a: no behaviour change; move the statics into `Game`, let `Display` report a tile's style, and add a pool check (every used slot is referenced exactly once: a level list, a pack, or a worn item). 8.3b: `persistence/SaveGame`, `Game` to JSON and back; unit tests that save, load, save gives identical JSON, from new games, deep levels, packs, worn rings, guesses and running fuses. 8.3c: `S` asks for the file (default `savefile=`), writes it through a temporary file and exits; `-r` or a file name restores, redraws map, status and last message, and plays on. 8.3d: resume equivalence; for keys P then K, the screens after K match between one run and a run that saves after P, quits, restores and plays K, over several seeds and awkward save points (mid-fight, hasted, confused, held by a flytrap, a monster after gold, inside a maze, mid-macro).
-9. **Idiom cleanup.**
+9. **Idiom cleanup** (*done*, see above).
    - *Done:* `std::string`/`std::format` instead of `sprintf` into `prbuf` (9.2).
    - *Done:* `msg()`/`addmsg()` and the other printf-style functions take `std::format` strings (9.3).
    - *Done:* remove `when`/`otherwise`/`on()`/`until()` and `shint`/`byte` (9.1). `ce()` went in phase 3.
-   - Remove the `//@` port annotations once the code they describe is gone.
+   - *Done:* remove the `//@` port annotations (9.4).
 
 ## Notes for whoever continues
 

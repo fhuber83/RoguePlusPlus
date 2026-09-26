@@ -6,7 +6,7 @@ namespace rogue {
 
 namespace {
 
-//@ The key table, was the case labels of execcom()'s switch
+// The key table
 struct Binding {
 	int key;
 	Command command;

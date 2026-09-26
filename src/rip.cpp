@@ -10,7 +10,6 @@
 #include "persistence/HighScores.hpp"
 #include "rogue.h"
 
-//@ moved from rogue.h
 #define TOPSCORES	10
 struct sc_ent {
 	char sc_name[38];
@@ -41,7 +40,7 @@ score(int amount, int flags, char monst)
 	char response = ' ';
 
 
-	display().open_page();  //@ stops the clock, as is_saved did
+	display().open_page();  // stops the clock, as is_saved did
 
 	if (amount || flags || monst)
 	{
@@ -84,7 +83,7 @@ reread:
 		rank = add_scores(&his_score, top_ten);
 	}
 	fclose(file);
-	//@ an unreadable file is left alone; an old binary one is rewritten as JSON
+	// an unreadable file is left alone; an old binary one is rewritten as JSON
 	if (readable && (rank > 0 || legacy))
 		put_scores(top_ten);
 	pr_scores(rank, top_ten);
@@ -96,7 +95,7 @@ reread:
 }
 
 #ifndef WIZARD
-/*@
+/*
  * get_scores:
  *	Fill top10 from the score file (persistence/HighScores); the entries
  *	after the last have no gold. Returns false, with an empty list, if the
@@ -124,7 +123,7 @@ get_scores(struct sc_ent *top10, bool *legacy)
 	return true;
 }
 
-/*@
+/*
  * put_scores:
  *	Write the entries with gold to the score file, with the cause of each
  *	fate in words.
@@ -170,7 +169,7 @@ pr_scores(int newrank, struct sc_ent *top10)
 		altmsg = NULL;
 		if (top10->sc_gold <=0 )
 			break;
-		if (top10->sc_level >= 26)  //@ There is AMULETLEVEL, you know?
+		if (top10->sc_level >= 26)
 			altmsg = " Honored by the Guild";
 
 		if (is_alpha(top10->sc_fate))
@@ -355,7 +354,7 @@ total_winner(void)
 			case ItemKind::Amulet:
 			worth = 1000;
 			break;
-	default:	//@ the other kinds of item: nothing
+	default:	// the other kinds of item: nothing
 		break;
 	}
 	if (worth < 0)

@@ -2,10 +2,10 @@
  * main:
  *	The main program, of course
  *
- *@ Moved from main.c. Command line:
- *@   rogue++ [-r | savefile]   restore a saved game (-r: the savefile option)
- *@   rogue++ -s                show the scores
- *@   rogue++ -d <seed>         play the dungeon generated from <seed>
+ * Command line:
+ *   rogue++ [-r | savefile]   restore a saved game (-r: the savefile option)
+ *   rogue++ -s                show the scores
+ *   rogue++ -d <seed>         play the dungeon generated from <seed>
  */
 
 #include <cstdlib>
@@ -19,7 +19,7 @@ main(int argc, char **argv)
 	char *curarg, *savfile=0;
 	rogue::Random::Seed seed = rogue::Random::from_clock();
 
-	//@ Allow non-ASCII output in <curses.h>
+	// Allow non-ASCII output in <curses.h>
 	setlocale(LC_ALL, "");
 
 	if (rogue::persistence::load_options(ENVFILE, game().options) == rogue::persistence::LoadResult::BadFormat)

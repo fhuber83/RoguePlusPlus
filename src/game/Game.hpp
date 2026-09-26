@@ -98,9 +98,9 @@ struct Player {
 	int quiet = 0;					/* Number of quiet turns */
 	int fung_hit = 0;				/* Number of time fungi has hit */
 	char flytrap_damage[10] = "";	/* f_damage: the venus flytrap's attack, grows per hit */
-	/*@
-	 * Was originally a bool, which was unsigned char. It is incremented and
-	 * compared with TRUE, see be_trapped() in move.cpp and look() in misc.cpp.
+	/*
+	 * Not only a flag: a teleport trap makes it TRUE + 1 (be_trapped() in
+	 * move.cpp), which look() in misc.cpp checks for.
 	 */
 	unsigned char was_trapped = FALSE;	/* Was a trap sprung */
 	coord old_pos = {};				/* oldpos: position before last look() call */
@@ -117,17 +117,17 @@ struct Level {
 	int no_food = 0;				/* Number of levels without food */
 	struct room rooms[MAXROOMS] = {};	/* One for each room -- A level */
 	struct room passages[MAXPASS] = {};	/* One for each passage */
-	/*@
-	 * What is at each square, and its F_* flags. Both were allocated in
-	 * init_ds(). Index them with INDEX(y, x), or use chat()/flat().
+	/*
+	 * What is at each square, and its F_* flags. Index them with INDEX(y, x),
+	 * or use chat()/flat().
 	 */
 	unsigned char map[(MAXLINES-3)*MAXCOLS] = {};	/* _level */
 	unsigned char flags[(MAXLINES-3)*MAXCOLS] = {};	/* _flags */
 	List<Item> objects;				/* lvl_obj: list of objects on this level */
 	List<Creature> monsters;		/* mlist: list of monsters on the level */
 
-	//@ Passages are dark rooms that are gone. The original table left the
-	//@ 13th one lit by mistake.
+	// Passages are dark rooms that are gone. The original table left the
+	// 13th one lit by mistake.
 	Level()
 	{
 		for (auto &p : passages)

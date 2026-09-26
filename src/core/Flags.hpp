@@ -51,7 +51,7 @@ public:
 		return *this;
 	}
 	constexpr Flags &set(Flags mask, bool value) { return value ? set(mask) : unset(mask); }
-	// @ not named clear(): the game's curses.h #defines clear
+	// not named clear(): the game's curses.h #defines clear
 	constexpr Flags &unset(Flags mask)
 	{
 		bits_ &= static_cast<Bits>(~mask.bits_);

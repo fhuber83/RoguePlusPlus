@@ -10,7 +10,6 @@ static std::string	nothing(ItemKind type);
  * inv_name:
  *	Return the name of something as it would appear in an
  *	inventory.
- *	@ builds a string instead of writing prbuf
  */
 std::string
 inv_name(const Item *obj, bool drop)
@@ -18,7 +17,7 @@ inv_name(const Item *obj, bool drop)
 	int which = obj->o_which;
 	std::string name;
 	rogue::Items &items = game().items;
-	bool brief = game().options.brief();	//@ chopmsg() chose by this
+	bool brief = game().options.brief();
 
 	switch (obj->o_type)
 	{
@@ -105,7 +104,7 @@ inv_name(const Item *obj, bool drop)
 			name += brief ? std::format("called {}", items.ws_guess[which])
 				: std::format("called {}({})", items.ws_guess[which], items.ws_made[which]);
 		else {
-			/*@
+			/*
 			 * The original wrote this over the name from its third
 			 * character, keeping "A " even before a vowel ("A oak staff").
 			 */
@@ -135,7 +134,7 @@ inv_name(const Item *obj, bool drop)
 			static_cast<int>(obj->o_type));
 		break;
 #else
-	default:	//@ the other kinds of item: nothing (was what prbuf last held)
+	default:	// the other kinds of item: nothing
 		break;
 #endif
 	}
@@ -215,7 +214,7 @@ print_disc(ItemKind type)
 		know = items.ws_know;
 		guess = items.ws_guess;
 		break;
-	default:	//@ the other kinds of item: nothing
+	default:	// the other kinds of item: nothing
 		break;
 	}
 	set_order(order, maxnum);
@@ -258,9 +257,8 @@ set_order(short *order, int numthings)
 
 /*
  * add_line:
- *	Add a line to the list of discoveries
- *	@ takes the line itself, not a format and one argument; NULL ends
- *	@ the page (end_line())
+ *	Add a line to the list of discoveries; NULL ends the page
+ *	(end_line())
  */
 unsigned char
 add_line(const char *use, const char *line)
@@ -330,7 +328,7 @@ nothing(ItemKind type)
 		case ItemKind::Scroll: tystr = "scroll"; break;
 		case ItemKind::Ring: tystr = "ring"; break;
 		case ItemKind::Stick: tystr = "stick"; break;
-		//@ not in original, avoid possibly uninitialized use of tystr
+		// avoid possibly uninitialized use of tystr
 		default: tystr = "item";
 	}
 	return std::format("{} about any {}s",

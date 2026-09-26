@@ -57,7 +57,7 @@ swander(void)
 void
 rollwand(void)
 {
-	int &between = game().wander_rolls;	//@ was a static
+	int &between = game().wander_rolls;
 
 	if (++between >= 3 + rnd(3))
 	{

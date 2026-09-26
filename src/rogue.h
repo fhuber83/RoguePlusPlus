@@ -4,7 +4,7 @@
  * rogue.h	1.4 (AI Design) 12/14/84
  */
 
-/*@
+/*
  * Modern headers first: extern.h and this file define macros such as max(),
  * pack and when that would break standard library headers.
  */
@@ -25,14 +25,14 @@
 #include "extern.h"
 #include "glyphs.h"
 
-/*@
+/*
  * Screen size. Fixed at 80x25 (see rogue::ui::Screen); these used to be the
  * ncurses globals of the same name. Only game files see these; the curses
  * backend uses ncurses' own.
  */
 const int LINES = MAXLINES;
 const int COLS = MAXCOLS;
-//@ Last line used for the map. Was a global, set in setup()
+// Last line used for the map
 const int maxrow = MAXLINES - 2;
 
 
@@ -80,7 +80,7 @@ const int maxrow = MAXLINES - 2;
 #define MAXPASS		13	/* upper limit on number of passages */
 #define MAXNAME		20  /* Maximum Length of a scroll */
 #define MAXITEMS	83  /* Maximum number of randomly generated things */
-#define BUFSIZE		128 /*@ moved from curses.h */
+#define BUFSIZE		128
 
 /*
  * All the fun defines
@@ -106,9 +106,6 @@ const int maxrow = MAXLINES - 2;
 #ifdef WIZARD
 #define debug		if (wizard) msg
 #endif
-/*@
- * And some new fun defines...
- */
 #define ismonster(ch)	(((ch) >= 'A') && ((ch) <= 'Z'))
 
 /*
@@ -274,27 +271,24 @@ const int maxrow = MAXLINES - 2;
 
 /*
  * Help list
- * @ this was unused in original. Now improved and put to good use
  */
 struct h_list {
-	unsigned char h_chstr[6];  //@ either (ch) or (ch,sep,ch2) appended with ": "
+	unsigned char h_chstr[6];  // either (ch) or (ch,sep,ch2) appended with ": "
 	const char *h_desc;
 };
 
 /*
  * Coordinate data type
  */
-using coord = rogue::Coord;  //@ see core/Coord.hpp
+using coord = rogue::Coord;  // see core/Coord.hpp
 
-//@ Game output goes through the display, see ui/Display.hpp
+// Game output goes through the display, see ui/Display.hpp
 using rogue::ui::display;
 using rogue::ui::input;
 using rogue::ui::TileStyle;
 
-/*@
+/*
  * Data type for strength values and modifiers
- * That's very generous from Rogue devs to allow full 16-bits (uint in 1985)
- * for strength, considering normal play would not get even remotely close to 8
  */
 typedef unsigned int str_t;
 
@@ -350,7 +344,7 @@ struct stats {
 	int s_maxhp;			/* Max hit points */
 };
 
-/*@
+/*
  * The legacy union thing is split into a creature (monster or player) and an
  * item. o_charges and o_goldval are other names for o_ac.
  */
@@ -368,8 +362,7 @@ using rogue::CreatureFlags;
 using rogue::ItemFlags;
 
 /*
- * Various flag bits
- * @ typed now: rogue::ItemFlag and rogue::CreatureFlag, in Flags sets
+ * Various flag bits: rogue::ItemFlag and rogue::CreatureFlag, in Flags sets
  */
 inline constexpr rogue::ItemFlag ISCURSED = rogue::ItemFlag::Cursed;
 inline constexpr rogue::ItemFlag ISKNOW = rogue::ItemFlag::Known;
@@ -408,7 +401,7 @@ struct monster {
 	struct stats m_stats;		/* Initial stats */
 };
 
-//@ The tables each game copies into game().items (extern.cpp)
+// The tables each game copies into game().items (extern.cpp)
 extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
 				ws_magic_base[], things_base[];
 
@@ -522,11 +515,10 @@ using rogue::execcom;
 
 /*
  * External variables
- * @ The state of a game is in game() (game/Game.hpp). What is left here are
- * @ fixed tables and strings (extern.cpp) and scratch buffers (init.cpp).
+ * The state of a game is in game() (game/Game.hpp). What is left here are
+ * fixed tables and strings (extern.cpp, init.cpp).
  */
 
-//@ nullstr should probably be used in misc and wizard instead of (size_t)NULL
 extern char nullstr[];
 extern const char *it, *you, *no_mem;
 
@@ -535,41 +527,21 @@ bool wizard;
 #endif
 
 extern const char *a_names[], *he_man[], *intense, *w_names[];
-//@ a std::format string for msg(), so a constant here instead of in extern.cpp
+// a std::format string for msg()
 inline constexpr const char *flashmsg = "your {} gives off a flash{}";
 extern struct h_list helpcoms[], helpobjs[];
 extern int	a_chances[], a_class[];
 extern struct monster	monsters[];
 
-/*@
- * Definition commented out:
- * extern bool askme, fight_flush, jump, passgo, slow_invent;
- * extern char *release;
- *
- * Not found:
- * extern bool in_shell;
- * extern char file_name[], home[], outbuf[];
- * extern int lastscore, is_me;
- */
-
-//@ init.c: the experience level table
+// the experience level table (init.cpp)
 extern const long e_levels[20];
-//@ extern char *_top, *_base;  //@ not found
-/*@
- * Deprecated:
- * extern char *end_mem;
- */
 
 /*
  * Function types
- *
- * @ curses.c has its own header
- * @ mach_dep.c functions are declared in extern.h
+ * mach_dep.cpp functions are declared in extern.h
  */
 
-//@ env.h
-
-//@ init.c
+// init.cpp
 void	init_player(void);
 void	init_things(void);
 void	init_colors(void);
@@ -579,8 +551,8 @@ void	init_materials(void);
 char	*getsyl(void);
 char	rchr(const char *string);
 
-//@ io.c
-//@ msg(), addmsg() and ifterse() take std::format strings. An empty msg() clears the line.
+// io.cpp
+// msg(), addmsg() and ifterse() take std::format strings. An empty msg() clears the line.
 void	show_msg(std::string_view text);
 void	add_msg(std::string_view text);
 
@@ -617,15 +589,14 @@ void	SIG2(void);
 std::string	io_unctrl(unsigned char ch);
 const char	*noterse(const char *str);
 
-//@ list.c
+// list.cpp
 Item	*new_item(void);
 Creature	*new_creature(void);
 int	discard(Item *item);
 int	discard(Creature *item);
 
-/*@
+/*
  * Empties a list of creatures or items and gives them back to the pool
- * (was _free_list)
  */
 template <class T>
 void
@@ -640,16 +611,16 @@ list_free(rogue::List<T> &list)
 	}
 }
 
-//@ main.c
+// playit.cpp
 void	endit(void);
 void	playit(char *sname);
 void	quit(void);
 void	leave(void);
-//@ legacy wrappers around rogue::rng()
+// legacy wrappers around rogue::rng()
 inline int	rnd(int range) { return rogue::rng().below(range); }
 inline int	roll(int number, int sides) { return rogue::rng().roll(number, sides); }
 
-//@ misc.c
+// misc.cpp
 void	look(bool wakeup);
 void	eat(void);
 void	chg_str(int amt);
@@ -678,24 +649,24 @@ int	spread(int nm);
 int	DISTANCE(int y1, int x1, int y2, int x2);
 int	INDEX(int y, int x);
 
-//@ move.c
+// move.cpp
 void	do_run(unsigned char ch);
 void	do_move(int dy, int dx);
 void	door_open(struct room *rp);
 void	descend(const char *mesg);
 void	rndmove(Creature *who, coord *newmv);
 
-//@ rip.c
+// rip.cpp
 void	score(int amount, int flags, char monst);
 void	death(char monst);
 void	total_winner(void);
 std::string	killname(unsigned char monst, bool doart);
 
-//@ save.c
+// save.cpp
 void	save_game(void);
 void	restore(char *savefile);
 
-//@ strings.c
+// strings.cpp
 bool	is_alpha(char ch);
 bool	is_upper(char ch);
 bool	is_lower(char ch);
@@ -707,13 +678,9 @@ char	*stpblk(char *str);
 char	*endblk(char *str);
 void	lcase(char *str);
 
-//@ wizard.c
+// wizard.cpp
 void	whatis(void);
 int	teleport(void);
 #ifdef WIZARD
 void	create_obj();
 #endif //WIZARD
-
-
-/*@ functions declared but not found
-*/

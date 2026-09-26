@@ -55,7 +55,7 @@ int a_class[MAXARMORS] = {		/* Armor class for each armor type */
 	3
 };
 
-/*@
+/*
  * The odds and worth of each kind of item. Each game works on a copy in
  * game().items, since init_*() accumulate the odds and add the stone value
  * to the worth of rings.
@@ -129,7 +129,7 @@ const struct magic_item ws_magic_base[MAXSTICKS] = {
 	{ "cancellation",		 5, 280 }
 };
 
-/*@
+/*
  * Original code used CP437 codes hard coded inside the help strings,
  * instead of the #define'd char constants for FLOOR, PLAYER etc.
  * To support the constants, H_*() macros were created and helpcoms/helpobjs
@@ -221,7 +221,7 @@ struct h_list helpobjs[] = {
 	H_CHSTR(STICK,   "a magic staff"),
 	H_CHSTR(POTION,  "a potion"),
 	H_CHSTR(RING,    "a magic ring"),
-	H_CHSTR(0xB2,    "a passage"),  //@ surprisingly it's not PASSAGE
+	H_CHSTR(0xB2,    "a passage"),  // not PASSAGE (0xB1)
 	/* make sure in 40 or 80 column none of line draw set connects */
 	/* this is currently in column 1 for 80 */
 	H_CHSTR(DOOR,    "a door"),
@@ -275,14 +275,10 @@ bool wizard = FALSE;			/* True if allows wizard commands */
 #endif
 /* char *release;	*/			/* Release number of rogue */
 /* WINDOW *hw;				 Used as a scratch window */
-//@ the game's variables that were here are in game() (game/Game.hpp)
 
-/*@
- * Original code did not define a value for s_maxhp member of stats struct.
- * s_maxhp from this monster template is unused, just like s_hpt, as its value
- * was randomly chosen for each new generated monster. To make compilers happy,
- * value is now set to a dummy ___ value, the same convention used in original
- * code for s_hpt.
+/*
+ * s_hpt and s_maxhp of these templates are unused (___), as each new monster
+ * rolls its hit points.
  */
 #define ___ 1
 #define XX 10
@@ -294,7 +290,7 @@ struct monster monsters[26] =
 	{ "centaur",	 15,	{},	{ XX, 25,   4,   4, ___, "1d6/1d6", ___ } },
 	{ "dragon",	 100,	ISMEAN,	{ XX,6800, 10,  -1, ___, "1d8/1d8/3d10", ___ } },
 	{ "emu",	 0,	ISMEAN,	{ XX,  2,   1,   7, ___, "1d2", ___ } },
-		/*@ damage is overwritten per game via flytrap_damage, see new_monster() */
+		/* damage is overwritten per game via flytrap_damage, see new_monster() */
 		/* string with others, since it is written on in the program */
 	{ "venus flytrap",0,	ISMEAN,	{ XX, 80,   8,   3, ___, "0d0", ___ } },
 	{ "griffin",	 20,	ISMEAN|ISFLY|ISREGEN,	{XX,2000, 13, 2,___, "4d3/3d5/4d3", ___ } },
@@ -302,7 +298,7 @@ struct monster monsters[26] =
 	{ "ice monster", 0,	ISMEAN,	{ XX,  15,   1,   9, ___, "1d2", ___ } },
 	{ "jabberwock",  70,	{},	{ XX,4000, 15,   6, ___, "2d12/2d4", ___ } },
 	{ "kestral",	 0,	ISMEAN|ISFLY, { XX,  1,   1,   7, ___, "1d4", ___ } },
-		/*@
+		/*
 		 * The original has ISGREED (0x40) in the CARRY column: leprechauns
 		 * carry something 64% of the time and are not greedy. Kept as is.
 		 */
@@ -325,12 +321,9 @@ struct monster monsters[26] =
 #undef ___
 #undef XX
 
-/*@
- * Not to be confused with _things[], which is an array of THINGS on the level
- * This one serves to choose the type of random items. The actual probability
- * is redefined in init_things(), and the only user is new_thing().
- * To make compilers happy, the unused mi_worth is set using ___, as per
- * original code convention.
+/*
+ * The odds of each kind of random item. init_things() accumulates them in
+ * the game's copy, and the only user is new_thing(). mi_worth is unused (___).
  */
 #define ___ 1
 const struct magic_item things_base[NUMTHINGS] = {
@@ -353,4 +346,3 @@ const char *intense = " of intense white light";
 const char *it = "it";
 const char *you = "you";
 const char *no_mem = "Not enough Memory";
-//@ char *smsg = "\r\n*** Stack Overflow ***\r\n$"; //only used in csav.asm

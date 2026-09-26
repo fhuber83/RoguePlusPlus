@@ -289,7 +289,6 @@ door(struct room *rm, coord *cp)
 	rm->r_exit[xit].x = cp->x;
 }
 
-//@ Unused function
 #ifdef WIZARD
 /*
  * add_pass:

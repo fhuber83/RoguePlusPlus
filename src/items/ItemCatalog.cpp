@@ -7,7 +7,7 @@ namespace rogue::items {
  *	Pick an item out of a list of nitems possible magic items
  */
 static
-int  //@ actually an offset, the element index in the array
+int  // actually an offset, the element index in the array
 pick_one(struct magic_item *magic, int nitems)
 {
 	struct magic_item *end;

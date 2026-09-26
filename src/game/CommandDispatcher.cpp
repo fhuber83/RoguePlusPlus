@@ -8,7 +8,7 @@
 
 namespace rogue {
 
-//@ Set by resume_saved_game() until the first command after a restore
+// Set by resume_saved_game() until the first command after a restore
 static bool resuming = false;
 
 void
@@ -24,7 +24,7 @@ command()
 	rogue::Player &player = game().player;
 
 	if (resuming)
-		ntimes = 1;	//@ the save was made after this roll
+		ntimes = 1;	// the save was made after this roll
 	else if (player.body.t_flags.test(ISHASTE))
 		ntimes = rnd(2) + 2;
 	else
@@ -40,7 +40,7 @@ command()
 				msg("you can move again");
 				player.no_command = 0;
 			}
-			display().flush();  //@ sleeping, fainted, frozen, etc
+			display().flush();  // sleeping, fainted, frozen, etc
 		} else
 			execcom();
 		do_fuses();
@@ -64,7 +64,6 @@ command()
 	}
 }
 
-//@ No need to declare in rogue.h
 static unsigned char
 com_char()
 {
@@ -89,7 +88,6 @@ com_char()
 	return ch;
 }
 
-//@ No need to declare in rogue.h
 /*
  * Read a command, setting thing up according to prefix like devices
  * Return the command character to be executed.
@@ -104,9 +102,9 @@ get_prefix()
 	turn.after = TRUE;
 	turn.fast_mode = turn.fast_state;
 	if (resuming)
-		resuming = false;	//@ the save was made after this look()
+		resuming = false;	// the save was made after this look()
 	else
-		look(TRUE); //@ draw player in updated position on every non-sleep frame
+		look(TRUE); // draw player in updated position on every non-sleep frame
 	if (!turn.running)
 		turn.door_stop = FALSE;
 	turn.do_take = TRUE;
@@ -115,13 +113,13 @@ get_prefix()
 		turn.do_take = turn.last_take;
 		retch = turn.last_ch;
 		turn.fast_mode = FALSE;
-		display().flush();  //@ repeated commands, ie, "10s"
+		display().flush();  // repeated commands, ie, "10s"
 	} else {
 		turn.count = 0;
 		if (turn.running) {
 			retch = turn.run_dir;
 			turn.do_take = turn.last_take;
-			display().flush();  //@ running ("H", "fh", "L", etc)
+			display().flush();  // running ("H", "fh", "L", etc)
 		} else {
 			for (retch = 0; retch == 0; ) {
 				switch (ch = com_char()) {
@@ -158,7 +156,7 @@ get_prefix()
 	}
 	if (turn.count)
 		turn.fast_mode = FALSE;
-	//@ Which commands a count repeats is in game/Command.cpp
+	// Which commands a count repeats is in game/Command.cpp
 	if (command_of(retch) == Command::Move && turn.fast_mode && !turn.running) {
 		if (!game().player.body.t_flags.test(ISBLIND)) {
 			turn.door_stop = TRUE;
@@ -170,7 +168,7 @@ get_prefix()
 		turn.count = 0;
 	if (turn.count || turn.last_count)
 		show_count();
-	//@ Saving isn't repeated: a restored game repeats the command before it
+	// Saving isn't repeated: a restored game repeats the command before it
 	if (command_of(retch) != Command::Save) {
 		turn.last_ch = retch;
 		turn.last_count = turn.count;
@@ -195,7 +193,6 @@ execcom()
 	do {
 		ch = get_prefix();
 		Command cmd = command_of(ch);
-		//@ was a "turn.after = FALSE;" in each case that doesn't take a turn
 		if (!takes_turn(cmd))
 			turn.after = FALSE;
 		switch (cmd) {

@@ -96,8 +96,8 @@ enum class ItemFlag : unsigned short {
 	Cursed   = 0x0001,	/* ISCURSED: object is cursed */
 	Known    = 0x0002,	/* ISKNOW: player knows details about the object */
 	DidFlash = 0x0004,	/* DIDFLASH: has the vorpal weapon flashed */
-	Ego      = 0x0008,	/* ISEGO: weapon has control of player @ unused */
-	/*@
+	Ego      = 0x0008,	/* ISEGO: weapon has control of player (unused) */
+	/*
 	 * A scare monster scroll that was picked up once. The original set the
 	 * creature flag ISFOUND on it, which is the same bit as ISEGO.
 	 */

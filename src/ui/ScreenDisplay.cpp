@@ -40,10 +40,9 @@ void ScreenDisplay::clear_message()
 	screen_.erase_to_eol();
 }
 
-/*@
+/*
  * More: tag the end of a line and wait for a space. The waiting is the
- * game's; this only draws. Originally more() in io.c, which read the covered
- * characters back with inch() and rewrote them as plain text.
+ * game's; this only draws.
  */
 void ScreenDisplay::show_more(std::string_view prompt, int col)
 {
@@ -141,11 +140,10 @@ TileStyle ScreenDisplay::tile_style_at(Coord pos) const
 
 // Status lines
 
-/*@
+/*
  * Rogue used a rudimentary custom sprintf() that didn't fully support
  * the (quite sophisticated) numeric formatting strings used on status.
- * As <stdio.h>'s sprintf() does, formatting was simplified so the output
- * matches the original. Now std::format.
+ * The formats here are simplified so that the output matches the original.
  */
 void ScreenDisplay::draw_status(const Status &s)
 {
@@ -264,8 +262,8 @@ bool ScreenDisplay::show_cursor(bool visible)
 
 // Title and ending screens
 
-/*@
- * The credits screen, originally credits() in mach_dep.c
+/*
+ * The title screen, for credits() in mach_dep.cpp
  */
 void ScreenDisplay::draw_title()
 {
@@ -317,8 +315,8 @@ void ScreenDisplay::end_title()
 	ink(Ink::Normal);
 }
 
-/*@
- * Originally in death(), rip.c
+/*
+ * The tombstone, for death() in rip.cpp
  */
 void ScreenDisplay::draw_tombstone(std::string_view name, std::string_view killer, int gold, int year)
 {
@@ -344,8 +342,8 @@ void ScreenDisplay::draw_tombstone(std::string_view name, std::string_view kille
 	centered(19, std::format("{}", static_cast<unsigned>(year)));
 }
 
-/*@
- * Originally pr_scores() in rip.c
+/*
+ * The score list, for pr_scores() in rip.cpp
  */
 void ScreenDisplay::draw_scores(std::span<const ScoreLine> lines, int highlight)
 {
@@ -372,8 +370,8 @@ void ScreenDisplay::draw_scores(std::span<const ScoreLine> lines, int highlight)
 	text("\n\n\n\n");
 }
 
-/*@
- * Originally in total_winner(), rip.c
+/*
+ * The winner's screen, for total_winner() in rip.cpp
  */
 void ScreenDisplay::draw_winner(bool brief)
 {
@@ -400,9 +398,9 @@ void ScreenDisplay::draw_winner(bool brief)
 
 // Transitions
 
-/*@
+/*
  * Display a curtain down animation, keep the curtain and blank the screen
- * without showing it. Moved from curses.c
+ * without showing it
  */
 void ScreenDisplay::curtain_down()
 {
@@ -426,7 +424,7 @@ void ScreenDisplay::curtain_down()
 	screen_.erase();
 }
 
-/*@
+/*
  * Display a curtain up animation over what was drawn behind the curtain
  */
 void ScreenDisplay::curtain_up()
@@ -444,7 +442,6 @@ void ScreenDisplay::curtain_up()
 
 /*
  * Clear the screen in an interesting fashion
- * @ implode(), moved from curses.c
  */
 void ScreenDisplay::wipe()
 {
@@ -482,7 +479,7 @@ void ScreenDisplay::bell()
 
 // Helpers
 
-/*@
+/*
  * The styles of the original's text attribute table (set_attr() indexes),
  * one table for colour screens and one for monochrome ones
  */
@@ -512,10 +509,9 @@ Style ScreenDisplay::style_for(Ink ink) const
 	return Plain;
 }
 
-/*@
+/*
  * The colour a glyph gets on a colour screen: map glyphs have their own
- * colours in rooms (plain text) and in passages (standout). Moved here from
- * cur_addch() in curses.c
+ * colours in rooms (plain text) and in passages (standout)
  */
 Style ScreenDisplay::glyph_style(std::uint8_t ch, Style base) const
 {
@@ -568,7 +564,7 @@ Style ScreenDisplay::glyph_style(std::uint8_t ch, Style base) const
 			return Style{Color::Blue, Color::LightGrey};
 		}
 	} else if (base == Bright && ch == STAIRS) {
-		//@ I suspect STAIRS used with high() is a case that never happen...
+		// STAIRS in Bright may never happen
 		return Style{Color::Black, Color::Green, true};
 	}
 	return base;

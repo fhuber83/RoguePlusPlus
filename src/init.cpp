@@ -277,7 +277,7 @@ init_names()
 
 	for (i = 0; i < MAXSCROLLS; i++)
 	{
-	std::string name;	//@ was built in prbuf
+	std::string name;
 	nwords = rnd(game().options.terse?3:4) + 2;
 	while (nwords--)
 	{
@@ -409,8 +409,6 @@ init_materials()
 /*
  * The experience needed for each level: 10, doubling 18 times, then 0
  * to end the table
- * @ was allocated and filled by init_ds(), with the scratch buffers
- * @ tbuf, prbuf and ring_buf, which strings replaced
  */
 const long e_levels[20] = {
 	10L, 20L, 40L, 80L, 160L, 320L, 640L, 1280L, 2560L, 5120L, 10240L,

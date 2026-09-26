@@ -217,15 +217,8 @@ look(bool wakeup)
 		}
 	if (turn.door_stop && !turn.first_move && passcount > 1)
 		turn.running = FALSE;
-	/*@
-	 * The expression (was_trapped > TRUE) would never evaluate to true if
-	 * `was_trapped` was a real boolean. I guess this is specifically testing
-	 * for the `was_trapped++` case in be_trapped() at move.c, triggered by
-	 * a teletransporting trap.
-	 * Not an issue in the original code, as bool was typedef'd to unsigned char.
-	 * This test helped reverting `was_trapped` to an unsigned char. However,
-	 * I guess int would be a better type, or perhape another logic to detect
-	 * teleport traps.
+	/*
+	 * was_trapped > TRUE: the rogue was teleported by a trap (be_trapped())
 	 */
 	display().draw_tile(hero, PLAYER,
 			((flat(hero.y,hero.x) & F_PASS) || (player.was_trapped > TRUE)
@@ -277,7 +270,7 @@ eat()
 		return;
 	}
 	player.in_pack--;
-	/*@
+	/*
 	 * What it is, and whether it was wielded, are checked before the last
 	 * one is discarded. Both were after discard(), reading a freed item.
 	 */
@@ -505,7 +498,7 @@ call_it(bool know, char **guess)
 	if (know && **guess)
 		**guess = '\0';
 	else if (!know && **guess == '\0') {
-		char buf[MAXNAME+1];	//@ was prbuf
+		char buf[MAXNAME+1];
 
 		msg("{}call it? ",noterse("what do you want to "));
 		input().read_line(buf,MAXNAME);
@@ -600,7 +593,7 @@ goodch(Item *obj)
 			break;
 		}
 		break;
-	default:	//@ the other kinds of item: nothing
+	default:	// the other kinds of item: nothing
 		break;
 	}
 	return ch;
@@ -835,7 +828,7 @@ call()
 		return;
 	}
 	msg("Was called \"{}\"", elsewise);
-	char buf[MAXNAME+1];	//@ was prbuf
+	char buf[MAXNAME+1];
 
 	msg("what do you want to call it? ");
 	input().read_line(buf,MAXNAME);
@@ -850,7 +843,7 @@ call()
 void
 do_macro(char *buf, int sz)
 {
-	std::vector<char> line(sz);	//@ was prbuf
+	std::vector<char> line(sz);
 	char *cp = line.data();
 
 	msg("F9 was {}, enter new macro: ",buf);

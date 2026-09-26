@@ -58,7 +58,7 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 			thunk(weap, mname, "hits", "hit");
 		else
 			hit(NULL, mname);
-		//@ original missed NULL check for weap
+		// original missed NULL check for weap
 		if (weap && weap->o_type == ItemKind::Potion) {
 			th_effect(weap, tp);
 			if (!thrown) {
@@ -199,7 +199,7 @@ attack(Creature *mp)
 			 * Violet fungi stops the poor guy from moving
 			 */
 			player.body.t_flags.set(ISHELD);
-			//@ was sprintf(), which could run past the buffer; now cut to fit
+			// cut to fit
 			*std::format_to_n(player.flytrap_damage, sizeof player.flytrap_damage - 1,
 				"{}d1", ++player.fung_hit).out = '\0';
 			break;
@@ -252,7 +252,7 @@ attack(Creature *mp)
 				}
 				else
 				{
-					//@ inv_name() must run before discard() frees steal
+					// inv_name() must run before discard() frees steal
 					std::string name = inv_name(steal, TRUE);
 					detach(pack, steal);
 					discard(steal);
@@ -384,7 +384,7 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 		}
 	}
 
-	//@ New NULL check to prevent segfault on parsing
+	// New NULL check to prevent segfault on parsing
 	if (cp == NULL)
 	{
 		return FALSE;
@@ -594,7 +594,6 @@ thunk(Item *weap, const char *mname, const char *does, const char *did)
 		msg("the {}", mname);
 }
 
-//@ renamed from remove() to avoid conflict with <stdio.h>
 /*
  * remove_monster:
  *	Remove a monster from the screen
@@ -646,7 +645,7 @@ is_magic(Item *obj)
 	case ItemKind::Ring:
 	case ItemKind::Amulet:
 		return TRUE;
-	default:	//@ the other kinds of item: nothing
+	default:	// the other kinds of item: nothing
 		break;
 	}
 	return FALSE;
@@ -659,7 +658,7 @@ is_magic(Item *obj)
 void
 killed(Creature *tp, bool pr)
 {
-	char type = tp->t_type;	//@ remove_monster() discards tp
+	char type = tp->t_type;	// remove_monster() discards tp
 
 	pstats.s_exp += tp->t_stats.s_exp;
 	/*

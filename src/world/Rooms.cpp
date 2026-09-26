@@ -154,9 +154,7 @@ leave_room(coord *cp)
 			default:
 				/*
 				 * to check for monster, we have to strip out
-				 * standout bit
-				 * @ No we don't, inch() took care of that already
-				 * @ originally tested for isupper(toascii(ch))
+				 * standout bit (the glyph has none)
 				 */
 				if (ismonster(ch))
 				{

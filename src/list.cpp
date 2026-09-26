@@ -8,12 +8,12 @@
 
 #include "rogue.h"
 
-/*@
- * The list functions are templates in rogue.h now, for both Creature and
- * Item lists.
+/*
+ * The lists themselves are rogue::List (entities/List.hpp) now. What is left
+ * here takes things from the pool and gives them back.
  */
 
-/*@
+/*
  * talloc: take the first free slot of a pool. The two pools share one count,
  * like the single pool of the original (see rogue::Pool).
  */
@@ -32,8 +32,7 @@ talloc(rogue::Slots<T, MAXITEMS> &slots)
 
 /*
  * new_item
- *	Get a new item with a specified size
- *	@ items and creatures come from separate pools now
+ *	Get a new item from the pool
  */
 Item *
 new_item()
@@ -41,14 +40,14 @@ new_item()
 	return talloc(game().pool.items);
 }
 
-//@ new_item() for monsters
+// new_item() for monsters
 Creature *
 new_creature()
 {
 	return talloc(game().pool.creatures);
 }
 
-/*@
+/*
  * discard: give a slot back to its pool, which destroys what it held
  */
 template <class T>
@@ -68,7 +67,7 @@ discard_from(T *item, rogue::Slots<T, MAXITEMS> &slots)
 int
 discard(Item *item)
 {
-	/*@
+	/*
 	 * get_item() compares the item it gave last with the one at that pack
 	 * letter. The original kept pointing at the freed slot, which matched a
 	 * new item that reused the slot; a freed item's address can be reused
@@ -76,7 +75,7 @@ discard(Item *item)
 	 */
 	if (game().turn.last_item == item)
 		game().turn.last_item = NULL;
-	/*@
+	/*
 	 * A monster after this item goes for the hero instead. add_pack() does
 	 * this when the rogue picks the item up, but not when it merges into a
 	 * pack item and is discarded: the original then chased the freed slot's

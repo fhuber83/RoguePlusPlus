@@ -30,7 +30,7 @@ runners()
 			dist = DISTANCE(hero.y, hero.x, tp->t_pos.y, tp->t_pos.x);
 			if	(!(tp->t_flags.test(ISSLOW) || (tp->t_type == 'S' && dist > 3)) || tp->t_turn)
 				do_chase(tp);
-			/*@
+			/*
 			 * do_chase() can end in attack(), which removes tp from the
 			 * level (a Leprechaun or Nymph vanishes once it steals). Once
 			 * that happens tp is a freed pool slot and must not be read
@@ -250,10 +250,7 @@ start_run(coord *runner)
 /*
  * chase:
  *	Find	the spot for the chaser(er) to move closer to the
- *	chasee(ee).	Returns	TRUE if	we want	to keep	on chasing later
- *	FALSE if we reach the goal.
- *
- *	@@ Wrong documentation: function is actually a void, there is no return
+ *	chasee(ee).
  */
 static void
 chase(Creature *tp, coord *ee)
@@ -446,7 +443,7 @@ new_slime(Creature *tp)
 	return ret;
 }
 
-/*@
+/*
  * Pick an appropriate spot around a central spot for a new monster to spawn
  * (r, c): row, col of central spot
  * cp: pointer to coordinate for the new monster, if any
@@ -477,7 +474,7 @@ plop_monster(int r, int c, coord *cp)
 			if (step_ok(ch = winat(y, x))) {
 				if (ch == SCROLL && find_obj(y, x)->o_which == S_SCARE)
 					continue;
-				/*@
+				/*
 				 * Get first available spot with 100% chance,
 				 * then randomly change to next available spot, if any,
 				 * with decreasing 1-to-n odds (50%, 33%, 25%, 20%,...)

@@ -16,7 +16,7 @@ init_player()
 {
 	Item *obj;
 	bcopy(pstats,game().player.max_stats);
-	game().player.food_left = HUNGERTIME;
+	game().player.food_left = hunger_time();
 	/*
 	 * initialize things
 	 */

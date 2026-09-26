@@ -105,6 +105,14 @@ struct Player {
 	unsigned char was_trapped = FALSE;	/* Was a trap sprung */
 	coord old_pos = {};				/* oldpos: position before last look() call */
 	struct room *old_room = nullptr;	/* oldrp: roomin(&old_pos) */
+
+	// Whether he wears this ring on this hand (was ISRING)
+	bool wears(Hand hand, Ring ring) const
+	{
+		return rings[hand] != nullptr && rings[hand]->which<Ring>() == ring;
+	}
+	// Whether he wears this ring on either hand (was ISWEARING)
+	bool wears(Ring ring) const { return wears(Hand::Left, ring) || wears(Hand::Right, ring); }
 };
 
 /*

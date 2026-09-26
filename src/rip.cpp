@@ -342,7 +342,7 @@ total_winner(void)
 			break;
 		case ItemKind::Stick:
 			worth = items.ws_magic[obj->which<Stick>()].mi_worth;
-			worth += 20 * obj->o_charges;
+			worth += 20 * obj->charges();
 			if (!obj->o_flags.test(ISKNOW))
 				worth /= 2;
 			obj->o_flags.set(ISKNOW);
@@ -396,7 +396,7 @@ killname(unsigned char monst, bool doart)
 		sp = "fall";
 		break;
 	default:
-		if (ismonster(monst))
+		if (is_monster(monst))
 			sp = monsters[monst-'A'].m_name;
 		else
 		{

@@ -28,9 +28,9 @@ doctor(void)
 	else
 	if (game().player.quiet >= 3)
 		pstats.s_hpt += rnd(lv - 7) + 1;
-	if (ISRING(Hand::Left, Ring::Regeneration))
+	if (game().player.wears(Hand::Left, Ring::Regeneration))
 		pstats.s_hpt++;
-	if (ISRING(Hand::Right, Ring::Regeneration))
+	if (game().player.wears(Hand::Right, Ring::Regeneration))
 		pstats.s_hpt++;
 	if (ohp != pstats.s_hpt)
 	{
@@ -65,7 +65,7 @@ rollwand(void)
 		{
 			wanderer();
 			extinguish(Event::RollWander);
-			fuse(Event::Swander, WANDERTIME);
+			fuse(Event::Swander, wander_time());
 		}
 	between = 0;
 	}

@@ -15,7 +15,7 @@ fix_stick(Item *cur)
 		cur->o_damage = "1d1";
 	cur->o_hurldmg = "1d1";
 
-	cur->o_charges = 3 + rnd(5);
+	cur->charges() = 3 + rnd(5);
 	switch (cur->which<Stick>())
 	{
 	case Stick::Striking:
@@ -24,7 +24,7 @@ fix_stick(Item *cur)
 		cur->o_damage = "1d8";
 		break;
 	case Stick::Light:
-		cur->o_charges = 10 + rnd(10);
+		cur->charges() = 10 + rnd(10);
 		break;
 	default:
 		break;
@@ -51,7 +51,7 @@ do_zap()
 	which_one = obj->which<Stick>();
 	if (obj->o_type != ItemKind::Stick)
 	{
-		if (obj->o_enemy && obj->o_charges)
+		if (obj->o_enemy && obj->charges())
 			which_one = Stick::Vorpal;
 		else
 		{
@@ -60,7 +60,7 @@ do_zap()
 			return;
 		}
 	}
-	if (obj->o_charges == 0)
+	if (obj->charges() == 0)
 	{
 		msg("nothing happens");
 		return;
@@ -144,7 +144,7 @@ do_zap()
 				List<Item> pp;
 
 				pp = std::move(tp->t_pack);
-				detach(game().level.monsters, tp);
+				game().level.monsters.remove(tp);
 				if (see_monst(tp))
 					display().draw_tile({x, y}, chat(y, x));
 				oldch = tp->t_oldch;
@@ -175,7 +175,7 @@ do_zap()
 						rm = rnd_room();
 						new_yx = tp->t_pos;
 						rnd_pos(&game().level.rooms[rm], &new_yx);
-					}  while (!(isfloor(winat(new_yx.y, new_yx.x))));
+					}  while (!(is_floor(winat(new_yx.y, new_yx.x))));
 					tp->t_pos = new_yx;
 					if (see_monst(tp))
 						display().draw_tile(tp->t_pos, tp->t_disguise);
@@ -211,7 +211,7 @@ do_zap()
 			bolt.o_launch = launched_by(player.weapon->which<WeaponType>());
 		do_motion(&bolt, turn.delta.y, turn.delta.x);
 		if ((tp = moat(bolt.o_pos.y, bolt.o_pos.x)) != NULL && !save_throw(SaveThrow::Magic, tp))
-			hit_monster(unc(bolt.o_pos), &bolt);
+			hit_monster(bolt.o_pos.y, bolt.o_pos.x, &bolt);
 		else
 		msg("the missle vanishes with a puff of smoke");
 	}
@@ -282,8 +282,8 @@ do_zap()
 			debug("what a bizarre schtick!");
 		break;
 	}
-	if (--obj->o_charges < 0)
-		obj->o_charges = 0;
+	if (--obj->charges() < 0)
+		obj->charges() = 0;
 }
 
 /*
@@ -408,7 +408,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 					if (tp->t_type == 'D' && strcmp(name, "flame") == 0)
 						msg("the flame bounces off the dragon");
 					else {
-						hit_monster(unc(pos), &bolt);
+						hit_monster(pos.y, pos.x, &bolt);
 						if (display().tile_at(pos) != dirch)
 							spotpos[i].s_under = display().tile_at(pos);
 					}
@@ -460,7 +460,7 @@ charge_str(const Item *obj)
 {
 	if (!obj->o_flags.test(ISKNOW))
 		return "";
-	return std::format(" [{} charges]", obj->o_charges);
+	return std::format(" [{} charges]", obj->charges());
 }
 
 }  // namespace rogue::items::effects

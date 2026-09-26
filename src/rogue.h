@@ -71,32 +71,12 @@ inline constexpr int BUFSIZE = 128;
 #define pack		game().player.body.t_pack
 #define proom		game().player.body.t_room
 #define max_hp		game().player.body.t_stats.s_maxhp
-#define attach(a,b)	(a).push_front(b)
-#define detach(a,b)	(a).remove(b)
-#define free_list(a)	list_free(a)
-#define max(a,b)	((a) > (b) ? (a) : (b))
-#define GOLDCALC	(rnd(50 + 10 * game().level.depth) + 2)
-#define ISRING(h,r)	(game().player.rings[h] != NULL && game().player.rings[h]->which<Ring>() == r)
-#define ISWEARING(r)	(ISRING(Hand::Left, r) || ISRING(Hand::Right, r))
-#define ISMULT(type) 	(type==ItemKind::Potion || type==ItemKind::Scroll || type==ItemKind::Food || type==ItemKind::Gold)
 #define chat(y,x)	(game().level.map[INDEX(y,x)])
 #define flat(y,x)	(game().level.flags[INDEX(y,x)])
-#define unc(cp)		(cp).y, (cp).x
-#define isfloor(c)	((c) == FLOOR || (c) == PASSAGE)
-#define isgone(rp)	((rp)->r_flags.test(RoomFlag::Gone) && !(rp)->r_flags.test(RoomFlag::Maze))
-#define ismonster(ch)	(((ch) >= 'A') && ((ch) <= 'Z'))
 
 /*
  * Various constants
  */
-#define BEARTIME	spread(3)
-#define SLEEPTIME	spread(5)
-#define HEALTIME	spread(30)
-#define HOLDTIME	spread(2)
-#define WANDERTIME	spread(70)
-#define HUHDURATION	spread(20)
-#define SEEDURATION	spread(300)
-#define HUNGERTIME	spread(1300)
 inline constexpr int MORETIME = 150;
 inline constexpr int STOMACHSIZE = 2000;
 inline constexpr int STARVETIME = 850;
@@ -113,6 +93,15 @@ inline constexpr int LAMPDIST = 3;
 struct h_list {
 	unsigned char h_chstr[6];  // either (ch) or (ch,sep,ch2) appended with ": "
 	const char *h_desc;
+
+	// A line of text; an empty one ends the list (were H_STR and H_END)
+	constexpr h_list(const char *desc) : h_chstr{}, h_desc(desc) {}
+	// A glyph and what it is (was H_CHSTR)
+	constexpr h_list(unsigned char ch, const char *desc)
+		: h_chstr{ch, ':', ' ', '\0'}, h_desc(desc) {}
+	// Two glyphs with a separator, "A-Z" (was H_CH2STR)
+	constexpr h_list(unsigned char first, unsigned char sep, unsigned char last, const char *desc)
+		: h_chstr{first, sep, last, ':', ' ', '\0'}, h_desc(desc) {}
 };
 
 /*
@@ -167,6 +156,12 @@ struct room {
 	RoomFlags r_flags;		/* Info about the room */
 	int r_nexits;			/* Number of exits */
 	coord r_exit[12];			/* Where the exits are */
+
+	// A corridor where a room would be, but not a maze (was isgone())
+	bool is_gone() const
+	{
+		return r_flags.test(RoomFlag::Gone) && !r_flags.test(RoomFlag::Maze);
+	}
 };
 
 /*
@@ -184,7 +179,7 @@ struct stats {
 
 /*
  * The legacy union thing is split into a creature (monster or player) and an
- * item. o_charges and o_goldval are other names for o_ac.
+ * item. charges() and gold_value() are other names for o_ac.
  */
 #include "entities/Item.hpp"
 #include "entities/Creature.hpp"
@@ -240,8 +235,6 @@ inline constexpr rogue::CreatureFlag ISSLOW = rogue::CreatureFlag::Slow;
 inline constexpr rogue::CreatureFlag ISHASTE = rogue::CreatureFlag::Hasted;
 inline constexpr rogue::CreatureFlag ISFLY = rogue::CreatureFlag::Flying;
 
-#define o_charges	o_ac
-#define o_goldval	o_ac
 
 /*
  * Array containing information on all the various types of monsters
@@ -470,7 +463,7 @@ list_free(rogue::List<T> &list)
 
 	while ((item = list.first()) != NULL)
 	{
-	detach(list, item);
+	list.remove(item);
 	discard(item);
 	}
 }
@@ -483,6 +476,8 @@ void	leave(void);
 // legacy wrappers around rogue::rng()
 inline int	rnd(int range) { return rogue::rng().below(range); }
 inline int	roll(int number, int sides) { return rogue::rng().roll(number, sides); }
+// The gold in a pile on this level (was GOLDCALC)
+inline int	gold_calc() { return rnd(50 + 10 * game().level.depth) + 2; }
 
 // misc.cpp
 void	look(bool wakeup);
@@ -510,6 +505,16 @@ char	goodch(Item *obj);
 int	sign(int nm);
 unsigned char	winat(int y, int x);
 int	spread(int nm);
+/*
+ * How long things last, each spread by 10% (were BEARTIME, SLEEPTIME, ...)
+ */
+inline int	bear_time() { return spread(3); }		/* held by a bear trap */
+inline int	sleep_time() { return spread(5); }		/* asleep from a gas trap or scroll */
+inline int	hold_time() { return spread(2); }		/* paralyzed by a potion */
+inline int	wander_time() { return spread(70); }	/* until the next wandering monster */
+inline int	huh_duration() { return spread(20); }	/* confused */
+inline int	see_duration() { return spread(300); }	/* seeing invisible, or blind */
+inline int	hunger_time() { return spread(1300); }	/* a full stomach */
 int	DISTANCE(int y1, int x1, int y2, int x2);
 int	INDEX(int y, int x);
 

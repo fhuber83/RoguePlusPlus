@@ -38,9 +38,9 @@ quaff(void)
 		if (!player.body.t_flags.test(ISHUH))
 			{
 			if (player.body.t_flags.test(ISHUH))
-				lengthen(Event::Unconfuse, rnd(8)+HUHDURATION);
+				lengthen(Event::Unconfuse, rnd(8)+huh_duration());
 			else
-				fuse(Event::Unconfuse, rnd(8)+HUHDURATION);
+				fuse(Event::Unconfuse, rnd(8)+huh_duration());
 			player.body.t_flags.set(ISHUH);
 			msg("wait, what's going on? Huh? What? Who?");
 		}
@@ -50,7 +50,7 @@ quaff(void)
 		constexpr const char *sick = "you feel {} sick.";
 
 		items.p_know[Potion::Poison] = TRUE;
-		if (!ISWEARING(Ring::SustainStrength))
+		if (!player.wears(Ring::SustainStrength))
 		{
 			chg_str(-(rnd(3)+1));
 			msg(sick, "very");
@@ -72,7 +72,7 @@ quaff(void)
 		msg("you feel stronger. What bulging muscles!");
 		break;
 	case Potion::MonsterDetection:
-		fuse(Event::TurnSeeOff, HUHDURATION);
+		fuse(Event::TurnSeeOff, huh_duration());
 		if (game().level.monsters.empty())
 			msg("you have a strange feeling{}.",
 				noterse(" for a moment"));
@@ -129,13 +129,13 @@ quaff(void)
 		break;
 	case Potion::Paralysis:
 		items.p_know[Potion::Paralysis] = TRUE;
-		player.no_command = HOLDTIME;
+		player.no_command = hold_time();
 		player.body.t_flags.unset(ISRUN);
 		msg("you can't move");
 		break;
 	case Potion::SeeInvisible:
 		if (!player.body.t_flags.test(CANSEE)) {
-			fuse(Event::Unsee, SEEDURATION);
+			fuse(Event::Unsee, see_duration());
 			look(FALSE);
 			invis_on();
 		}
@@ -164,15 +164,15 @@ quaff(void)
 			msg("you feel yourself moving much faster");
 		break;
 	case Potion::RestoreStrength:
-		if (ISRING(Hand::Left, Ring::AddStrength))
+		if (player.wears(Hand::Left, Ring::AddStrength))
 			add_str(&pstats.s_str, -player.rings[Hand::Left]->o_ac);
-		if (ISRING(Hand::Right, Ring::AddStrength))
+		if (player.wears(Hand::Right, Ring::AddStrength))
 			add_str(&pstats.s_str, -player.rings[Hand::Right]->o_ac);
 		if (pstats.s_str < player.max_stats.s_str)
 			pstats.s_str = player.max_stats.s_str;
-		if (ISRING(Hand::Left, Ring::AddStrength))
+		if (player.wears(Hand::Left, Ring::AddStrength))
 			add_str(&pstats.s_str, player.rings[Hand::Left]->o_ac);
-		if (ISRING(Hand::Right, Ring::AddStrength))
+		if (player.wears(Hand::Right, Ring::AddStrength))
 			add_str(&pstats.s_str, player.rings[Hand::Right]->o_ac);
 		msg("{}you feel warm all over",
 			noterse("hey, this tastes great.  It makes "));
@@ -182,7 +182,7 @@ quaff(void)
 		if (!player.body.t_flags.test(ISBLIND))
 		{
 			player.body.t_flags.set(ISBLIND);
-			fuse(Event::Sight, SEEDURATION);
+			fuse(Event::Sight, see_duration());
 			look(FALSE);
 		}
 		msg("a cloak of darkness falls around you");
@@ -203,7 +203,7 @@ quaff(void)
 		obj->o_count--;
 	else
 	{
-		detach(pack, obj);
+		pack.remove(obj);
 		discardit = TRUE;
 	}
 

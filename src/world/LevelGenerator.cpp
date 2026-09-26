@@ -45,8 +45,8 @@ new_level(void)
 	 * Free up the monsters on the last level
 	 */
 	for (tp = level.monsters.first(); tp != NULL; tp = level.monsters.after(tp))
-		free_list(tp->t_pack);
-	free_list(level.monsters);
+		list_free(tp->t_pack);
+	list_free(level.monsters);
 	/*
 	 * just in case we left some flytraps behind
 	 */
@@ -54,7 +54,7 @@ new_level(void)
 	/*
 	 * Throw away stuff left on the previous level (if anything)
 	 */
-	free_list(level.objects);
+	list_free(level.objects);
 	do_rooms();				/* Draw rooms */
 	if (player.max_level > 1)
 	{
@@ -72,7 +72,7 @@ new_level(void)
 		rm = rnd_room();
 	rnd_pos(&level.rooms[rm], &stairs);
 	index = INDEX(stairs.y, stairs.x);
-	} while (!isfloor(level.map[index]));
+	} while (!is_floor(level.map[index]));
 	level.map[index] = STAIRS;
 	/*
 	 * Place the traps
@@ -87,7 +87,7 @@ new_level(void)
 				rm = rnd_room();
 				rnd_pos(&level.rooms[rm], &stairs);
 				index = INDEX(stairs.y, stairs.x);
-			} while (!isfloor(level.map[index]));
+			} while (!is_floor(level.map[index]));
 			fp = &level.flags[index];
 			fp->unset(MapFlag::Real);
 			fp->set_trap(static_cast<Trap>(rnd(kind_count<Trap>)));
@@ -97,7 +97,7 @@ new_level(void)
 		rm = rnd_room();
 		rnd_pos(&level.rooms[rm], &hero);
 		index = INDEX(hero.y, hero.x);
-	} while (!(isfloor(level.map[index]) && level.flags[index].test(MapFlag::Real)
+	} while (!(is_floor(level.map[index]) && level.flags[index].test(MapFlag::Real)
 				&& moat(hero.y, hero.x) == NULL));
 
 	game().message.end = 0;
@@ -154,7 +154,7 @@ put_things(void)
 		 */
 		if (level.depth >= AMULETLEVEL && !game().player.saw_amulet) {
 			if ((cur = new_item()) != NULL) {
-				attach(level.objects, cur);
+				level.objects.push_front(cur);
 				cur->o_hplus = cur->o_dplus = 0;
 				cur->o_damage = cur->o_hurldmg = "0d0";
 				cur->o_ac = 11;
@@ -165,7 +165,7 @@ put_things(void)
 				do {
 					rm = rnd_room();
 					rnd_pos(&level.rooms[rm], &tp);
-				} while (!isfloor(winat(tp.y, tp.x)));
+				} while (!is_floor(winat(tp.y, tp.x)));
 				chat(tp.y, tp.x) = AMULET;
 				bcopy(cur->o_pos,tp);
 			}
@@ -185,14 +185,14 @@ put_things(void)
 			 * Pick a new object and link it in the list
 			 */
 			cur = new_thing();
-			attach(level.objects, cur);
+			level.objects.push_front(cur);
 			/*
 			 * Put it somewhere
 			 */
 			do {
 				rm = rnd_room();
 				rnd_pos(&level.rooms[rm], &tp);
-			} while (!isfloor(chat(tp.y, tp.x)));
+			} while (!is_floor(chat(tp.y, tp.x)));
 			chat(tp.y, tp.x) = glyph_of(cur->o_type);
 			bcopy(cur->o_pos,tp);
 		}
@@ -227,10 +227,10 @@ treas_room(void)
 		{
 			rnd_pos(rp, &mp);
 			index = INDEX(mp.y, mp.x);
-		} while (!isfloor(level.map[index]));
+		} while (!is_floor(level.map[index]));
 		obj = new_thing();
 		bcopy(obj->o_pos,mp);
-		attach(level.objects, obj);
+		level.objects.push_front(obj);
 		level.map[index] = glyph_of(obj->o_type);
 	}
 
@@ -250,7 +250,7 @@ treas_room(void)
 		{
 			rnd_pos(rp, &mp);
 			index = INDEX(mp.y, mp.x);
-			if (isfloor(level.map[index]) && moat(mp.y, mp.x) == NULL)
+			if (is_floor(level.map[index]) && moat(mp.y, mp.x) == NULL)
 				break;
 		}
 		if (spots != MAXTRIES)
@@ -373,20 +373,20 @@ do_rooms(void)
 			Item *gold;
 
 			if ((gold = new_item()) != NULL) {
-				gold->o_goldval = rp->r_goldval = GOLDCALC;
+				gold->gold_value() = rp->r_goldval = gold_calc();
 				while (1) {
 					unsigned char gch;
 
 					rnd_pos(rp, &rp->r_gold);
 					gch =  chat(rp->r_gold.y, rp->r_gold.x);
-					if (isfloor(gch))
+					if (is_floor(gch))
 						break;
 				}
 				bcopy(gold->o_pos,rp->r_gold);
 				gold->o_flags = ISMANY;
 				gold->o_group = GOLDGRP;
 				gold->o_type = ItemKind::Gold;
-				attach(level.objects, gold);
+				level.objects.push_front(gold);
 				chat(rp->r_gold.y, rp->r_gold.x) = GOLD;
 			}
 		}
@@ -400,7 +400,7 @@ do_rooms(void)
 				do {
 					rnd_pos(rp, &mp);
 					mch = winat(mp.y, mp.x);
-				} while (!isfloor(mch));
+				} while (!is_floor(mch));
 				new_monster(tp, randmonster(FALSE), &mp);
 				give_pack(tp);
 			}

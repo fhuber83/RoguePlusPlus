@@ -67,7 +67,7 @@ add_pack(Item *obj, bool silent)
 				op->o_count += obj->o_count;
 				if (from_floor)
 				{
-					detach(game().level.objects, obj);
+					game().level.objects.remove(obj);
 					display().draw_tile(hero, floor);
 					chat(hero.y, hero.x) = floor;
 				}
@@ -92,7 +92,7 @@ add_pack(Item *obj, bool silent)
 	{
 		if (obj->o_flags.test(rogue::ItemFlag::Found))
 		{
-			detach(game().level.objects, obj);
+			game().level.objects.remove(obj);
 			display().draw_tile(hero, floor);
 			chat(hero.y, hero.x) = floor;
 			msg("the scroll turns to dust{}.", noterse(" as you pick it up"));
@@ -105,7 +105,7 @@ add_pack(Item *obj, bool silent)
 	game().player.in_pack++;
 	if (from_floor)
 	{
-		detach(game().level.objects, obj);
+		game().level.objects.remove(obj);
 		display().draw_tile(hero, floor);
 		chat(hero.y, hero.x) = floor;
 	}
@@ -158,7 +158,7 @@ add_pack(Item *obj, bool silent)
 		 * If we found an exact match.  If it is a potion, food, or a
 		 * scroll, increase the count, otherwise put it with its clones.
 		 */
-		if (exact && ISMULT(obj->o_type))
+		if (exact && is_multiple(obj->o_type))
 		{
 			op->o_count++;
 			discard(obj);
@@ -231,7 +231,7 @@ inventory(const List<Item> &list, ItemFilter type, const char *lstr)
 		  (obj->o_type == ItemKind::Scroll || obj->o_type == ItemKind::Potion ||
 		  obj->o_type == ItemKind::Ring || obj->o_type == ItemKind::Stick)) &&
 		  !(type.is(ItemKind::Weapon) && obj->o_type == ItemKind::Potion) &&
-		  !(type.is(ItemKind::Stick) && obj->o_enemy && obj->o_charges))
+		  !(type.is(ItemKind::Stick) && obj->o_enemy && obj->charges()))
 			continue;
 		n_objs++;
 		add_line(lstr, std::format("{}) {}", static_cast<char>(ch), inv_name(obj, FALSE)).c_str());
@@ -262,7 +262,7 @@ pick_up(unsigned char ch)
 
 		if ((obj = find_obj(hero.y, hero.x)) == NULL)
 		return;
-		money(obj->o_goldval);
+		money(obj->gold_value());
 		/*
 		 * find_dest() can point a monster's t_dest straight at this gold's
 		 * o_pos. Redirect it to the hero before the gold's pool slot is
@@ -273,7 +273,7 @@ pick_up(unsigned char ch)
 			if (mp->t_dest != NULL &&
 			   (mp->t_dest->x == obj->o_pos.x) && (mp->t_dest->y == obj->o_pos.y))
 				mp->t_dest = &hero;
-		detach(game().level.objects, obj);
+		game().level.objects.remove(obj);
 		discard(obj);
 		proom->r_goldval = 0;
 		break;
@@ -453,12 +453,12 @@ drop(void)
 			game().player.in_pack++;
 	}
 	else
-		detach(pack, op);
+		pack.remove(op);
 	game().player.in_pack--;
 	/*
 	 * Link it into the level object list
 	 */
-	attach(game().level.objects, op);
+	game().level.objects.push_front(op);
 	chat(hero.y, hero.x) = glyph_of(op->o_type);
 	bcopy(op->o_pos,hero);
 	if (op->o_type == ItemKind::Amulet)

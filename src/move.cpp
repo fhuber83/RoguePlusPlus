@@ -105,7 +105,7 @@ over:
 	case LLWALL:
 	case LRWALL:
 hit_bound:
-		if (turn.running && isgone(proom) && !player.body.t_flags.test(ISBLIND)) {
+		if (turn.running && proom->is_gone() && !player.body.t_flags.test(ISBLIND)) {
 			bool	b1, b2;
 
 			switch (turn.run_dir)
@@ -170,7 +170,7 @@ hit_bound:
 		goto move_stuff;
 	default:
 		turn.running = FALSE;
-		if (ismonster(ch) || moat(nh.y, nh.x))
+		if (is_monster(ch) || moat(nh.y, nh.x))
 			fight(&nh, ch, player.weapon, FALSE);
 		else {
 			turn.running = FALSE;
@@ -206,7 +206,7 @@ door_open(struct room *rp)
 			for (k = rp->r_pos.x; k < rp->r_pos.x + rp->r_max.x; k++) {
 				ch = winat(j, k);
 				/* move(j, k); Why do this,?????? */
-				if (ismonster(ch)) {
+				if (is_monster(ch)) {
 					tp = wake_monster(j, k);
 					if (tp == NULL)
 					{
@@ -241,11 +241,11 @@ be_trapped(coord *tc)
 		descend("you fell into a trap!");
 		break;
 	case Trap::Bear:
-		player.no_move += BEARTIME;
+		player.no_move += bear_time();
 		msg("you are caught in a bear trap");
 		break;
 	case Trap::Sleep:
-		player.no_command += SLEEPTIME;
+		player.no_command += sleep_time();
 		player.body.t_flags.unset(ISRUN);
 		msg("a {}mist envelops you and you fall asleep",
 			noterse("strange white "));
@@ -289,7 +289,7 @@ be_trapped(coord *tc)
 				msg("a poisoned dart killed you");
 				death('d');
 			}
-			if (!ISWEARING(Ring::SustainStrength) && !save(SaveThrow::Poison))
+			if (!player.wears(Ring::SustainStrength) && !save(SaveThrow::Poison))
 				chg_str(-1);
 			msg("a dart just hit you in the shoulder");
 		} else

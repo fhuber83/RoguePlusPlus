@@ -67,7 +67,7 @@ new_monster(Creature *tp, unsigned char type, coord *cp)
 
 	if ((lev_add = game().level.depth - AMULETLEVEL) < 0)
 		lev_add = 0;
-	attach(game().level.monsters, tp);
+	game().level.monsters.push_front(tp);
 	tp->t_type = type;
 	tp->t_disguise = type;
 	bcopy(tp->t_pos,*cp);
@@ -83,7 +83,7 @@ new_monster(Creature *tp, unsigned char type, coord *cp)
 	tp->t_flags = mp->m_flags;
 	tp->t_turn = TRUE;
 	tp->t_pack.clear();
-	if (ISWEARING(Ring::AggravateMonster))
+	if (game().player.wears(Ring::AggravateMonster))
 		start_run(cp);
 	if (type == 'F')
 		tp->t_stats.s_dmg = game().player.flytrap_damage;
@@ -184,7 +184,7 @@ wake_monster(int y, int x)
 	 * Every time he sees mean monster, it might start chasing him
 	 */
 	if (!tp->t_flags.test(ISRUN) && rnd(3) != 0 && tp->t_flags.test(ISMEAN) && !tp->t_flags.test(ISHELD)
-		&& !ISWEARING(Ring::Stealth))
+		&& !game().player.wears(Ring::Stealth))
 	{
 		tp->t_dest = &hero;
 		tp->t_flags.set(ISRUN);
@@ -198,9 +198,9 @@ wake_monster(int y, int x)
 			tp->t_flags.set(ISFOUND);
 			if (!save(SaveThrow::Magic)) {
 				if (game().player.body.t_flags.test(ISHUH))
-					lengthen(Event::Unconfuse, rnd(20) + HUHDURATION);
+					lengthen(Event::Unconfuse, rnd(20) + huh_duration());
 				else
-					fuse(Event::Unconfuse, rnd(20) + HUHDURATION);
+					fuse(Event::Unconfuse, rnd(20) + huh_duration());
 				game().player.body.t_flags.set(ISHUH);
 				msg("the medusa's gaze has confused you");
 			}
@@ -230,7 +230,7 @@ give_pack(Creature *tp)
 	 * check if we can allocate a new item
 	 */
 	if (game().pool.total < MAXITEMS && rnd(100) < monsters[tp->t_type-'A'].m_carry)
-		attach(tp->t_pack, new_thing());
+		tp->t_pack.push_front(new_thing());
 }
 
 /*

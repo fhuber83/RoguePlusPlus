@@ -136,8 +136,8 @@ over:
 			if	(th->t_dest == &obj->o_pos) {
 				unsigned char oldchar;
 
-				detach(game().level.objects, obj);
-				attach(th->t_pack, obj);
+				game().level.objects.remove(obj);
+				th->t_pack.push_front(obj);
 				oldchar = chat(obj->o_pos.y, obj->o_pos.x) =
 				th->t_room->r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
 				if (cansee(obj->o_pos.y, obj->o_pos.x))

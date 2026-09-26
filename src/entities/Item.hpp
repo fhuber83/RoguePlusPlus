@@ -69,6 +69,14 @@ kind_of_glyph(unsigned char glyph)
 	return std::nullopt;
 }
 
+// Items of these kinds stack in the pack (was ISMULT)
+constexpr bool
+is_multiple(ItemKind kind)
+{
+	return kind == ItemKind::Potion || kind == ItemKind::Scroll || kind == ItemKind::Food
+		|| kind == ItemKind::Gold;
+}
+
 /*
  * Which items of the pack get_item() and inventory() offer: those of one
  * kind, all of them, or those that can be named with 'c' (were the type
@@ -123,7 +131,7 @@ struct Item {
 	int o_which;				/* Which object of a type it is: use which<E>() */
 	int o_hplus;				/* Plusses to hit */
 	int o_dplus;				/* Plusses to damage */
-	short o_ac;					/* Armor class (o_charges, o_goldval) */
+	short o_ac;					/* Armor class (charges(), gold_value()) */
 	ItemFlags o_flags;			/* Information about objects */
 	char o_enemy;				/* If it is enchanted, who it hates */
 	int o_group;				/* Group number for this object */
@@ -139,6 +147,12 @@ struct Item {
 	template <typename E>
 		requires std::is_enum_v<E>
 	constexpr void set_which(E kind) { o_which = std::to_underlying(kind); }
+
+	// A stick's charges and gold's worth are kept in o_ac (were o_charges, o_goldval)
+	constexpr short &charges() { return o_ac; }
+	constexpr short charges() const { return o_ac; }
+	constexpr short &gold_value() { return o_ac; }
+	constexpr short gold_value() const { return o_ac; }
 };
 
 }  // namespace rogue

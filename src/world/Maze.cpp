@@ -174,13 +174,10 @@ splat(int y, int x)
 		maxy = y;
 }
 
-#define MAXY (topy+((maxrow+1)/3))
-#define MAXX (topx+COLS/3)
-
 bool
 inrange(int y, int x)
 {
-	return(y >= topy && y < MAXY && x >= topx && x < MAXX);
+	return y >= topy && y < topy + (maxrow + 1) / 3 && x >= topx && x < topx + COLS / 3;
 }
 
 }  // namespace rogue::world

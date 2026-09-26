@@ -165,7 +165,7 @@ inv_name(const Item *obj, bool drop)
 	else if (obj == game().player.rings[Hand::Right])
 		name += " (on right hand)";
 	if (!name.empty()) {
-		if (drop && ismonster(name[0]))
+		if (drop && is_monster(name[0]))
 			name[0] = tolower(name[0]);
 		else if (!drop && is_lower(name[0]))
 			name[0] = toupper(name[0]);
@@ -205,7 +205,7 @@ print_disc(ItemKind type)
 	char **guess = NULL;
 	int i, maxnum = 0, num_found;
 	static Item obj;
-	static short order[(std::max)({kind_count<Scroll>, kind_count<Potion>, kind_count<Ring>, kind_count<Stick>})];
+	static short order[std::max({kind_count<Scroll>, kind_count<Potion>, kind_count<Ring>, kind_count<Stick>})];
 	rogue::Items &items = game().items;
 
 	switch (type)

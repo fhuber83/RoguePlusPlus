@@ -74,7 +74,7 @@ main(int argc, char **argv)
 		 * Start up daemons and fuses
 		 */
 		start_daemon(Event::Doctor);
-		fuse(Event::Swander, WANDERTIME);
+		fuse(Event::Swander, wander_time());
 		start_daemon(Event::Stomach);
 		start_daemon(Event::Runners);
 		msg("Hello {}{}.", game().options.name, noterse(".  Welcome to the Dungeons of Doom"));

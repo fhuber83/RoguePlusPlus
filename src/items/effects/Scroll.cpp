@@ -70,7 +70,7 @@ read_scroll()
 		 * Scroll which makes you fall asleep
 		 */
 		items.s_know[Scroll::Sleep] = TRUE;
-		player.no_command += rnd(SLEEPTIME) + 4;
+		player.no_command += rnd(sleep_time()) + 4;
 		player.body.t_flags.unset(ISRUN);
 		msg("you fall asleep");
 		break;
@@ -238,14 +238,14 @@ read_scroll()
 			if (player.weapon->o_enemy != 0) {
 				msg("your {} vanishes in a puff of smoke",
 				w_names[player.weapon->which<WeaponType>()]);
-				detach(pack, player.weapon);
+				pack.remove(player.weapon);
 				discard(player.weapon);
 				player.weapon = NULL;
 			} else {
 				player.weapon->o_enemy = pick_mons();
 				player.weapon->o_hplus++;
 				player.weapon->o_dplus++;
-				player.weapon->o_charges = 1;
+				player.weapon->charges() = 1;
 				msg(flashmsg, w_names[player.weapon->which<WeaponType>()],
 					game().options.brief() ? "" : intense);
 
@@ -278,7 +278,7 @@ read_scroll()
 	obj->o_count--;
 	else
 	{
-	detach(pack, obj);
+	pack.remove(obj);
 	discardit = TRUE;
 	}
 	call_it(items.s_know[obj->which<Scroll>()], &items.s_guess[obj->which<Scroll>()]);

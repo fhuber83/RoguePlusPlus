@@ -273,14 +273,14 @@ eat()
 		player.weapon = NULL;
 	if (--obj->o_count < 1)
 	{
-		detach(pack, obj);
+		pack.remove(obj);
 		discard(obj);
 	}
 	if (player.food_left < 0)
 		player.food_left = 0;
 	if (player.food_left > (STOMACHSIZE - 20))
 		player.no_command += 2 + rnd(5);
-	if ((player.food_left += HUNGERTIME - 200 + rnd(400)) > STOMACHSIZE)
+	if ((player.food_left += hunger_time() - 200 + rnd(400)) > STOMACHSIZE)
 		player.food_left = STOMACHSIZE;
 	player.hungry_state = 0;
 	if (which == Food::Fruit)
@@ -312,9 +312,9 @@ chg_str(int amt)
 	return;
 	add_str(&pstats.s_str, amt);
 	comp = pstats.s_str;
-	if (ISRING(Hand::Left, Ring::AddStrength))
+	if (game().player.wears(Hand::Left, Ring::AddStrength))
 		add_str(&comp, -game().player.rings[Hand::Left]->o_ac);
-	if (ISRING(Hand::Right, Ring::AddStrength))
+	if (game().player.wears(Hand::Right, Ring::AddStrength))
 		add_str(&comp, -game().player.rings[Hand::Right]->o_ac);
 	if (comp > game().player.max_stats.s_str)
 		game().player.max_stats.s_str = comp;
@@ -520,7 +520,7 @@ step_ok(unsigned char ch)
 	case LRWALL:
 		return FALSE;
 	default:
-		return (!ismonster(ch));
+		return (!is_monster(ch));
 	}
 }
 

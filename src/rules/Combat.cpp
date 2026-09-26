@@ -65,7 +65,7 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 				if (weap->o_count > 1)
 					weap->o_count--;
 				else {
-					detach(pack, weap);
+					pack.remove(weap);
 					discard(weap);
 				}
 				player.weapon = NULL;
@@ -128,7 +128,7 @@ attack(Creature *mp)
 			if (player.armor != NULL && player.armor->o_ac < 9
 			  && player.armor->which<ArmorType>() != ArmorType::Leather)
 			{
-				if (ISWEARING(Ring::MaintainArmor))
+				if (player.wears(Ring::MaintainArmor))
 					msg("the rust vanishes instantly");
 				else
 				{
@@ -150,7 +150,7 @@ attack(Creature *mp)
 			 */
 			if (!save(SaveThrow::Poison))
 			{
-				if (!ISWEARING(Ring::SustainStrength))
+				if (!player.wears(Ring::SustainStrength))
 				{
 					chg_str(-1);
 					msg("you feel a bite in your leg{}",
@@ -211,9 +211,9 @@ attack(Creature *mp)
 			long lastpurse;
 
 			lastpurse = player.purse;
-			player.purse -= GOLDCALC;
+			player.purse -= gold_calc();
 			if (!save(SaveThrow::Magic))
-			player.purse -= GOLDCALC + GOLDCALC + GOLDCALC + GOLDCALC;
+			player.purse -= gold_calc() + gold_calc() + gold_calc() + gold_calc();
 			if (player.purse < 0)
 			player.purse = 0;
 			remove_monster(&mp->t_pos, mp, FALSE);
@@ -254,7 +254,7 @@ attack(Creature *mp)
 				{
 					// inv_name() must run before discard() frees steal
 					std::string name = inv_name(steal, TRUE);
-					detach(pack, steal);
+					pack.remove(steal);
 					discard(steal);
 					msg(she_stole, name);
 				}
@@ -355,13 +355,13 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 		}
 		if (weap == player.weapon)
 		{
-			if (ISRING(Hand::Left, Ring::IncreaseDamage))
+			if (player.wears(Hand::Left, Ring::IncreaseDamage))
 				dplus += player.rings[Hand::Left]->o_ac;
-			else if (ISRING(Hand::Left, Ring::Dexterity))
+			else if (player.wears(Hand::Left, Ring::Dexterity))
 				hplus += player.rings[Hand::Left]->o_ac;
-			if (ISRING(Hand::Right, Ring::IncreaseDamage))
+			if (player.wears(Hand::Right, Ring::IncreaseDamage))
 				dplus += player.rings[Hand::Right]->o_ac;
-			else if (ISRING(Hand::Right, Ring::Dexterity))
+			else if (player.wears(Hand::Right, Ring::Dexterity))
 				hplus += player.rings[Hand::Right]->o_ac;
 		}
 		cp = weap->o_damage;
@@ -376,11 +376,11 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 		 * Drain a staff of striking
 		 */
 		if (weap->o_type == ItemKind::Stick && weap->which<Stick>() == Stick::Striking
-			&& --weap->o_charges < 0)
+			&& --weap->charges() < 0)
 		{
 			cp = weap->o_damage = "0d0";
 			weap->o_hplus = weap->o_dplus = 0;
-			weap->o_charges = 0;
+			weap->charges() = 0;
 		}
 	}
 
@@ -401,9 +401,9 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 	{
 		if (player.armor != NULL)
 			def_arm = player.armor->o_ac;
-		if (ISRING(Hand::Left, Ring::Protection))
+		if (player.wears(Hand::Left, Ring::Protection))
 			def_arm -= player.rings[Hand::Left]->o_ac;
-		if (ISRING(Hand::Right, Ring::Protection))
+		if (player.wears(Hand::Right, Ring::Protection))
 			def_arm -= player.rings[Hand::Right]->o_ac;
 	}
 	for (const rogue::Dice &attack : rogue::parse_attacks(cp))
@@ -419,7 +419,7 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 				  * make it easier on level one
 				  */
 						damage = (damage+1) / 2;
-			def->s_hpt -= max(0, damage);
+			def->s_hpt -= std::max(0, damage);
 			did_hit = TRUE;
 		}
 	}
@@ -518,9 +518,9 @@ save(SaveThrow which)
 	int against = std::to_underlying(which);
 
 	if (which == SaveThrow::Magic) {
-		if (ISRING(Hand::Left, Ring::Protection))
+		if (game().player.wears(Hand::Left, Ring::Protection))
 			against -= game().player.rings[Hand::Left]->o_ac;
-		if (ISRING(Hand::Right, Ring::Protection))
+		if (game().player.wears(Hand::Right, Ring::Protection))
 			against -= game().player.rings[Hand::Right]->o_ac;
 	}
 	return throw_against(against, &game().player.body);
@@ -619,7 +619,7 @@ remove_monster(coord *mp, Creature *tp, bool waskill)
 	{
 		nexti = tp->t_pack.after(obj);
 		bcopy(obj->o_pos,tp->t_pos);
-		detach(tp->t_pack, obj);
+		tp->t_pack.remove(obj);
 		if (waskill)
 			fall(obj, FALSE);
 		else
@@ -630,7 +630,7 @@ remove_monster(coord *mp, Creature *tp, bool waskill)
 		display().draw_tile(*mp, ' ', style);
 	else if (tp->t_oldch != '@')
 		display().draw_tile(*mp, tp->t_oldch, style);
-	detach(game().level.monsters, tp);
+	game().level.monsters.remove(tp);
 	discard(tp);
 }
 
@@ -684,10 +684,10 @@ killed(Creature *tp, bool pr)
 		if ((gold = new_item()) == NULL)
 			return;
 		gold->o_type = ItemKind::Gold;
-		gold->o_goldval = GOLDCALC;
+		gold->gold_value() = gold_calc();
 		if (save(SaveThrow::Magic))
-			gold->o_goldval += GOLDCALC + GOLDCALC + GOLDCALC + GOLDCALC;
-		attach(tp->t_pack, gold);
+			gold->gold_value() += gold_calc() + gold_calc() + gold_calc() + gold_calc();
+		tp->t_pack.push_front(gold);
 		break;
 	}
 	/*

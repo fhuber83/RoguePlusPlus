@@ -50,7 +50,7 @@ missile(int ydelta, int xdelta)
 	 */
 	hack:
 	if (obj->o_count < 2) {
-		detach(pack, obj);
+		pack.remove(obj);
 		game().player.in_pack--;
 	} else {
 		/*
@@ -74,7 +74,7 @@ missile(int ydelta, int xdelta)
 	 * or if it misses (combat) the monster, put it on the floor
 	 */
 	if (moat(obj->o_pos.y, obj->o_pos.x) == NULL
-		|| !hit_monster(unc(obj->o_pos), obj))
+		|| !hit_monster(obj->o_pos.y, obj->o_pos.x, obj))
 			fall(obj, TRUE);
 }
 
@@ -98,7 +98,7 @@ do_motion(Item *obj, int ydelta, int xdelta)
 		/*
 		 * Erase the old one
 		 */
-		if (under != '@' && !(obj->o_pos == hero) && cansee(unc(obj->o_pos)))
+		if (under != '@' && !(obj->o_pos == hero) && cansee(obj->o_pos.y, obj->o_pos.x))
 			display().draw_tile(obj->o_pos, under);
 		/*
 		 * Get the new position
@@ -111,7 +111,7 @@ do_motion(Item *obj, int ydelta, int xdelta)
 			 * It hasn't hit anything yet, so display it
 			 * If it alright.
 			 */
-			if (cansee(unc(obj->o_pos))) {
+			if (cansee(obj->o_pos.y, obj->o_pos.x)) {
 				under = chat(obj->o_pos.y, obj->o_pos.x);
 				display().draw_tile(obj->o_pos, glyph_of(obj->o_type));
 				tick_pause();
@@ -170,7 +170,7 @@ fall(Item *obj, bool pr)
 			if (moat(fpos.y,fpos.x) != NULL)
 				moat(fpos.y,fpos.x)->t_oldch = glyph_of(obj->o_type);
 		}
-		attach(game().level.objects, obj);
+		game().level.objects.push_front(obj);
 		return;
 	case 2:
 		pr = 0;

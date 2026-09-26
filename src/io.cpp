@@ -10,7 +10,13 @@
 
 #include	"rogue.h"
 
-#define AC(a) (-((a)-11))
+// The armor class the status line shows: the game's counts down from 11 (was AC())
+static constexpr int
+armor_class(int ac)
+{
+	return -(ac - 11);
+}
+
 /*
  * msg:
  *	Display a message at the top of the screen.
@@ -185,7 +191,7 @@ status(void)
 	st.str = pstats.s_str;
 	st.str_max = player.max_stats.s_str;
 	st.gold = player.purse;
-	st.armor = AC(ac);
+	st.armor = armor_class(ac);
 	st.rank = he_man[pstats.s_lvl-1];
 	st.hunger = player.hungry_state;
 	rogue::ui::display().draw_status(st);

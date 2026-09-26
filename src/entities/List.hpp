@@ -17,11 +17,10 @@ namespace rogue {
  *	for (tp = list.first(); tp != nullptr; tp = list.after(tp))
  *
  * stops when its body detaches tp, just as a detached node's cleared l_next
- * used to stop it. Legacy code uses the attach() and detach() macros of
- * rogue.h, which call push_front() and remove().
+ * used to stop it.
  *
- * Member names avoid the lowercase macros of the legacy headers (next, prev,
- * max, ...).
+ * Member names avoid the lowercase macros of the legacy headers (pack, hero,
+ * chat, ...).
  */
 template <typename T>
 class List {

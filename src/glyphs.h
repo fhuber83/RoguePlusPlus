@@ -42,6 +42,20 @@ inline constexpr unsigned char AMULET = 0x0c;
 inline constexpr unsigned char RING = 0x09;
 inline constexpr unsigned char WEAPON = 0x18;
 
+// A square one can walk on and a thing can lie on (was isfloor)
+constexpr bool
+is_floor(unsigned char ch)
+{
+	return ch == FLOOR || ch == PASSAGE;
+}
+
+// A monster's letter (was ismonster)
+constexpr bool
+is_monster(int ch)
+{
+	return ch >= 'A' && ch <= 'Z';
+}
+
 inline constexpr unsigned char VWALL = 0xba;
 inline constexpr unsigned char HWALL = 0xcd;
 inline constexpr unsigned char ULWALL = 0xc9;

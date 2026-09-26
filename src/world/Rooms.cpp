@@ -32,7 +32,7 @@ roomin(coord *cp)
 	if (fp->test(MapFlag::Passage))
 		return	&game().level.passages[fp->passage()];
 	if constexpr (rogue::config::debug_checks)
-		debug("in some bizarre place ({}, {})", unc(*cp));
+		debug("in some bizarre place ({}, {})", cp->y, cp->x);
 	game().turn.bailout = TRUE;
 	return NULL;
 }
@@ -154,7 +154,7 @@ leave_room(coord *cp)
 				 * to check for monster, we have to strip out
 				 * standout bit (the glyph has none)
 				 */
-				if (ismonster(ch))
+				if (is_monster(ch))
 				{
 					if (game().player.body.t_flags.test(SEEMONST)) {
 						display().draw_tile({x, y}, ch, TileStyle::Inverse);

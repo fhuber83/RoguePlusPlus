@@ -26,6 +26,7 @@ conn(int r1, int r2)
 	int distance = 0, turn_spot, turn_distance;
 	int direc;
 	coord del, curr, turn_delta, spos, epos;
+	rogue::Level &level = game().level;
 
 	if (r1 < r2) {
 		rm = r1;
@@ -40,14 +41,14 @@ conn(int r1, int r2)
 		else
 			direc = 'd';
 	}
-	rpf = &game().level.rooms[rm];
+	rpf = &level.rooms[rm];
 	/*
 	 * Set up the movement variables, in two cases:
 	 * first drawing one down.
 	 */
 	if (direc == 'd') {
 		rmt = rm + 3;				/* room # of dest */
-		rpt = &game().level.rooms[rmt];			/* room pointer of dest */
+		rpt = &level.rooms[rmt];			/* room pointer of dest */
 		del.x = 0;				/* direction of move */
 		del.y = 1;
 		/*
@@ -58,7 +59,7 @@ conn(int r1, int r2)
 			spos.y = rpf->r_pos.y + rpf->r_max.y - 1;
 			do {
 				spos.x = rpf->r_pos.x + rnd(rpf->r_max.x - 2) + 1;
-			} while (chat(spos.y,spos.x) == ' ');
+			} while (level.at(spos) == ' ');
 		} else {
 			spos.x = rpf->r_pos.x;
 			spos.y = rpf->r_pos.y;
@@ -67,7 +68,7 @@ conn(int r1, int r2)
 		if (!rpt->r_flags.test(RoomFlag::Gone) || rpt->r_flags.test(RoomFlag::Maze)) {
 			do {
 				epos.x = rpt->r_pos.x + rnd(rpt->r_max.x - 2) + 1;
-			} while (chat(epos.y,epos.x) == ' ');
+			} while (level.at(epos) == ' ');
 		} else
 			epos.x = rpt->r_pos.x;
 		distance = abs(spos.y - epos.y) - 1;	/* distance to move */
@@ -76,14 +77,14 @@ conn(int r1, int r2)
 		turn_distance = abs(spos.x - epos.x);	/* how far to turn */
 	} else if (direc == 'r') {			/* setup for moving right */
 		rmt = rm + 1;
-		rpt = &game().level.rooms[rmt];
+		rpt = &level.rooms[rmt];
 		del.x = 1;
 		del.y = 0;
 		if (!rpf->r_flags.test(RoomFlag::Gone) || rpf->r_flags.test(RoomFlag::Maze)) {
 			spos.x = rpf->r_pos.x + rpf->r_max.x-1;
 			do {
 				spos.y = rpf->r_pos.y + rnd(rpf->r_max.y-2)+1;
-			} while (chat(spos.y,spos.x) == ' ');
+			} while (level.at(spos) == ' ');
 		} else {
 			spos.x = rpf->r_pos.x;
 			spos.y = rpf->r_pos.y;
@@ -92,7 +93,7 @@ conn(int r1, int r2)
 		if (!rpt->r_flags.test(RoomFlag::Gone) || rpt->r_flags.test(RoomFlag::Maze)) {
 			do {
 				epos.y = rpt->r_pos.y + rnd(rpt->r_max.y-2)+1;
-			} while (chat(epos.y, epos.x) == ' ');
+			} while (level.at(epos) == ' ');
 		} else
 			epos.y = rpt->r_pos.y;
 		distance = abs(spos.x - epos.x) - 1;
@@ -322,10 +323,11 @@ numpass(int y, int x)
 	MapFlags *fp;
 	struct room *rp;
 	unsigned char ch;
+	rogue::Level &level = game().level;
 
 	if (offmap(y,x))
 		return;
-	fp = &flat(y, x);
+	fp = &level.flags_at(y, x);
 	if (fp->passage())
 		return;
 	if (newpnum) {
@@ -336,8 +338,8 @@ numpass(int y, int x)
 	 * check to see if it is a door or secret door, i.e., a new exit,
 	 * or a numerable type of place
 	 */
-	if ((ch = chat(y, x)) == DOOR || (!fp->test(MapFlag::Real) && ch != FLOOR)) {
-		rp = &game().level.passages[pnum];
+	if ((ch = level.at(y, x)) == DOOR || (!fp->test(MapFlag::Real) && ch != FLOOR)) {
+		rp = &level.passages[pnum];
 		rp->r_exit[rp->r_nexits].y = y;
 		rp->r_exit[rp->r_nexits++].x = x;
 	} else if (!fp->test(MapFlag::Passage))

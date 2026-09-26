@@ -28,7 +28,7 @@ roomin(coord *cp)
 		if (cp->x < rp->r_pos.x + rp->r_max.x && rp->r_pos.x <= cp->x
 		 && cp->y < rp->r_pos.y + rp->r_max.y && rp->r_pos.y <= cp->y)
 			return rp;
-	fp = &flat(cp->y, cp->x);
+	fp = &game().level.flags_at(*cp);
 	if (fp->test(MapFlag::Passage))
 		return	&game().level.passages[fp->passage()];
 	if constexpr (rogue::config::debug_checks)
@@ -44,9 +44,11 @@ roomin(coord *cp)
 bool
 diag_ok(coord *sp, coord *ep)
 {
+	rogue::Level &level = game().level;
+
 	if (ep->x == sp->x || ep->y	== sp->y)
 		return	TRUE;
-	return (step_ok(chat(ep->y,	sp->x))	&& step_ok(chat(sp->y, ep->x)));
+	return (step_ok(level.at(ep->y, sp->x))	&& step_ok(level.at(sp->y, ep->x)));
 }
 
 /*
@@ -58,10 +60,11 @@ cansee(int y, int x)
 {
 	struct room *rer;
 	coord tp;
+	rogue::Player &player = game().player;
 
-	if (game().player.body.t_flags.test(ISBLIND))
+	if (player.body.t_flags.test(ISBLIND))
 		return	FALSE;
-	if (DISTANCE(y, x, hero.y, hero.x) < LAMPDIST)
+	if (DISTANCE(y, x, player.body.t_pos.y, player.body.t_pos.x) < LAMPDIST)
 		return	TRUE;
 	/*
 	 * We can only see if the hero in the same room as
@@ -70,7 +73,7 @@ cansee(int y, int x)
 	tp.y = y;
 	tp.x = x;
 	rer	= roomin(&tp);
-	return (rer	== proom && !rer->r_flags.test(RoomFlag::Dark));
+	return (rer	== player.body.t_room && !rer->r_flags.test(RoomFlag::Dark));
 }
 
 /*
@@ -94,8 +97,9 @@ enter_room(coord *cp)
 	struct room *rp;
 	int y, x;
 	Creature *tp;
+	rogue::Level &level = game().level;
 
-	rp = proom = roomin(cp);
+	rp = game().player.body.t_room = roomin(cp);
 	if (game().turn.bailout || (rp->r_flags.test(RoomFlag::Gone) && !rp->r_flags.test(RoomFlag::Maze))) {
 		if constexpr (rogue::config::debug_checks)
 			debug("in a gone room");
@@ -111,9 +115,9 @@ enter_room(coord *cp)
 				 */
 				tp = moat(y, x);
 				if (tp == NULL || !see_monst(tp))
-					display().draw_tile({x, y}, chat(y, x));
+					display().draw_tile({x, y}, level.at(y, x));
 				else {
-					tp->t_oldch = chat(y,x);
+					tp->t_oldch = level.at(y, x);
 					display().draw_tile({x, y}, tp->t_disguise);
 				}
 			}
@@ -131,10 +135,11 @@ leave_room(coord *cp)
 	struct room *rp;
 	unsigned char floor;
 	unsigned char ch;
+	rogue::Player &player = game().player;
 
-	rp = proom;
-	proom = &game().level.passages[flat(cp->y, cp->x).passage()];
-	floor = (rp->r_flags.test(RoomFlag::Dark) && !game().player.body.t_flags.test(ISBLIND)) ? ' ' : FLOOR;
+	rp = player.body.t_room;
+	player.body.t_room = &game().level.passages[game().level.flags_at(*cp).passage()];
+	floor = (rp->r_flags.test(RoomFlag::Dark) && !player.body.t_flags.test(ISBLIND)) ? ' ' : FLOOR;
 	if (rp->r_flags.test(RoomFlag::Maze))
 		floor = PASSAGE;
 	for (y = rp->r_pos.y + 1; y < rp->r_max.y + rp->r_pos.y - 1; y++)
@@ -156,7 +161,7 @@ leave_room(coord *cp)
 				 */
 				if (is_monster(ch))
 				{
-					if (game().player.body.t_flags.test(SEEMONST)) {
+					if (player.body.t_flags.test(SEEMONST)) {
 						display().draw_tile({x, y}, ch, TileStyle::Inverse);
 						break;
 					} else

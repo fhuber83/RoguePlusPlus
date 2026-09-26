@@ -95,16 +95,16 @@ new_level(void)
 	}
 	do {
 		rm = rnd_room();
-		rnd_pos(&level.rooms[rm], &hero);
-		index = INDEX(hero.y, hero.x);
+		rnd_pos(&level.rooms[rm], &player.body.t_pos);
+		index = INDEX(player.body.t_pos.y, player.body.t_pos.x);
 	} while (!(is_floor(level.map[index]) && level.flags[index].test(MapFlag::Real)
-				&& moat(hero.y, hero.x) == NULL));
+				&& moat(player.body.t_pos.y, player.body.t_pos.x) == NULL));
 
 	game().message.end = 0;
-	enter_room(&hero);
-	display().draw_tile(hero, PLAYER);
-	bcopy(player.old_pos,hero);
-	player.old_room = proom;
+	enter_room(&player.body.t_pos);
+	display().draw_tile(player.body.t_pos, PLAYER);
+	bcopy(player.old_pos,player.body.t_pos);
+	player.old_room = player.body.t_room;
 	if (player.body.t_flags.test(SEEMONST))
 		turn_see(FALSE);
 }
@@ -166,7 +166,7 @@ put_things(void)
 					rm = rnd_room();
 					rnd_pos(&level.rooms[rm], &tp);
 				} while (!is_floor(winat(tp.y, tp.x)));
-				chat(tp.y, tp.x) = AMULET;
+				level.at(tp) = AMULET;
 				bcopy(cur->o_pos,tp);
 			}
 		}
@@ -192,8 +192,8 @@ put_things(void)
 			do {
 				rm = rnd_room();
 				rnd_pos(&level.rooms[rm], &tp);
-			} while (!is_floor(chat(tp.y, tp.x)));
-			chat(tp.y, tp.x) = glyph_of(cur->o_type);
+			} while (!is_floor(level.at(tp)));
+			level.at(tp) = glyph_of(cur->o_type);
 			bcopy(cur->o_pos,tp);
 		}
 }
@@ -378,7 +378,7 @@ do_rooms(void)
 					unsigned char gch;
 
 					rnd_pos(rp, &rp->r_gold);
-					gch =  chat(rp->r_gold.y, rp->r_gold.x);
+					gch =  level.at(rp->r_gold);
 					if (is_floor(gch))
 						break;
 				}
@@ -387,7 +387,7 @@ do_rooms(void)
 				gold->o_group = GOLDGRP;
 				gold->o_type = ItemKind::Gold;
 				level.objects.push_front(gold);
-				chat(rp->r_gold.y, rp->r_gold.x) = GOLD;
+				level.at(rp->r_gold) = GOLD;
 			}
 		}
 		/*
@@ -416,6 +416,7 @@ void
 draw_room(struct room *rp)
 {
 	int y, x;
+	rogue::Level &level = game().level;
 
 	/*
 	 * Here we draw normal rooms, one side at a time
@@ -424,16 +425,16 @@ draw_room(struct room *rp)
 	vert(rp, rp->r_pos.x + rp->r_max.x - 1);	/* Draw right side */
 	horiz(rp, rp->r_pos.y);			/* Draw top */
 	horiz(rp, rp->r_pos.y + rp->r_max.y - 1);	/* Draw bottom */
-	chat(rp->r_pos.y,rp->r_pos.x) = ULWALL;
-	chat(rp->r_pos.y,rp->r_pos.x+rp->r_max.x - 1) = URWALL;
-	chat(rp->r_pos.y+rp->r_max.y-1,rp->r_pos.x) = LLWALL;
-	chat(rp->r_pos.y+rp->r_max.y-1,rp->r_pos.x+rp->r_max.x - 1) = LRWALL;
+	level.at(rp->r_pos) = ULWALL;
+	level.at(rp->r_pos.y, rp->r_pos.x+rp->r_max.x - 1) = URWALL;
+	level.at(rp->r_pos.y+rp->r_max.y-1, rp->r_pos.x) = LLWALL;
+	level.at(rp->r_pos.y+rp->r_max.y-1, rp->r_pos.x+rp->r_max.x - 1) = LRWALL;
 	/*
 	 * Put the floor down
 	 */
 	for (y = rp->r_pos.y + 1; y < rp->r_pos.y + rp->r_max.y - 1; y++)
 		for (x = rp->r_pos.x + 1; x < rp->r_pos.x + rp->r_max.x - 1; x++)
-			chat(y, x) = FLOOR;
+			level.at(y, x) = FLOOR;
 }
 
 /*
@@ -447,7 +448,7 @@ vert(struct room *rp, int startx)
 	int y;
 
 	for (y = rp->r_pos.y + 1; y <= rp->r_max.y + rp->r_pos.y - 1; y++)
-		chat(y, startx) = VWALL;
+		game().level.at(y, startx) = VWALL;
 }
 
 /*
@@ -461,7 +462,7 @@ horiz(struct room *rp, int starty)
 	int x;
 
 	for (x = rp->r_pos.x; x <= rp->r_pos.x + rp->r_max.x - 1; x++)
-		chat(starty, x) = HWALL;
+		game().level.at(starty, x) = HWALL;
 }
 
 }  // namespace rogue::world

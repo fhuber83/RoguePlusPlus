@@ -88,7 +88,7 @@ add_pack(Item *obj, bool silent)
 	/*
 	 * Check for and deal with scare monster scrolls
 	 */
-	if (obj->o_type == ItemKind::Scroll && obj->o_which == S_SCARE)
+	if (obj->o_type == ItemKind::Scroll && obj->which<Scroll>() == Scroll::ScareMonster)
 	{
 		if (obj->o_flags.test(rogue::ItemFlag::Found))
 		{
@@ -477,7 +477,7 @@ can_drop(Item *op)
 	if (op == NULL)
 		return TRUE;
 	if (op != player.armor && op != player.weapon
-		&& op != player.rings[LEFT] && op != player.rings[RIGHT])
+		&& op != player.rings[Hand::Left] && op != player.rings[Hand::Right])
 		return TRUE;
 	if (op->o_flags.test(ISCURSED)) {
 		msg("you can't.  It appears to be cursed");
@@ -489,22 +489,24 @@ can_drop(Item *op)
 		waste_time();
 		player.armor = NULL;
 	} else {
-		int hand;
+		Hand hand;
 
-		if (op != player.rings[hand = LEFT])
-			if (op != player.rings[hand = RIGHT]) {
+		if (op != player.rings[hand = Hand::Left])
+			if (op != player.rings[hand = Hand::Right]) {
 				if constexpr (rogue::config::debug_checks)
 					debug("Candrop called with funny thing");
 				return TRUE;
 			}
 		player.rings[hand] = NULL;
-		switch (op->o_which) {
-		case R_ADDSTR:
+		switch (op->which<Ring>()) {
+		case Ring::AddStrength:
 			chg_str(-op->o_ac);
 			break;
-		case R_SEEINVIS:
+		case Ring::SeeInvisible:
 			unsee();
 			extinguish(Event::Unsee);
+			break;
+		default:
 			break;
 		}
 	}

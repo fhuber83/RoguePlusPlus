@@ -28,9 +28,9 @@ doctor(void)
 	else
 	if (game().player.quiet >= 3)
 		pstats.s_hpt += rnd(lv - 7) + 1;
-	if (ISRING(LEFT, R_REGEN))
+	if (ISRING(Hand::Left, Ring::Regeneration))
 		pstats.s_hpt++;
-	if (ISRING(RIGHT, R_REGEN))
+	if (ISRING(Hand::Right, Ring::Regeneration))
 		pstats.s_hpt++;
 	if (ohp != pstats.s_hpt)
 	{
@@ -158,7 +158,7 @@ stomach(void)
 		 * If you are in 40 column mode use food twice as fast
 		 * (e.g. 3-(80/40) = 1, 3-(40/40) = 2 : pretty gross huh?)
 		 */
-		deltafood = ring_eat(LEFT) + ring_eat(RIGHT) + 1;
+		deltafood = ring_eat(Hand::Left) + ring_eat(Hand::Right) + 1;
 		if (game().options.terse)
 			deltafood *= 2;
 		player.food_left -= deltafood;

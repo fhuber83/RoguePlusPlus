@@ -87,7 +87,7 @@ struct Player {
 	int in_pack = 0;				/* inpack: number of things in pack */
 	Item *armor = nullptr;			/* cur_armor: what a well dresssed rogue wears */
 	Item *weapon = nullptr;		/* cur_weapon: which weapon he is weilding */
-	Item *rings[2] = {};			/* cur_ring: which rings are being worn */
+	KindTable<Hand, Item *> rings = {};	/* cur_ring: which rings are being worn */
 	int food_left = 0;				/* Amount of food in hero's stomach */
 	int hungry_state = 0;			/* How hungry is he */
 	bool has_amulet = false;		/* amulet: he has the amulet */
@@ -141,28 +141,28 @@ struct Level {
  */
 struct Items {
 	/* Names, cumulative odds and worth of each kind; init_*() accumulate */
-	struct magic_item s_magic[MAXSCROLLS];
-	struct magic_item p_magic[MAXPOTIONS];
-	struct magic_item r_magic[MAXRINGS];
-	struct magic_item ws_magic[MAXSTICKS];
+	KindTable<Scroll, magic_item> s_magic;
+	KindTable<Potion, magic_item> p_magic;
+	KindTable<Ring, magic_item> r_magic;
+	KindTable<Stick, magic_item> ws_magic;
 	struct magic_item things[NUMTHINGS];	/* Odds of each type of item */
 	/* How the kinds look in this game */
-	struct array s_names[MAXSCROLLS] = {};	/* Names of the scrolls */
-	const char *p_colors[MAXPOTIONS] = {};	/* Colors of the potions */
-	const char *r_stones[MAXRINGS] = {};	/* Stone settings of the rings */
-	const char *ws_made[MAXSTICKS] = {};	/* What sticks are made of */
-	const char *ws_type[MAXSTICKS] = {};	/* Is it a wand or a staff */
+	KindTable<Scroll, array> s_names = {};	/* Names of the scrolls */
+	KindTable<Potion, const char *> p_colors = {};	/* Colors of the potions */
+	KindTable<Ring, const char *> r_stones = {};	/* Stone settings of the rings */
+	KindTable<Stick, const char *> ws_made = {};	/* What sticks are made of */
+	KindTable<Stick, const char *> ws_type = {};	/* Is it a wand or a staff */
 	/* What the rogue knows, and what he has called the kinds he doesn't */
-	bool s_know[MAXSCROLLS] = {};			/* Does he know what a scroll does */
-	bool p_know[MAXPOTIONS] = {};			/* Does he know what a potion does */
-	bool r_know[MAXRINGS] = {};				/* Does he know what a ring does */
-	bool ws_know[MAXSTICKS] = {};			/* Does he know what a stick does */
-	char *s_guess[MAXSCROLLS] = {};			/* Players guess at what scroll is */
-	char *p_guess[MAXPOTIONS] = {};			/* Players guess at what potion is */
-	char *r_guess[MAXRINGS] = {};			/* Players guess at what ring is */
-	char *ws_guess[MAXSTICKS] = {};			/* Players guess at what wand is */
+	KindTable<Scroll, bool> s_know = {};			/* Does he know what a scroll does */
+	KindTable<Potion, bool> p_know = {};			/* Does he know what a potion does */
+	KindTable<Ring, bool> r_know = {};				/* Does he know what a ring does */
+	KindTable<Stick, bool> ws_know = {};			/* Does he know what a stick does */
+	KindTable<Scroll, char *> s_guess = {};			/* Players guess at what scroll is */
+	KindTable<Potion, char *> p_guess = {};			/* Players guess at what potion is */
+	KindTable<Ring, char *> r_guess = {};			/* Players guess at what ring is */
+	KindTable<Stick, char *> ws_guess = {};			/* Players guess at what wand is */
 	/* storage for the guesses (was _guesses) */
-	struct array guesses[MAXSCROLLS+MAXPOTIONS+MAXRINGS+MAXSTICKS] = {};
+	struct array guesses[kind_count<Scroll> + kind_count<Potion> + kind_count<Ring> + kind_count<Stick>] = {};
 	int iguess = 0;
 	int group = 2;							/* Current group number */
 

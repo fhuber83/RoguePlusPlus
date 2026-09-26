@@ -10,7 +10,7 @@
  * All this should be low as possible in memory so that
  * we can save the min
  */
-const char *w_names[MAXWEAPONS + 1] = {	/* Names of the various weapons */
+KindTable<WeaponType, const char *, kind_count<WeaponType> + 1> w_names = {	/* Names of the various weapons */
 	"mace",
 	"long sword",
 	"short bow",
@@ -21,9 +21,9 @@ const char *w_names[MAXWEAPONS + 1] = {	/* Names of the various weapons */
 	"crossbow",
 	"crossbow bolt",
 	"spear",
-	NULL				/* fake entry for dragon's breath */
+	NULL				/* fake entry for dragon's breath, set by fire_bolt() */
 };
-const char *a_names[MAXARMORS] = {		/* Names of armor types */
+const KindTable<ArmorType, const char *> a_names = {		/* Names of armor types */
 	"leather armor",
 	"ring mail",
 	"studded leather armor",
@@ -34,7 +34,7 @@ const char *a_names[MAXARMORS] = {		/* Names of armor types */
 	"plate mail"
 };
 
-int a_chances[MAXARMORS] = {		/* Chance for each armor type */
+const KindTable<ArmorType, int> a_chances = {		/* Chance for each armor type */
 	20,
 	35,
 	50,
@@ -44,7 +44,7 @@ int a_chances[MAXARMORS] = {		/* Chance for each armor type */
 	95,
 	100
 };
-int a_class[MAXARMORS] = {		/* Armor class for each armor type */
+const KindTable<ArmorType, int> a_class = {		/* Armor class for each armor type */
 	8,
 	7,
 	7,
@@ -60,7 +60,7 @@ int a_class[MAXARMORS] = {		/* Armor class for each armor type */
  * game().items, since init_*() accumulate the odds and add the stone value
  * to the worth of rings.
  */
-const struct magic_item s_magic_base[MAXSCROLLS] = {
+const KindTable<Scroll, magic_item> s_magic_base = {
 	{ "monster confusion",	 8, 140 },
 	{ "magic mapping",		 5, 150 },
 	{ "hold monster",		 3, 180 },
@@ -78,7 +78,7 @@ const struct magic_item s_magic_base[MAXSCROLLS] = {
 	{ "vorpalize weapon",	 1, 300 }
 };
 
-const struct magic_item p_magic_base[MAXPOTIONS] = {
+const KindTable<Potion, magic_item> p_magic_base = {
 	{ "confusion",		 8,   5 },
 	{ "paralysis",		10,   5 },
 	{ "poison",			 8,   5 },
@@ -95,7 +95,7 @@ const struct magic_item p_magic_base[MAXPOTIONS] = {
 	{ "thirst quenching",	 1,   5 }
 };
 
-const struct magic_item r_magic_base[MAXRINGS] = {
+const KindTable<Ring, magic_item> r_magic_base = {
 	{ "protection",		 9, 400 },
 	{ "add strength",		 9, 400 },
 	{ "sustain strength",	 5, 280 },
@@ -112,7 +112,7 @@ const struct magic_item r_magic_base[MAXRINGS] = {
 	{ "maintain armor",		 5, 380 }
 };
 
-const struct magic_item ws_magic_base[MAXSTICKS] = {
+const KindTable<Stick, magic_item> ws_magic_base = {
 	{ "light",			12, 250 },
 	{ "striking",		 9,  75 },
 	{ "lightning",		 3, 330 },

@@ -276,58 +276,59 @@ total_winner(void)
 			worth = 2 * obj->o_count;
 			break;
 		case ItemKind::Weapon:
-			switch (obj->o_which)
+			switch (obj->which<WeaponType>())
 			{
-				case MACE: worth = 8; break;
-				case SWORD: worth = 15; break;
-				case CROSSBOW: worth = 30; break;
-				case ARROW: worth = 1; break;
-				case DAGGER: worth = 2; break;
-				case TWOSWORD: worth = 75; break;
-				case DART: worth = 1; break;
-				case BOW: worth = 15; break;
-				case BOLT: worth = 1; break;
-				case SPEAR: worth = 5;
+				case WeaponType::Mace: worth = 8; break;
+				case WeaponType::LongSword: worth = 15; break;
+				case WeaponType::Crossbow: worth = 30; break;
+				case WeaponType::Arrow: worth = 1; break;
+				case WeaponType::Dagger: worth = 2; break;
+				case WeaponType::TwoHandedSword: worth = 75; break;
+				case WeaponType::Dart: worth = 1; break;
+				case WeaponType::ShortBow: worth = 15; break;
+				case WeaponType::CrossbowBolt: worth = 1; break;
+				case WeaponType::Spear: worth = 5;
 				break;
+				default: break;
 			}
 			worth *= 3 * (obj->o_hplus + obj->o_dplus) + obj->o_count;
 			obj->o_flags.set(ISKNOW);
 			break;
 		case ItemKind::Armor:
-			switch (obj->o_which)
+			switch (obj->which<ArmorType>())
 			{
-				case LEATHER: worth = 20; break;
-				case RING_MAIL: worth = 25; break;
-				case STUDDED_LEATHER: worth = 20; break;
-				case SCALE_MAIL: worth = 30; break;
-				case CHAIN_MAIL: worth = 75; break;
-				case SPLINT_MAIL: worth = 80; break;
-				case BANDED_MAIL: worth = 90; break;
-				case PLATE_MAIL: worth = 150;
+				case ArmorType::Leather: worth = 20; break;
+				case ArmorType::RingMail: worth = 25; break;
+				case ArmorType::StuddedLeather: worth = 20; break;
+				case ArmorType::ScaleMail: worth = 30; break;
+				case ArmorType::ChainMail: worth = 75; break;
+				case ArmorType::SplintMail: worth = 80; break;
+				case ArmorType::BandedMail: worth = 90; break;
+				case ArmorType::PlateMail: worth = 150;
 				break;
 			}
 			worth += (9 - obj->o_ac) * 100;
-			worth += (10 * (a_class[obj->o_which] - obj->o_ac));
+			worth += (10 * (a_class[obj->which<ArmorType>()] - obj->o_ac));
 			obj->o_flags.set(ISKNOW);
 			break;
 		case ItemKind::Scroll:
-			worth = items.s_magic[obj->o_which].mi_worth;
+			worth = items.s_magic[obj->which<Scroll>()].mi_worth;
 			worth *= obj->o_count;
-			if (!items.s_know[obj->o_which])
+			if (!items.s_know[obj->which<Scroll>()])
 				worth /= 2;
-			items.s_know[obj->o_which] = TRUE;
+			items.s_know[obj->which<Scroll>()] = TRUE;
 			break;
 		case ItemKind::Potion:
-			worth = items.p_magic[obj->o_which].mi_worth;
+			worth = items.p_magic[obj->which<Potion>()].mi_worth;
 			worth *= obj->o_count;
-			if (!items.p_know[obj->o_which])
+			if (!items.p_know[obj->which<Potion>()])
 				worth /= 2;
-			items.p_know[obj->o_which] = TRUE;
+			items.p_know[obj->which<Potion>()] = TRUE;
 			break;
 		case ItemKind::Ring:
-			worth = items.r_magic[obj->o_which].mi_worth;
-			if (obj->o_which == R_ADDSTR || obj->o_which == R_ADDDAM ||
-				obj->o_which == R_PROTECT || obj->o_which == R_ADDHIT)
+			worth = items.r_magic[obj->which<Ring>()].mi_worth;
+			if (obj->which<Ring>() == Ring::AddStrength || obj->which<Ring>() == Ring::IncreaseDamage ||
+				obj->which<Ring>() == Ring::Protection || obj->which<Ring>() == Ring::Dexterity)
 			{
 				if (obj->o_ac > 0)
 					worth += obj->o_ac * 100;
@@ -337,15 +338,15 @@ total_winner(void)
 			if (!obj->o_flags.test(ISKNOW))
 				worth /= 2;
 			obj->o_flags.set(ISKNOW);
-			items.r_know[obj->o_which] = TRUE;
+			items.r_know[obj->which<Ring>()] = TRUE;
 			break;
 		case ItemKind::Stick:
-			worth = items.ws_magic[obj->o_which].mi_worth;
+			worth = items.ws_magic[obj->which<Stick>()].mi_worth;
 			worth += 20 * obj->o_charges;
 			if (!obj->o_flags.test(ISKNOW))
 				worth /= 2;
 			obj->o_flags.set(ISKNOW);
-			items.ws_know[obj->o_which] = TRUE;
+			items.ws_know[obj->which<Stick>()] = TRUE;
 				break;
 			case ItemKind::Amulet:
 			worth = 1000;

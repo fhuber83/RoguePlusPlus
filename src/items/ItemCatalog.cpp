@@ -30,6 +30,14 @@ pick_one(struct magic_item *magic, int nitems)
 	return magic - start;
 }
 
+// Pick a kind of E by the odds in the table
+template <typename E>
+static E
+pick_one(KindTable<E, magic_item> &table)
+{
+	return static_cast<E>(pick_one(table.data(), table.size()));
+}
+
 /*
  * new_thing:
  *	Return a new thing
@@ -38,7 +46,7 @@ Item *
 new_thing()
 {
 	Item *cur;
-	int j, k;
+	int k;
 	rogue::Items &items = game().items;
 
 	if ((cur = new_item()) == NULL)
@@ -58,24 +66,24 @@ new_thing()
 	{
 	case 0:
 		cur->o_type = ItemKind::Potion;
-		cur->o_which = pick_one(items.p_magic, MAXPOTIONS);
+		cur->set_which(pick_one(items.p_magic));
 		break;
 	case 1:
 		cur->o_type = ItemKind::Scroll;
-		cur->o_which = pick_one(items.s_magic, MAXSCROLLS);
+		cur->set_which(pick_one(items.s_magic));
 		break;
 	case 2:
 		game().level.no_food = 0;
 		cur->o_type = ItemKind::Food;
 		if (rnd(10) != 0)
-			cur->o_which = 0;
+			cur->set_which(Food::Ration);
 		else
-			cur->o_which = 1;
+			cur->set_which(Food::Fruit);
 		break;
 	case 3:
 		cur->o_type = ItemKind::Weapon;
-		cur->o_which = rnd(MAXWEAPONS);
-		init_weapon(cur, cur->o_which);
+		cur->set_which(static_cast<WeaponType>(rnd(kind_count<WeaponType>)));
+		init_weapon(cur, cur->which<WeaponType>());
 		if ((k = rnd(100)) < 10)
 		{
 			cur->o_flags.set(ISCURSED);
@@ -84,20 +92,24 @@ new_thing()
 		else if (k < 15)
 			cur->o_hplus += rnd(3) + 1;
 		break;
-	case 4:
+	case 4: {
+		std::optional<ArmorType> armor;
+
 		cur->o_type = ItemKind::Armor;
-		for (j = 0, k = rnd(100); j < MAXARMORS; j++)
-			if (k < a_chances[j])
+		k = rnd(100);
+		for (ArmorType a : kinds<ArmorType>())
+			if (k < a_chances[a]) {
+				armor = a;
 				break;
-		if constexpr (rogue::config::debug_checks) {
-			if (j == MAXARMORS)
-			{
-				debug("Picked a bad armor {}", k);
-				j = 0;
 			}
+		if (!armor)
+		{
+			if constexpr (rogue::config::debug_checks)
+				debug("Picked a bad armor {}", k);
+			armor = ArmorType::Leather;
 		}
-		cur->o_which = j;
-		cur->o_ac = a_class[j];
+		cur->set_which(*armor);
+		cur->o_ac = a_class[*armor];
 		if ((k = rnd(100)) < 20)
 		{
 			cur->o_flags.set(ISCURSED);
@@ -106,30 +118,33 @@ new_thing()
 		else if (k < 28)
 			cur->o_ac -= rnd(3) + 1;
 		break;
+	}
 	case 5:
 		cur->o_type = ItemKind::Ring;
-		cur->o_which = pick_one(items.r_magic, MAXRINGS);
-		switch (cur->o_which)
+		cur->set_which(pick_one(items.r_magic));
+		switch (cur->which<Ring>())
 		{
-		case R_ADDSTR:
-		case R_PROTECT:
-		case R_ADDHIT:
-		case R_ADDDAM:
+		case Ring::AddStrength:
+		case Ring::Protection:
+		case Ring::Dexterity:
+		case Ring::IncreaseDamage:
 			if ((cur->o_ac = rnd(3)) == 0)
 			{
 				cur->o_ac = -1;
 				cur->o_flags.set(ISCURSED);
 			}
 			break;
-		case R_AGGR:
-		case R_TELEPORT:
+		case Ring::AggravateMonster:
+		case Ring::Teleportation:
 			cur->o_flags.set(ISCURSED);
+			break;
+		default:
 			break;
 		}
 		break;
 	case 6:
 		cur->o_type = ItemKind::Stick;
-		cur->o_which = pick_one(items.ws_magic, MAXSTICKS);
+		cur->set_which(pick_one(items.ws_magic));
 		fix_stick(cur);
 		break;
 	default:

@@ -126,9 +126,9 @@ attack(Creature *mp)
 			 * that armor is leather or there is a magic ring
 			 */
 			if (player.armor != NULL && player.armor->o_ac < 9
-			  && player.armor->o_which != LEATHER)
+			  && player.armor->which<ArmorType>() != ArmorType::Leather)
 			{
-				if (ISWEARING(R_SUSTARM))
+				if (ISWEARING(Ring::MaintainArmor))
 					msg("the rust vanishes instantly");
 				else
 				{
@@ -148,9 +148,9 @@ attack(Creature *mp)
 			/*
 			 * Rattlesnakes have poisonous bites
 			 */
-			if (!save(VS_POISON))
+			if (!save(SaveThrow::Poison))
 			{
-				if (!ISWEARING(R_SUSTSTR))
+				if (!ISWEARING(Ring::SustainStrength))
 				{
 					chg_str(-1);
 					msg("you feel a bite in your leg{}",
@@ -212,7 +212,7 @@ attack(Creature *mp)
 
 			lastpurse = player.purse;
 			player.purse -= GOLDCALC;
-			if (!save(VS_MAGIC))
+			if (!save(SaveThrow::Magic))
 			player.purse -= GOLDCALC + GOLDCALC + GOLDCALC + GOLDCALC;
 			if (player.purse < 0)
 			player.purse = 0;
@@ -234,7 +234,7 @@ attack(Creature *mp)
 			steal = NULL;
 			for (nobj = 0, obj = pack.first(); obj != NULL; obj = pack.after(obj))
 			if (obj != player.armor && obj != player.weapon
-				&& obj != player.rings[LEFT] && obj != player.rings[RIGHT]
+				&& obj != player.rings[Hand::Left] && obj != player.rings[Hand::Right]
 				&& is_magic(obj) && rnd(++nobj) == 0)
 				steal = obj;
 			if (steal != NULL)
@@ -355,18 +355,18 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 		}
 		if (weap == player.weapon)
 		{
-			if (ISRING(LEFT, R_ADDDAM))
-				dplus += player.rings[LEFT]->o_ac;
-			else if (ISRING(LEFT, R_ADDHIT))
-				hplus += player.rings[LEFT]->o_ac;
-			if (ISRING(RIGHT, R_ADDDAM))
-				dplus += player.rings[RIGHT]->o_ac;
-			else if (ISRING(RIGHT, R_ADDHIT))
-				hplus += player.rings[RIGHT]->o_ac;
+			if (ISRING(Hand::Left, Ring::IncreaseDamage))
+				dplus += player.rings[Hand::Left]->o_ac;
+			else if (ISRING(Hand::Left, Ring::Dexterity))
+				hplus += player.rings[Hand::Left]->o_ac;
+			if (ISRING(Hand::Right, Ring::IncreaseDamage))
+				dplus += player.rings[Hand::Right]->o_ac;
+			else if (ISRING(Hand::Right, Ring::Dexterity))
+				hplus += player.rings[Hand::Right]->o_ac;
 		}
 		cp = weap->o_damage;
 		if (hurl && weap->o_flags.test(ISMISL) && player.weapon != NULL &&
-			  player.weapon->o_which == weap->o_launch)
+			  launched_by(player.weapon->which<WeaponType>()) == weap->o_launch)
 		{
 			cp = weap->o_hurldmg;
 			hplus += player.weapon->o_hplus;
@@ -375,7 +375,7 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 		/*
 		 * Drain a staff of striking
 		 */
-		if (weap->o_type == ItemKind::Stick && weap->o_which == WS_HIT
+		if (weap->o_type == ItemKind::Stick && weap->which<Stick>() == Stick::Striking
 			&& --weap->o_charges < 0)
 		{
 			cp = weap->o_damage = "0d0";
@@ -401,10 +401,10 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 	{
 		if (player.armor != NULL)
 			def_arm = player.armor->o_ac;
-		if (ISRING(LEFT, R_PROTECT))
-			def_arm -= player.rings[LEFT]->o_ac;
-		if (ISRING(RIGHT, R_PROTECT))
-			def_arm -= player.rings[RIGHT]->o_ac;
+		if (ISRING(Hand::Left, Ring::Protection))
+			def_arm -= player.rings[Hand::Left]->o_ac;
+		if (ISRING(Hand::Right, Ring::Protection))
+			def_arm -= player.rings[Hand::Right]->o_ac;
 	}
 	for (const rogue::Dice &attack : rogue::parse_attacks(cp))
 	{
@@ -493,8 +493,8 @@ miss(const char *er, const char *ee)
  * save_throw:
  *	See if a creature save against something
  */
-bool
-save_throw(int which, Creature *tp)
+static bool
+throw_against(int which, Creature *tp)
 {
 	int need;
 
@@ -502,20 +502,28 @@ save_throw(int which, Creature *tp)
 	return (roll(1, 20) >= need);
 }
 
+bool
+save_throw(SaveThrow which, Creature *tp)
+{
+	return throw_against(std::to_underlying(which), tp);
+}
+
 /*
  * save:
  *	See if he saves against various nasty things
  */
 bool
-save(int which)
+save(SaveThrow which)
 {
-	if (which == VS_MAGIC) {
-		if (ISRING(LEFT, R_PROTECT))
-			which -= game().player.rings[LEFT]->o_ac;
-		if (ISRING(RIGHT, R_PROTECT))
-			which -= game().player.rings[RIGHT]->o_ac;
+	int against = std::to_underlying(which);
+
+	if (which == SaveThrow::Magic) {
+		if (ISRING(Hand::Left, Ring::Protection))
+			against -= game().player.rings[Hand::Left]->o_ac;
+		if (ISRING(Hand::Right, Ring::Protection))
+			against -= game().player.rings[Hand::Right]->o_ac;
 	}
-	return save_throw(which, &game().player.body);
+	return throw_against(against, &game().player.body);
 }
 
 /*
@@ -585,7 +593,7 @@ static void
 thunk(Item *weap, const char *mname, const char *does, const char *did)
 {
 	if (weap->o_type == ItemKind::Weapon)
-		addmsg("the {} {} ", w_names[weap->o_which], does);
+		addmsg("the {} {} ", w_names[weap->which<WeaponType>()], does);
 	else
 		addmsg("you {} ", did);
 	if (game().player.body.t_flags.test(ISBLIND))
@@ -636,7 +644,7 @@ is_magic(Item *obj)
 	switch (obj->o_type)
 	{
 	case ItemKind::Armor:
-		return obj->o_ac != a_class[obj->o_which];
+		return obj->o_ac != a_class[obj->which<ArmorType>()];
 	case ItemKind::Weapon:
 		return obj->o_hplus != 0 || obj->o_dplus != 0;
 	case ItemKind::Potion:
@@ -677,7 +685,7 @@ killed(Creature *tp, bool pr)
 			return;
 		gold->o_type = ItemKind::Gold;
 		gold->o_goldval = GOLDCALC;
-		if (save(VS_MAGIC))
+		if (save(SaveThrow::Magic))
 			gold->o_goldval += GOLDCALC + GOLDCALC + GOLDCALC + GOLDCALC;
 		attach(tp->t_pack, gold);
 		break;

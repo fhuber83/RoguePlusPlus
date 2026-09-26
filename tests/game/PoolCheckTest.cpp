@@ -110,7 +110,7 @@ TEST_F(PoolCheck, WornItemsAreInThePack)
 {
 	Item *obj = new_item();
 	game().level.objects.push_front(obj);
-	game().player.rings[1] = obj;
+	game().player.rings[Hand::Right] = obj;
 	EXPECT_NE(problems(), "");
 	game().level.objects.remove(obj);
 	game().player.body.t_pack.push_front(obj);

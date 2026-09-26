@@ -9,22 +9,24 @@ namespace rogue::items::effects {
 void
 fix_stick(Item *cur)
 {
-	if (strcmp(game().items.ws_type[cur->o_which], "staff") == 0)
+	if (strcmp(game().items.ws_type[cur->which<Stick>()], "staff") == 0)
 		cur->o_damage = "2d3";
 	else
 		cur->o_damage = "1d1";
 	cur->o_hurldmg = "1d1";
 
 	cur->o_charges = 3 + rnd(5);
-	switch (cur->o_which)
+	switch (cur->which<Stick>())
 	{
-	case WS_HIT:
+	case Stick::Striking:
 		cur->o_hplus = 100;
 		cur->o_dplus = 3;
 		cur->o_damage = "1d8";
 		break;
-	case WS_LIGHT:
+	case Stick::Light:
 		cur->o_charges = 10 + rnd(10);
+		break;
+	default:
 		break;
 	}
 }
@@ -40,17 +42,17 @@ do_zap()
 	Creature *tp;
 	int y, x;
 	const char *name;
-	int which_one;
+	Stick which_one;
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
 
 	if ((obj = get_item("zap with", ItemKind::Stick)) == NULL)
 		return;
-	which_one = obj->o_which;
+	which_one = obj->which<Stick>();
 	if (obj->o_type != ItemKind::Stick)
 	{
 		if (obj->o_enemy && obj->o_charges)
-			which_one = MAXSTICKS;
+			which_one = Stick::Vorpal;
 		else
 		{
 			msg("you can't zap with that!");
@@ -65,7 +67,7 @@ do_zap()
 	}
 	switch (which_one)
 	{
-	case WS_LIGHT:
+	case Stick::Light:
 		/*
 		 * Reddy Kilowat wand.  Light up the room
 		 */
@@ -73,7 +75,7 @@ do_zap()
 			msg("you feel a warm glow around you");
 		else
 		{
-			game().items.ws_know[WS_LIGHT] = TRUE;
+			game().items.ws_know[Stick::Light] = TRUE;
 			if (proom->r_flags.test(RoomFlag::Gone))
 				msg("the corridor glows and then fades");
 			else
@@ -88,7 +90,7 @@ do_zap()
 			enter_room(&hero);
 		}
 		break;
-	case WS_DRAIN:
+	case Stick::DrainLife:
 		/*
 		 * Take away 1/2 of hero's hit points, then take it away
 		 * evenly from the monsters in the room (or next to hero
@@ -102,11 +104,11 @@ do_zap()
 		else
 			drain();
 		break;
-	case WS_POLYMORPH:
-	case WS_TELAWAY:
-	case WS_TELTO:
-	case WS_CANCEL:
-	case MAXSTICKS:			/* Special case for vorpal weapon */
+	case Stick::Polymorph:
+	case Stick::TeleportAway:
+	case Stick::TeleportTo:
+	case Stick::Cancellation:
+	case Stick::Vorpal:			/* Special case for vorpal weapon */
 	{
 		unsigned char monster, oldch;
 		int rm;
@@ -126,7 +128,7 @@ do_zap()
 			omonst = monster = tp->t_type;
 			if (monster == 'F')
 				player.body.t_flags.unset(ISHELD);
-			if (which_one == MAXSTICKS)
+			if (which_one == Stick::Vorpal)
 			{
 				if (monster == obj->o_enemy)
 				{
@@ -137,7 +139,7 @@ do_zap()
 				else
 					msg("you hear a maniacal chuckle in the distance.");
 			}
-			else if (which_one == WS_POLYMORPH)
+			else if (which_one == Stick::Polymorph)
 			{
 				List<Item> pp;
 
@@ -153,9 +155,9 @@ do_zap()
 					display().draw_tile({x, y}, monster);
 				tp->t_oldch = oldch;
 				tp->t_pack = std::move(pp);
-				game().items.ws_know[WS_POLYMORPH] |= (monster != omonst);
+				game().items.ws_know[Stick::Polymorph] |= (monster != omonst);
 			}
-			else if (which_one == WS_CANCEL)
+			else if (which_one == Stick::Cancellation)
 			{
 				tp->t_flags.set(ISCANC);
 				tp->t_flags.unset(ISINVIS|CANHUH);
@@ -165,7 +167,7 @@ do_zap()
 			{
 				if (see_monst(tp))
 					display().draw_tile({x, y}, tp->t_oldch);
-				if (which_one == WS_TELAWAY)
+				if (which_one == Stick::TeleportAway)
 				{
 					tp->t_oldch = '@';
 					do
@@ -180,7 +182,7 @@ do_zap()
 					else if (player.body.t_flags.test(SEEMONST))
 						display().draw_tile(tp->t_pos, tp->t_disguise, TileStyle::Inverse);
 				}
-				else /* it MUST BE at WS_TELTO */
+				else /* it MUST BE at Stick::TeleportTo */
 				{
 					tp->t_pos.y = hero.y + turn.delta.y;
 					tp->t_pos.x = hero.x + turn.delta.x;
@@ -195,26 +197,26 @@ do_zap()
 		}
 	}
 		break;
-	case WS_MISSILE:
+	case Stick::MagicMissile:
 	{
 		Item bolt;
 
-		game().items.ws_know[WS_MISSILE] = TRUE;
+		game().items.ws_know[Stick::MagicMissile] = TRUE;
 		bolt.o_type = ItemKind::Missile;
 		bolt.o_hurldmg = "1d8";
 		bolt.o_hplus = 1000;
 		bolt.o_dplus = 1;
 		bolt.o_flags = ISMISL;
 		if (player.weapon != NULL)
-			bolt.o_launch = player.weapon->o_which;
+			bolt.o_launch = launched_by(player.weapon->which<WeaponType>());
 		do_motion(&bolt, turn.delta.y, turn.delta.x);
-		if ((tp = moat(bolt.o_pos.y, bolt.o_pos.x)) != NULL && !save_throw(VS_MAGIC, tp))
+		if ((tp = moat(bolt.o_pos.y, bolt.o_pos.x)) != NULL && !save_throw(SaveThrow::Magic, tp))
 			hit_monster(unc(bolt.o_pos), &bolt);
 		else
 		msg("the missle vanishes with a puff of smoke");
 	}
 		break;
-	case WS_HIT:
+	case Stick::Striking:
 		turn.delta.y += hero.y;
 		turn.delta.x += hero.x;
 		if ((tp = moat(turn.delta.y, turn.delta.x)) != NULL)
@@ -232,8 +234,8 @@ do_zap()
 			fight(&turn.delta, tp->t_type, obj, FALSE);
 		}
 		break;
-	case WS_HASTE_M:
-	case WS_SLOW_M:
+	case Stick::HasteMonster:
+	case Stick::SlowMonster:
 		y = hero.y;
 		x = hero.x;
 		while (step_ok(winat(y, x)))
@@ -243,7 +245,7 @@ do_zap()
 		}
 		if ((tp = moat(y, x)) != NULL)
 		{
-			if (which_one == WS_HASTE_M)
+			if (which_one == Stick::HasteMonster)
 			{
 				if (tp->t_flags.test(ISSLOW))
 					tp->t_flags.unset(ISSLOW);
@@ -263,12 +265,12 @@ do_zap()
 			start_run(&turn.delta);
 		}
 		break;
-	case WS_ELECT:
-	case WS_FIRE:
-	case WS_COLD:
-		if (which_one == WS_ELECT)
+	case Stick::Lightning:
+	case Stick::Fire:
+	case Stick::Cold:
+		if (which_one == Stick::Lightning)
 			name = "bolt";
-		else if (which_one == WS_FIRE)
+		else if (which_one == Stick::Fire)
 			name = "flame";
 		else
 			name = "ice";
@@ -355,11 +357,11 @@ fire_bolt(coord *start, coord *dir, const char *name)
 
 	is_frost = (strcmp(name, "frost") == 0);
 	bolt.o_type = ItemKind::Weapon;
-	bolt.o_which = FLAME;
+	bolt.set_which(WeaponType::Flame);
 	bolt.o_damage = bolt.o_hurldmg = "6d6";
 	bolt.o_hplus = 30;
 	bolt.o_dplus = 0;
-	w_names[FLAME] = name;
+	w_names[WeaponType::Flame] = name;
 	switch (dir->y + dir->x) {
 		case 0: dirch = '/'; break;
 		case 1: case -1: dirch = (dir->y == 0 ? '-' : '|'); break;
@@ -400,7 +402,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 				changed = !changed;
 				if (tp->t_oldch != '@')
 					tp->t_oldch = chat(pos.y, pos.x);
-				if (!save_throw(VS_MAGIC, tp) || is_frost) {
+				if (!save_throw(SaveThrow::Magic, tp) || is_frost) {
 					bolt.o_pos = pos;
 					used = TRUE;
 					if (tp->t_type == 'D' && strcmp(name, "flame") == 0)
@@ -419,7 +421,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 			} else if (hit_hero && (pos == hero)) {
 				hit_hero = FALSE;
 				changed = !changed;
-				if (!save(VS_MAGIC)) {
+				if (!save(SaveThrow::Magic)) {
 					if (is_frost) {
 						msg("You are frozen by a blast of frost{}.",
 							noterse(" from the Ice Monster"));

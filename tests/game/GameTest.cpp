@@ -33,8 +33,8 @@ TEST(Options, BriefWhenTerseOrExpert)
 TEST(Items, OddsAreCopiedPerGame)
 {
 	rogue::Items items;
-	for (int i = 0; i < MAXSCROLLS; i++)
-		EXPECT_EQ(items.s_magic[i].mi_prob, s_magic_base[i].mi_prob);
+	for (Scroll s : kinds<Scroll>())
+		EXPECT_EQ(items.s_magic[s].mi_prob, s_magic_base[s].mi_prob);
 	for (int i = 0; i < NUMTHINGS; i++)
 		EXPECT_EQ(items.things[i].mi_prob, things_base[i].mi_prob);
 

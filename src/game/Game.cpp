@@ -7,10 +7,10 @@ namespace rogue {
 
 Items::Items()
 {
-	std::copy_n(s_magic_base, MAXSCROLLS, s_magic);
-	std::copy_n(p_magic_base, MAXPOTIONS, p_magic);
-	std::copy_n(r_magic_base, MAXRINGS, r_magic);
-	std::copy_n(ws_magic_base, MAXSTICKS, ws_magic);
+	s_magic = s_magic_base;
+	p_magic = p_magic_base;
+	r_magic = r_magic_base;
+	ws_magic = ws_magic_base;
 	std::copy_n(things_base, NUMTHINGS, things);
 }
 
@@ -90,7 +90,7 @@ pool_problems(const Game &g)
 		problem("the pool counts " + std::to_string(pool.total) + " things in use, but " + std::to_string(used) + " are");
 
 	const Player &player = g.player;
-	for (const Item *worn : {player.armor, player.weapon, player.rings[0], player.rings[1]})
+	for (const Item *worn : {player.armor, player.weapon, player.rings[Hand::Left], player.rings[Hand::Right]})
 		if (worn != nullptr && !player.body.t_pack.contains(worn))
 			problem("a worn item isn't in the pack");
 	if (g.turn.last_item != nullptr && pool.items.slot_of(g.turn.last_item) < 0)

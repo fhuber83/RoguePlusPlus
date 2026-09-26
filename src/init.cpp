@@ -26,8 +26,8 @@ init_player()
 	 */
 	obj = new_item();
 	obj->o_type = ItemKind::Weapon;
-	obj->o_which = MACE;
-	init_weapon(obj, MACE);
+	obj->set_which(WeaponType::Mace);
+	init_weapon(obj, WeaponType::Mace);
 	obj->o_hplus = 1;
 	obj->o_dplus = 1;
 	obj->o_flags.set(ISKNOW);
@@ -40,8 +40,8 @@ init_player()
 	 */
 	obj = new_item();
 	obj->o_type = ItemKind::Weapon;
-	obj->o_which = BOW;
-	init_weapon(obj, BOW);
+	obj->set_which(WeaponType::ShortBow);
+	init_weapon(obj, WeaponType::ShortBow);
 	obj->o_hplus = 1;
 	obj->o_dplus = 0;
 	obj->o_count = 1;
@@ -53,8 +53,8 @@ init_player()
 	 */
 	obj = new_item();
 	obj->o_type = ItemKind::Weapon;
-	obj->o_which = ARROW;
-	init_weapon(obj, ARROW);
+	obj->set_which(WeaponType::Arrow);
+	init_weapon(obj, WeaponType::Arrow);
 	obj->o_count = rnd(15) + 25;
 	obj->o_hplus = obj->o_dplus = 0;
 	obj->o_flags.set(ISKNOW);
@@ -64,8 +64,8 @@ init_player()
 	 */
 	obj = new_item();
 	obj->o_type = ItemKind::Armor;
-	obj->o_which = RING_MAIL;
-	obj->o_ac = a_class[RING_MAIL] - 1;
+	obj->set_which(ArmorType::RingMail);
+	obj->o_ac = a_class[ArmorType::RingMail] - 1;
 	obj->o_flags.set(ISKNOW);
 	obj->o_count = 1;
 	obj->o_group = 0;
@@ -77,7 +77,7 @@ init_player()
 	obj = new_item();
 	obj->o_type = ItemKind::Food;
 	obj->o_count = 1;
-	obj->o_which = 0;
+	obj->set_which(Food::Ration);
 	obj->o_group = 0;
 	add_pack(obj, TRUE);
 }
@@ -224,6 +224,20 @@ static const char *metal[] = {
 constexpr std::size_t NMETAL = std::size(metal);
 
 /*
+ * Make each kind's odds cumulative, the running total that pick_one()
+ * compares its roll against
+ */
+template <typename E>
+static void
+accumulate_odds(KindTable<E, magic_item> &table)
+{
+	int odds = 0;
+
+	for (magic_item &mi : table)
+		mi.mi_prob = odds += mi.mi_prob;
+}
+
+/*
  * init_things
  *	Initialize the probabilities for types of things
  */
@@ -249,18 +263,17 @@ init_colors()
 
 	for (i = 0; i < NCOLORS; i++)
 		used[i] = FALSE;
-	for (i = 0; i < MAXPOTIONS; i++)
+	for (Potion p : kinds<Potion>())
 	{
 		do
 			j = rnd(NCOLORS);
 		while (used[j]);
 		used[j] = TRUE;
-		items.p_colors[i] = rainbow[j];
-		items.p_know[i] = FALSE;
-		items.p_guess[i] = (char *)&items.guesses[items.iguess++];
-		if (i > 0)
-			items.p_magic[i].mi_prob += items.p_magic[i-1].mi_prob;
+		items.p_colors[p] = rainbow[j];
+		items.p_know[p] = FALSE;
+		items.p_guess[p] = (char *)&items.guesses[items.iguess++];
 	}
+	accumulate_odds(items.p_magic);
 }
 
 /*
@@ -273,9 +286,9 @@ init_names()
 	rogue::Items &items = game().items;
 	 int nsyl;
 	 const char *sp;
-	 int i, nwords;
+	 int nwords;
 
-	for (i = 0; i < MAXSCROLLS; i++)
+	for (Scroll s : kinds<Scroll>())
 	{
 	std::string name;
 	nwords = rnd(game().options.terse?3:4) + 2;
@@ -295,12 +308,11 @@ init_names()
 		name += ' ';
 	}
 	name.pop_back();
-	items.s_know[i] = FALSE;
-	items.s_guess[i] = (char *)&items.guesses[items.iguess++];
-	strcpy(items.s_names[i].storage, name.c_str());
-	if (i > 0)
-		items.s_magic[i].mi_prob += items.s_magic[i-1].mi_prob;
+	items.s_know[s] = FALSE;
+	items.s_guess[s] = (char *)&items.guesses[items.iguess++];
+	strcpy(items.s_names[s].storage, name.c_str());
 	}
+	accumulate_odds(items.s_magic);
 }
 
 /*
@@ -342,19 +354,18 @@ init_stones()
 
 	for (i = 0; i < NSTONES; i++)
 		used[i] = FALSE;
-	for (i = 0; i < MAXRINGS; i++)
+	for (Ring r : kinds<Ring>())
 	{
 		do
 			j = rnd(NSTONES);
 		while (used[j]);
 		used[j] = TRUE;
-		items.r_stones[i] = stones[j].st_name;
-		items.r_know[i] = FALSE;
-		items.r_guess[i] = (char *)&items.guesses[items.iguess++];
-		if (i > 0)
-			items.r_magic[i].mi_prob += items.r_magic[i-1].mi_prob;
-		items.r_magic[i].mi_worth += stones[j].st_value;
+		items.r_stones[r] = stones[j].st_name;
+		items.r_know[r] = FALSE;
+		items.r_guess[r] = (char *)&items.guesses[items.iguess++];
+		items.r_magic[r].mi_worth += stones[j].st_value;
 	}
+	accumulate_odds(items.r_magic);
 }
 
 /*
@@ -373,7 +384,7 @@ init_materials()
 		woodused[i] = FALSE;
 	for (i = 0; i < NMETAL; i++)
 		metused[i] = FALSE;
-	for (i = 0; i < MAXSTICKS; i++)
+	for (Stick w : kinds<Stick>())
 	{
 		for (;;)
 			if (rnd(2) == 0)
@@ -381,7 +392,7 @@ init_materials()
 				j = rnd(NMETAL);
 				if (!metused[j])
 				{
-					items.ws_type[i] = "wand";
+					items.ws_type[w] = "wand";
 					str = metal[j];
 					metused[j] = TRUE;
 					break;
@@ -392,18 +403,17 @@ init_materials()
 				j = rnd(NWOOD);
 				if (!woodused[j])
 				{
-					items.ws_type[i] = "staff";
+					items.ws_type[w] = "staff";
 					str = wood[j];
 					woodused[j] = TRUE;
 					break;
 				}
 			}
-		items.ws_made[i] = str;
-		items.ws_know[i] = FALSE;
-		items.ws_guess[i] = (char *)&items.guesses[items.iguess++];
-		if (i > 0)
-			items.ws_magic[i].mi_prob += items.ws_magic[i-1].mi_prob;
+		items.ws_made[w] = str;
+		items.ws_know[w] = FALSE;
+		items.ws_guess[w] = (char *)&items.guesses[items.iguess++];
 	}
+	accumulate_odds(items.ws_magic);
 }
 
 /*

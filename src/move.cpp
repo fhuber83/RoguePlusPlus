@@ -11,7 +11,7 @@
  */
 static coord nh;
 
-static unsigned char	be_trapped(coord *tc);
+static Trap	be_trapped(coord *tc);
 
 /*
  * do_run:
@@ -34,6 +34,7 @@ void
 do_move(int dy, int dx)
 {
 	unsigned char ch;
+	Trap trap;
 	int fl;
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
@@ -157,8 +158,8 @@ hit_bound:
 			enter_room(&nh);
 		goto move_stuff;
 	case TRAP:
-		ch = be_trapped(&nh);
-		if (ch == T_DOOR || ch == T_TELEP)
+		trap = be_trapped(&nh);
+		if (trap == Trap::Door || trap == Trap::Teleport)
 			return;
 		/* fallthrough */
 	case PASSAGE:
@@ -223,33 +224,33 @@ door_open(struct room *rp)
  *	The guy stepped on a trap.... Make him pay.
  */
 static
-unsigned char
+Trap
 be_trapped(coord *tc)
 {
-	unsigned char tr;
+	Trap tr;
 	int index;
 	rogue::Player &player = game().player;
 
 	game().turn.count = game().turn.running = FALSE;
 	index = INDEX(tc->y, tc->x);
 	game().level.map[index] = TRAP;
-	tr = game().level.flags[index] & F_TMASK;
+	tr = static_cast<Trap>(game().level.flags[index] & F_TMASK);
 	player.was_trapped = TRUE;
 	switch (tr) {
-	case T_DOOR:
+	case Trap::Door:
 		descend("you fell into a trap!");
 		break;
-	case T_BEAR:
+	case Trap::Bear:
 		player.no_move += BEARTIME;
 		msg("you are caught in a bear trap");
 		break;
-	case T_SLEEP:
+	case Trap::Sleep:
 		player.no_command += SLEEPTIME;
 		player.body.t_flags.unset(ISRUN);
 		msg("a {}mist envelops you and you fall asleep",
 			noterse("strange white "));
 		break;
-	case T_ARROW:
+	case Trap::Arrow:
 		if (swing(pstats.s_lvl-1, pstats.s_arm, 1)) {
 			pstats.s_hpt -= roll(1, 6);
 			if (pstats.s_hpt <= 0) {
@@ -263,8 +264,8 @@ be_trapped(coord *tc)
 
 			if ((arrow = new_item()) != NULL) {
 				arrow->o_type = ItemKind::Weapon;
-				arrow->o_which = ARROW;
-				init_weapon(arrow, ARROW);
+				arrow->set_which(WeaponType::Arrow);
+				init_weapon(arrow, WeaponType::Arrow);
 				arrow->o_count = 1;
 				bcopy(arrow->o_pos,hero);
 				fall(arrow, FALSE);
@@ -272,7 +273,7 @@ be_trapped(coord *tc)
 			msg("an arrow shoots past you");
 		}
 		break;
-	case T_TELEP:
+	case Trap::Teleport:
 		teleport();
 		display().draw_tile(*tc, TRAP); /* since the hero's leaving, look()
 						won't put it on for us */
@@ -281,14 +282,14 @@ be_trapped(coord *tc)
 		 */
 		player.was_trapped++;
 		break;
-	case T_DART:
+	case Trap::Dart:
 		if (swing(pstats.s_lvl+1, pstats.s_arm, 1)) {
 			pstats.s_hpt -= roll(1, 4);
 			if (pstats.s_hpt <= 0) {
 				msg("a poisoned dart killed you");
 				death('d');
 			}
-			if (!ISWEARING(R_SUSTSTR) && !save(VS_POISON))
+			if (!ISWEARING(Ring::SustainStrength) && !save(SaveThrow::Poison))
 				chg_str(-1);
 			msg("a dart just hit you in the shoulder");
 		} else
@@ -308,7 +309,7 @@ descend(const char *mesg)
 	new_level();
 	msg("");
 	msg("{}", mesg);
-	if (!save(VS_LUCK)) {
+	if (!save(SaveThrow::Luck)) {
 		msg("you are damaged by the fall");
 		if ((pstats.s_hpt -= roll(1,8)) <= 0)
 			death('f');
@@ -346,7 +347,7 @@ rndmove(Creature *who, coord *newmv)
 			for (obj = game().level.objects.first(); obj != NULL; obj = game().level.objects.after(obj))
 				if (y == obj->o_pos.y && x == obj->o_pos.x)
 					break;
-			if (obj != NULL && obj->o_which == S_SCARE)
+			if (obj != NULL && obj->which<Scroll>() == Scroll::ScareMonster)
 				goto bad;
 		}
 	}

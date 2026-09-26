@@ -41,22 +41,31 @@ command()
 			execcom();
 		do_fuses();
 		do_daemons();
-		for (ntimes = LEFT; ntimes <= RIGHT; ntimes++)
+		for (Hand hand : kinds<Hand>())
 		{
-			if (player.rings[ntimes])
+			if (player.rings[hand])
 			{
-				switch (player.rings[ntimes]->o_which)
+				switch (player.rings[hand]->which<Ring>())
 				{
-				case R_SEARCH:
+				case Ring::Searching:
 					search();
 					break;
-				case R_TELEPORT:
+				case Ring::Teleportation:
 					if (rnd(50) == 17)
 						teleport();
+					break;
+				default:
 					break;
 				}
 			}
 		}
+		/*
+		 * The original counted the hands with ntimes, leaving it at 2, so
+		 * this loop never ends: command() never returns, the haste roll
+		 * above is made once, and a hasted rogue gets no extra moves. Kept,
+		 * since this step must not change the game.
+		 */
+		ntimes = 2;
 	}
 }
 
@@ -253,7 +262,7 @@ execcom()
 					msg("no trap there.");
 				else
 					msg("you found {}",
-						tr_name(flat(lookat.y, lookat.x) & F_TMASK));
+						tr_name(static_cast<Trap>(flat(lookat.y, lookat.x) & F_TMASK)));
 			}
 			break;
 		case Command::Options: msg("i don't have any options, oh my!"); break;

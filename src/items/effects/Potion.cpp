@@ -31,10 +31,10 @@ quaff(void)
 	/*
 	 * Calculate the effect it has on the poor guy.
 	 */
-	switch (obj->o_which)
+	switch (obj->which<Potion>())
 	{
-	case P_CONFUSE:
-		items.p_know[P_CONFUSE] = TRUE;
+	case Potion::Confusion:
+		items.p_know[Potion::Confusion] = TRUE;
 		if (!player.body.t_flags.test(ISHUH))
 			{
 			if (player.body.t_flags.test(ISHUH))
@@ -45,12 +45,12 @@ quaff(void)
 			msg("wait, what's going on? Huh? What? Who?");
 		}
 		break;
-	case P_POISON:
+	case Potion::Poison:
 		{
 		constexpr const char *sick = "you feel {} sick.";
 
-		items.p_know[P_POISON] = TRUE;
-		if (!ISWEARING(R_SUSTSTR))
+		items.p_know[Potion::Poison] = TRUE;
+		if (!ISWEARING(Ring::SustainStrength))
 		{
 			chg_str(-(rnd(3)+1));
 			msg(sick, "very");
@@ -59,19 +59,19 @@ quaff(void)
 			msg(sick, "momentarily");
 		}
 		break;
-	case P_HEALING:
-		items.p_know[P_HEALING] = TRUE;
+	case Potion::Healing:
+		items.p_know[Potion::Healing] = TRUE;
 		if ((pstats.s_hpt += roll(pstats.s_lvl, 4)) > max_hp)
 			pstats.s_hpt = ++max_hp;
 		sight();
 		msg("you begin to feel better");
 		break;
-	case P_STRENGTH:
-		items.p_know[P_STRENGTH] = TRUE;
+	case Potion::GainStrength:
+		items.p_know[Potion::GainStrength] = TRUE;
 		chg_str(1);
 		msg("you feel stronger. What bulging muscles!");
 		break;
-	case P_MFIND:
+	case Potion::MonsterDetection:
 		fuse(Event::TurnSeeOff, HUHDURATION);
 		if (game().level.monsters.empty())
 			msg("you have a strange feeling{}.",
@@ -80,12 +80,12 @@ quaff(void)
 		{
 			if (turn_see(FALSE))
 			{
-				items.p_know[P_MFIND] = TRUE;
+				items.p_know[Potion::MonsterDetection] = TRUE;
 			}
 			msg("");
 		}
 		break;
-	case P_TFIND:
+	case Potion::MagicDetection:
 		/*
 		 * Potion of magic detection.  Find everything interesting on
 		 * the level and show him where they are.  Also give hints as
@@ -103,7 +103,7 @@ quaff(void)
 				{
 					show = TRUE;
 					display().draw_tile(tp->o_pos, goodch(tp));
-					items.p_know[P_TFIND] = TRUE;
+					items.p_know[Potion::MagicDetection] = TRUE;
 				}
 			}
 			for (th = game().level.monsters.first(); th != NULL; th = game().level.monsters.after(th))
@@ -114,7 +114,7 @@ quaff(void)
 					{
 						show = TRUE;
 						display().draw_tile(th->t_pos, MAGIC);
-						items.p_know[P_TFIND] = TRUE;
+						items.p_know[Potion::MagicDetection] = TRUE;
 					}
 				}
 			}
@@ -127,13 +127,13 @@ quaff(void)
 		msg("you have a strange feeling for a moment{}.",
 				noterse(", then it passes"));
 		break;
-	case P_PARALYZE:
-		items.p_know[P_PARALYZE] = TRUE;
+	case Potion::Paralysis:
+		items.p_know[Potion::Paralysis] = TRUE;
 		player.no_command = HOLDTIME;
 		player.body.t_flags.unset(ISRUN);
 		msg("you can't move");
 		break;
-	case P_SEEINVIS:
+	case Potion::SeeInvisible:
 		if (!player.body.t_flags.test(CANSEE)) {
 			fuse(Event::Unsee, SEEDURATION);
 			look(FALSE);
@@ -142,13 +142,13 @@ quaff(void)
 		sight();
 		msg("this potion tastes like {} juice", game().options.fruit);
 		break;
-	case P_RAISE:
-		items.p_know[P_RAISE] = TRUE;
+	case Potion::RaiseLevel:
+		items.p_know[Potion::RaiseLevel] = TRUE;
 		msg("you suddenly feel much more skillful");
 		raise_level();
 		break;
-	case P_XHEAL:
-		items.p_know[P_XHEAL] = TRUE;
+	case Potion::ExtraHealing:
+		items.p_know[Potion::ExtraHealing] = TRUE;
 		if ((pstats.s_hpt += roll(pstats.s_lvl, 8)) > max_hp)
 		{
 			if (pstats.s_hpt > max_hp + pstats.s_lvl + 1)
@@ -158,27 +158,27 @@ quaff(void)
 		sight();
 		msg("you begin to feel much better");
 		break;
-	case P_HASTE:
-		items.p_know[P_HASTE] = TRUE;
+	case Potion::Haste:
+		items.p_know[Potion::Haste] = TRUE;
 		if (add_haste(TRUE))
 			msg("you feel yourself moving much faster");
 		break;
-	case P_RESTORE:
-		if (ISRING(LEFT, R_ADDSTR))
-			add_str(&pstats.s_str, -player.rings[LEFT]->o_ac);
-		if (ISRING(RIGHT, R_ADDSTR))
-			add_str(&pstats.s_str, -player.rings[RIGHT]->o_ac);
+	case Potion::RestoreStrength:
+		if (ISRING(Hand::Left, Ring::AddStrength))
+			add_str(&pstats.s_str, -player.rings[Hand::Left]->o_ac);
+		if (ISRING(Hand::Right, Ring::AddStrength))
+			add_str(&pstats.s_str, -player.rings[Hand::Right]->o_ac);
 		if (pstats.s_str < player.max_stats.s_str)
 			pstats.s_str = player.max_stats.s_str;
-		if (ISRING(LEFT, R_ADDSTR))
-			add_str(&pstats.s_str, player.rings[LEFT]->o_ac);
-		if (ISRING(RIGHT, R_ADDSTR))
-			add_str(&pstats.s_str, player.rings[RIGHT]->o_ac);
+		if (ISRING(Hand::Left, Ring::AddStrength))
+			add_str(&pstats.s_str, player.rings[Hand::Left]->o_ac);
+		if (ISRING(Hand::Right, Ring::AddStrength))
+			add_str(&pstats.s_str, player.rings[Hand::Right]->o_ac);
 		msg("{}you feel warm all over",
 			noterse("hey, this tastes great.  It makes "));
 		break;
-	case P_BLIND:
-		items.p_know[P_BLIND] = TRUE;
+	case Potion::Blindness:
+		items.p_know[Potion::Blindness] = TRUE;
 		if (!player.body.t_flags.test(ISBLIND))
 		{
 			player.body.t_flags.set(ISBLIND);
@@ -187,7 +187,7 @@ quaff(void)
 		}
 		msg("a cloak of darkness falls around you");
 		break;
-	case P_NOP:
+	case Potion::ThirstQuenching:
 		msg("this potion tastes extremely dull");
 		break;
 	default:
@@ -207,7 +207,7 @@ quaff(void)
 		discardit = TRUE;
 	}
 
-	call_it(items.p_know[obj->o_which], &items.p_guess[obj->o_which]);
+	call_it(items.p_know[obj->which<Potion>()], &items.p_guess[obj->which<Potion>()]);
 
 	if (discardit)
 		discard(obj);
@@ -269,29 +269,31 @@ turn_see(bool turn_off)
 void
 th_effect(Item *obj, Creature *tp)
 {
-	switch (obj->o_which)
+	switch (obj->which<Potion>())
 	{
-	case P_CONFUSE:
-	case P_BLIND:
+	case Potion::Confusion:
+	case Potion::Blindness:
 		tp->t_flags.set(ISHUH);
 		msg("the {} appears confused", monsters[tp->t_type-'A'].m_name);
 		break;
-	case P_PARALYZE:
+	case Potion::Paralysis:
 		tp->t_flags.unset(ISRUN);
 		tp->t_flags.set(ISHELD);
 		break;
-	case P_HEALING:
-	case P_XHEAL:
+	case Potion::Healing:
+	case Potion::ExtraHealing:
 		if ((tp->t_stats.s_hpt += rnd(8)) > tp->t_stats.s_maxhp)
 		tp->t_stats.s_hpt = ++tp->t_stats.s_maxhp;
 		break;
-	case P_RAISE:
+	case Potion::RaiseLevel:
 		tp->t_stats.s_hpt += 8;
 		tp->t_stats.s_maxhp += 8;
 		tp->t_stats.s_lvl++;
 		break;
-	case P_HASTE:
+	case Potion::Haste:
 		tp->t_flags.set(ISHASTE);
+		break;
+	default:
 		break;
 	}
 	msg("the flask shatters.");

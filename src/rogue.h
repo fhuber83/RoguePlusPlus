@@ -17,11 +17,14 @@
 #include "core/Coord.hpp"
 #include "core/Dice.hpp"
 #include "core/Flags.hpp"
+#include "core/KindTable.hpp"
 #include "core/Random.hpp"
 #include "entities/List.hpp"
 #include "game/Slots.hpp"
+#include "items/Kinds.hpp"
 #include "ui/Display.hpp"
 #include "ui/Input.hpp"
+#include "world/Trap.hpp"
 
 #include "extern.h"
 #include "glyphs.h"
@@ -72,8 +75,8 @@ inline constexpr int BUFSIZE = 128;
 #define free_list(a)	list_free(a)
 #define max(a,b)	((a) > (b) ? (a) : (b))
 #define GOLDCALC	(rnd(50 + 10 * game().level.depth) + 2)
-#define ISRING(h,r)	(game().player.rings[h] != NULL && game().player.rings[h]->o_which == r)
-#define ISWEARING(r)	(ISRING(LEFT, r) || ISRING(RIGHT, r))
+#define ISRING(h,r)	(game().player.rings[h] != NULL && game().player.rings[h]->which<Ring>() == r)
+#define ISWEARING(r)	(ISRING(Hand::Left, r) || ISRING(Hand::Right, r))
 #define ISMULT(type) 	(type==ItemKind::Potion || type==ItemKind::Scroll || type==ItemKind::Food || type==ItemKind::Gold)
 #define chat(y,x)	(game().level.map[INDEX(y,x)])
 #define flat(y,x)	(game().level.flags[INDEX(y,x)])
@@ -96,21 +99,8 @@ inline constexpr int BUFSIZE = 128;
 inline constexpr int MORETIME = 150;
 inline constexpr int STOMACHSIZE = 2000;
 inline constexpr int STARVETIME = 850;
-#define LEFT		0
-#define RIGHT		1
 inline constexpr int BOLT_LENGTH = 6;
 inline constexpr int LAMPDIST = 3;
-
-/*
- * Save against things
- */
-#define VS_POISON	00
-#define VS_PARALYZATION	00
-#define VS_LUCK		01
-#define VS_DEATH	00
-#define VS_BREATH	02
-#define VS_MAGIC	03
-
 
 /*
  * Flags for level map
@@ -120,124 +110,6 @@ inline constexpr int LAMPDIST = 3;
 #define F_REAL		0x010		/* what you see is what you get */
 #define F_PNUM		0x00f		/* passage number mask */
 #define F_TMASK		0x007		/* trap number mask */
-
-/*
- * Trap types
- */
-#define T_DOOR	00
-#define T_ARROW	01
-#define T_SLEEP	02
-#define T_BEAR	03
-#define T_TELEP	04
-#define T_DART	05
-#define NTRAPS	6
-
-/*
- * Potion types
- */
-#define P_CONFUSE	0
-#define P_PARALYZE	1
-#define P_POISON	2
-#define P_STRENGTH	3
-#define P_SEEINVIS	4
-#define P_HEALING	5
-#define P_MFIND		6
-#define	P_TFIND 	7
-#define	P_RAISE		8
-#define P_XHEAL		9
-#define P_HASTE		10
-#define P_RESTORE	11
-#define P_BLIND		12
-#define P_NOP		13
-#define MAXPOTIONS	14
-
-/*
- * Scroll types
- */
-#define S_CONFUSE	0
-#define S_MAP		1
-#define S_HOLD		2
-#define S_SLEEP		3
-#define S_ARMOR		4
-#define S_IDENT		5
-#define S_SCARE		6
-#define S_GFIND		7
-#define S_TELEP		8
-#define S_ENCH		9
-#define S_CREATE	10
-#define S_REMOVE	11
-#define S_AGGR		12
-#define S_NOP		13
-#define S_VORPAL	14
-#define MAXSCROLLS	15
-
-/*
- * Weapon types
- */
-#define MACE		0
-#define SWORD		1
-#define BOW		2
-#define ARROW		3
-#define DAGGER		4
-#define TWOSWORD	5
-#define DART		6
-#define CROSSBOW	7
-#define BOLT		8
-#define SPEAR		9
-#define FLAME		10	/* fake entry for dragon breath (ick) */
-#define MAXWEAPONS	10	/* this should equal FLAME */
-
-/*
- * Armor types
- */
-#define LEATHER		0
-#define RING_MAIL	1
-#define STUDDED_LEATHER	2
-#define SCALE_MAIL	3
-#define CHAIN_MAIL	4
-#define SPLINT_MAIL	5
-#define BANDED_MAIL	6
-#define PLATE_MAIL	7
-#define MAXARMORS	8
-
-/*
- * Ring types
- */
-#define R_PROTECT	0
-#define R_ADDSTR	1
-#define R_SUSTSTR	2
-#define R_SEARCH	3
-#define R_SEEINVIS	4
-#define R_NOP		5
-#define R_AGGR		6
-#define R_ADDHIT	7
-#define R_ADDDAM	8
-#define R_REGEN		9
-#define R_DIGEST	10
-#define R_TELEPORT	11
-#define R_STEALTH	12
-#define R_SUSTARM	13
-#define MAXRINGS	14
-
-/*
- * Rod/Wand/Staff types
- */
-
-#define WS_LIGHT	0
-#define WS_HIT		1
-#define WS_ELECT	2
-#define WS_FIRE		3
-#define WS_COLD		4
-#define WS_POLYMORPH	5
-#define WS_MISSILE	6
-#define WS_HASTE_M	7
-#define WS_SLOW_M	8
-#define WS_DRAIN	9
-#define WS_NOP		10
-#define WS_TELAWAY	11
-#define WS_TELTO	12
-#define WS_CANCEL	13
-#define MAXSTICKS	14
 
 /*
  * Now we define the structures and types
@@ -329,6 +201,18 @@ using rogue::Creature;
 using rogue::Item;
 using rogue::List;
 using rogue::ItemKind;
+using rogue::KindTable;
+using rogue::kind_count;
+using rogue::kinds;
+using rogue::Potion;
+using rogue::Scroll;
+using rogue::Ring;
+using rogue::Stick;
+using rogue::WeaponType;
+using rogue::ArmorType;
+using rogue::Food;
+using rogue::Hand;
+using rogue::Trap;
 using rogue::ItemFilter;
 using rogue::glyph_of;
 using rogue::kind_of_glyph;
@@ -376,8 +260,11 @@ struct monster {
 };
 
 // The tables each game copies into game().items (extern.cpp)
-extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
-				ws_magic_base[], things_base[];
+extern const KindTable<Scroll, magic_item> s_magic_base;
+extern const KindTable<Potion, magic_item> p_magic_base;
+extern const KindTable<Ring, magic_item> r_magic_base;
+extern const KindTable<Stick, magic_item> ws_magic_base;
+extern const struct magic_item things_base[];
 
 #include "game/Game.hpp"
 #include "items/ItemCatalog.hpp"
@@ -433,6 +320,7 @@ using rogue::items::effects::missile;
 using rogue::items::effects::do_motion;
 using rogue::items::effects::fall;
 using rogue::items::effects::init_weapon;
+using rogue::items::effects::launched_by;
 using rogue::items::effects::hit_monster;
 using rogue::items::effects::num;
 using rogue::items::effects::wield;
@@ -457,6 +345,7 @@ using rogue::rules::attack;
 using rogue::rules::swing;
 using rogue::rules::check_level;
 using rogue::rules::save_throw;
+using rogue::rules::SaveThrow;
 using rogue::rules::save;
 using rogue::rules::is_magic;
 using rogue::rules::raise_level;
@@ -496,11 +385,14 @@ using rogue::execcom;
 extern char nullstr[];
 extern const char *it, *you, *no_mem;
 
-extern const char *a_names[], *he_man[], *intense, *w_names[];
+extern const char *he_man[], *intense;
+// Weapon names, and the name of the WeaponType::Flame that fire_bolt() throws
+extern KindTable<WeaponType, const char *, kind_count<WeaponType> + 1> w_names;
+extern const KindTable<ArmorType, const char *> a_names;
 // a std::format string for msg()
 inline constexpr const char *flashmsg = "your {} gives off a flash{}";
 extern struct h_list helpcoms[], helpobjs[];
-extern int	a_chances[], a_class[];
+extern const KindTable<ArmorType, int> a_chances, a_class;
 extern struct monster	monsters[];
 
 // the experience level table (init.cpp)
@@ -618,7 +510,7 @@ bool	get_dir(void);
 bool	find_dir(unsigned char ch, coord *cp);
 bool	step_ok(unsigned char ch);
 bool	offmap(int y, int x);
-const char	*tr_name(unsigned char type);
+const char	*tr_name(Trap type);
 const char	*vowelstr(const char *str);
 char	goodch(Item *obj);
 int	sign(int nm);

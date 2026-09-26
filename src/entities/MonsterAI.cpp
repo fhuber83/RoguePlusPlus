@@ -214,7 +214,7 @@ see_monst(Creature *mp)
 	  && !player.weapon->o_flags.test(DIDFLASH))
 	{
 		player.weapon->o_flags.set(DIDFLASH);
-		msg(flashmsg, w_names[player.weapon->o_which], game().options.brief() ? "" : intense);
+		msg(flashmsg, w_names[player.weapon->which<WeaponType>()], game().options.brief() ? "" : intense);
 	}
 	return TRUE;
 }
@@ -320,7 +320,7 @@ chase(Creature *tp, coord *ee)
 							if (y ==	obj->o_pos.y &&	x == obj->o_pos.x)
 								break;
 						}
-						if (obj != NULL && obj->o_which == S_SCARE)
+						if (obj != NULL && obj->which<Scroll>() == Scroll::ScareMonster)
 							continue;
 					}
 					/*
@@ -362,7 +362,7 @@ find_dest(Creature *tp)
 	rp = tp->t_room;
 	for (obj = game().level.objects.first(); obj != NULL; obj = game().level.objects.after(obj))
 	{
-	if (obj->o_type == ItemKind::Scroll && obj->o_which == S_SCARE)
+	if (obj->o_type == ItemKind::Scroll && obj->which<Scroll>() == Scroll::ScareMonster)
 		continue;
 	if (roomin(&obj->o_pos) == rp && rnd(100) < prob)
 	{
@@ -470,7 +470,7 @@ plop_monster(int r, int c, coord *cp)
 			 * Or anything else nasty
 			 */
 			if (step_ok(ch = winat(y, x))) {
-				if (ch == SCROLL && find_obj(y, x)->o_which == S_SCARE)
+				if (ch == SCROLL && find_obj(y, x)->which<Scroll>() == Scroll::ScareMonster)
 					continue;
 				/*
 				 * Get first available spot with 100% chance,

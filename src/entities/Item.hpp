@@ -9,6 +9,8 @@
  */
 
 #include <optional>
+#include <type_traits>
+#include <utility>
 
 namespace rogue {
 
@@ -118,13 +120,25 @@ struct Item {
 	const char *o_damage;		/* Damage if used like sword */
 	const char *o_hurldmg;		/* Damage if thrown */
 	int o_count;				/* Count for plural objects */
-	int o_which;				/* Which object of a type it is */
+	int o_which;				/* Which object of a type it is: use which<E>() */
 	int o_hplus;				/* Plusses to hit */
 	int o_dplus;				/* Plusses to damage */
 	short o_ac;					/* Armor class (o_charges, o_goldval) */
 	ItemFlags o_flags;			/* Information about objects */
 	char o_enemy;				/* If it is enchanted, who it hates */
 	int o_group;				/* Group number for this object */
+
+	/*
+	 * Which potion, scroll, weapon, ... it is (items/Kinds.hpp). o_which
+	 * holds the number, which the save file stores; the caller knows from
+	 * o_type which enum it is.
+	 */
+	template <typename E>
+		requires std::is_enum_v<E>
+	constexpr E which() const { return static_cast<E>(o_which); }
+	template <typename E>
+		requires std::is_enum_v<E>
+	constexpr void set_which(E kind) { o_which = std::to_underlying(kind); }
 };
 
 }  // namespace rogue

@@ -4,21 +4,23 @@ namespace rogue::items::effects {
 
 constexpr char NONE = 100;
 
-static struct init_weps {
+struct init_weps {
 	const char *iw_dam;	/* Damage when wielded */
 	const char *iw_hrl;	/* Damage when thrown */
 	char iw_launch;	/* Launching weapon */
 	ItemFlags iw_flags;	/* Miscellaneous flags */
-} init_dam[MAXWEAPONS] = {
+};
+
+static constexpr KindTable<WeaponType, init_weps> init_dam = {
 	{"2d4",	"1d3",	NONE,     {}},            	/* Mace */
 	{"3d4",	"1d2",	NONE,     {}},            	/* Long sword */
 	{"1d1",	"1d1",	NONE,     {}},            	/* Bow */
-	{"1d1",	"2d3",	BOW,      ISMANY|ISMISL},	/* Arrow */
+	{"1d1",	"2d3",	launched_by(WeaponType::ShortBow), ISMANY|ISMISL},	/* Arrow */
 	{"1d6",	"1d4",	NONE,     ISMISL},       	/* Dagger */
 	{"4d4",	"1d2",	NONE,     {}},            	/* 2h sword */
 	{"1d1",	"1d3",	NONE,     ISMANY|ISMISL},	/* Dart */
 	{"1d1",	"1d1",	NONE,     {}},            	/* Crossbow */
-	{"1d2",	"2d5",	CROSSBOW, ISMANY|ISMISL},	/* Crossbow bolt */
+	{"1d2",	"2d5",	launched_by(WeaponType::Crossbow), ISMANY|ISMISL},	/* Crossbow bolt */
 	{"2d3",	"1d6",	NONE,     ISMISL}        	/* Spear */
 };
 
@@ -126,8 +128,8 @@ std::string
 short_name(Item *obj)
 {
 	switch (obj->o_type) {
-		case ItemKind::Weapon: return w_names[obj->o_which];
-		case ItemKind::Armor: return a_names[obj->o_which];
+		case ItemKind::Weapon: return w_names[obj->which<WeaponType>()];
+		case ItemKind::Armor: return a_names[obj->which<ArmorType>()];
 		case ItemKind::Food: return "food";
 		case ItemKind::Potion:
 		case ItemKind::Scroll:
@@ -185,9 +187,9 @@ fall(Item *obj, bool pr)
  *	Set up the initial goodies for a weapon
  */
 void
-init_weapon(Item *weap, unsigned char type)
+init_weapon(Item *weap, WeaponType type)
 {
-	struct init_weps *iwp;
+	const struct init_weps *iwp;
 
 	iwp = &init_dam[type];
 	weap->o_damage = iwp->iw_dam;

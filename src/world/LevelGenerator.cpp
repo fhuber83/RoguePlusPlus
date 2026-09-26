@@ -90,7 +90,7 @@ new_level(void)
 			} while (!isfloor(level.map[index]));
 			fp = &level.flags[index];
 			*fp &= ~F_REAL;
-			*fp |= rnd(NTRAPS);
+			*fp |= rnd(kind_count<Trap>);
 		}
 	}
 	do {

@@ -7,11 +7,24 @@
  * Included by rogue.h after entities/Item.hpp (Item).
  */
 
+#include "items/Kinds.hpp"
+
 namespace rogue {
 
 class Item;
 
 namespace items::effects {
+
+/*
+ * launched_by:
+ *	What o_launch holds for an item shot from this weapon (arrows from a
+ *	short bow): the weapon's number.
+ */
+constexpr char
+launched_by(WeaponType launcher)
+{
+	return static_cast<char>(launcher);
+}
 
 /*
  * missile:
@@ -36,7 +49,7 @@ void fall(Item *obj, bool pr);
  * init_weapon:
  *	Set up the initial goodies for a weapon.
  */
-void init_weapon(Item *weap, unsigned char type);
+void init_weapon(Item *weap, WeaponType type);
 
 /*
  * hit_monster:

@@ -83,7 +83,7 @@ new_monster(Creature *tp, unsigned char type, coord *cp)
 	tp->t_flags = mp->m_flags;
 	tp->t_turn = TRUE;
 	tp->t_pack.clear();
-	if (ISWEARING(R_AGGR))
+	if (ISWEARING(Ring::AggravateMonster))
 		start_run(cp);
 	if (type == 'F')
 		tp->t_stats.s_dmg = game().player.flytrap_damage;
@@ -184,7 +184,7 @@ wake_monster(int y, int x)
 	 * Every time he sees mean monster, it might start chasing him
 	 */
 	if (!tp->t_flags.test(ISRUN) && rnd(3) != 0 && tp->t_flags.test(ISMEAN) && !tp->t_flags.test(ISHELD)
-		&& !ISWEARING(R_STEALTH))
+		&& !ISWEARING(Ring::Stealth))
 	{
 		tp->t_dest = &hero;
 		tp->t_flags.set(ISRUN);
@@ -196,7 +196,7 @@ wake_monster(int y, int x)
 		dst = DISTANCE(y, x, hero.y, hero.x);
 		if ((rp != NULL && !rp->r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
 			tp->t_flags.set(ISFOUND);
-			if (!save(VS_MAGIC)) {
+			if (!save(SaveThrow::Magic)) {
 				if (game().player.body.t_flags.test(ISHUH))
 					lengthen(Event::Unconfuse, rnd(20) + HUHDURATION);
 				else

@@ -11,24 +11,24 @@
  *	Print the name of a trap
  */
 const char *
-tr_name(unsigned char type)
+tr_name(Trap type)
 {
 	switch (type)
 	{
-	case T_DOOR:
+	case Trap::Door:
 		return "a trapdoor";
-	case T_BEAR:
+	case Trap::Bear:
 		return "a beartrap";
-	case T_SLEEP:
+	case Trap::Sleep:
 		return "a sleeping gas trap";
-	case T_ARROW:
+	case Trap::Arrow:
 		return "an arrow trap";
-	case T_TELEP:
+	case Trap::Teleport:
 		return "a teleport trap";
-	case T_DART:
+	case Trap::Dart:
 		return "a poison dart trap";
 	}
-	msg("wierd trap: {:d}", type);
+	msg("wierd trap: {:d}", std::to_underlying(type));
 	return NULL;
 }
 
@@ -253,7 +253,7 @@ void
 eat()
 {
 	Item *obj;
-	int which;
+	Food which;
 	rogue::Player &player = game().player;
 
 	if ((obj = get_item("eat", ItemKind::Food)) == NULL)
@@ -268,7 +268,7 @@ eat()
 	 * What it is, and whether it was wielded, are checked before the last
 	 * one is discarded. Both were after discard(), reading a freed item.
 	 */
-	which = obj->o_which;
+	which = obj->which<Food>();
 	if (obj == player.weapon)
 		player.weapon = NULL;
 	if (--obj->o_count < 1)
@@ -283,7 +283,7 @@ eat()
 	if ((player.food_left += HUNGERTIME - 200 + rnd(400)) > STOMACHSIZE)
 		player.food_left = STOMACHSIZE;
 	player.hungry_state = 0;
-	if (which == 1)
+	if (which == Food::Fruit)
 		msg("my, that was a yummy {}", game().options.fruit);
 	else
 		if (rnd(100) > 70)
@@ -312,10 +312,10 @@ chg_str(int amt)
 	return;
 	add_str(&pstats.s_str, amt);
 	comp = pstats.s_str;
-	if (ISRING(LEFT, R_ADDSTR))
-		add_str(&comp, -game().player.rings[LEFT]->o_ac);
-	if (ISRING(RIGHT, R_ADDSTR))
-		add_str(&comp, -game().player.rings[RIGHT]->o_ac);
+	if (ISRING(Hand::Left, Ring::AddStrength))
+		add_str(&comp, -game().player.rings[Hand::Left]->o_ac);
+	if (ISRING(Hand::Right, Ring::AddStrength))
+		add_str(&comp, -game().player.rings[Hand::Right]->o_ac);
 	if (comp > game().player.max_stats.s_str)
 		game().player.max_stats.s_str = comp;
 }
@@ -402,8 +402,8 @@ is_current(Item *obj)
 {
 	if (obj == NULL)
 		return FALSE;
-	if (obj == game().player.armor || obj == game().player.weapon || obj == game().player.rings[LEFT]
-		|| obj == game().player.rings[RIGHT]) {
+	if (obj == game().player.armor || obj == game().player.weapon || obj == game().player.rings[Hand::Left]
+		|| obj == game().player.rings[Hand::Right]) {
 		msg("That's already in use");
 		return TRUE;
 	}
@@ -538,7 +538,7 @@ goodch(Item *obj)
 		ch = BMAGIC;
 	switch (obj->o_type) {
 	case ItemKind::Armor:
-		if (obj->o_ac > a_class[obj->o_which])
+		if (obj->o_ac > a_class[obj->which<ArmorType>()])
 			ch = BMAGIC;
 		break;
 	case ItemKind::Weapon:
@@ -546,44 +546,52 @@ goodch(Item *obj)
 			ch = BMAGIC;
 		break;
 	case ItemKind::Scroll:
-		switch (obj->o_which) {
-		case S_SLEEP:
-		case S_CREATE:
-		case S_AGGR:
+		switch (obj->which<Scroll>()) {
+		case Scroll::Sleep:
+		case Scroll::CreateMonster:
+		case Scroll::AggravateMonsters:
 			ch = BMAGIC;
+			break;
+		default:
 			break;
 		}
 		break;
 	case ItemKind::Potion:
-		switch (obj->o_which) {
-		case P_CONFUSE:
-		case P_PARALYZE:
-		case P_POISON:
-		case P_BLIND:
+		switch (obj->which<Potion>()) {
+		case Potion::Confusion:
+		case Potion::Paralysis:
+		case Potion::Poison:
+		case Potion::Blindness:
 			ch = BMAGIC;
+			break;
+		default:
 			break;
 		}
 		break;
 	case ItemKind::Stick:
-		switch (obj->o_which) {
-		case WS_HASTE_M:
-		case WS_TELTO:
+		switch (obj->which<Stick>()) {
+		case Stick::HasteMonster:
+		case Stick::TeleportTo:
 			ch = BMAGIC;
+			break;
+		default:
 			break;
 		}
 		break;
 	case ItemKind::Ring:
-		switch (obj->o_which) {
-		case R_PROTECT:
-		case R_ADDSTR:
-		case R_ADDDAM:
-		case R_ADDHIT:
+		switch (obj->which<Ring>()) {
+		case Ring::Protection:
+		case Ring::AddStrength:
+		case Ring::IncreaseDamage:
+		case Ring::Dexterity:
 			if (obj->o_ac < 0)
 				ch = BMAGIC;
 			break;
-		case R_AGGR:
-		case R_TELEPORT:
+		case Ring::AggravateMonster:
+		case Ring::Teleportation:
 			ch = BMAGIC;
+			break;
+		default:
 			break;
 		}
 		break;
@@ -723,7 +731,7 @@ search()
 						chat(y, x) = TRAP;
 						*fp |= F_REAL;
 						game().turn.count = game().turn.running = FALSE;
-						msg("you found {}", tr_name(*fp & F_TMASK));
+						msg("you found {}", tr_name(static_cast<Trap>(*fp & F_TMASK)));
 						break;
 				}
 		}
@@ -788,28 +796,28 @@ call()
 	switch (obj->o_type)
 	{
 	case ItemKind::Ring:
-		guess = (char **)items.r_guess;
-		know = items.r_know;
+		guess = items.r_guess.data();
+		know = items.r_know.data();
 		elsewise = (*guess[obj->o_which] != '\0' ?
-			guess[obj->o_which] : items.r_stones[obj->o_which]);
+			guess[obj->o_which] : items.r_stones[obj->which<Ring>()]);
 		break;
 	case ItemKind::Potion:
-		guess = (char **)items.p_guess;
-		know = items.p_know;
+		guess = items.p_guess.data();
+		know = items.p_know.data();
 		elsewise = (*guess[obj->o_which] != '\0' ?
-			guess[obj->o_which] : items.p_colors[obj->o_which]);
+			guess[obj->o_which] : items.p_colors[obj->which<Potion>()]);
 		break;
 	case ItemKind::Scroll:
-		guess = (char **)items.s_guess;
-		know = items.s_know;
+		guess = items.s_guess.data();
+		know = items.s_know.data();
 		elsewise = (*guess[obj->o_which] != '\0' ?
-			guess[obj->o_which] : items.s_names[obj->o_which].storage);
+			guess[obj->o_which] : items.s_names[obj->which<Scroll>()].storage);
 		break;
 	case ItemKind::Stick:
-		guess = (char **)items.ws_guess;
-		know = items.ws_know;
+		guess = items.ws_guess.data();
+		know = items.ws_know.data();
 		elsewise = (*guess[obj->o_which] != '\0' ?
-			guess[obj->o_which] : items.ws_made[obj->o_which]);
+			guess[obj->o_which] : items.ws_made[obj->which<Stick>()]);
 		break;
 	default:
 		msg("you can't call that anything");

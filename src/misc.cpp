@@ -485,14 +485,14 @@ spread(int nm)
  *	Call an object something after use.
  */
 void
-call_it(bool know, char **guess)
+call_it(bool know, std::string &guess)
 {
-	if (know && **guess)
-		**guess = '\0';
-	else if (!know && **guess == '\0') {
+	if (know && !guess.empty())
+		guess.clear();
+	else if (!know && guess.empty()) {
 		msg("{}call it? ",noterse("what do you want to "));
 		if (auto name = input().read_line(MAXNAME))
-			strcpy(*guess, name->c_str());
+			guess = *name;
 		msg("");
 	}
 }
@@ -783,7 +783,7 @@ void
 call()
 {
 	Item *obj;
-	char **guess;
+	std::string *guess;
 	std::string_view elsewise;
 	bool *know;
 	rogue::Items &items = game().items;
@@ -799,25 +799,25 @@ call()
 	case ItemKind::Ring:
 		guess = items.r_guess.data();
 		know = items.r_know.data();
-		elsewise = (*guess[obj->o_which] != '\0' ?
+		elsewise = (!guess[obj->o_which].empty() ?
 			guess[obj->o_which] : items.r_stones[obj->which<Ring>()]);
 		break;
 	case ItemKind::Potion:
 		guess = items.p_guess.data();
 		know = items.p_know.data();
-		elsewise = (*guess[obj->o_which] != '\0' ?
+		elsewise = (!guess[obj->o_which].empty() ?
 			guess[obj->o_which] : items.p_colors[obj->which<Potion>()]);
 		break;
 	case ItemKind::Scroll:
 		guess = items.s_guess.data();
 		know = items.s_know.data();
-		elsewise = (*guess[obj->o_which] != '\0' ?
-			guess[obj->o_which] : items.s_names[obj->which<Scroll>()].storage);
+		elsewise = (!guess[obj->o_which].empty() ?
+			guess[obj->o_which] : items.s_names[obj->which<Scroll>()]);
 		break;
 	case ItemKind::Stick:
 		guess = items.ws_guess.data();
 		know = items.ws_know.data();
-		elsewise = (*guess[obj->o_which] != '\0' ?
+		elsewise = (!guess[obj->o_which].empty() ?
 			guess[obj->o_which] : items.ws_made[obj->which<Stick>()]);
 		break;
 	default:
@@ -832,7 +832,7 @@ call()
 	msg("Was called \"{}\"", elsewise);
 	msg("what do you want to call it? ");
 	if (auto name = input().read_line(MAXNAME); name && !name->empty())
-		strcpy(guess[obj->o_which], name->c_str());
+		guess[obj->o_which] = *name;
 	msg("");
 }
 

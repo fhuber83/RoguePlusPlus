@@ -232,21 +232,6 @@ wait_msg(const char *msg)
 }
 
 /*
- * show_win:
- *	Function used to display a window and wait before returning
- */
-void
-show_win(char *message)
-{
-	rogue::Player &player = game().player;
-
-	display().write_at(0, 0, message);
-	display().write_at(player.body.t_pos.y, player.body.t_pos.x, "");
-	wait_for(' ');
-}
-
-
-/*
  * str_attr:  format a string with attributes.
  *
  *    formats:

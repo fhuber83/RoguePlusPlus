@@ -25,8 +25,8 @@ concept KindEnum = std::is_enum_v<E> && (kind_count<E> > 0);
  * number, so a potion can't look itself up in the scroll table. N is larger
  * than kind_count<E> only for a table that has entries for the fake kinds.
  *
- * Like the C array it replaces, it is trivially copyable, and value-initialized
- * (`= {}`) it is zeroed. A table given entries must have exactly N of them,
+ * Like the C array it replaces, it is trivially copyable when T is, and
+ * value-initialized (`= {}`) it is zeroed. A table given entries must have exactly N of them,
  * checked at compile time.
  */
 template <KindEnum E, typename T, std::size_t N = kind_count<E>>

@@ -19,19 +19,11 @@ protected:
 		game().items = rogue::Items();
 		game().options = rogue::Options();
 		rogue::Items &items = game().items;
-		int g = 0;
-		for (Scroll s : kinds<Scroll>())
-			items.s_guess[s] = items.guesses[g++].storage;
-		for (Potion p : kinds<Potion>()) {
-			items.p_guess[p] = items.guesses[g++].storage;
+		for (Potion p : kinds<Potion>())
 			items.p_colors[p] = "red";
-		}
-		for (Ring r : kinds<Ring>()) {
-			items.r_guess[r] = items.guesses[g++].storage;
+		for (Ring r : kinds<Ring>())
 			items.r_stones[r] = "opal";
-		}
 		for (Stick w : kinds<Stick>()) {
-			items.ws_guess[w] = items.guesses[g++].storage;
 			items.ws_type[w] = "staff";
 			items.ws_made[w] = "oak";
 		}
@@ -53,13 +45,13 @@ protected:
 TEST_F(Names, Scrolls)
 {
 	constexpr Scroll scroll = Scroll::MonsterConfusion;
-	strcpy(game().items.s_names[scroll].storage, "zim zam zoo zar bax");
+	game().items.s_names[scroll] = "zim zam zoo zar bax";
 	Item obj = item(ItemKind::Scroll, scroll);
 	EXPECT_EQ(inv_name(&obj, false), "A scroll titled 'zim zam zoo zar bax'");
 	game().options.terse = true;	// brief names cut the title
 	EXPECT_EQ(inv_name(&obj, false), "A scroll titled 'zim zam zoo zar b'");
 	obj.o_count = 3;
-	strcpy(game().items.s_guess[scroll], "boom");
+	game().items.s_guess[scroll] = "boom";
 	EXPECT_EQ(inv_name(&obj, false), "3 scrolls called boom");
 	game().items.s_know[scroll] = true;
 	EXPECT_EQ(inv_name(&obj, false), std::format("3 scrolls of {}", game().items.s_magic[scroll].mi_name));
@@ -115,7 +107,7 @@ TEST_F(Names, UnknownSticksKeepTheirArticle)
 {
 	Item obj = item(ItemKind::Stick, Stick::Light);
 	EXPECT_EQ(inv_name(&obj, false), "A oak staff");
-	strcpy(game().items.ws_guess[Stick::Light], "zapper");
+	game().items.ws_guess[Stick::Light] = "zapper";
 	EXPECT_EQ(inv_name(&obj, false), "A staff called zapper(oak)");
 }
 

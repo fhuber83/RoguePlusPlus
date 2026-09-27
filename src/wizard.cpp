@@ -35,16 +35,16 @@ whatis(void)
 	switch (obj->o_type) {
 	case ItemKind::Scroll:
 		items.s_know[obj->which<Scroll>()] = true;
-		*items.s_guess[obj->which<Scroll>()] = '\0';
+		items.s_guess[obj->which<Scroll>()].clear();
 		break;
 	case ItemKind::Potion:
 		items.p_know[obj->which<Potion>()] = true;
-		*items.p_guess[obj->which<Potion>()] = '\0';
+		items.p_guess[obj->which<Potion>()].clear();
 		break;
 	case ItemKind::Stick:
 		items.ws_know[obj->which<Stick>()] = true;
 		obj->o_flags.set(ISKNOW);
-		*items.ws_guess[obj->which<Stick>()] = '\0';
+		items.ws_guess[obj->which<Stick>()].clear();
 		break;
 	case ItemKind::Weapon:
 	case ItemKind::Armor:
@@ -53,7 +53,7 @@ whatis(void)
 	case ItemKind::Ring:
 		items.r_know[obj->which<Ring>()] = true;
 		obj->o_flags.set(ISKNOW);
-		*items.r_guess[obj->which<Ring>()] = '\0';
+		items.r_guess[obj->which<Ring>()].clear();
 		break;
 	default:	// the other kinds of item: nothing
 		break;

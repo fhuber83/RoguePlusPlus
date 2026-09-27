@@ -207,7 +207,7 @@ quaff(void)
 		discardit = true;
 	}
 
-	call_it(items.p_know[obj->which<Potion>()], &items.p_guess[obj->which<Potion>()]);
+	call_it(items.p_know[obj->which<Potion>()], items.p_guess[obj->which<Potion>()]);
 
 	if (discardit)
 		discard(obj);

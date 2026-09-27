@@ -37,16 +37,16 @@ static_assert(map_rows == maxrow - 1 && map_cols == COLS);
  * then update the size (measured on x86-64 Linux, where these hold).
  */
 #if defined(__x86_64__) && defined(__linux__)
-static_assert(sizeof(Game) == 18168, "a Game member was added or removed: save it");
+static_assert(sizeof(Game) == 18496, "a Game member was added or removed: save it");
 static_assert(sizeof(Player) == 264, "a Player field was added or removed: save it");
 static_assert(sizeof(Level) == 6488, "a Level field was added or removed: save it");
-static_assert(sizeof(Items) == 4480, "an Items field was added or removed: save it");
+static_assert(sizeof(Items) == 4808, "an Items field was added or removed: save it");
 static_assert(sizeof(Pool) == 1336, "a Pool field was added or removed: save it");
 static_assert(sizeof(Turn) == 80, "a Turn field was added or removed: save it");
 static_assert(sizeof(MessageLine) == 80, "a MessageLine field was added or removed: save it");
 static_assert(sizeof(Options) == 264, "an Options field was added or removed: decide whether to save it");
 static_assert(sizeof(Creature) == 112, "a Creature field was added or removed: save it");
-static_assert(sizeof(Item) == 80, "an Item field was added or removed: save it");
+static_assert(sizeof(Item) == 64, "an Item field was added or removed: save it");
 static_assert(sizeof(struct room) == 132, "a room field was added or removed: save it");
 static_assert(sizeof(struct stats) == 48, "a stats field was added or removed: save it");
 #endif
@@ -238,16 +238,21 @@ json bools_json(const auto &values)
 	return out;
 }
 
+/*
+ * The guesses were buffers in one pool, handed out in the order main() calls
+ * init_names(), init_colors(), init_stones() and init_materials(); the file
+ * keeps that: "guesses" is the pool and "guessed" each kind's index in it.
+ */
+constexpr std::size_t guess_pool_size =
+	kind_count<Scroll> + kind_count<Potion> + kind_count<Ring> + kind_count<Stick>;
+
 template <KindEnum E>
-json guess_refs(const Items &items, const KindTable<E, char *> &guesses)
+json guess_refs(const KindTable<E, std::string> &guesses, json &pool)
 {
 	json out = json::array();
-	for (const char *guess : guesses) {
-		const struct array *slot = reinterpret_cast<const struct array *>(guess);
-		if (points_into(slot, items.guesses, std::size(items.guesses)))
-			out.push_back(slot - items.guesses);
-		else
-			out.push_back(nullptr);
+	for (const std::string &guess : guesses) {
+		out.push_back(pool.size());
+		pool.push_back(bytes_to_utf8(guess));
 	}
 	return out;
 }
@@ -255,11 +260,15 @@ json guess_refs(const Items &items, const KindTable<E, char *> &guesses)
 json items_json(const Items &items)
 {
 	json names = json::array();
-	for (const struct array &a : items.s_names)
-		names.push_back(bytes_to_utf8(a.storage));
+	for (const std::string &name : items.s_names)
+		names.push_back(bytes_to_utf8(name));
 	json guesses = json::array();
-	for (const struct array &a : items.guesses)
-		guesses.push_back(bytes_to_utf8(a.storage));
+	json guessed = {
+		{"scrolls", guess_refs(items.s_guess, guesses)},
+		{"potions", guess_refs(items.p_guess, guesses)},
+		{"rings", guess_refs(items.r_guess, guesses)},
+		{"sticks", guess_refs(items.ws_guess, guesses)},
+	};
 	return {
 		{"odds", {
 			{"scrolls", odds_json(items.s_magic.data(), items.s_magic.size())},
@@ -280,13 +289,8 @@ json items_json(const Items &items)
 			{"sticks", bools_json(items.ws_know)},
 		}},
 		{"guesses", std::move(guesses)},
-		{"guessed", {
-			{"scrolls", guess_refs(items, items.s_guess)},
-			{"potions", guess_refs(items, items.p_guess)},
-			{"rings", guess_refs(items, items.r_guess)},
-			{"sticks", guess_refs(items, items.ws_guess)},
-		}},
-		{"next_guess", items.iguess},
+		{"guessed", std::move(guessed)},
+		{"next_guess", guess_pool_size},
 		{"group", items.group},
 	};
 }
@@ -605,7 +609,6 @@ void item_from(Item &o, const json &j)
 {
 	o.o_type = static_cast<ItemKind>(num_in<int>(j, "kind", 0, static_cast<int>(ItemKind::Missile)));
 	o.o_pos = coord_of(j, "pos");
-	o.o_text = nullptr;
 	o.o_launch = num<char>(j, "launch");
 	o.o_damage = kept_text(field(j, "damage"), "\"damage\"");
 	o.o_hurldmg = kept_text(field(j, "hurl"), "\"hurl\"");
@@ -704,18 +707,19 @@ void bools_from(KindTable<E, bool> &values, const json &j, const char *key)
 }
 
 template <KindEnum E>
-void guess_refs_from(Items &items, KindTable<E, char *> &guesses, const json &j, const char *key)
+void guess_refs_from(KindTable<E, std::string> &guesses, const std::vector<std::string> &pool,
+	const json &j, const char *key)
 {
 	const json &list = array_of(j, key, guesses.size());
 	for (std::size_t i = 0; i < guesses.size(); i++) {
-		if (list[i].is_null()) {
-			guesses.data()[i] = nullptr;
+		if (list[i].is_null()) {			/* a game saved before init_*() */
+			guesses.data()[i].clear();
 			continue;
 		}
 		int n = whole(list[i], key);
-		if (n < 0 || n >= static_cast<int>(std::size(items.guesses)))
+		if (n < 0 || n >= static_cast<int>(pool.size()))
 			fail(std::string("\"") + key + "\" is out of range");
-		guesses.data()[i] = items.guesses[n].storage;
+		guesses.data()[i] = pool[n];
 	}
 }
 
@@ -729,10 +733,8 @@ void items_from(Items &items, const json &j)
 	odds_from(items.things, NUMTHINGS, odds, "things");
 
 	const json &names = array_of(j, "scroll_names", items.s_names.size());
-	for (std::size_t i = 0; i < items.s_names.size(); i++) {
-		struct array &name = items.s_names.data()[i];
-		text_into(name.storage, sizeof name.storage, json{{"name", names[i]}}, "name");
-	}
+	for (std::size_t i = 0; i < items.s_names.size(); i++)
+		items.s_names.data()[i] = text_of(json{{"name", names[i]}}, "name", MAXNAME);
 	kept_texts_from(items.p_colors, j, "potion_colors");
 	kept_texts_from(items.r_stones, j, "ring_stones");
 	kept_texts_from(items.ws_made, j, "stick_materials");
@@ -744,15 +746,16 @@ void items_from(Items &items, const json &j)
 	bools_from(items.r_know, known, "rings");
 	bools_from(items.ws_know, known, "sticks");
 
-	const json &texts = array_of(j, "guesses", std::size(items.guesses));
-	for (std::size_t i = 0; i < std::size(items.guesses); i++)
-		text_into(items.guesses[i].storage, sizeof items.guesses[i].storage, json{{"guess", texts[i]}}, "guess");
+	const json &texts = array_of(j, "guesses", guess_pool_size);
+	std::vector<std::string> pool;
+	for (const json &text : texts)
+		pool.push_back(text_of(json{{"guess", text}}, "guess", MAXNAME));
 	const json &guessed = field(j, "guessed");
-	guess_refs_from(items, items.s_guess, guessed, "scrolls");
-	guess_refs_from(items, items.p_guess, guessed, "potions");
-	guess_refs_from(items, items.r_guess, guessed, "rings");
-	guess_refs_from(items, items.ws_guess, guessed, "sticks");
-	items.iguess = num_in<int>(j, "next_guess", 0, std::size(items.guesses));
+	guess_refs_from(items.s_guess, pool, guessed, "scrolls");
+	guess_refs_from(items.p_guess, pool, guessed, "potions");
+	guess_refs_from(items.r_guess, pool, guessed, "rings");
+	guess_refs_from(items.ws_guess, pool, guessed, "sticks");
+	num_in<int>(j, "next_guess", 0, guess_pool_size);	// the pool's use, no longer needed
 	items.group = num<int>(j, "group");
 }
 

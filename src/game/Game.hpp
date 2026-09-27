@@ -173,7 +173,7 @@ struct Items {
 	KindTable<Stick, magic_item> ws_magic;
 	struct magic_item things[NUMTHINGS];	/* Odds of each type of item */
 	/* How the kinds look in this game */
-	KindTable<Scroll, array> s_names = {};	/* Names of the scrolls */
+	KindTable<Scroll, std::string> s_names;	/* Names of the scrolls */
 	KindTable<Potion, std::string_view> p_colors = {};	/* Colors of the potions */
 	KindTable<Ring, std::string_view> r_stones = {};	/* Stone settings of the rings */
 	KindTable<Stick, std::string_view> ws_made = {};	/* What sticks are made of */
@@ -183,13 +183,11 @@ struct Items {
 	KindTable<Potion, bool> p_know = {};			/* Does he know what a potion does */
 	KindTable<Ring, bool> r_know = {};				/* Does he know what a ring does */
 	KindTable<Stick, bool> ws_know = {};			/* Does he know what a stick does */
-	KindTable<Scroll, char *> s_guess = {};			/* Players guess at what scroll is */
-	KindTable<Potion, char *> p_guess = {};			/* Players guess at what potion is */
-	KindTable<Ring, char *> r_guess = {};			/* Players guess at what ring is */
-	KindTable<Stick, char *> ws_guess = {};			/* Players guess at what wand is */
-	/* storage for the guesses (was _guesses) */
-	struct array guesses[kind_count<Scroll> + kind_count<Potion> + kind_count<Ring> + kind_count<Stick>] = {};
-	int iguess = 0;
+	/* What he has called each kind, at most MAXNAME characters; "" for nothing */
+	KindTable<Scroll, std::string> s_guess;
+	KindTable<Potion, std::string> p_guess;
+	KindTable<Ring, std::string> r_guess;
+	KindTable<Stick, std::string> ws_guess;
 	int group = 2;							/* Current group number */
 
 	Items();

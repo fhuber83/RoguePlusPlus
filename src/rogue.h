@@ -127,9 +127,6 @@ struct magic_item {
 	short mi_worth;
 };
 
-struct array {
-	char storage[MAXNAME+1];
-};
 
 /*
  * Room structure
@@ -437,7 +434,6 @@ void	more(const char *msg);
 void	putmsg(std::string_view msg);
 void	status(void);
 void	wait_for(unsigned char ch);
-void	show_win(char *message);
 void	str_attr(const char *str);
 void	SIG2(void);
 std::string	io_unctrl(unsigned char ch);
@@ -482,7 +478,7 @@ void	eat(void);
 void	chg_str(int amt);
 void	add_str(str_t *sp, int amt);
 void	aggravate(void);
-void	call_it(bool know, char **guess);
+void	call_it(bool know, std::string &guess);
 void	help(const struct h_list *helpscr);
 void	search(void);
 void	d_level(void);

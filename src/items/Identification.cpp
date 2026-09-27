@@ -29,12 +29,12 @@ inv_name(const Item *obj, bool drop)
 			name = std::format("{} scrolls ", obj->o_count);
 		if (items.s_know[which])
 			name += std::format("of {}", items.s_magic[which].mi_name);
-		else if (*items.s_guess[which])
+		else if (!items.s_guess[which].empty())
 			name += std::format("called {}", items.s_guess[which]);
 		else if (brief)
-			name += std::format("titled '{:.17}'", static_cast<const char *>(items.s_names[which].storage));
+			name += std::format("titled '{:.17}'", items.s_names[which]);
 		else
-			name += std::format("titled '{}'", static_cast<const char *>(items.s_names[which].storage));
+			name += std::format("titled '{}'", items.s_names[which]);
 		break;
 	}
 	case ItemKind::Potion: {
@@ -47,7 +47,7 @@ inv_name(const Item *obj, bool drop)
 		if (items.p_know[which])
 			name += brief ? std::format("of {}", items.p_magic[which].mi_name)
 				: std::format("of {}({})", items.p_magic[which].mi_name, items.p_colors[which]);
-		else if (*items.p_guess[which])
+		else if (!items.p_guess[which].empty())
 			name += brief ? std::format("called {}", items.p_guess[which])
 				: std::format("called {}({})", items.p_guess[which], items.p_colors[which]);
 		else if (obj->o_count == 1)
@@ -116,7 +116,7 @@ inv_name(const Item *obj, bool drop)
 			name += brief ? std::format("of {}{}", items.ws_magic[which].mi_name, charge_str(obj))
 				: std::format("of {}{}({})", items.ws_magic[which].mi_name,
 					charge_str(obj), items.ws_made[which]);
-		else if (*items.ws_guess[which])
+		else if (!items.ws_guess[which].empty())
 			name += brief ? std::format("called {}", items.ws_guess[which])
 				: std::format("called {}({})", items.ws_guess[which], items.ws_made[which]);
 		else {
@@ -136,7 +136,7 @@ inv_name(const Item *obj, bool drop)
 			name = brief ? std::format("A{} ring of {}", ring_num(obj), items.r_magic[which].mi_name)
 				: std::format("A{} ring of {}({})", ring_num(obj),
 					items.r_magic[which].mi_name, items.r_stones[which]);
-		else if (*items.r_guess[which])
+		else if (!items.r_guess[which].empty())
 			name = brief ? std::format("A ring called {}", items.r_guess[which])
 				: std::format("A ring called {}({})", items.r_guess[which], items.r_stones[which]);
 		else
@@ -202,7 +202,7 @@ void
 print_disc(ItemKind type)
 {
 	bool *know = nullptr;
-	char **guess = nullptr;
+	std::string *guess = nullptr;
 	int i, maxnum = 0, num_found;
 	static Item obj;
 	static short order[std::max({kind_count<Scroll>, kind_count<Potion>, kind_count<Ring>, kind_count<Stick>})];
@@ -238,7 +238,7 @@ print_disc(ItemKind type)
 	obj.o_flags.reset();
 	num_found = 0;
 	for (i = 0; i < maxnum; i++)
-		if (know[order[i]] || *guess[order[i]])
+		if (know[order[i]] || !guess[order[i]].empty())
 		{
 			obj.o_type = type;
 			obj.o_which = order[i];

@@ -281,7 +281,7 @@ read_scroll()
 	player.body.t_pack.remove(obj);
 	discardit = true;
 	}
-	call_it(items.s_know[obj->which<Scroll>()], &items.s_guess[obj->which<Scroll>()]);
+	call_it(items.s_know[obj->which<Scroll>()], items.s_guess[obj->which<Scroll>()]);
 
 	if (discardit)
 	discard(obj);

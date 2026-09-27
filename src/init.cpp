@@ -271,7 +271,7 @@ init_colors()
 		used[j] = true;
 		items.p_colors[p] = rainbow[j];
 		items.p_know[p] = false;
-		items.p_guess[p] = (char *)&items.guesses[items.iguess++];
+		items.p_guess[p].clear();
 	}
 	accumulate_odds(items.p_magic);
 }
@@ -309,8 +309,8 @@ init_names()
 	}
 	name.pop_back();
 	items.s_know[s] = false;
-	items.s_guess[s] = (char *)&items.guesses[items.iguess++];
-	strcpy(items.s_names[s].storage, name.c_str());
+	items.s_guess[s].clear();
+	items.s_names[s] = name;
 	}
 	accumulate_odds(items.s_magic);
 }
@@ -362,7 +362,7 @@ init_stones()
 		used[j] = true;
 		items.r_stones[r] = stones[j].st_name;
 		items.r_know[r] = false;
-		items.r_guess[r] = (char *)&items.guesses[items.iguess++];
+		items.r_guess[r].clear();
 		items.r_magic[r].mi_worth += stones[j].st_value;
 	}
 	accumulate_odds(items.r_magic);
@@ -411,7 +411,7 @@ init_materials()
 			}
 		items.ws_made[w] = str;
 		items.ws_know[w] = false;
-		items.ws_guess[w] = (char *)&items.guesses[items.iguess++];
+		items.ws_guess[w].clear();
 	}
 	accumulate_odds(items.ws_magic);
 }

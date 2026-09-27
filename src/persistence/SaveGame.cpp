@@ -186,13 +186,20 @@ json room_json(const struct room &r)
 const char hex_digits[] = "0123456789abcdef";
 
 // The map rows of a column-major level grid (see INDEX()), as hex
-json grid_json(const unsigned char *grid)
+// A grid is saved as its bytes: the map's glyphs, or the MapFlags' bits
+unsigned char byte_of(unsigned char cell) { return cell; }
+unsigned char byte_of(MapFlags cell) { return cell.bits(); }
+void set_byte(unsigned char &cell, unsigned char b) { cell = b; }
+void set_byte(MapFlags &cell, unsigned char b) { cell = MapFlags::from_bits(b); }
+
+template <class Cell>
+json grid_json(const Cell *grid)
 {
 	json rows = json::array();
 	for (int y = 1; y < maxrow; y++) {
 		std::string row;
 		for (int x = 0; x < COLS; x++) {
-			unsigned char b = grid[INDEX(y, x)];
+			unsigned char b = byte_of(grid[INDEX(y, x)]);
 			row += hex_digits[b >> 4];
 			row += hex_digits[b & 0xf];
 		}
@@ -201,16 +208,16 @@ json grid_json(const unsigned char *grid)
 	return rows;
 }
 
-json odds_json(const struct magic_item *items, int n)
+json odds_json(const struct magic_item *items, std::size_t n)
 {
 	json out = json::array();
-	for (int i = 0; i < n; i++)
+	for (std::size_t i = 0; i < n; i++)
 		out.push_back(json::array({items[i].mi_prob, items[i].mi_worth}));
 	return out;
 }
 
-template <class T, std::size_t N>
-json texts_json(const T (&texts)[N])
+// texts and values: a KindTable or an array
+json texts_json(const auto &texts)
 {
 	json out = json::array();
 	for (const auto &t : texts)
@@ -218,8 +225,7 @@ json texts_json(const T (&texts)[N])
 	return out;
 }
 
-template <std::size_t N>
-json bools_json(const bool (&values)[N])
+json bools_json(const auto &values)
 {
 	json out = json::array();
 	for (bool v : values)
@@ -227,8 +233,8 @@ json bools_json(const bool (&values)[N])
 	return out;
 }
 
-template <std::size_t N>
-json guess_refs(const Items &items, char *const (&guesses)[N])
+template <KindEnum E>
+json guess_refs(const Items &items, const KindTable<E, char *> &guesses)
 {
 	json out = json::array();
 	for (const char *guess : guesses) {
@@ -251,10 +257,10 @@ json items_json(const Items &items)
 		guesses.push_back(bytes_to_utf8(a.storage));
 	return {
 		{"odds", {
-			{"scrolls", odds_json(items.s_magic, MAXSCROLLS)},
-			{"potions", odds_json(items.p_magic, MAXPOTIONS)},
-			{"rings", odds_json(items.r_magic, MAXRINGS)},
-			{"sticks", odds_json(items.ws_magic, MAXSTICKS)},
+			{"scrolls", odds_json(items.s_magic.data(), items.s_magic.size())},
+			{"potions", odds_json(items.p_magic.data(), items.p_magic.size())},
+			{"rings", odds_json(items.r_magic.data(), items.r_magic.size())},
+			{"sticks", odds_json(items.ws_magic.data(), items.ws_magic.size())},
 			{"things", odds_json(items.things, NUMTHINGS)},
 		}},
 		{"scroll_names", std::move(names)},
@@ -288,13 +294,13 @@ json player_json(const Game &g)
 		{"max_stats", stats_json(g, p.max_stats)},
 		{"purse", p.purse}, {"in_pack", p.in_pack},
 		{"armor", item_ref(g, p.armor)}, {"weapon", item_ref(g, p.weapon)},
-		{"rings", json::array({item_ref(g, p.rings[0]), item_ref(g, p.rings[1])})},
+		{"rings", json::array({item_ref(g, p.rings[Hand::Left]), item_ref(g, p.rings[Hand::Right])})},
 		{"food_left", p.food_left}, {"hungry_state", p.hungry_state},
 		{"has_amulet", p.has_amulet}, {"saw_amulet", p.saw_amulet},
 		{"max_level", p.max_level}, {"no_command", p.no_command}, {"no_move", p.no_move},
 		{"quiet", p.quiet}, {"fungus_hits", p.fung_hit},
 		{"flytrap_damage", bytes_to_utf8(p.flytrap_damage)},
-		{"was_trapped", p.was_trapped},
+		{"was_trapped", std::to_underlying(p.was_trapped)},
 		{"old_pos", coord_json(p.old_pos)}, {"old_room", room_ref(g, p.old_room)},
 	};
 }
@@ -634,20 +640,21 @@ std::vector<unsigned char> hex_row(const json &v, const char *what)
 	return out;
 }
 
-void grid_from(unsigned char *grid, const json &j, const char *key)
+template <class Cell>
+void grid_from(Cell *grid, const json &j, const char *key)
 {
 	const json &rows = array_of(j, key, map_rows);
 	for (int y = 1; y < maxrow; y++) {
 		std::vector<unsigned char> row = hex_row(rows[y - 1], key);
 		for (int x = 0; x < COLS; x++)
-			grid[INDEX(y, x)] = row[x];
+			set_byte(grid[INDEX(y, x)], row[x]);
 	}
 }
 
-void odds_from(struct magic_item *items, int n, const json &j, const char *key)
+void odds_from(struct magic_item *items, std::size_t n, const json &j, const char *key)
 {
 	const json &list = array_of(j, key, n);
-	for (int i = 0; i < n; i++) {
+	for (std::size_t i = 0; i < n; i++) {
 		if (!list[i].is_array() || list[i].size() != 2)
 			fail(std::string("\"") + key + "\" entries should be [odds, worth]");
 		items[i].mi_prob = whole(list[i][0], key);
@@ -658,53 +665,55 @@ void odds_from(struct magic_item *items, int n, const json &j, const char *key)
 	}
 }
 
-template <std::size_t N>
-void kept_texts_from(const char *(&texts)[N], const json &j, const char *key)
+template <KindEnum E>
+void kept_texts_from(KindTable<E, const char *> &texts, const json &j, const char *key)
 {
-	const json &list = array_of(j, key, N);
-	for (std::size_t i = 0; i < N; i++)
-		texts[i] = kept_text(list[i], key);
+	const json &list = array_of(j, key, texts.size());
+	for (std::size_t i = 0; i < texts.size(); i++)
+		texts.data()[i] = kept_text(list[i], key);
 }
 
-template <std::size_t N>
-void bools_from(bool (&values)[N], const json &j, const char *key)
+template <KindEnum E>
+void bools_from(KindTable<E, bool> &values, const json &j, const char *key)
 {
-	const json &list = array_of(j, key, N);
-	for (std::size_t i = 0; i < N; i++) {
+	const json &list = array_of(j, key, values.size());
+	for (std::size_t i = 0; i < values.size(); i++) {
 		if (!list[i].is_boolean())
 			fail(std::string("\"") + key + "\" should hold true or false");
-		values[i] = list[i].get<bool>();
+		values.data()[i] = list[i].get<bool>();
 	}
 }
 
-template <std::size_t N>
-void guess_refs_from(Items &items, char *(&guesses)[N], const json &j, const char *key)
+template <KindEnum E>
+void guess_refs_from(Items &items, KindTable<E, char *> &guesses, const json &j, const char *key)
 {
-	const json &list = array_of(j, key, N);
-	for (std::size_t i = 0; i < N; i++) {
+	const json &list = array_of(j, key, guesses.size());
+	for (std::size_t i = 0; i < guesses.size(); i++) {
 		if (list[i].is_null()) {
-			guesses[i] = nullptr;
+			guesses.data()[i] = nullptr;
 			continue;
 		}
 		int n = whole(list[i], key);
 		if (n < 0 || n >= static_cast<int>(std::size(items.guesses)))
 			fail(std::string("\"") + key + "\" is out of range");
-		guesses[i] = items.guesses[n].storage;
+		guesses.data()[i] = items.guesses[n].storage;
 	}
 }
 
 void items_from(Items &items, const json &j)
 {
 	const json &odds = field(j, "odds");
-	odds_from(items.s_magic, MAXSCROLLS, odds, "scrolls");
-	odds_from(items.p_magic, MAXPOTIONS, odds, "potions");
-	odds_from(items.r_magic, MAXRINGS, odds, "rings");
-	odds_from(items.ws_magic, MAXSTICKS, odds, "sticks");
+	odds_from(items.s_magic.data(), items.s_magic.size(), odds, "scrolls");
+	odds_from(items.p_magic.data(), items.p_magic.size(), odds, "potions");
+	odds_from(items.r_magic.data(), items.r_magic.size(), odds, "rings");
+	odds_from(items.ws_magic.data(), items.ws_magic.size(), odds, "sticks");
 	odds_from(items.things, NUMTHINGS, odds, "things");
 
-	const json &names = array_of(j, "scroll_names", MAXSCROLLS);
-	for (int i = 0; i < MAXSCROLLS; i++)
-		text_into(items.s_names[i].storage, sizeof items.s_names[i].storage, json{{"name", names[i]}}, "name");
+	const json &names = array_of(j, "scroll_names", items.s_names.size());
+	for (std::size_t i = 0; i < items.s_names.size(); i++) {
+		struct array &name = items.s_names.data()[i];
+		text_into(name.storage, sizeof name.storage, json{{"name", names[i]}}, "name");
+	}
 	kept_texts_from(items.p_colors, j, "potion_colors");
 	kept_texts_from(items.r_stones, j, "ring_stones");
 	kept_texts_from(items.ws_made, j, "stick_materials");
@@ -795,8 +804,8 @@ void player_from(Game &g, const json &j)
 	p.armor = item_at(g, field(j, "armor"), "\"armor\"");
 	p.weapon = item_at(g, field(j, "weapon"), "\"weapon\"");
 	const json &rings = array_of(j, "rings", 2);
-	p.rings[0] = item_at(g, rings[0], "\"rings\"");
-	p.rings[1] = item_at(g, rings[1], "\"rings\"");
+	p.rings[Hand::Left] = item_at(g, rings[0], "\"rings\"");
+	p.rings[Hand::Right] = item_at(g, rings[1], "\"rings\"");
 	p.food_left = num<int>(j, "food_left");
 	p.hungry_state = num<int>(j, "hungry_state");
 	p.has_amulet = flag(j, "has_amulet");
@@ -807,7 +816,7 @@ void player_from(Game &g, const json &j)
 	p.quiet = num<int>(j, "quiet");
 	p.fung_hit = num<int>(j, "fungus_hits");
 	text_into(p.flytrap_damage, sizeof p.flytrap_damage, j, "flytrap_damage");
-	p.was_trapped = num<unsigned char>(j, "was_trapped");
+	p.was_trapped = static_cast<Trapped>(num_in<unsigned char>(j, "was_trapped", 0, 2));
 	p.old_pos = coord_of(j, "old_pos");
 	p.old_room = room_at(g, field(j, "old_room"), "\"old_room\"");
 }

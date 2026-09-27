@@ -10,7 +10,7 @@
 #include "persistence/HighScores.hpp"
 #include "rogue.h"
 
-#define TOPSCORES	10
+constexpr int TOPSCORES = 10;
 struct sc_ent {
 	char sc_name[38];
 	int sc_rank;
@@ -34,7 +34,6 @@ static int	add_scores(struct sc_ent *newscore, struct sc_ent *oldlist);
 void
 score(int amount, int flags, char monst)
 {
-#ifndef WIZARD
 	struct sc_ent his_score, top_ten[TOPSCORES];
 	int rank=0;
 	char response = ' ';
@@ -46,7 +45,7 @@ score(int amount, int flags, char monst)
 	{
 		wait_msg("see rankings");
 	}
-	while ((file = fopen(game().options.score_file, "r")) == NULL)
+	while ((file = fopen(game().options.score_file, "r")) == nullptr)
 	{
 		display().write("\n");
 		if (game().noscore || (amount == 0))
@@ -73,13 +72,13 @@ reread:
 	bool legacy = false;
 	bool readable = get_scores(top_ten, &legacy);
 
-	if (game().noscore != TRUE)
+	if (game().noscore != true)
 	{
 		strcpy(his_score.sc_name,game().options.name);
 		his_score.sc_gold = amount;
 		his_score.sc_fate = flags ? flags : monst;
 		his_score.sc_level = game().player.max_level;
-		his_score.sc_rank  = pstats.s_lvl;
+		his_score.sc_rank  = game().player.body.t_stats.s_lvl;
 		rank = add_scores(&his_score, top_ten);
 	}
 	fclose(file);
@@ -91,10 +90,8 @@ reread:
 		display().write("The score file can't be read, so this score is not kept.\n");
 	wait_msg("exit");
 	display().write("\n");
-#endif //WIZARD
 }
 
-#ifndef WIZARD
 /*
  * get_scores:
  *	Fill top10 from the score file (persistence/HighScores); the entries
@@ -144,7 +141,7 @@ put_scores(struct sc_ent *top10)
 		e.experience = sc.sc_rank;
 		e.fate = sc.sc_fate;
 		if (is_alpha(sc.sc_fate))
-			e.cause = std::string("killed by ") + killname(0xff & sc.sc_fate, TRUE);
+			e.cause = std::string("killed by ") + killname(0xff & sc.sc_fate, true);
 		else
 			e.cause = sc.sc_fate == 2 ? "a total winner" : sc.sc_fate == 1 ? "quit" : "weirded out";
 		entries.push_back(std::move(e));
@@ -166,7 +163,7 @@ pr_scores(int newrank, struct sc_ent *top10)
 	{
 		std::string &text = texts[n];
 
-		altmsg = NULL;
+		altmsg = nullptr;
 		if (top10->sc_gold <=0 )
 			break;
 		if (top10->sc_level >= 26)
@@ -174,7 +171,7 @@ pr_scores(int newrank, struct sc_ent *top10)
 
 		if (is_alpha(top10->sc_fate))
 		{
-			dthstr = " killed by " + killname((0xff & top10->sc_fate), TRUE);
+			dthstr = " killed by " + killname((0xff & top10->sc_fate), true);
 		}
 		else
 		{
@@ -198,7 +195,7 @@ pr_scores(int newrank, struct sc_ent *top10)
 			if (top10->sc_rank > 1 && (strlen(top10->sc_name)))
 				text = std::format(" \"{}\"", he_man[top10->sc_rank - 1]);
 		}
-		if (altmsg == NULL)
+		if (altmsg == nullptr)
 			text += std::format("{} on level {}", dthstr, top10->sc_level);
 		else
 			text += altmsg;
@@ -232,7 +229,6 @@ add_scores(struct sc_ent *newscore, struct sc_ent *oldlist)
 	*insert = *newscore;
 	return retcode;
 }
-#endif //WIZARD
 
 /*
  * death:
@@ -247,7 +243,7 @@ death(char monst)
 
 	display().curtain_down();
 	year = md_localtime()->year;
-	display().draw_tombstone(game().options.name, killname(monst, TRUE), game().player.purse, year);
+	display().draw_tombstone(game().options.name, killname(monst, true), game().player.purse, year);
 	display().curtain_up();
 	display().write_at(LINES-1, 0, "");
 	score(game().player.purse, 0, monst);
@@ -266,13 +262,14 @@ total_winner(void)
 	unsigned char c;
 	int oldpurse;
 	rogue::Items &items = game().items;
+	rogue::Player &player = game().player;
 
 	display().draw_winner(game().options.terse);
 	wait_for(' ');
 	display().clear_page();
 	display().write_at(0, 0, "   Worth  Item");
-	oldpurse = game().player.purse;
-	for (c = 'a', obj = pack.first(); obj != NULL; c++, obj = pack.after(obj))
+	oldpurse = player.purse;
+	for (c = 'a', obj = player.body.t_pack.first(); obj != nullptr; c++, obj = player.body.t_pack.after(obj))
 	{
 	switch (obj->o_type)
 	{
@@ -280,58 +277,59 @@ total_winner(void)
 			worth = 2 * obj->o_count;
 			break;
 		case ItemKind::Weapon:
-			switch (obj->o_which)
+			switch (obj->which<WeaponType>())
 			{
-				case MACE: worth = 8; break;
-				case SWORD: worth = 15; break;
-				case CROSSBOW: worth = 30; break;
-				case ARROW: worth = 1; break;
-				case DAGGER: worth = 2; break;
-				case TWOSWORD: worth = 75; break;
-				case DART: worth = 1; break;
-				case BOW: worth = 15; break;
-				case BOLT: worth = 1; break;
-				case SPEAR: worth = 5;
+				case WeaponType::Mace: worth = 8; break;
+				case WeaponType::LongSword: worth = 15; break;
+				case WeaponType::Crossbow: worth = 30; break;
+				case WeaponType::Arrow: worth = 1; break;
+				case WeaponType::Dagger: worth = 2; break;
+				case WeaponType::TwoHandedSword: worth = 75; break;
+				case WeaponType::Dart: worth = 1; break;
+				case WeaponType::ShortBow: worth = 15; break;
+				case WeaponType::CrossbowBolt: worth = 1; break;
+				case WeaponType::Spear: worth = 5;
 				break;
+				default: break;
 			}
 			worth *= 3 * (obj->o_hplus + obj->o_dplus) + obj->o_count;
 			obj->o_flags.set(ISKNOW);
 			break;
 		case ItemKind::Armor:
-			switch (obj->o_which)
+			switch (obj->which<ArmorType>())
 			{
-				case LEATHER: worth = 20; break;
-				case RING_MAIL: worth = 25; break;
-				case STUDDED_LEATHER: worth = 20; break;
-				case SCALE_MAIL: worth = 30; break;
-				case CHAIN_MAIL: worth = 75; break;
-				case SPLINT_MAIL: worth = 80; break;
-				case BANDED_MAIL: worth = 90; break;
-				case PLATE_MAIL: worth = 150;
+				case ArmorType::Leather: worth = 20; break;
+				case ArmorType::RingMail: worth = 25; break;
+				case ArmorType::StuddedLeather: worth = 20; break;
+				case ArmorType::ScaleMail: worth = 30; break;
+				case ArmorType::ChainMail: worth = 75; break;
+				case ArmorType::SplintMail: worth = 80; break;
+				case ArmorType::BandedMail: worth = 90; break;
+				case ArmorType::PlateMail: worth = 150;
 				break;
 			}
 			worth += (9 - obj->o_ac) * 100;
-			worth += (10 * (a_class[obj->o_which] - obj->o_ac));
+			worth += (10 * (a_class[obj->which<ArmorType>()] - obj->o_ac));
 			obj->o_flags.set(ISKNOW);
 			break;
 		case ItemKind::Scroll:
-			worth = items.s_magic[obj->o_which].mi_worth;
+			worth = items.s_magic[obj->which<Scroll>()].mi_worth;
 			worth *= obj->o_count;
-			if (!items.s_know[obj->o_which])
+			if (!items.s_know[obj->which<Scroll>()])
 				worth /= 2;
-			items.s_know[obj->o_which] = TRUE;
+			items.s_know[obj->which<Scroll>()] = true;
 			break;
 		case ItemKind::Potion:
-			worth = items.p_magic[obj->o_which].mi_worth;
+			worth = items.p_magic[obj->which<Potion>()].mi_worth;
 			worth *= obj->o_count;
-			if (!items.p_know[obj->o_which])
+			if (!items.p_know[obj->which<Potion>()])
 				worth /= 2;
-			items.p_know[obj->o_which] = TRUE;
+			items.p_know[obj->which<Potion>()] = true;
 			break;
 		case ItemKind::Ring:
-			worth = items.r_magic[obj->o_which].mi_worth;
-			if (obj->o_which == R_ADDSTR || obj->o_which == R_ADDDAM ||
-				obj->o_which == R_PROTECT || obj->o_which == R_ADDHIT)
+			worth = items.r_magic[obj->which<Ring>()].mi_worth;
+			if (obj->which<Ring>() == Ring::AddStrength || obj->which<Ring>() == Ring::IncreaseDamage ||
+				obj->which<Ring>() == Ring::Protection || obj->which<Ring>() == Ring::Dexterity)
 			{
 				if (obj->o_ac > 0)
 					worth += obj->o_ac * 100;
@@ -341,15 +339,15 @@ total_winner(void)
 			if (!obj->o_flags.test(ISKNOW))
 				worth /= 2;
 			obj->o_flags.set(ISKNOW);
-			items.r_know[obj->o_which] = TRUE;
+			items.r_know[obj->which<Ring>()] = true;
 			break;
 		case ItemKind::Stick:
-			worth = items.ws_magic[obj->o_which].mi_worth;
-			worth += 20 * obj->o_charges;
+			worth = items.ws_magic[obj->which<Stick>()].mi_worth;
+			worth += 20 * obj->charges();
 			if (!obj->o_flags.test(ISKNOW))
 				worth /= 2;
 			obj->o_flags.set(ISKNOW);
-			items.ws_know[obj->o_which] = TRUE;
+			items.ws_know[obj->which<Stick>()] = true;
 				break;
 			case ItemKind::Amulet:
 			worth = 1000;
@@ -360,12 +358,12 @@ total_winner(void)
 	if (worth < 0)
 		worth = 0;
 	display().write_at(c - 'a' + 1, 0,
-		std::format("{}) {:5}  {}", static_cast<char>(c), worth, inv_name(obj, FALSE)));
-	game().player.purse += worth;
+		std::format("{}) {:5}  {}", static_cast<char>(c), worth, inv_name(obj, false)));
+	player.purse += worth;
 	}
 	display().write_at(c - 'a' + 1, 0,
 		std::format("   {:5}  Gold Pieces          ", static_cast<unsigned>(oldpurse)));
-	score(game().player.purse, 2, 0);
+	score(player.purse, 2, 0);
 	md_exit(EXIT_SUCCESS);
 }
 
@@ -379,7 +377,7 @@ killname(unsigned char monst, bool doart)
 	const char *sp;
 	bool article;
 
-	article = TRUE;
+	article = true;
 	switch (monst)
 	{
 	case 'a':
@@ -393,18 +391,18 @@ killname(unsigned char monst, bool doart)
 		break;
 	case 's':
 		sp = "starvation";
-		article = FALSE;
+		article = false;
 		break;
 	case 'f':
 		sp = "fall";
 		break;
 	default:
-		if (ismonster(monst))
+		if (is_monster(monst))
 			sp = monsters[monst-'A'].m_name;
 		else
 		{
 			sp = "God";
-			article = FALSE;
+			article = false;
 		}
 	}
 	if (doart && article)

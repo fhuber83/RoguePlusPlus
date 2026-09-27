@@ -7,18 +7,6 @@
 #include	"rogue.h"
 
 
-unsigned char swap_bits(
-	unsigned char data,
-	unsigned i,      // positions of bit sequences to swap
-	unsigned j,
-	unsigned length  // number of consecutive bits in each sequence
-)
-{
-	unsigned char x = ((data >> i) ^ (data >> j)) & ((1U << length) - 1);
-	return data ^ ((x << i) | (x << j));
-}
-
-
 /*
  * setup:
  *	Get starting setup for all games
@@ -26,9 +14,7 @@ unsigned char swap_bits(
 void
 setup()
 {
-	game().options.terse = FALSE;
-	if (COLS == 40)
-		game().options.terse = TRUE;
+	game().options.terse = false;
 	game().options.expert = game().options.terse;
 }
 
@@ -51,7 +37,7 @@ start_terminal()
 long
 md_time(void)
 {
-	return (long)time(NULL);
+	return (long)time(nullptr);
 }
 
 
@@ -63,7 +49,7 @@ TM *
 md_localtime()
 {
 	static TM md_local;
-	time_t secs = time(NULL);
+	time_t secs = time(nullptr);
 	struct tm *local = localtime(&secs);
 	md_local.second = local->tm_sec;
 	md_local.minute = local->tm_min;
@@ -83,7 +69,7 @@ void
 md_nanosleep(long nanoseconds)
 {
 	struct timespec ts = {0, nanoseconds};
-	nanosleep(&ts, NULL);
+	nanosleep(&ts, nullptr);
 }
 
 
@@ -137,12 +123,12 @@ static const struct xlate {
 	{rogue::ui::key::function(1),	'?'},
 	{rogue::ui::key::function(2),	'/'},
 	{rogue::ui::key::function(3),	'a'},
-	{rogue::ui::key::function(4),	CTRL('R')},
+	{rogue::ui::key::function(4),	ctrl('R')},
 	{rogue::ui::key::function(5),	'c'},
 	{rogue::ui::key::function(6),	'D'},
 	{rogue::ui::key::function(7),	'i'},
 	{rogue::ui::key::function(8),	'^'},
-	{rogue::ui::key::function(9),	CTRL('F')},
+	{rogue::ui::key::function(9),	ctrl('F')},
 	{rogue::ui::key::AltF9,	'F'}  // ALT+F9
 };
 
@@ -193,22 +179,8 @@ readchar()
 
 
 /*
- * newmem:
- *	Allocate memory, or exit. Callers free() what they get.
- */
-char *
-newmem(unsigned int nbytes)
-{
-	void * newaddr;
-	if ((newaddr = (char *) malloc(nbytes)) == NULL)
-		fatal("No Memory");
-	return (char *)newaddr;
-}
-
-
-/*
  *  fatal: exit with a message
- *  fatal() formats it with std::format (extern.h) and calls this, which
+ *  fatal() formats it with std::format (mach_dep.h) and calls this, which
  *  prints it after closing the terminal
  */
 void
@@ -228,8 +200,7 @@ fatal_text(std::string_view text)
 void md_exit(int status)
 {
 	rogue::ui::stop_terminal();
-#ifdef ROGUE_DEBUG
-	printf("Exited normally\n");
-#endif
+	if constexpr (rogue::config::debug_checks)
+		std::fputs("Exited normally\n", stdout);
 	exit(status);
 }

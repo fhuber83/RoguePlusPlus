@@ -10,7 +10,7 @@
  * All this should be low as possible in memory so that
  * we can save the min
  */
-const char *w_names[MAXWEAPONS + 1] = {	/* Names of the various weapons */
+KindTable<WeaponType, const char *, kind_count<WeaponType> + 1> w_names = {	/* Names of the various weapons */
 	"mace",
 	"long sword",
 	"short bow",
@@ -21,9 +21,9 @@ const char *w_names[MAXWEAPONS + 1] = {	/* Names of the various weapons */
 	"crossbow",
 	"crossbow bolt",
 	"spear",
-	NULL				/* fake entry for dragon's breath */
+	nullptr				/* fake entry for dragon's breath, set by fire_bolt() */
 };
-const char *a_names[MAXARMORS] = {		/* Names of armor types */
+const KindTable<ArmorType, const char *> a_names = {		/* Names of armor types */
 	"leather armor",
 	"ring mail",
 	"studded leather armor",
@@ -34,7 +34,7 @@ const char *a_names[MAXARMORS] = {		/* Names of armor types */
 	"plate mail"
 };
 
-int a_chances[MAXARMORS] = {		/* Chance for each armor type */
+const KindTable<ArmorType, int> a_chances = {		/* Chance for each armor type */
 	20,
 	35,
 	50,
@@ -44,7 +44,7 @@ int a_chances[MAXARMORS] = {		/* Chance for each armor type */
 	95,
 	100
 };
-int a_class[MAXARMORS] = {		/* Armor class for each armor type */
+const KindTable<ArmorType, int> a_class = {		/* Armor class for each armor type */
 	8,
 	7,
 	7,
@@ -60,7 +60,7 @@ int a_class[MAXARMORS] = {		/* Armor class for each armor type */
  * game().items, since init_*() accumulate the odds and add the stone value
  * to the worth of rings.
  */
-const struct magic_item s_magic_base[MAXSCROLLS] = {
+const KindTable<Scroll, magic_item> s_magic_base = {
 	{ "monster confusion",	 8, 140 },
 	{ "magic mapping",		 5, 150 },
 	{ "hold monster",		 3, 180 },
@@ -78,7 +78,7 @@ const struct magic_item s_magic_base[MAXSCROLLS] = {
 	{ "vorpalize weapon",	 1, 300 }
 };
 
-const struct magic_item p_magic_base[MAXPOTIONS] = {
+const KindTable<Potion, magic_item> p_magic_base = {
 	{ "confusion",		 8,   5 },
 	{ "paralysis",		10,   5 },
 	{ "poison",			 8,   5 },
@@ -95,7 +95,7 @@ const struct magic_item p_magic_base[MAXPOTIONS] = {
 	{ "thirst quenching",	 1,   5 }
 };
 
-const struct magic_item r_magic_base[MAXRINGS] = {
+const KindTable<Ring, magic_item> r_magic_base = {
 	{ "protection",		 9, 400 },
 	{ "add strength",		 9, 400 },
 	{ "sustain strength",	 5, 280 },
@@ -112,7 +112,7 @@ const struct magic_item r_magic_base[MAXRINGS] = {
 	{ "maintain armor",		 5, 380 }
 };
 
-const struct magic_item ws_magic_base[MAXSTICKS] = {
+const KindTable<Stick, magic_item> ws_magic_base = {
 	{ "light",			12, 250 },
 	{ "striking",		 9,  75 },
 	{ "lightning",		 3, 330 },
@@ -132,110 +132,106 @@ const struct magic_item ws_magic_base[MAXSTICKS] = {
 /*
  * Original code used CP437 codes hard coded inside the help strings,
  * instead of the #define'd char constants for FLOOR, PLAYER etc.
- * To support the constants, H_*() macros were created and helpcoms/helpobjs
- * array type has changed from string to struct h_list.
+ * To support the constants, helpcoms/helpobjs array type has changed from
+ * string to struct h_list, whose constructors build the glyph column.
  *
  * Ironically, struct h_list already existed in rogue.h, but it was unused in
  * code, so perhaps original authors either abandoned the idea or were halfway
  * through implementing it.
  */
-#define H_STR(str)	{"", str}
-#define H_CHSTR(ch, str)	{{ch, ':', ' ', '\0'}, str}
-#define H_CH2STR(ch1, ch2, sep, str)	{{ch1, sep, ch2, ':', ' ', '\0'}, str}
-#define H_END	{"", ""}
 struct h_list helpcoms[] = {
-	H_STR("F1     list of commands"),
-	H_STR("F2     list of symbols"),
-	H_STR("F3     repeat command"),
-	H_STR("F4     repeat message"),
-	H_STR("F5     rename something"),
-	H_STR("F6     recall what's been discovered"),
-	H_STR("F7     inventory of your possessions"),
-	H_STR("F8     <dir> identify trap type"),
-	H_STR("F9     The Any Key (definable)"),
-	H_STR("Alt F9 defines the Any Key"),
-	H_STR("Space  Clear -More- message"),
-	H_STR("\x11\xd9     the Enter Key"),
-	H_STR("\x1b      left"),
-	H_STR("\x19      down"),
-	H_STR("\x18      up"),
-	H_STR("\x1a      right"),
-	H_STR("Home   up & left"),
-	H_STR("PgUp   up & right"),
-	H_STR("End    down & left"),
-	H_STR("PgDn   down & right"),
-	H_STR("Scroll Fast Play mode"),
-	H_STR(".      rest"),
-	H_STR(">      go down a staircase"),
-	H_STR("<      go up a staircase"),
-	H_STR("Esc    cancel command"),
-	H_STR("d      drop object"),
-	H_STR("e      eat food"),
-	H_STR("f      <dir> find something"),
-	H_STR("q      quaff potion"),
-	H_STR("r      read paper"),
-	H_STR("s      search for trap/secret door"),
-	H_STR("t      <dir> throw something"),
-	H_STR("w      wield a weapon"),
-	H_STR("z      <dir> zap with a wand"),
-	H_STR("B      run down & left"),
-	H_STR("H      run left"),
-	H_STR("J      run down"),
-	H_STR("K      run up"),
-	H_STR("L      run right"),
-	H_STR("N      run down & right"),
-	H_STR("U      run up & right"),
-	H_STR("Y      run up & left"),
-	H_STR("W      wear armor"),
-	H_STR("T      take armor off"),
-	H_STR("P      put on ring"),
-	H_STR("Q      quit"),
-	H_STR("R      remove ring"),
-	H_STR("S      save game"),
-	H_STR("^      identify trap"),
-	H_STR("?      help"),
-	H_STR("/      key"),
-	H_STR("+      throw"),
-	H_STR("-      zap"),
-	H_STR("Ctrl t terse message format"),
-	H_STR("Ctrl r repeat message"),
-	H_STR("Del    search for something hidden"),
-	H_STR("Ins    <dir> find something"),
-	H_STR("a      repeat command"),
-	H_STR("c      rename something"),
-	H_STR("i      inventory"),
-	H_STR("v      version number"),
-	H_STR("D      list what has been discovered"),
-	H_END
+	{"F1     list of commands"},
+	{"F2     list of symbols"},
+	{"F3     repeat command"},
+	{"F4     repeat message"},
+	{"F5     rename something"},
+	{"F6     recall what's been discovered"},
+	{"F7     inventory of your possessions"},
+	{"F8     <dir> identify trap type"},
+	{"F9     The Any Key (definable)"},
+	{"Alt F9 defines the Any Key"},
+	{"Space  Clear -More- message"},
+	{"\x11\xd9     the Enter Key"},
+	{"\x1b      left"},
+	{"\x19      down"},
+	{"\x18      up"},
+	{"\x1a      right"},
+	{"Home   up & left"},
+	{"PgUp   up & right"},
+	{"End    down & left"},
+	{"PgDn   down & right"},
+	{"Scroll Fast Play mode"},
+	{".      rest"},
+	{">      go down a staircase"},
+	{"<      go up a staircase"},
+	{"Esc    cancel command"},
+	{"d      drop object"},
+	{"e      eat food"},
+	{"f      <dir> find something"},
+	{"q      quaff potion"},
+	{"r      read paper"},
+	{"s      search for trap/secret door"},
+	{"t      <dir> throw something"},
+	{"w      wield a weapon"},
+	{"z      <dir> zap with a wand"},
+	{"B      run down & left"},
+	{"H      run left"},
+	{"J      run down"},
+	{"K      run up"},
+	{"L      run right"},
+	{"N      run down & right"},
+	{"U      run up & right"},
+	{"Y      run up & left"},
+	{"W      wear armor"},
+	{"T      take armor off"},
+	{"P      put on ring"},
+	{"Q      quit"},
+	{"R      remove ring"},
+	{"S      save game"},
+	{"^      identify trap"},
+	{"?      help"},
+	{"/      key"},
+	{"+      throw"},
+	{"-      zap"},
+	{"Ctrl t terse message format"},
+	{"Ctrl r repeat message"},
+	{"Del    search for something hidden"},
+	{"Ins    <dir> find something"},
+	{"a      repeat command"},
+	{"c      rename something"},
+	{"i      inventory"},
+	{"v      version number"},
+	{"D      list what has been discovered"},
+	{""}		/* the end */
 };
 
 struct h_list helpobjs[] = {
-	H_CHSTR(FLOOR,   "the floor"),
-	H_CHSTR(PLAYER,  "the hero"),
-	H_CHSTR(FOOD,    "some food"),
-	H_CHSTR(AMULET,  "the amulet of yendor"),
-	H_CHSTR(SCROLL,  "a scroll"),
-	H_CHSTR(WEAPON,  "a weapon"),
-	H_CHSTR(ARMOR,   "a piece of armor"),
-	H_CHSTR(GOLD,    "some gold"),
-	H_CHSTR(STICK,   "a magic staff"),
-	H_CHSTR(POTION,  "a potion"),
-	H_CHSTR(RING,    "a magic ring"),
-	H_CHSTR(0xB2,    "a passage"),  // not PASSAGE (0xB1)
+	{FLOOR,   "the floor"},
+	{PLAYER,  "the hero"},
+	{FOOD,    "some food"},
+	{AMULET,  "the amulet of yendor"},
+	{SCROLL,  "a scroll"},
+	{WEAPON,  "a weapon"},
+	{ARMOR,   "a piece of armor"},
+	{GOLD,    "some gold"},
+	{STICK,   "a magic staff"},
+	{POTION,  "a potion"},
+	{RING,    "a magic ring"},
+	{0xB2,    "a passage"},  // not PASSAGE (0xB1)
 	/* make sure in 40 or 80 column none of line draw set connects */
 	/* this is currently in column 1 for 80 */
-	H_CHSTR(DOOR,    "a door"),
-	H_CHSTR(ULWALL,  "an upper left corner"),
-	H_CHSTR(TRAP,    "a trap"),
-	H_CHSTR(HWALL,   "a horizontal wall"),
-	H_CHSTR(LRWALL,  "a lower right corner"),
-	H_CHSTR(LLWALL,  "a lower left corner"),
-	H_CHSTR(VWALL,   "a vertical wall"),
-	H_CHSTR(URWALL,  "an upper right corner"),
-	H_CHSTR(STAIRS,  "a stair case"),
-	H_CH2STR(MAGIC, BMAGIC, ',', "safe and perilous magic"),
-	H_CH2STR('A',   'Z',    '-', "26 different monsters"),
-	H_END
+	{DOOR,    "a door"},
+	{ULWALL,  "an upper left corner"},
+	{TRAP,    "a trap"},
+	{HWALL,   "a horizontal wall"},
+	{LRWALL,  "a lower right corner"},
+	{LLWALL,  "a lower left corner"},
+	{VWALL,   "a vertical wall"},
+	{URWALL,  "an upper right corner"},
+	{STAIRS,  "a stair case"},
+	{MAGIC, ',', BMAGIC, "safe and perilous magic"},
+	{'A', '-', 'Z', "26 different monsters"},
+	{""}		/* the end */
 };
 /*
  * Names of the various experience levels
@@ -265,77 +261,73 @@ const char *he_man[] = {
 	"Bug Chaser"
 };
 
-/* bool askme = TRUE; */			/* Ask about unidentified things */
-/* bool fight_flush = TRUE;	*/	/* True if toilet input */
-/* bool jump = FALSE;	*/		/* Show running as series of jumps */
-/* bool passgo = TRUE;	*/		/* Follow passages */
-/* bool slow_invent = FALSE; */		/* Inventory one line at a time */
-#ifdef WIZARD
-bool wizard = FALSE;			/* True if allows wizard commands */
-#endif
+/* bool askme = true; */			/* Ask about unidentified things */
+/* bool fight_flush = true;	*/	/* True if toilet input */
+/* bool jump = false;	*/		/* Show running as series of jumps */
+/* bool passgo = true;	*/		/* Follow passages */
+/* bool slow_invent = false; */		/* Inventory one line at a time */
 /* char *release;	*/			/* Release number of rogue */
 /* WINDOW *hw;				 Used as a scratch window */
 
 /*
- * s_hpt and s_maxhp of these templates are unused (___), as each new monster
- * rolls its hit points.
+ * A value the game never reads (was ___): s_hpt and s_maxhp of the monster
+ * templates, as each new monster rolls its hit points, and the worth of the
+ * kinds of item.
  */
-#define ___ 1
-#define XX 10
+constexpr int NA = 1;
+// Every monster's strength
+constexpr str_t XX = 10;
+
 struct monster monsters[26] =
 {
 	/* Name		 CARRY	FLAG    str, exp, lvl, amr, hpt, dmg, maxhp */
-	{ "aquator",	0,	ISMEAN,	{ XX, 20,   5,   2, ___, "0d0/0d0", ___ } },
-	{ "bat",	 	0,	ISFLY,	{ XX,  1,   1,   3, ___, "1d2", ___ } },
-	{ "centaur",	 15,	{},	{ XX, 25,   4,   4, ___, "1d6/1d6", ___ } },
-	{ "dragon",	 100,	ISMEAN,	{ XX,6800, 10,  -1, ___, "1d8/1d8/3d10", ___ } },
-	{ "emu",	 0,	ISMEAN,	{ XX,  2,   1,   7, ___, "1d2", ___ } },
+	{ "aquator",	0,	ISMEAN,	{ XX, 20,   5,   2, NA, "0d0/0d0", NA } },
+	{ "bat",	 	0,	ISFLY,	{ XX,  1,   1,   3, NA, "1d2", NA } },
+	{ "centaur",	 15,	{},	{ XX, 25,   4,   4, NA, "1d6/1d6", NA } },
+	{ "dragon",	 100,	ISMEAN,	{ XX,6800, 10,  -1, NA, "1d8/1d8/3d10", NA } },
+	{ "emu",	 0,	ISMEAN,	{ XX,  2,   1,   7, NA, "1d2", NA } },
 		/* damage is overwritten per game via flytrap_damage, see new_monster() */
 		/* string with others, since it is written on in the program */
-	{ "venus flytrap",0,	ISMEAN,	{ XX, 80,   8,   3, ___, "0d0", ___ } },
-	{ "griffin",	 20,	ISMEAN|ISFLY|ISREGEN,	{XX,2000, 13, 2,___, "4d3/3d5/4d3", ___ } },
-	{ "hobgoblin",	 0,	ISMEAN,	{ XX,  3,   1,   5, ___, "1d8", ___ } },
-	{ "ice monster", 0,	ISMEAN,	{ XX,  15,   1,   9, ___, "1d2", ___ } },
-	{ "jabberwock",  70,	{},	{ XX,4000, 15,   6, ___, "2d12/2d4", ___ } },
-	{ "kestral",	 0,	ISMEAN|ISFLY, { XX,  1,   1,   7, ___, "1d4", ___ } },
+	{ "venus flytrap",0,	ISMEAN,	{ XX, 80,   8,   3, NA, "0d0", NA } },
+	{ "griffin",	 20,	ISMEAN|ISFLY|ISREGEN,	{XX,2000, 13, 2,NA, "4d3/3d5/4d3", NA } },
+	{ "hobgoblin",	 0,	ISMEAN,	{ XX,  3,   1,   5, NA, "1d8", NA } },
+	{ "ice monster", 0,	ISMEAN,	{ XX,  15,   1,   9, NA, "1d2", NA } },
+	{ "jabberwock",  70,	{},	{ XX,4000, 15,   6, NA, "2d12/2d4", NA } },
+	{ "kestral",	 0,	ISMEAN|ISFLY, { XX,  1,   1,   7, NA, "1d4", NA } },
 		/*
 		 * The original has ISGREED (0x40) in the CARRY column: leprechauns
 		 * carry something 64% of the time and are not greedy. Kept as is.
 		 */
-	{ "leprechaun",	 0x40,	{},	{ XX, 10,   3,   8, ___, "1d2", ___ } },
-	{ "medusa",	 40,	ISMEAN,	{ XX,200,   8,   2, ___, "3d4/3d4/2d5", ___ } },
-	{ "nymph",	 100,	{},	{ XX, 37,   3,   9, ___, "0d0", ___ } },
-	{ "orc",	 15,	ISGREED,{ XX,  5,   1,   6, ___, "1d8", ___ } },
-	{ "phantom",	 0,ISINVIS,{ XX,120,   8,   3, ___, "4d4", ___ } },
-	{ "quagga",	 30,	ISMEAN,	{ XX, 32,   3,   2, ___, "1d2/1d2/1d4", ___ } },
-	{ "rattlesnake", 0,	ISMEAN,	{ XX,  9,   2,   3, ___, "1d6", ___ } },
-	{ "slime",	 	 0,	ISMEAN,	{ XX,  1,   2,   8, ___, "1d3", ___ } },
-	{ "troll",	 50,	ISREGEN|ISMEAN,{ XX, 120, 6, 4, ___, "1d8/1d8/2d6", ___ } },
-	{ "ur-vile",	 0,	ISMEAN,	{ XX,190,   7,  -2, ___, "1d3/1d3/1d3/4d6", ___ } },
-	{ "vampire",	 20,	ISREGEN|ISMEAN,{ XX,350,   8,   1, ___, "1d10", ___ } },
-	{ "wraith",	 0,	{},	{ XX, 55,   5,   4, ___, "1d6", ___ } },
-	{ "xeroc",30,	{},	{ XX,100,   7,   7, ___, "3d4", ___ } },
-	{ "yeti",	 30,	{},	{ XX, 50,   4,   6, ___, "1d6/1d6", ___ } },
-	{ "zombie",	 0,	ISMEAN,	{ XX,  6,   2,   8, ___, "1d8", ___ } }
+	{ "leprechaun",	 0x40,	{},	{ XX, 10,   3,   8, NA, "1d2", NA } },
+	{ "medusa",	 40,	ISMEAN,	{ XX,200,   8,   2, NA, "3d4/3d4/2d5", NA } },
+	{ "nymph",	 100,	{},	{ XX, 37,   3,   9, NA, "0d0", NA } },
+	{ "orc",	 15,	ISGREED,{ XX,  5,   1,   6, NA, "1d8", NA } },
+	{ "phantom",	 0,ISINVIS,{ XX,120,   8,   3, NA, "4d4", NA } },
+	{ "quagga",	 30,	ISMEAN,	{ XX, 32,   3,   2, NA, "1d2/1d2/1d4", NA } },
+	{ "rattlesnake", 0,	ISMEAN,	{ XX,  9,   2,   3, NA, "1d6", NA } },
+	{ "slime",	 	 0,	ISMEAN,	{ XX,  1,   2,   8, NA, "1d3", NA } },
+	{ "troll",	 50,	ISREGEN|ISMEAN,{ XX, 120, 6, 4, NA, "1d8/1d8/2d6", NA } },
+	{ "ur-vile",	 0,	ISMEAN,	{ XX,190,   7,  -2, NA, "1d3/1d3/1d3/4d6", NA } },
+	{ "vampire",	 20,	ISREGEN|ISMEAN,{ XX,350,   8,   1, NA, "1d10", NA } },
+	{ "wraith",	 0,	{},	{ XX, 55,   5,   4, NA, "1d6", NA } },
+	{ "xeroc",30,	{},	{ XX,100,   7,   7, NA, "3d4", NA } },
+	{ "yeti",	 30,	{},	{ XX, 50,   4,   6, NA, "1d6/1d6", NA } },
+	{ "zombie",	 0,	ISMEAN,	{ XX,  6,   2,   8, NA, "1d8", NA } }
 };
-#undef ___
-#undef XX
 
 /*
  * The odds of each kind of random item. init_things() accumulates them in
- * the game's copy, and the only user is new_thing(). mi_worth is unused (___).
+ * the game's copy, and the only user is new_thing(). mi_worth is unused (NA).
  */
-#define ___ 1
 const struct magic_item things_base[NUMTHINGS] = {
-	{ 0,			27, ___ },	/* potion */
-	{ 0,			30, ___ },	/* scroll */
-	{ 0,			17, ___ },	/* food */
-	{ 0,			 8, ___ },	/* weapon */
-	{ 0,			 8, ___ },	/* armor */
-	{ 0,			 5, ___ },	/* ring */
-	{ 0,			 5, ___ }	/* stick */
+	{ 0,			27, NA },	/* potion */
+	{ 0,			30, NA },	/* scroll */
+	{ 0,			17, NA },	/* food */
+	{ 0,			 8, NA },	/* weapon */
+	{ 0,			 8, NA },	/* armor */
+	{ 0,			 5, NA },	/* ring */
+	{ 0,			 5, NA }	/* stick */
 };
-#undef ___
 
 /*
  * Common strings

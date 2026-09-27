@@ -12,11 +12,11 @@
 #include <string>
 #include <utility>
 
+#include "core/Config.hpp"
 #include "ui/ScreenDisplay.hpp"
 #include "glyphs.h"
 
-#define NCURSES_WIDECHAR 1
-#include <curses.h>
+#include <curses.h>	// with NCURSES_WIDECHAR=1 (CMakeLists.txt)
 
 namespace rogue::ui {
 
@@ -26,15 +26,8 @@ namespace {
 int want_lines = MAXLINES;
 int want_cols = MAXCOLS;
 
-/*
- * ASCII instead of Unicode glyphs. ROGUE_CHARSET=1 selects it at build
- * time; 3 (UNICODE, the default) and the retired 2 (raw CP437) do not.
- */
-#if defined(ROGUE_CHARSET) && ROGUE_CHARSET == 1
-bool ascii = true;
-#else
-bool ascii = false;
-#endif
+// ASCII instead of Unicode glyphs (the ROGUE_ASCII build switch)
+constexpr bool ascii = rogue::config::ascii_glyphs;
 
 /*
  * Number of colors we're working with, regardless if terminal has more colors
@@ -422,8 +415,8 @@ CursesTerminal::open(int rows, int cols)
 	start_color();
 	cbreak();  // do not buffer input until ENTER
 	noecho();  // do not echo typed characters
-	nodelay(stdscr, FALSE); // use a blocking getch() (already the default)
-	keypad(stdscr, TRUE);   // enable directional arrows, keypad, home, etc
+	nodelay(stdscr, false); // use a blocking getch() (already the default)
+	keypad(stdscr, true);   // enable directional arrows, keypad, home, etc
 
 	resize_screen();
 	define_keys();
@@ -510,7 +503,7 @@ CursesTerminal::read_key(int timeout_ms)
 
 	wtimeout(stdscr, timeout_ms);
 	ret = wget_wch(stdscr, &wch);
-	nodelay(stdscr, FALSE);
+	nodelay(stdscr, false);
 
 	// we're only interested in ASCII input and special keys
 	if (ret == ERR || (ret == OK && wch > 0x7f))

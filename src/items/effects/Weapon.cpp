@@ -1,24 +1,29 @@
+#include <chrono>
+#include <thread>
+
 #include "rogue.h"
 
 namespace rogue::items::effects {
 
-#define NONE 100
+constexpr char NONE = 100;
 
-static struct init_weps {
+struct init_weps {
 	const char *iw_dam;	/* Damage when wielded */
 	const char *iw_hrl;	/* Damage when thrown */
 	char iw_launch;	/* Launching weapon */
 	ItemFlags iw_flags;	/* Miscellaneous flags */
-} init_dam[MAXWEAPONS] = {
+};
+
+static constexpr KindTable<WeaponType, init_weps> init_dam = {
 	{"2d4",	"1d3",	NONE,     {}},            	/* Mace */
 	{"3d4",	"1d2",	NONE,     {}},            	/* Long sword */
 	{"1d1",	"1d1",	NONE,     {}},            	/* Bow */
-	{"1d1",	"2d3",	BOW,      ISMANY|ISMISL},	/* Arrow */
+	{"1d1",	"2d3",	launched_by(WeaponType::ShortBow), ISMANY|ISMISL},	/* Arrow */
 	{"1d6",	"1d4",	NONE,     ISMISL},       	/* Dagger */
 	{"4d4",	"1d2",	NONE,     {}},            	/* 2h sword */
 	{"1d1",	"1d3",	NONE,     ISMANY|ISMISL},	/* Dart */
 	{"1d1",	"1d1",	NONE,     {}},            	/* Crossbow */
-	{"1d2",	"2d5",	CROSSBOW, ISMANY|ISMISL},	/* Crossbow bolt */
+	{"1d2",	"2d5",	launched_by(WeaponType::Crossbow), ISMANY|ISMISL},	/* Crossbow bolt */
 	{"2d3",	"1d6",	NONE,     ISMISL}        	/* Spear */
 };
 
@@ -37,7 +42,7 @@ missile(int ydelta, int xdelta)
 	/*
 	 * Get which thing we are hurling
 	 */
-	if ((obj = get_item("throw", ItemKind::Weapon)) == NULL)
+	if ((obj = get_item("throw", ItemKind::Weapon)) == nullptr)
 		return;
 	if (!can_drop(obj) || is_current(obj))
 		return;
@@ -48,13 +53,13 @@ missile(int ydelta, int xdelta)
 	 */
 	hack:
 	if (obj->o_count < 2) {
-		detach(pack, obj);
+		game().player.body.t_pack.remove(obj);
 		game().player.in_pack--;
 	} else {
 		/*
 		 * here is a quick hack to check if we can get a new item
 		 */
-		if ((nitem = new_item()) == NULL) {
+		if ((nitem = new_item()) == nullptr) {
 			obj->o_count = 1;
 			msg("something in your pack explodes!!!");
 			goto hack;
@@ -62,7 +67,7 @@ missile(int ydelta, int xdelta)
 		obj->o_count--;
 		if (obj->o_group == 0)
 			game().player.in_pack--;
-		bcopy(*nitem,*obj);
+		*nitem = *obj;
 		nitem->o_count = 1;
 		obj = nitem;
 	}
@@ -71,9 +76,9 @@ missile(int ydelta, int xdelta)
 	 * AHA! Here it has hit something.  If it is a wall or a door,
 	 * or if it misses (combat) the monster, put it on the floor
 	 */
-	if (moat(obj->o_pos.y, obj->o_pos.x) == NULL
-		|| !hit_monster(unc(obj->o_pos), obj))
-			fall(obj, TRUE);
+	if (moat(obj->o_pos.y, obj->o_pos.x) == nullptr
+		|| !hit_monster(obj->o_pos.y, obj->o_pos.x, obj))
+			fall(obj, true);
 }
 
 /*
@@ -85,18 +90,19 @@ void
 do_motion(Item *obj, int ydelta, int xdelta)
 {
 	unsigned char under = '@';
+	rogue::Player &player = game().player;
 
 	/*
 	 * Come fly with us ...
 	 */
-	bcopy(obj->o_pos,hero);
+	obj->o_pos = player.body.t_pos;
 	for (;;) {
 		int ch;
 
 		/*
 		 * Erase the old one
 		 */
-		if (under != '@' && !(obj->o_pos == hero) && cansee(unc(obj->o_pos)))
+		if (under != '@' && !(obj->o_pos == player.body.t_pos) && cansee(obj->o_pos.y, obj->o_pos.x))
 			display().draw_tile(obj->o_pos, under);
 		/*
 		 * Get the new position
@@ -109,8 +115,8 @@ do_motion(Item *obj, int ydelta, int xdelta)
 			 * It hasn't hit anything yet, so display it
 			 * If it alright.
 			 */
-			if (cansee(unc(obj->o_pos))) {
-				under = chat(obj->o_pos.y, obj->o_pos.x);
+			if (cansee(obj->o_pos.y, obj->o_pos.x)) {
+				under = game().level.at(obj->o_pos);
 				display().draw_tile(obj->o_pos, glyph_of(obj->o_type));
 				tick_pause();
 			} else
@@ -126,8 +132,8 @@ std::string
 short_name(Item *obj)
 {
 	switch (obj->o_type) {
-		case ItemKind::Weapon: return w_names[obj->o_which];
-		case ItemKind::Armor: return a_names[obj->o_which];
+		case ItemKind::Weapon: return w_names[obj->which<WeaponType>()];
+		case ItemKind::Armor: return a_names[obj->which<ArmorType>()];
 		case ItemKind::Food: return "food";
 		case ItemKind::Potion:
 		case ItemKind::Scroll:
@@ -135,7 +141,7 @@ short_name(Item *obj)
 		case ItemKind::Stick:
 		case ItemKind::Ring:
 		{
-			std::string name = inv_name(obj, TRUE);
+			std::string name = inv_name(obj, true);
 			return name.substr(name.find(' ') + 1);
 		}
 		default:
@@ -152,23 +158,24 @@ fall(Item *obj, bool pr)
 {
 	static coord fpos;
 	int index;
+	rogue::Level &level = game().level;
 
 	switch (fallpos(obj, &fpos))
 	{
 	case 1:
 		index = INDEX(fpos.y, fpos.x);
-		game().level.map[index] = glyph_of(obj->o_type);
-		bcopy(obj->o_pos,fpos);
+		level.map[index] = glyph_of(obj->o_type);
+		obj->o_pos = fpos;
 		if (cansee(fpos.y, fpos.x))
 		{
 			display().draw_tile(fpos, glyph_of(obj->o_type),
-					((flat(obj->o_pos.y, obj->o_pos.x) & F_PASS) ||
-					 (flat(obj->o_pos.y, obj->o_pos.x) & F_MAZE))
+					(level.flags_at(obj->o_pos).test(MapFlag::Passage) ||
+					 level.flags_at(obj->o_pos).test(MapFlag::Maze))
 						? TileStyle::Inverse : TileStyle::Normal);
-			if (moat(fpos.y,fpos.x) != NULL)
+			if (moat(fpos.y,fpos.x) != nullptr)
 				moat(fpos.y,fpos.x)->t_oldch = glyph_of(obj->o_type);
 		}
-		attach(game().level.objects, obj);
+		level.objects.push_front(obj);
 		return;
 	case 2:
 		pr = 0;
@@ -185,9 +192,9 @@ fall(Item *obj, bool pr)
  *	Set up the initial goodies for a weapon
  */
 void
-init_weapon(Item *weap, unsigned char type)
+init_weapon(Item *weap, WeaponType type)
 {
-	struct init_weps *iwp;
+	const struct init_weps *iwp;
 
 	iwp = &init_dam[type];
 	weap->o_damage = iwp->iw_dam;
@@ -216,9 +223,9 @@ hit_monster(int y, int x, Item *obj)
 	if (mo) {
 		mp.y = y;
 		mp.x = x;
-		return fight(&mp, mo->t_type, obj, TRUE);
+		return fight(&mp, mo->t_type, obj, true);
 	}
-	return FALSE;
+	return false;
 }
 
 /*
@@ -253,10 +260,10 @@ wield(void)
 		return;
 	}
 	player.weapon = oweapon;
-	if ((obj = get_item("wield", ItemKind::Weapon)) == NULL)
+	if ((obj = get_item("wield", ItemKind::Weapon)) == nullptr)
 	{
 bad:
-		game().turn.after = FALSE;
+		game().turn.after = false;
 		return;
 	}
 
@@ -268,7 +275,7 @@ bad:
 	if (is_current(obj))
 		goto bad;
 
-	sp = inv_name(obj, TRUE);
+	sp = inv_name(obj, true);
 	player.weapon = obj;
 	ifterse("now wielding {} ({:c})", "you are now wielding {} ({:c})",
 		sp, pack_char(obj));
@@ -284,6 +291,7 @@ fallpos(Item *obj, coord *newpos)
 {
 	int y, x, cnt = 0, ch;
 	Item *onfloor;
+	rogue::Player &player = game().player;
 
 	for (y = obj->o_pos.y - 1; y <= obj->o_pos.y + 1; y++) {
 		for (x = obj->o_pos.x - 1; x <= obj->o_pos.x + 1; x++) {
@@ -292,9 +300,9 @@ fallpos(Item *obj, coord *newpos)
 			 * put the object there, set it in the level list
 			 * and re-draw the room if he can see it
 			 */
-			if ((y == hero.y && x == hero.x) || offmap(y,x))
+			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || offmap(y,x))
 				continue;
-			if ((ch = chat(y, x)) == FLOOR || ch == PASSAGE) {
+			if ((ch = game().level.at(y, x)) == FLOOR || ch == PASSAGE) {
 				if (rnd(++cnt) == 0) {
 					newpos->y = y;
 					newpos->x = x;
@@ -321,7 +329,7 @@ void
 tick_pause(void)
 {
 	display().flush();
-	msleep(55);
+	std::this_thread::sleep_for(std::chrono::milliseconds(55));
 }
 
 }  // namespace rogue::items::effects

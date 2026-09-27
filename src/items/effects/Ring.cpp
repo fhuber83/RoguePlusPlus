@@ -2,7 +2,7 @@
 
 namespace rogue::items::effects {
 
-static int	gethand(void);
+static std::optional<Hand>	gethand(void);
 
 /*
  * ring_on:
@@ -12,10 +12,10 @@ void
 ring_on()
 {
 	Item *obj;
-	int ring = -1;
+	std::optional<Hand> ring;
 	rogue::Player &player = game().player;
 
-	if ((obj = get_item("put on", ItemKind::Ring)) == NULL)
+	if ((obj = get_item("put on", ItemKind::Ring)) == nullptr)
 		goto no_ring;
 	/*
 	 * Make certain that it is somethings that we want to wear
@@ -31,40 +31,42 @@ ring_on()
 	if (is_current(obj))
 		goto no_ring;
 
-	if (player.rings[LEFT] == NULL)
-		ring = LEFT;
-	if (player.rings[RIGHT] == NULL)
-		ring = RIGHT;
-	if (player.rings[LEFT] == NULL && player.rings[RIGHT] == NULL)
-		if ((ring = gethand()) < 0)
+	if (player.rings[Hand::Left] == nullptr)
+		ring = Hand::Left;
+	if (player.rings[Hand::Right] == nullptr)
+		ring = Hand::Right;
+	if (player.rings[Hand::Left] == nullptr && player.rings[Hand::Right] == nullptr)
+		if (!(ring = gethand()))
 			goto no_ring;
-	if (ring < 0) {
+	if (!ring) {
 		msg("you already have a ring on each hand");
 		goto no_ring;
 	}
-	player.rings[ring] = obj;
+	player.rings[*ring] = obj;
 
 	/*
 	 * Calculate the effect it has on the poor guy.
 	 */
-	switch (obj->o_which) {
-	case R_ADDSTR:
+	switch (obj->which<Ring>()) {
+	case Ring::AddStrength:
 		chg_str(obj->o_ac);
 		break;
-	case R_SEEINVIS:
+	case Ring::SeeInvisible:
 		invis_on();
 		break;
-	case R_AGGR:
+	case Ring::AggravateMonster:
 		aggravate();
+		break;
+	default:
 		break;
 	}
 
 	msg("{}wearing {} ({:c})", noterse("you are now "),
-		inv_name(obj, TRUE), pack_char(obj));
+		inv_name(obj, true), pack_char(obj));
 	return ;
 
 no_ring:
-	game().turn.after = FALSE;
+	game().turn.after = false;
 	return;
 }
 
@@ -75,32 +77,33 @@ no_ring:
 void
 ring_off(void)
 {
-	int ring;
+	Hand ring;
 	Item *obj;
 	char packchar;
 	rogue::Player &player = game().player;
 
-	if (player.rings[LEFT] == NULL && player.rings[RIGHT] == NULL) {
+	if (player.rings[Hand::Left] == nullptr && player.rings[Hand::Right] == nullptr) {
 		msg("you aren't wearing any rings");
-		game().turn.after = FALSE;
+		game().turn.after = false;
 		return;
-	} else if (player.rings[LEFT] == NULL)
-		ring = RIGHT;
-	else if (player.rings[RIGHT] == NULL)
-		ring = LEFT;
+	} else if (player.rings[Hand::Left] == nullptr)
+		ring = Hand::Right;
+	else if (player.rings[Hand::Right] == nullptr)
+		ring = Hand::Left;
+	else if (std::optional<Hand> hand = gethand())
+		ring = *hand;
 	else
-		if ((ring = gethand()) < 0)
-			return;
+		return;
 	game().message.end = 0;
 	obj = player.rings[ring];
-	if (obj == NULL) {
+	if (obj == nullptr) {
 		msg("not wearing such a ring");
-		game().turn.after = FALSE;
+		game().turn.after = false;
 		return;
 	}
 	packchar = pack_char(obj);
 	if (can_drop(obj))
-		msg("was wearing {}({:c})", inv_name(obj, TRUE), packchar);
+		msg("was wearing {}({:c})", inv_name(obj, true), packchar);
 }
 
 /*
@@ -108,7 +111,7 @@ ring_off(void)
  *	Which hand is the hero interested in?
  */
 static
-int
+std::optional<Hand>
 gethand(void)
 {
 	int c;
@@ -116,17 +119,16 @@ gethand(void)
 	for (;;) {
 		msg("left hand or right hand? ");
 		if ((c = readchar()) == ESCAPE)  {
-			game().turn.after = FALSE;
-			return -1;
+			game().turn.after = false;
+			return std::nullopt;
 		}
 		game().message.end = 0;
 		if (c == 'l' || c == 'L')
-			return LEFT;
+			return Hand::Left;
 		else if (c == 'r' || c == 'R')
-			return RIGHT;
+			return Hand::Right;
 		msg("please type L or R");
 	}
-	return -1;
 }
 
 /*
@@ -134,27 +136,27 @@ gethand(void)
  *	How much food does this ring use up?
  */
 int
-ring_eat(int hand)
+ring_eat(Hand hand)
 {
-	if (game().player.rings[hand] == NULL)
+	if (game().player.rings[hand] == nullptr)
 		return 0;
-	switch (game().player.rings[hand]->o_which) {
-	case R_REGEN:
+	switch (game().player.rings[hand]->which<Ring>()) {
+	case Ring::Regeneration:
 		return 2;
-	case R_SUSTSTR:
-	case R_SUSTARM:
-	case R_PROTECT:
-	case R_ADDSTR:
-	case R_STEALTH:
+	case Ring::SustainStrength:
+	case Ring::MaintainArmor:
+	case Ring::Protection:
+	case Ring::AddStrength:
+	case Ring::Stealth:
 		return 1;
-	case R_SEARCH:
+	case Ring::Searching:
 		return(rnd(5)==0);
-	case R_ADDHIT:
-	case R_ADDDAM:
+	case Ring::Dexterity:
+	case Ring::IncreaseDamage:
 		return (rnd(3) == 0);
-	case R_DIGEST:
+	case Ring::SlowDigestion:
 		return -rnd(2);
-	case R_SEEINVIS:
+	case Ring::SeeInvisible:
 		return (rnd(5) == 0);
 	default:
 		return 0;
@@ -170,11 +172,11 @@ ring_num(const Item *obj)
 {
 	if (!obj->o_flags.test(ISKNOW))
 		return "";
-	switch (obj->o_which) {
-	case R_PROTECT:
-	case R_ADDSTR:
-	case R_ADDDAM:
-	case R_ADDHIT:
+	switch (obj->which<Ring>()) {
+	case Ring::Protection:
+	case Ring::AddStrength:
+	case Ring::IncreaseDamage:
+	case Ring::Dexterity:
 		return " " + num(obj->o_ac, 0, RING);
 	default:
 		return "";

@@ -11,11 +11,11 @@ quaff(void)
 {
 	Item *obj;
 	Creature *th;
-	bool discardit = FALSE;
+	bool discardit = false;
 	rogue::Player &player = game().player;
 	rogue::Items &items = game().items;
 
-	if ((obj = get_item("quaff", ItemKind::Potion)) == NULL)
+	if ((obj = get_item("quaff", ItemKind::Potion)) == nullptr)
 		return;
 	/*
 	 * Make certain that it is somethings that we want to drink
@@ -26,31 +26,31 @@ quaff(void)
 		return;
 	}
 	if (obj == player.weapon)
-		player.weapon = NULL;
+		player.weapon = nullptr;
 
 	/*
 	 * Calculate the effect it has on the poor guy.
 	 */
-	switch (obj->o_which)
+	switch (obj->which<Potion>())
 	{
-	case P_CONFUSE:
-		items.p_know[P_CONFUSE] = TRUE;
+	case Potion::Confusion:
+		items.p_know[Potion::Confusion] = true;
 		if (!player.body.t_flags.test(ISHUH))
 			{
 			if (player.body.t_flags.test(ISHUH))
-				lengthen(Event::Unconfuse, rnd(8)+HUHDURATION);
+				lengthen(Event::Unconfuse, rnd(8)+huh_duration());
 			else
-				fuse(Event::Unconfuse, rnd(8)+HUHDURATION);
+				fuse(Event::Unconfuse, rnd(8)+huh_duration());
 			player.body.t_flags.set(ISHUH);
 			msg("wait, what's going on? Huh? What? Who?");
 		}
 		break;
-	case P_POISON:
+	case Potion::Poison:
 		{
 		constexpr const char *sick = "you feel {} sick.";
 
-		items.p_know[P_POISON] = TRUE;
-		if (!ISWEARING(R_SUSTSTR))
+		items.p_know[Potion::Poison] = true;
+		if (!player.wears(Ring::SustainStrength))
 		{
 			chg_str(-(rnd(3)+1));
 			msg(sick, "very");
@@ -59,33 +59,33 @@ quaff(void)
 			msg(sick, "momentarily");
 		}
 		break;
-	case P_HEALING:
-		items.p_know[P_HEALING] = TRUE;
-		if ((pstats.s_hpt += roll(pstats.s_lvl, 4)) > max_hp)
-			pstats.s_hpt = ++max_hp;
+	case Potion::Healing:
+		items.p_know[Potion::Healing] = true;
+		if ((player.body.t_stats.s_hpt += roll(player.body.t_stats.s_lvl, 4)) > player.body.t_stats.s_maxhp)
+			player.body.t_stats.s_hpt = ++player.body.t_stats.s_maxhp;
 		sight();
 		msg("you begin to feel better");
 		break;
-	case P_STRENGTH:
-		items.p_know[P_STRENGTH] = TRUE;
+	case Potion::GainStrength:
+		items.p_know[Potion::GainStrength] = true;
 		chg_str(1);
 		msg("you feel stronger. What bulging muscles!");
 		break;
-	case P_MFIND:
-		fuse(Event::TurnSeeOff, HUHDURATION);
+	case Potion::MonsterDetection:
+		fuse(Event::TurnSeeOff, huh_duration());
 		if (game().level.monsters.empty())
 			msg("you have a strange feeling{}.",
 				noterse(" for a moment"));
 		else
 		{
-			if (turn_see(FALSE))
+			if (turn_see(false))
 			{
-				items.p_know[P_MFIND] = TRUE;
+				items.p_know[Potion::MonsterDetection] = true;
 			}
 			msg("");
 		}
 		break;
-	case P_TFIND:
+	case Potion::MagicDetection:
 		/*
 		 * Potion of magic detection.  Find everything interesting on
 		 * the level and show him where they are.  Also give hints as
@@ -96,25 +96,25 @@ quaff(void)
 			Item *tp;
 			bool show;
 
-			show = FALSE;
-			for (tp = game().level.objects.first(); tp != NULL; tp = game().level.objects.after(tp))
+			show = false;
+			for (tp = game().level.objects.first(); tp != nullptr; tp = game().level.objects.after(tp))
 			{
 				if (is_magic(tp))
 				{
-					show = TRUE;
+					show = true;
 					display().draw_tile(tp->o_pos, goodch(tp));
-					items.p_know[P_TFIND] = TRUE;
+					items.p_know[Potion::MagicDetection] = true;
 				}
 			}
-			for (th = game().level.monsters.first(); th != NULL; th = game().level.monsters.after(th))
+			for (th = game().level.monsters.first(); th != nullptr; th = game().level.monsters.after(th))
 			{
-				for (tp = th->t_pack.first(); tp != NULL; tp = th->t_pack.after(tp))
+				for (tp = th->t_pack.first(); tp != nullptr; tp = th->t_pack.after(tp))
 				{
 					if (is_magic(tp))
 					{
-						show = TRUE;
+						show = true;
 						display().draw_tile(th->t_pos, MAGIC);
-						items.p_know[P_TFIND] = TRUE;
+						items.p_know[Potion::MagicDetection] = true;
 					}
 				}
 			}
@@ -127,67 +127,67 @@ quaff(void)
 		msg("you have a strange feeling for a moment{}.",
 				noterse(", then it passes"));
 		break;
-	case P_PARALYZE:
-		items.p_know[P_PARALYZE] = TRUE;
-		player.no_command = HOLDTIME;
+	case Potion::Paralysis:
+		items.p_know[Potion::Paralysis] = true;
+		player.no_command = hold_time();
 		player.body.t_flags.unset(ISRUN);
 		msg("you can't move");
 		break;
-	case P_SEEINVIS:
+	case Potion::SeeInvisible:
 		if (!player.body.t_flags.test(CANSEE)) {
-			fuse(Event::Unsee, SEEDURATION);
-			look(FALSE);
+			fuse(Event::Unsee, see_duration());
+			look(false);
 			invis_on();
 		}
 		sight();
 		msg("this potion tastes like {} juice", game().options.fruit);
 		break;
-	case P_RAISE:
-		items.p_know[P_RAISE] = TRUE;
+	case Potion::RaiseLevel:
+		items.p_know[Potion::RaiseLevel] = true;
 		msg("you suddenly feel much more skillful");
 		raise_level();
 		break;
-	case P_XHEAL:
-		items.p_know[P_XHEAL] = TRUE;
-		if ((pstats.s_hpt += roll(pstats.s_lvl, 8)) > max_hp)
+	case Potion::ExtraHealing:
+		items.p_know[Potion::ExtraHealing] = true;
+		if ((player.body.t_stats.s_hpt += roll(player.body.t_stats.s_lvl, 8)) > player.body.t_stats.s_maxhp)
 		{
-			if (pstats.s_hpt > max_hp + pstats.s_lvl + 1)
-				++max_hp;
-			pstats.s_hpt = ++max_hp;
+			if (player.body.t_stats.s_hpt > player.body.t_stats.s_maxhp + player.body.t_stats.s_lvl + 1)
+				++player.body.t_stats.s_maxhp;
+			player.body.t_stats.s_hpt = ++player.body.t_stats.s_maxhp;
 		}
 		sight();
 		msg("you begin to feel much better");
 		break;
-	case P_HASTE:
-		items.p_know[P_HASTE] = TRUE;
-		if (add_haste(TRUE))
+	case Potion::Haste:
+		items.p_know[Potion::Haste] = true;
+		if (add_haste(true))
 			msg("you feel yourself moving much faster");
 		break;
-	case P_RESTORE:
-		if (ISRING(LEFT, R_ADDSTR))
-			add_str(&pstats.s_str, -player.rings[LEFT]->o_ac);
-		if (ISRING(RIGHT, R_ADDSTR))
-			add_str(&pstats.s_str, -player.rings[RIGHT]->o_ac);
-		if (pstats.s_str < player.max_stats.s_str)
-			pstats.s_str = player.max_stats.s_str;
-		if (ISRING(LEFT, R_ADDSTR))
-			add_str(&pstats.s_str, player.rings[LEFT]->o_ac);
-		if (ISRING(RIGHT, R_ADDSTR))
-			add_str(&pstats.s_str, player.rings[RIGHT]->o_ac);
+	case Potion::RestoreStrength:
+		if (player.wears(Hand::Left, Ring::AddStrength))
+			add_str(&player.body.t_stats.s_str, -player.rings[Hand::Left]->o_ac);
+		if (player.wears(Hand::Right, Ring::AddStrength))
+			add_str(&player.body.t_stats.s_str, -player.rings[Hand::Right]->o_ac);
+		if (player.body.t_stats.s_str < player.max_stats.s_str)
+			player.body.t_stats.s_str = player.max_stats.s_str;
+		if (player.wears(Hand::Left, Ring::AddStrength))
+			add_str(&player.body.t_stats.s_str, player.rings[Hand::Left]->o_ac);
+		if (player.wears(Hand::Right, Ring::AddStrength))
+			add_str(&player.body.t_stats.s_str, player.rings[Hand::Right]->o_ac);
 		msg("{}you feel warm all over",
 			noterse("hey, this tastes great.  It makes "));
 		break;
-	case P_BLIND:
-		items.p_know[P_BLIND] = TRUE;
+	case Potion::Blindness:
+		items.p_know[Potion::Blindness] = true;
 		if (!player.body.t_flags.test(ISBLIND))
 		{
 			player.body.t_flags.set(ISBLIND);
-			fuse(Event::Sight, SEEDURATION);
-			look(FALSE);
+			fuse(Event::Sight, see_duration());
+			look(false);
 		}
 		msg("a cloak of darkness falls around you");
 		break;
-	case P_NOP:
+	case Potion::ThirstQuenching:
 		msg("this potion tastes extremely dull");
 		break;
 	default:
@@ -203,11 +203,11 @@ quaff(void)
 		obj->o_count--;
 	else
 	{
-		detach(pack, obj);
-		discardit = TRUE;
+		player.body.t_pack.remove(obj);
+		discardit = true;
 	}
 
-	call_it(items.p_know[obj->o_which], &items.p_guess[obj->o_which]);
+	call_it(items.p_know[obj->which<Potion>()], &items.p_guess[obj->which<Potion>()]);
 
 	if (discardit)
 		discard(obj);
@@ -223,7 +223,7 @@ invis_on(void)
 	Creature *th;
 
 	game().player.body.t_flags.set(CANSEE);
-	for (th = game().level.monsters.first(); th != NULL; th = game().level.monsters.after(th))
+	for (th = game().level.monsters.first(); th != nullptr; th = game().level.monsters.after(th))
 	if (th->t_flags.test(ISINVIS) && see_monst(th))
 	{
 		display().draw_tile(th->t_pos, th->t_disguise);
@@ -241,8 +241,8 @@ turn_see(bool turn_off)
 	bool can_see, add_new;
 	unsigned char was_there = ' ';
 
-	add_new = FALSE;
-	for (mp = game().level.monsters.first(); mp != NULL; mp = game().level.monsters.after(mp)) {
+	add_new = false;
+	for (mp = game().level.monsters.first(); mp != nullptr; mp = game().level.monsters.after(mp)) {
 		can_see = (see_monst(mp) || (was_there = display().tile_at(mp->t_pos)) == mp->t_type);
 		if (turn_off) {
 			if (!see_monst(mp) && mp->t_oldch != '@')
@@ -250,7 +250,7 @@ turn_see(bool turn_off)
 		} else {
 			if (!can_see) {
 				mp->t_oldch = was_there;
-				add_new = TRUE;
+				add_new = true;
 			}
 			display().draw_tile(mp->t_pos, mp->t_type,
 					can_see ? TileStyle::Normal : TileStyle::Inverse);
@@ -269,29 +269,31 @@ turn_see(bool turn_off)
 void
 th_effect(Item *obj, Creature *tp)
 {
-	switch (obj->o_which)
+	switch (obj->which<Potion>())
 	{
-	case P_CONFUSE:
-	case P_BLIND:
+	case Potion::Confusion:
+	case Potion::Blindness:
 		tp->t_flags.set(ISHUH);
 		msg("the {} appears confused", monsters[tp->t_type-'A'].m_name);
 		break;
-	case P_PARALYZE:
+	case Potion::Paralysis:
 		tp->t_flags.unset(ISRUN);
 		tp->t_flags.set(ISHELD);
 		break;
-	case P_HEALING:
-	case P_XHEAL:
+	case Potion::Healing:
+	case Potion::ExtraHealing:
 		if ((tp->t_stats.s_hpt += rnd(8)) > tp->t_stats.s_maxhp)
 		tp->t_stats.s_hpt = ++tp->t_stats.s_maxhp;
 		break;
-	case P_RAISE:
+	case Potion::RaiseLevel:
 		tp->t_stats.s_hpt += 8;
 		tp->t_stats.s_maxhp += 8;
 		tp->t_stats.s_lvl++;
 		break;
-	case P_HASTE:
+	case Potion::Haste:
 		tp->t_flags.set(ISHASTE);
+		break;
+	default:
 		break;
 	}
 	msg("the flask shatters.");

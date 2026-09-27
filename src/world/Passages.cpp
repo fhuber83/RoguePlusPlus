@@ -21,11 +21,12 @@ static void	psplat(int y, int x);
 void
 conn(int r1, int r2)
 {
-	struct room *rpf, *rpt = NULL;
+	struct room *rpf, *rpt = nullptr;
 	int rmt, rm;
 	int distance = 0, turn_spot, turn_distance;
 	int direc;
 	coord del, curr, turn_delta, spos, epos;
+	rogue::Level &level = game().level;
 
 	if (r1 < r2) {
 		rm = r1;
@@ -40,14 +41,14 @@ conn(int r1, int r2)
 		else
 			direc = 'd';
 	}
-	rpf = &game().level.rooms[rm];
+	rpf = &level.rooms[rm];
 	/*
 	 * Set up the movement variables, in two cases:
 	 * first drawing one down.
 	 */
 	if (direc == 'd') {
 		rmt = rm + 3;				/* room # of dest */
-		rpt = &game().level.rooms[rmt];			/* room pointer of dest */
+		rpt = &level.rooms[rmt];			/* room pointer of dest */
 		del.x = 0;				/* direction of move */
 		del.y = 1;
 		/*
@@ -58,7 +59,7 @@ conn(int r1, int r2)
 			spos.y = rpf->r_pos.y + rpf->r_max.y - 1;
 			do {
 				spos.x = rpf->r_pos.x + rnd(rpf->r_max.x - 2) + 1;
-			} while (chat(spos.y,spos.x) == ' ');
+			} while (level.at(spos) == ' ');
 		} else {
 			spos.x = rpf->r_pos.x;
 			spos.y = rpf->r_pos.y;
@@ -67,7 +68,7 @@ conn(int r1, int r2)
 		if (!rpt->r_flags.test(RoomFlag::Gone) || rpt->r_flags.test(RoomFlag::Maze)) {
 			do {
 				epos.x = rpt->r_pos.x + rnd(rpt->r_max.x - 2) + 1;
-			} while (chat(epos.y,epos.x) == ' ');
+			} while (level.at(epos) == ' ');
 		} else
 			epos.x = rpt->r_pos.x;
 		distance = abs(spos.y - epos.y) - 1;	/* distance to move */
@@ -76,14 +77,14 @@ conn(int r1, int r2)
 		turn_distance = abs(spos.x - epos.x);	/* how far to turn */
 	} else if (direc == 'r') {			/* setup for moving right */
 		rmt = rm + 1;
-		rpt = &game().level.rooms[rmt];
+		rpt = &level.rooms[rmt];
 		del.x = 1;
 		del.y = 0;
 		if (!rpf->r_flags.test(RoomFlag::Gone) || rpf->r_flags.test(RoomFlag::Maze)) {
 			spos.x = rpf->r_pos.x + rpf->r_max.x-1;
 			do {
 				spos.y = rpf->r_pos.y + rnd(rpf->r_max.y-2)+1;
-			} while (chat(spos.y,spos.x) == ' ');
+			} while (level.at(spos) == ' ');
 		} else {
 			spos.x = rpf->r_pos.x;
 			spos.y = rpf->r_pos.y;
@@ -92,7 +93,7 @@ conn(int r1, int r2)
 		if (!rpt->r_flags.test(RoomFlag::Gone) || rpt->r_flags.test(RoomFlag::Maze)) {
 			do {
 				epos.y = rpt->r_pos.y + rnd(rpt->r_max.y-2)+1;
-			} while (chat(epos.y, epos.x) == ' ');
+			} while (level.at(epos) == ' ');
 		} else
 			epos.y = rpt->r_pos.y;
 		distance = abs(spos.x - epos.x) - 1;
@@ -100,10 +101,8 @@ conn(int r1, int r2)
 		turn_delta.x = 0;
 		turn_distance = abs(spos.y - epos.y);
 	}
-#ifdef DEBUG
-	else
+	else if constexpr (rogue::config::debug_checks)
 		debug("error in connection tables");
-#endif
 	turn_spot = rnd(distance-1) + 1;
 	/*
 	 * Draw in the doors on either side of the passage or just put #'s
@@ -181,7 +180,7 @@ do_passages()
 	{ { 0, 0, 0, 0, 1, 0, 1, 0, 1 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0 },
 	{ { 0, 0, 0, 0, 0, 1, 0, 1, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0 }
 	};
-	struct rdes *r1, *r2 = NULL;
+	struct rdes *r1, *r2 = nullptr;
 
 	/*
 	 * reinitialize room graph description
@@ -189,8 +188,8 @@ do_passages()
 	for (r1 = rdes; r1 < &rdes[MAXROOMS]; r1++)
 	{
 		for (j = 0; j < MAXROOMS; j++)
-			r1->isconn[j] = FALSE;
-		r1->ingraph = FALSE;
+			r1->isconn[j] = false;
+		r1->ingraph = false;
 	}
 
 	/*
@@ -199,7 +198,7 @@ do_passages()
 	 */
 	roomcount = 1;
 	r1 = &rdes[rnd(MAXROOMS)];
-	r1->ingraph = TRUE;
+	r1->ingraph = true;
 	do
 	{
 		/*
@@ -225,12 +224,12 @@ do_passages()
 		 */
 		else
 		{
-			r2->ingraph = TRUE;
+			r2->ingraph = true;
 			i = r1 - rdes;
 			j = r2 - rdes;
 			conn(i, j);
-			r1->isconn[j] = TRUE;
-			r2->isconn[i] = TRUE;
+			r1->isconn[j] = true;
+			r2->isconn[i] = true;
 			roomcount++;
 		}
 	} while (roomcount < MAXROOMS);
@@ -258,8 +257,8 @@ do_passages()
 			i = r1 - rdes;
 			j = r2 - rdes;
 			conn(i, j);
-			r1->isconn[j] = TRUE;
-			r2->isconn[i] = TRUE;
+			r1->isconn[j] = true;
+			r2->isconn[i] = true;
 		}
 	}
 	passnum();
@@ -280,7 +279,7 @@ door(struct room *rm, coord *cp)
 	if (rnd(10) + 1 < game().level.depth && rnd(5) == 0)
 	{
 		game().level.map[index] = (cp->y == rm->r_pos.y || cp->y == rm->r_pos.y + rm->r_max.y - 1) ? HWALL : VWALL;
-		game().level.flags[index] &= ~F_REAL;
+		game().level.flags[index].unset(MapFlag::Real);
 	}
 	else
 		game().level.map[index] = DOOR;
@@ -289,22 +288,6 @@ door(struct room *rm, coord *cp)
 	rm->r_exit[xit].x = cp->x;
 }
 
-#ifdef WIZARD
-/*
- * add_pass:
- *	Add the passages to the current window (wizard command)
- */
-void
-add_pass()
-{
-	int y, x, ch;
-
-	for (y = 1; y < maxrow; y++)
-		for (x = 0; x < COLS; x++)
-			if ((ch = chat(y, x)) == DOOR || ch == PASSAGE)
-				display().draw_tile({x, y}, ch);
-}
-#endif
 
 /*
  * passnum:
@@ -320,7 +303,7 @@ passnum()
 	int i;
 
 	pnum = 0;
-	newpnum = FALSE;
+	newpnum = false;
 	for (rp = game().level.passages; rp < &game().level.passages[MAXPASS]; rp++)
 		rp->r_nexits = 0;
 	for (rp = game().level.rooms; rp < &game().level.rooms[MAXROOMS]; rp++)
@@ -337,30 +320,31 @@ passnum()
 void
 numpass(int y, int x)
 {
-	unsigned char *fp;
+	MapFlags *fp;
 	struct room *rp;
 	unsigned char ch;
+	rogue::Level &level = game().level;
 
 	if (offmap(y,x))
 		return;
-	fp = &flat(y, x);
-	if (*fp & F_PNUM)
+	fp = &level.flags_at(y, x);
+	if (fp->passage())
 		return;
 	if (newpnum) {
 		pnum++;
-		newpnum = FALSE;
+		newpnum = false;
 	}
 	/*
 	 * check to see if it is a door or secret door, i.e., a new exit,
 	 * or a numerable type of place
 	 */
-	if ((ch = chat(y, x)) == DOOR || (!(*fp & F_REAL) && ch != FLOOR)) {
-		rp = &game().level.passages[pnum];
+	if ((ch = level.at(y, x)) == DOOR || (!fp->test(MapFlag::Real) && ch != FLOOR)) {
+		rp = &level.passages[pnum];
 		rp->r_exit[rp->r_nexits].y = y;
 		rp->r_exit[rp->r_nexits++].x = x;
-	} else if (!(*fp & F_PASS))
+	} else if (!fp->test(MapFlag::Passage))
 		return;
-	*fp |= pnum;
+	fp->set_passage(pnum);
 	/*
 	 * recurse on the surrounding places
 	 */
@@ -376,7 +360,7 @@ psplat(int y, int x)
 	int idx;
 
 	game().level.map[idx = INDEX(y, x)] = PASSAGE;
-	game().level.flags[idx] |= F_PASS;
+	game().level.flags[idx].set(MapFlag::Passage);
 }
 
 }  // namespace rogue::world

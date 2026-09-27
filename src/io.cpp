@@ -10,7 +10,13 @@
 
 #include	"rogue.h"
 
-#define AC(a) (-((a)-11))
+// The armor class the status line shows: the game's counts down from 11 (was AC())
+static constexpr int
+armor_class(int ac)
+{
+	return -(ac - 11);
+}
+
 /*
  * msg:
  *	Display a message at the top of the screen.
@@ -54,7 +60,7 @@ endmsg(void)
 	if (message.remember)
 		strcpy(message.last, message.text);
 	if (message.end) {
-		look(FALSE);
+		look(false);
 		more_at(" More ", message.end);
 	}
 	/*
@@ -177,16 +183,16 @@ status(void)
 	/*
 	 * The armor class shown ignores rings of protection, as it always did
 	 */
-	ac = player.armor != NULL ? player.armor->o_ac : pstats.s_arm;
+	ac = player.armor != nullptr ? player.armor->o_ac : player.body.t_stats.s_arm;
 
 	st.level = game().level.depth;
-	st.hp = pstats.s_hpt;
-	st.hp_max = max_hp;
-	st.str = pstats.s_str;
+	st.hp = player.body.t_stats.s_hpt;
+	st.hp_max = player.body.t_stats.s_maxhp;
+	st.str = player.body.t_stats.s_str;
 	st.str_max = player.max_stats.s_str;
 	st.gold = player.purse;
-	st.armor = AC(ac);
-	st.rank = he_man[pstats.s_lvl-1];
+	st.armor = armor_class(ac);
+	st.rank = he_man[player.body.t_stats.s_lvl-1];
 	st.hunger = player.hungry_state;
 	rogue::ui::display().draw_status(st);
 }
@@ -209,7 +215,7 @@ wait_for(unsigned char ch)
 void
 wait_msg(const char *msg)
 {
-	display().show_cursor(TRUE);
+	display().show_cursor(true);
 	display().write_at(LINES-1, 0,
 		*msg ? std::format("[Press Enter to {}]", msg) : "[Press Enter]");
 	flush_type();
@@ -224,8 +230,10 @@ wait_msg(const char *msg)
 void
 show_win(char *message)
 {
+	rogue::Player &player = game().player;
+
 	display().write_at(0, 0, message);
-	display().write_at(hero.y, hero.x, "");
+	display().write_at(player.body.t_pos.y, player.body.t_pos.x, "");
 	wait_for(' ');
 }
 
@@ -268,14 +276,14 @@ str_attr(const char *str)
  *	Periodic status update: draws the clock in the bottom-right corner.
  *	The original also showed NUM LOCK/CAP LOCK and toggled "Fast Play" via
  *	Scroll Lock by reading keyboard LEDs through BIOS; terminals cannot
- *	report those, so faststate stays FALSE.
+ *	report those, so faststate stays false.
  */
 void
 SIG2(void)
 {
 	static int bighand, littlehand;
 	static long cur_time = 0;
-	int showtime = FALSE;
+	int showtime = false;
 	long new_time = md_time();
 
 	/*
@@ -289,7 +297,7 @@ SIG2(void)
 		bighand = local->hour % 12;
 		littlehand = local->minute;
 		cur_time = new_time - local->second;
-		showtime = TRUE;
+		showtime = true;
 	}
 
 	if (showtime)

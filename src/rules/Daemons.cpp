@@ -16,27 +16,28 @@ void
 doctor(void)
 {
 	int lv, ohp;
+	rogue::Player &player = game().player;
 
-	lv = pstats.s_lvl;
-	ohp = pstats.s_hpt;
-	game().player.quiet++;
+	lv = player.body.t_stats.s_lvl;
+	ohp = player.body.t_stats.s_hpt;
+	player.quiet++;
 	if (lv < 8)
 	{
-		if (game().player.quiet + (lv << 1) > 20)
-			pstats.s_hpt++;
+		if (player.quiet + (lv << 1) > 20)
+			player.body.t_stats.s_hpt++;
 	}
 	else
-	if (game().player.quiet >= 3)
-		pstats.s_hpt += rnd(lv - 7) + 1;
-	if (ISRING(LEFT, R_REGEN))
-		pstats.s_hpt++;
-	if (ISRING(RIGHT, R_REGEN))
-		pstats.s_hpt++;
-	if (ohp != pstats.s_hpt)
+	if (player.quiet >= 3)
+		player.body.t_stats.s_hpt += rnd(lv - 7) + 1;
+	if (player.wears(Hand::Left, Ring::Regeneration))
+		player.body.t_stats.s_hpt++;
+	if (player.wears(Hand::Right, Ring::Regeneration))
+		player.body.t_stats.s_hpt++;
+	if (ohp != player.body.t_stats.s_hpt)
 	{
-		if (pstats.s_hpt > max_hp)
-			pstats.s_hpt = max_hp;
-		game().player.quiet = 0;
+		if (player.body.t_stats.s_hpt > player.body.t_stats.s_maxhp)
+			player.body.t_stats.s_hpt = player.body.t_stats.s_maxhp;
+		player.quiet = 0;
 	}
 }
 
@@ -65,7 +66,7 @@ rollwand(void)
 		{
 			wanderer();
 			extinguish(Event::RollWander);
-			fuse(Event::Swander, WANDERTIME);
+			fuse(Event::Swander, wander_time());
 		}
 	between = 0;
 	}
@@ -91,7 +92,7 @@ unsee(void)
 {
 	Creature *th;
 
-	for (th = game().level.monsters.first(); th != NULL; th = game().level.monsters.after(th))
+	for (th = game().level.monsters.first(); th != nullptr; th = game().level.monsters.after(th))
 		if (th->t_flags.test(ISINVIS) && see_monst(th) && th->t_oldch != '@')
 			display().draw_tile(th->t_pos, th->t_oldch);
 	game().player.body.t_flags.unset(CANSEE);
@@ -104,12 +105,14 @@ unsee(void)
 void
 sight(void)
 {
-	if (game().player.body.t_flags.test(ISBLIND))
+	rogue::Player &player = game().player;
+
+	if (player.body.t_flags.test(ISBLIND))
 	{
 		extinguish(Event::Sight);
-		game().player.body.t_flags.unset(ISBLIND);
-		if (!proom->r_flags.test(RoomFlag::Gone))
-			enter_room(&hero);
+		player.body.t_flags.unset(ISBLIND);
+		if (!player.body.t_room->r_flags.test(RoomFlag::Gone))
+			enter_room(&player.body.t_pos);
 		msg("the veil of darkness lifts");
 	}
 }
@@ -146,7 +149,7 @@ stomach(void)
 			return;
 		player.no_command += rnd(8) + 4;
 		player.body.t_flags.unset(ISRUN);
-		game().turn.running = FALSE;
+		game().turn.running = false;
 		game().turn.count = 0;
 		player.hungry_state = 3;
 		msg("{}you faint from lack of food",noterse("you feel very weak. "));
@@ -158,7 +161,7 @@ stomach(void)
 		 * If you are in 40 column mode use food twice as fast
 		 * (e.g. 3-(80/40) = 1, 3-(40/40) = 2 : pretty gross huh?)
 		 */
-		deltafood = ring_eat(LEFT) + ring_eat(RIGHT) + 1;
+		deltafood = ring_eat(Hand::Left) + ring_eat(Hand::Right) + 1;
 		if (game().options.terse)
 			deltafood *= 2;
 		player.food_left -= deltafood;

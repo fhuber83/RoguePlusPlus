@@ -11,7 +11,7 @@
  */
 static coord nh;
 
-static unsigned char	be_trapped(coord *tc);
+static Trap	be_trapped(coord *tc);
 
 /*
  * do_run:
@@ -20,8 +20,8 @@ static unsigned char	be_trapped(coord *tc);
 void
 do_run(unsigned char ch)
 {
-	game().turn.running = TRUE;
-	game().turn.after = FALSE;
+	game().turn.running = true;
+	game().turn.after = false;
 	game().turn.run_dir = ch;
 }
 
@@ -34,13 +34,15 @@ void
 do_move(int dy, int dx)
 {
 	unsigned char ch;
-	int fl;
+	Trap trap;
+	MapFlags fl;
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
+	rogue::Level &level = game().level;
 
-	turn.first_move = FALSE;
+	turn.first_move = false;
 	if (turn.bailout) {
-		turn.bailout = FALSE;
+		turn.bailout = false;
 		msg("the crack widens ... ");
 		descend("");
 		return ;
@@ -57,8 +59,8 @@ do_move(int dy, int dx)
 		rndmove(&player.body,&nh);
 	else {
 over:
-		nh.y = hero.y + dy;
-		nh.x = hero.x + dx;
+		nh.y = player.body.t_pos.y + dy;
+		nh.x = player.body.t_pos.x + dx;
 	}
 
 	/*
@@ -68,28 +70,28 @@ over:
 	 */
 	if (offmap(nh.y, nh.x))
 		goto hit_bound;
-	if (!diag_ok(&hero, &nh)) {
-		turn.after = FALSE;
-		turn.running = FALSE;
+	if (!diag_ok(&player.body.t_pos, &nh)) {
+		turn.after = false;
+		turn.running = false;
 		return;
 	}
 	/*
 	 * If you are running and the move does
 	 * not get you anywhere stop running
 	 */
-	if (turn.running && (hero == nh))
-		turn.after = turn.running = FALSE;
-	fl = flat(nh.y, nh.x);
+	if (turn.running && (player.body.t_pos == nh))
+		turn.after = turn.running = false;
+	fl = level.flags_at(nh);
 	ch = winat(nh.y, nh.x);
 	/*
 	 * When the hero is on the door do not allow him
 	 * to run until he enters the room all the way
 	 */
-	if ((chat(hero.y,hero.x) == DOOR) && (ch == FLOOR))
-		turn.running = FALSE;
-	if (!(fl & F_REAL) && ch == FLOOR) {
-		chat(nh.y, nh.x) = ch = TRAP;
-		flat(nh.y, nh.x) |= F_REAL;
+	if ((level.at(player.body.t_pos) == DOOR) && (ch == FLOOR))
+		turn.running = false;
+	if (!fl.test(MapFlag::Real) && ch == FLOOR) {
+		level.at(nh) = ch = TRAP;
+		level.flags_at(nh).set(MapFlag::Real);
 	}
 	else if (player.body.t_flags.test(ISHELD) && ch != 'F') {
 		msg("you are being held");
@@ -104,19 +106,19 @@ over:
 	case LLWALL:
 	case LRWALL:
 hit_bound:
-		if (turn.running && isgone(proom) && !player.body.t_flags.test(ISBLIND)) {
+		if (turn.running && player.body.t_room->is_gone() && !player.body.t_flags.test(ISBLIND)) {
 			bool	b1, b2;
 
 			switch (turn.run_dir)
 			{
 			case 'h':
 			case 'l':
-				b1 = (hero.y > 1 &&
-					((flat(hero.y - 1, hero.x) & F_PASS) ||
-					  chat(hero.y - 1, hero.x) == DOOR));
-				b2 = (hero.y < maxrow - 1 &&
-					((flat(hero.y + 1, hero.x) & F_PASS) ||
-					  chat(hero.y + 1, hero.x) == DOOR));
+				b1 = (player.body.t_pos.y > 1 &&
+					(level.flags_at(player.body.t_pos.y - 1, player.body.t_pos.x).test(MapFlag::Passage) ||
+					  level.at(player.body.t_pos.y - 1, player.body.t_pos.x) == DOOR));
+				b2 = (player.body.t_pos.y < maxrow - 1 &&
+					(level.flags_at(player.body.t_pos.y + 1, player.body.t_pos.x).test(MapFlag::Passage) ||
+					  level.at(player.body.t_pos.y + 1, player.body.t_pos.x) == DOOR));
 				if (!(b1 ^ b2))
 					break;
 				if (b1) {
@@ -130,12 +132,12 @@ hit_bound:
 				goto over;
 			case 'j':
 			case 'k':
-				b1 = (hero.x > 1 &&
-					((flat(hero.y, hero.x - 1) & F_PASS)
-					|| chat(hero.y, hero.x - 1) == DOOR));
-				b2 = (hero.x < COLS-2 &&
-					((flat(hero.y, hero.x + 1) & F_PASS)
-					|| chat(hero.y, hero.x + 1) == DOOR));
+				b1 = (player.body.t_pos.x > 1 &&
+					(level.flags_at(player.body.t_pos.y, player.body.t_pos.x - 1).test(MapFlag::Passage)
+					|| level.at(player.body.t_pos.y, player.body.t_pos.x - 1) == DOOR));
+				b2 = (player.body.t_pos.x < COLS-2 &&
+					(level.flags_at(player.body.t_pos.y, player.body.t_pos.x + 1).test(MapFlag::Passage)
+					|| level.at(player.body.t_pos.y, player.body.t_pos.x + 1) == DOOR));
 				if (!(b1 ^ b2))
 					break;
 				if (b1) {
@@ -149,40 +151,40 @@ hit_bound:
 				goto over;
 			}
 		}
-		turn.after = turn.running = FALSE;
+		turn.after = turn.running = false;
 		break;
 	case DOOR:
-		turn.running = FALSE;
-		if (flat(hero.y, hero.x) & F_PASS)
+		turn.running = false;
+		if (level.flags_at(player.body.t_pos).test(MapFlag::Passage))
 			enter_room(&nh);
 		goto move_stuff;
 	case TRAP:
-		ch = be_trapped(&nh);
-		if (ch == T_DOOR || ch == T_TELEP)
+		trap = be_trapped(&nh);
+		if (trap == Trap::Door || trap == Trap::Teleport)
 			return;
 		/* fallthrough */
 	case PASSAGE:
 		goto move_stuff;
 	case FLOOR:
-		if (!(fl & F_REAL))
-			be_trapped(&hero);
+		if (!fl.test(MapFlag::Real))
+			be_trapped(&player.body.t_pos);
 		goto move_stuff;
 	default:
-		turn.running = FALSE;
-		if (ismonster(ch) || moat(nh.y, nh.x))
-			fight(&nh, ch, player.weapon, FALSE);
+		turn.running = false;
+		if (is_monster(ch) || moat(nh.y, nh.x))
+			fight(&nh, ch, player.weapon, false);
 		else {
-			turn.running = FALSE;
+			turn.running = false;
 			if (ch != STAIRS)
 				turn.take = ch;
 move_stuff:
-			display().draw_tile(hero, chat(hero.y, hero.x));
-			if ((fl & F_PASS) && (chat(player.old_pos.y, player.old_pos.x) == DOOR
-					|| (flat(player.old_pos.y, player.old_pos.x) & F_MAZE)))
+			display().draw_tile(player.body.t_pos, level.at(player.body.t_pos));
+			if (fl.test(MapFlag::Passage) && (level.at(player.old_pos) == DOOR
+					|| level.flags_at(player.old_pos).test(MapFlag::Maze)))
 				leave_room(&nh);
-			if ((fl & F_MAZE) && (flat(player.old_pos.y, player.old_pos.x) & F_MAZE) == 0)
+			if (fl.test(MapFlag::Maze) && !level.flags_at(player.old_pos).test(MapFlag::Maze))
 				enter_room(&nh);
-			bcopy(hero,nh);
+			player.body.t_pos = nh;
 		}
 		break;
 	}
@@ -205,15 +207,15 @@ door_open(struct room *rp)
 			for (k = rp->r_pos.x; k < rp->r_pos.x + rp->r_max.x; k++) {
 				ch = winat(j, k);
 				/* move(j, k); Why do this,?????? */
-				if (ismonster(ch)) {
+				if (is_monster(ch)) {
 					tp = wake_monster(j, k);
-					if (tp == NULL)
+					if (tp == nullptr)
 					{
 						continue;
 					}
 					if (tp->t_oldch == ' ' && !rp->r_flags.test(RoomFlag::Dark)
 						&& !game().player.body.t_flags.test(ISBLIND))
-							tp->t_oldch = chat(j, k);
+							tp->t_oldch = game().level.at(j, k);
 				}
 			}
 }
@@ -223,36 +225,36 @@ door_open(struct room *rp)
  *	The guy stepped on a trap.... Make him pay.
  */
 static
-unsigned char
+Trap
 be_trapped(coord *tc)
 {
-	unsigned char tr;
+	Trap tr;
 	int index;
 	rogue::Player &player = game().player;
 
-	game().turn.count = game().turn.running = FALSE;
+	game().turn.count = game().turn.running = false;
 	index = INDEX(tc->y, tc->x);
 	game().level.map[index] = TRAP;
-	tr = game().level.flags[index] & F_TMASK;
-	player.was_trapped = TRUE;
+	tr = game().level.flags[index].trap();
+	player.was_trapped = rogue::Trapped::Sprung;
 	switch (tr) {
-	case T_DOOR:
+	case Trap::Door:
 		descend("you fell into a trap!");
 		break;
-	case T_BEAR:
-		player.no_move += BEARTIME;
+	case Trap::Bear:
+		player.no_move += bear_time();
 		msg("you are caught in a bear trap");
 		break;
-	case T_SLEEP:
-		player.no_command += SLEEPTIME;
+	case Trap::Sleep:
+		player.no_command += sleep_time();
 		player.body.t_flags.unset(ISRUN);
 		msg("a {}mist envelops you and you fall asleep",
 			noterse("strange white "));
 		break;
-	case T_ARROW:
-		if (swing(pstats.s_lvl-1, pstats.s_arm, 1)) {
-			pstats.s_hpt -= roll(1, 6);
-			if (pstats.s_hpt <= 0) {
+	case Trap::Arrow:
+		if (swing(player.body.t_stats.s_lvl-1, player.body.t_stats.s_arm, 1)) {
+			player.body.t_stats.s_hpt -= roll(1, 6);
+			if (player.body.t_stats.s_hpt <= 0) {
 				msg("an arrow killed you");
 				death('a');
 			} else
@@ -261,34 +263,31 @@ be_trapped(coord *tc)
 		else {
 			Item *arrow;
 
-			if ((arrow = new_item()) != NULL) {
+			if ((arrow = new_item()) != nullptr) {
 				arrow->o_type = ItemKind::Weapon;
-				arrow->o_which = ARROW;
-				init_weapon(arrow, ARROW);
+				arrow->set_which(WeaponType::Arrow);
+				init_weapon(arrow, WeaponType::Arrow);
 				arrow->o_count = 1;
-				bcopy(arrow->o_pos,hero);
-				fall(arrow, FALSE);
+				arrow->o_pos = player.body.t_pos;
+				fall(arrow, false);
 			}
 			msg("an arrow shoots past you");
 		}
 		break;
-	case T_TELEP:
+	case Trap::Teleport:
 		teleport();
 		display().draw_tile(*tc, TRAP); /* since the hero's leaving, look()
 						won't put it on for us */
-		/*
-		 * TRUE + 1 tells look() that this was a teleport trap
-		 */
-		player.was_trapped++;
+		player.was_trapped = rogue::Trapped::Teleported;
 		break;
-	case T_DART:
-		if (swing(pstats.s_lvl+1, pstats.s_arm, 1)) {
-			pstats.s_hpt -= roll(1, 4);
-			if (pstats.s_hpt <= 0) {
+	case Trap::Dart:
+		if (swing(player.body.t_stats.s_lvl+1, player.body.t_stats.s_arm, 1)) {
+			player.body.t_stats.s_hpt -= roll(1, 4);
+			if (player.body.t_stats.s_hpt <= 0) {
 				msg("a poisoned dart killed you");
 				death('d');
 			}
-			if (!ISWEARING(R_SUSTSTR) && !save(VS_POISON))
+			if (!player.wears(Ring::SustainStrength) && !save(SaveThrow::Poison))
 				chg_str(-1);
 			msg("a dart just hit you in the shoulder");
 		} else
@@ -308,9 +307,9 @@ descend(const char *mesg)
 	new_level();
 	msg("");
 	msg("{}", mesg);
-	if (!save(VS_LUCK)) {
+	if (!save(SaveThrow::Luck)) {
 		msg("you are damaged by the fall");
-		if ((pstats.s_hpt -= roll(1,8)) <= 0)
+		if ((game().player.body.t_stats.s_hpt -= roll(1,8)) <= 0)
 			death('f');
 	}
 }
@@ -343,16 +342,16 @@ rndmove(Creature *who, coord *newmv)
 		if (!step_ok(ch))
 			goto bad;
 		if (ch == SCROLL) {
-			for (obj = game().level.objects.first(); obj != NULL; obj = game().level.objects.after(obj))
+			for (obj = game().level.objects.first(); obj != nullptr; obj = game().level.objects.after(obj))
 				if (y == obj->o_pos.y && x == obj->o_pos.x)
 					break;
-			if (obj != NULL && obj->o_which == S_SCARE)
+			if (obj != nullptr && obj->which<Scroll>() == Scroll::ScareMonster)
 				goto bad;
 		}
 	}
 	return;
 
 bad:
-	bcopy((*newmv),who->t_pos);
+	(*newmv) = who->t_pos;
 	return;
 }

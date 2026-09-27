@@ -16,6 +16,19 @@ class Creature;
 namespace rules {
 
 /*
+ * What a saving throw is against (were the VS_* defines). The number is added
+ * to what the throw needs, so several share one.
+ */
+enum class SaveThrow {
+	Poison = 0,
+	Paralyzation = 0,
+	Death = 0,
+	Luck = 1,
+	Breath = 2,
+	Magic = 3,
+};
+
+/*
  * fight:
  *	The player attacks the monster (mn is its glyph on the map). Returns
  *	whether he hit it.
@@ -44,13 +57,13 @@ void check_level();
  * save_throw:
  *	See if a creature save against something.
  */
-bool save_throw(int which, Creature *tp);
+bool save_throw(SaveThrow which, Creature *tp);
 
 /*
  * save:
  *	See if he saves against various nasty things.
  */
-bool save(int which);
+bool save(SaveThrow which);
 
 /*
  * is_magic:

@@ -109,12 +109,12 @@ protected:
 		// A ring worn, a guess named, a fuse burning, a macro half typed
 		Item *ring = new_item();
 		ring->o_type = rogue::ItemKind::Ring;
-		ring->o_which = 3;
+		ring->set_which(Ring::Searching);
 		ring->o_damage = ring->o_hurldmg = "0d0";
 		p.body.t_pack.push_front(ring);
-		p.rings[1] = ring;
-		strcpy(g.items.p_guess[2], "fizzy");
-		g.items.p_know[4] = true;
+		p.rings[Hand::Right] = ring;
+		strcpy(g.items.p_guess[Potion::Poison], "fizzy");
+		g.items.p_know[Potion::SeeInvisible] = true;
 		fuse(rogue::rules::Event::Unconfuse, 9);
 		strcpy(g.options.macro, "sss");
 		g.turn.typeahead = g.options.macro + 1;
@@ -183,8 +183,8 @@ TEST_F(SaveGame, PointersPointIntoTheGame)
 	load(text);
 	rogue::Game &g = game();
 	EXPECT_TRUE(rogue::pool_problems(g).empty());
-	EXPECT_TRUE(g.player.body.t_pack.contains(g.player.rings[1]));
-	EXPECT_STREQ(g.items.p_guess[2], "fizzy");
+	EXPECT_TRUE(g.player.body.t_pack.contains(g.player.rings[Hand::Right]));
+	EXPECT_STREQ(g.items.p_guess[Potion::Poison], "fizzy");
 	EXPECT_STREQ(g.turn.typeahead, "ss");
 	EXPECT_EQ(g.turn.last_item, g.player.weapon);
 	EXPECT_EQ(g.scheduler.time_left(rogue::rules::Event::Unconfuse), 9);

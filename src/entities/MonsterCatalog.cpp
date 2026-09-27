@@ -67,10 +67,10 @@ new_monster(Creature *tp, unsigned char type, coord *cp)
 
 	if ((lev_add = game().level.depth - AMULETLEVEL) < 0)
 		lev_add = 0;
-	attach(game().level.monsters, tp);
+	game().level.monsters.push_front(tp);
 	tp->t_type = type;
 	tp->t_disguise = type;
-	bcopy(tp->t_pos,*cp);
+	tp->t_pos = *cp;
 	tp->t_oldch = '@';
 	tp->t_room = roomin(cp);
 	mp = &monsters[tp->t_type-'A'];
@@ -81,9 +81,9 @@ new_monster(Creature *tp, unsigned char type, coord *cp)
 	tp->t_stats.s_str = mp->m_stats.s_str;
 	tp->t_stats.s_exp = mp->m_stats.s_exp + lev_add * 10 + exp_add(tp);
 	tp->t_flags = mp->m_flags;
-	tp->t_turn = TRUE;
+	tp->t_turn = true;
 	tp->t_pack.clear();
-	if (ISWEARING(R_AGGR))
+	if (game().player.wears(Ring::AggravateMonster))
 		start_run(cp);
 	if (type == 'F')
 		tp->t_stats.s_dmg = game().player.flytrap_damage;
@@ -149,23 +149,20 @@ wanderer(void)
 	struct room *rp;
 	Creature *tp;
 	coord cp;
+	rogue::Player &player = game().player;
 
 	/*
 	 * can we allocate a new monster
 	 */
-	if ((tp = new_creature()) == NULL)
+	if ((tp = new_creature()) == nullptr)
 		return;
 	do {
 		i = rnd_room();
-		if ((rp = &game().level.rooms[i]) == proom)
+		if ((rp = &game().level.rooms[i]) == player.body.t_room)
 			continue;
 		rnd_pos(rp, &cp);
-	} while (!(rp != proom && step_ok(winat(cp.y, cp.x))));
-	new_monster(tp, randmonster(TRUE), &cp);
-#ifdef WIZARD
-	if (wizard)
-		msg("started a wandering {}", monsters[tp->t_type-'A'].m_name);
-#endif
+	} while (!(rp != player.body.t_room && step_ok(winat(cp.y, cp.x))));
+	new_monster(tp, randmonster(true), &cp);
 	start_run(&tp->t_pos);
 }
 
@@ -180,32 +177,33 @@ wake_monster(int y, int x)
 	struct room *rp;
 	unsigned char ch;
 	int dst;
+	rogue::Player &player = game().player;
 
-	if ((tp = moat(y, x)) == NULL)
+	if ((tp = moat(y, x)) == nullptr)
 		return tp;
 	ch = tp->t_type;
 	/*
 	 * Every time he sees mean monster, it might start chasing him
 	 */
 	if (!tp->t_flags.test(ISRUN) && rnd(3) != 0 && tp->t_flags.test(ISMEAN) && !tp->t_flags.test(ISHELD)
-		&& !ISWEARING(R_STEALTH))
+		&& !player.wears(Ring::Stealth))
 	{
-		tp->t_dest = &hero;
+		tp->t_dest = &player.body.t_pos;
 		tp->t_flags.set(ISRUN);
 	}
-	if (ch == 'M' && !game().player.body.t_flags.test(ISBLIND) && !tp->t_flags.test(ISFOUND)
+	if (ch == 'M' && !player.body.t_flags.test(ISBLIND) && !tp->t_flags.test(ISFOUND)
 		&& !tp->t_flags.test(ISCANC) && tp->t_flags.test(ISRUN))
 	{
-		rp = proom;
-		dst = DISTANCE(y, x, hero.y, hero.x);
-		if ((rp != NULL && !rp->r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
+		rp = player.body.t_room;
+		dst = DISTANCE(y, x, player.body.t_pos.y, player.body.t_pos.x);
+		if ((rp != nullptr && !rp->r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
 			tp->t_flags.set(ISFOUND);
-			if (!save(VS_MAGIC)) {
-				if (game().player.body.t_flags.test(ISHUH))
-					lengthen(Event::Unconfuse, rnd(20) + HUHDURATION);
+			if (!save(SaveThrow::Magic)) {
+				if (player.body.t_flags.test(ISHUH))
+					lengthen(Event::Unconfuse, rnd(20) + huh_duration());
 				else
-					fuse(Event::Unconfuse, rnd(20) + HUHDURATION);
-				game().player.body.t_flags.set(ISHUH);
+					fuse(Event::Unconfuse, rnd(20) + huh_duration());
+				player.body.t_flags.set(ISHUH);
 				msg("the medusa's gaze has confused you");
 			}
 		}
@@ -215,10 +213,10 @@ wake_monster(int y, int x)
 	 */
 	if (tp->t_flags.test(ISGREED) && !tp->t_flags.test(ISRUN)) {
 		tp->t_flags.set(ISRUN);
-		if (proom->r_goldval)
-			tp->t_dest = &proom->r_gold;
+		if (player.body.t_room->r_goldval)
+			tp->t_dest = &player.body.t_room->r_gold;
 		else
-			tp->t_dest = &hero;
+			tp->t_dest = &player.body.t_pos;
 	}
 	return tp;
 }
@@ -234,7 +232,7 @@ give_pack(Creature *tp)
 	 * check if we can allocate a new item
 	 */
 	if (game().pool.total < MAXITEMS && rnd(100) < monsters[tp->t_type-'A'].m_carry)
-		attach(tp->t_pack, new_thing());
+		tp->t_pack.push_front(new_thing());
 }
 
 /*
@@ -259,7 +257,7 @@ pick_mons(void)
 /*
  * moat(x,y)
  *    returns pointer to monster at coordinate
- *	  if no monster there return NULL
+ *	  if no monster there return null
  */
 
 Creature *
@@ -267,10 +265,10 @@ moat(int my, int mx)
 {
 	Creature *tp;
 
-	for (tp = game().level.monsters.first(); tp != NULL; tp = game().level.monsters.after(tp))
+	for (tp = game().level.monsters.first(); tp != nullptr; tp = game().level.monsters.after(tp))
 		if (tp->t_pos.x == mx  && tp->t_pos.y == my)
 			return(tp);
-	return(NULL);
+	return(nullptr);
 }
 
 }  // namespace rogue::entities

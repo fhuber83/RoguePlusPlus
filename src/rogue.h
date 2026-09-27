@@ -4,266 +4,81 @@
  * rogue.h	1.4 (AI Design) 12/14/84
  */
 
-/*
- * Modern headers first: extern.h and this file define macros such as max(),
- * pack and when that would break standard library headers.
- */
+#pragma once
+
+#include <cctype>
+#include <cerrno>
+#include <clocale>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
 #include <format>
 #include <optional>
 #include <string>
 #include <vector>
 
+#include <unistd.h>
+
+#include "core/Config.hpp"
 #include "core/Coord.hpp"
 #include "core/Dice.hpp"
 #include "core/Flags.hpp"
+#include "core/KindTable.hpp"
 #include "core/Random.hpp"
 #include "entities/List.hpp"
 #include "game/Slots.hpp"
+#include "items/Kinds.hpp"
 #include "ui/Display.hpp"
 #include "ui/Input.hpp"
+#include "world/MapFlags.hpp"
+#include "world/Trap.hpp"
 
-#include "extern.h"
 #include "glyphs.h"
+#include "mach_dep.h"
 
 /*
  * Screen size. Fixed at 80x25 (see rogue::ui::Screen); these used to be the
  * ncurses globals of the same name. Only game files see these; the curses
  * backend uses ncurses' own.
  */
-const int LINES = MAXLINES;
-const int COLS = MAXCOLS;
+inline constexpr int LINES = MAXLINES;
+inline constexpr int COLS = MAXCOLS;
 // Last line used for the map
-const int maxrow = MAXLINES - 2;
+inline constexpr int maxrow = MAXLINES - 2;
 
 
 /*
  *  Options set for PC rogue
  */
-
-/*
- * if DEBUG or WIZARD is changed
- * might as well recompile everything
- */
-#define HELP
-#undef DEMO
-#define DEMOTIME 10
-/*
- * DEMO
- *      recompile:
- *          save.c
- *	    rip.c
- *          io.c
- *          main.c
- */
-#define REV 1
-#define VER 48
-
-/*
- * If CODECSUM is changed recompile extern.c
- */
-#define SCOREFILE "rogue.scr"
-#define SAVEFILE  "rogue.sav"
-#define ENVFILE	  "rogue.opt"
-#define IBM
-#define MACROSZ 41
+inline constexpr int REV = 1;		/* the version, 1.48 */
+inline constexpr int VER = 48;
+inline constexpr const char *ENVFILE = "rogue.opt";
+inline constexpr int MACROSZ = 41;
 
 /*
  * Maximum number of different things
  */
-#define MAXROOMS	9
-#define MAXTHINGS	9
-#define MAXOBJ		9
-#define MAXPACK		23
-#define MAXTRAPS	10
-#define AMULETLEVEL	26
-#define	NUMTHINGS	7	/* number of types of things */
-#define MAXPASS		13	/* upper limit on number of passages */
-#define MAXNAME		20  /* Maximum Length of a scroll */
-#define MAXITEMS	83  /* Maximum number of randomly generated things */
-#define BUFSIZE		128
-
-/*
- * All the fun defines
- */
-#define hero		game().player.body.t_pos
-#define pstats		game().player.body.t_stats
-#define pack		game().player.body.t_pack
-#define proom		game().player.body.t_room
-#define max_hp		game().player.body.t_stats.s_maxhp
-#define attach(a,b)	(a).push_front(b)
-#define detach(a,b)	(a).remove(b)
-#define free_list(a)	list_free(a)
-#define max(a,b)	((a) > (b) ? (a) : (b))
-#define GOLDCALC	(rnd(50 + 10 * game().level.depth) + 2)
-#define ISRING(h,r)	(game().player.rings[h] != NULL && game().player.rings[h]->o_which == r)
-#define ISWEARING(r)	(ISRING(LEFT, r) || ISRING(RIGHT, r))
-#define ISMULT(type) 	(type==ItemKind::Potion || type==ItemKind::Scroll || type==ItemKind::Food || type==ItemKind::Gold)
-#define chat(y,x)	(game().level.map[INDEX(y,x)])
-#define flat(y,x)	(game().level.flags[INDEX(y,x)])
-#define unc(cp)		(cp).y, (cp).x
-#define isfloor(c)	((c) == FLOOR || (c) == PASSAGE)
-#define isgone(rp)	((rp)->r_flags.test(RoomFlag::Gone) && !(rp)->r_flags.test(RoomFlag::Maze))
-#ifdef WIZARD
-#define debug		if (wizard) msg
-#endif
-#define ismonster(ch)	(((ch) >= 'A') && ((ch) <= 'Z'))
+inline constexpr int MAXROOMS = 9;
+inline constexpr int MAXOBJ = 9;
+inline constexpr int MAXPACK = 23;
+inline constexpr int MAXTRAPS = 10;
+inline constexpr int AMULETLEVEL = 26;
+inline constexpr int NUMTHINGS = 7;	/* number of types of things */
+inline constexpr int MAXPASS = 13;	/* upper limit on number of passages */
+inline constexpr int MAXNAME = 20;	/* Maximum Length of a scroll */
+inline constexpr int MAXITEMS = 83;	/* Maximum number of randomly generated things */
+inline constexpr int BUFSIZE = 128;
 
 /*
  * Various constants
  */
-#define BEARTIME	spread(3)
-#define SLEEPTIME	spread(5)
-#define HEALTIME	spread(30)
-#define HOLDTIME	spread(2)
-#define WANDERTIME	spread(70)
-#define HUHDURATION	spread(20)
-#define SEEDURATION	spread(300)
-#define HUNGERTIME	spread(1300)
-#define MORETIME	150
-#define STOMACHSIZE	2000
-#define STARVETIME	850
-#define LEFT		0
-#define RIGHT		1
-#define BOLT_LENGTH	6
-#define LAMPDIST	3
-
-/*
- * Save against things
- */
-#define VS_POISON	00
-#define VS_PARALYZATION	00
-#define VS_LUCK		01
-#define VS_DEATH	00
-#define VS_BREATH	02
-#define VS_MAGIC	03
-
-
-/*
- * Flags for level map
- */
-#define F_PASS		0x040		/* is a passageway */
-#define F_MAZE		0x020		/* have seen this corridor before */
-#define F_REAL		0x010		/* what you see is what you get */
-#define F_PNUM		0x00f		/* passage number mask */
-#define F_TMASK		0x007		/* trap number mask */
-
-/*
- * Trap types
- */
-#define T_DOOR	00
-#define T_ARROW	01
-#define T_SLEEP	02
-#define T_BEAR	03
-#define T_TELEP	04
-#define T_DART	05
-#define NTRAPS	6
-
-/*
- * Potion types
- */
-#define P_CONFUSE	0
-#define P_PARALYZE	1
-#define P_POISON	2
-#define P_STRENGTH	3
-#define P_SEEINVIS	4
-#define P_HEALING	5
-#define P_MFIND		6
-#define	P_TFIND 	7
-#define	P_RAISE		8
-#define P_XHEAL		9
-#define P_HASTE		10
-#define P_RESTORE	11
-#define P_BLIND		12
-#define P_NOP		13
-#define MAXPOTIONS	14
-
-/*
- * Scroll types
- */
-#define S_CONFUSE	0
-#define S_MAP		1
-#define S_HOLD		2
-#define S_SLEEP		3
-#define S_ARMOR		4
-#define S_IDENT		5
-#define S_SCARE		6
-#define S_GFIND		7
-#define S_TELEP		8
-#define S_ENCH		9
-#define S_CREATE	10
-#define S_REMOVE	11
-#define S_AGGR		12
-#define S_NOP		13
-#define S_VORPAL	14
-#define MAXSCROLLS	15
-
-/*
- * Weapon types
- */
-#define MACE		0
-#define SWORD		1
-#define BOW		2
-#define ARROW		3
-#define DAGGER		4
-#define TWOSWORD	5
-#define DART		6
-#define CROSSBOW	7
-#define BOLT		8
-#define SPEAR		9
-#define FLAME		10	/* fake entry for dragon breath (ick) */
-#define MAXWEAPONS	10	/* this should equal FLAME */
-
-/*
- * Armor types
- */
-#define LEATHER		0
-#define RING_MAIL	1
-#define STUDDED_LEATHER	2
-#define SCALE_MAIL	3
-#define CHAIN_MAIL	4
-#define SPLINT_MAIL	5
-#define BANDED_MAIL	6
-#define PLATE_MAIL	7
-#define MAXARMORS	8
-
-/*
- * Ring types
- */
-#define R_PROTECT	0
-#define R_ADDSTR	1
-#define R_SUSTSTR	2
-#define R_SEARCH	3
-#define R_SEEINVIS	4
-#define R_NOP		5
-#define R_AGGR		6
-#define R_ADDHIT	7
-#define R_ADDDAM	8
-#define R_REGEN		9
-#define R_DIGEST	10
-#define R_TELEPORT	11
-#define R_STEALTH	12
-#define R_SUSTARM	13
-#define MAXRINGS	14
-
-/*
- * Rod/Wand/Staff types
- */
-
-#define WS_LIGHT	0
-#define WS_HIT		1
-#define WS_ELECT	2
-#define WS_FIRE		3
-#define WS_COLD		4
-#define WS_POLYMORPH	5
-#define WS_MISSILE	6
-#define WS_HASTE_M	7
-#define WS_SLOW_M	8
-#define WS_DRAIN	9
-#define WS_NOP		10
-#define WS_TELAWAY	11
-#define WS_TELTO	12
-#define WS_CANCEL	13
-#define MAXSTICKS	14
+inline constexpr int MORETIME = 150;
+inline constexpr int STOMACHSIZE = 2000;
+inline constexpr int STARVETIME = 850;
+inline constexpr int BOLT_LENGTH = 6;
+inline constexpr int LAMPDIST = 3;
 
 /*
  * Now we define the structures and types
@@ -275,6 +90,15 @@ const int maxrow = MAXLINES - 2;
 struct h_list {
 	unsigned char h_chstr[6];  // either (ch) or (ch,sep,ch2) appended with ": "
 	const char *h_desc;
+
+	// A line of text; an empty one ends the list (were H_STR and H_END)
+	constexpr h_list(const char *desc) : h_chstr{}, h_desc(desc) {}
+	// A glyph and what it is (was H_CHSTR)
+	constexpr h_list(unsigned char ch, const char *desc)
+		: h_chstr{ch, ':', ' ', '\0'}, h_desc(desc) {}
+	// Two glyphs with a separator, "A-Z" (was H_CH2STR)
+	constexpr h_list(unsigned char first, unsigned char sep, unsigned char last, const char *desc)
+		: h_chstr{first, sep, last, ':', ' ', '\0'}, h_desc(desc) {}
 };
 
 /*
@@ -329,6 +153,12 @@ struct room {
 	RoomFlags r_flags;		/* Info about the room */
 	int r_nexits;			/* Number of exits */
 	coord r_exit[12];			/* Where the exits are */
+
+	// A corridor where a room would be, but not a maze (was isgone())
+	bool is_gone() const
+	{
+		return r_flags.test(RoomFlag::Gone) && !r_flags.test(RoomFlag::Maze);
+	}
 };
 
 /*
@@ -346,7 +176,7 @@ struct stats {
 
 /*
  * The legacy union thing is split into a creature (monster or player) and an
- * item. o_charges and o_goldval are other names for o_ac.
+ * item. charges() and gold_value() are other names for o_ac.
  */
 #include "entities/Item.hpp"
 #include "entities/Creature.hpp"
@@ -355,6 +185,20 @@ using rogue::Creature;
 using rogue::Item;
 using rogue::List;
 using rogue::ItemKind;
+using rogue::KindTable;
+using rogue::kind_count;
+using rogue::kinds;
+using rogue::Potion;
+using rogue::Scroll;
+using rogue::Ring;
+using rogue::Stick;
+using rogue::WeaponType;
+using rogue::ArmorType;
+using rogue::Food;
+using rogue::Hand;
+using rogue::Trap;
+using rogue::MapFlag;
+using rogue::MapFlags;
 using rogue::ItemFilter;
 using rogue::glyph_of;
 using rogue::kind_of_glyph;
@@ -388,8 +232,6 @@ inline constexpr rogue::CreatureFlag ISSLOW = rogue::CreatureFlag::Slow;
 inline constexpr rogue::CreatureFlag ISHASTE = rogue::CreatureFlag::Hasted;
 inline constexpr rogue::CreatureFlag ISFLY = rogue::CreatureFlag::Flying;
 
-#define o_charges	o_ac
-#define o_goldval	o_ac
 
 /*
  * Array containing information on all the various types of monsters
@@ -402,8 +244,11 @@ struct monster {
 };
 
 // The tables each game copies into game().items (extern.cpp)
-extern const struct magic_item s_magic_base[], p_magic_base[], r_magic_base[],
-				ws_magic_base[], things_base[];
+extern const KindTable<Scroll, magic_item> s_magic_base;
+extern const KindTable<Potion, magic_item> p_magic_base;
+extern const KindTable<Ring, magic_item> r_magic_base;
+extern const KindTable<Stick, magic_item> ws_magic_base;
+extern const struct magic_item things_base[];
 
 #include "game/Game.hpp"
 #include "items/ItemCatalog.hpp"
@@ -459,6 +304,7 @@ using rogue::items::effects::missile;
 using rogue::items::effects::do_motion;
 using rogue::items::effects::fall;
 using rogue::items::effects::init_weapon;
+using rogue::items::effects::launched_by;
 using rogue::items::effects::hit_monster;
 using rogue::items::effects::num;
 using rogue::items::effects::wield;
@@ -483,6 +329,7 @@ using rogue::rules::attack;
 using rogue::rules::swing;
 using rogue::rules::check_level;
 using rogue::rules::save_throw;
+using rogue::rules::SaveThrow;
 using rogue::rules::save;
 using rogue::rules::is_magic;
 using rogue::rules::raise_level;
@@ -522,15 +369,14 @@ using rogue::execcom;
 extern char nullstr[];
 extern const char *it, *you, *no_mem;
 
-#ifdef WIZARD
-bool wizard;
-#endif
-
-extern const char *a_names[], *he_man[], *intense, *w_names[];
+extern const char *he_man[], *intense;
+// Weapon names, and the name of the WeaponType::Flame that fire_bolt() throws
+extern KindTable<WeaponType, const char *, kind_count<WeaponType> + 1> w_names;
+extern const KindTable<ArmorType, const char *> a_names;
 // a std::format string for msg()
 inline constexpr const char *flashmsg = "your {} gives off a flash{}";
 extern struct h_list helpcoms[], helpobjs[];
-extern int	a_chances[], a_class[];
+extern const KindTable<ArmorType, int> a_chances, a_class;
 extern struct monster	monsters[];
 
 // the experience level table (init.cpp)
@@ -538,7 +384,7 @@ extern const long e_levels[20];
 
 /*
  * Function types
- * mach_dep.cpp functions are declared in extern.h
+ * mach_dep.cpp functions are declared in mach_dep.h
  */
 
 // init.cpp
@@ -568,6 +414,14 @@ void
 addmsg(std::format_string<Args...> fmt, Args &&...args)
 {
 	add_msg(std::format(fmt, std::forward<Args>(args)...));
+}
+
+// A message from the consistency checks (rogue::config::debug_checks)
+template <class... Args>
+void
+debug(std::format_string<Args...> fmt, Args &&...args)
+{
+	show_msg(std::format(fmt, std::forward<Args>(args)...));
 }
 
 template <class... Args>
@@ -604,9 +458,9 @@ list_free(rogue::List<T> &list)
 {
 	T *item;
 
-	while ((item = list.first()) != NULL)
+	while ((item = list.first()) != nullptr)
 	{
-	detach(list, item);
+	list.remove(item);
 	discard(item);
 	}
 }
@@ -619,6 +473,8 @@ void	leave(void);
 // legacy wrappers around rogue::rng()
 inline int	rnd(int range) { return rogue::rng().below(range); }
 inline int	roll(int number, int sides) { return rogue::rng().roll(number, sides); }
+// The gold in a pile on this level (was GOLDCALC)
+inline int	gold_calc() { return rnd(50 + 10 * game().level.depth) + 2; }
 
 // misc.cpp
 void	look(bool wakeup);
@@ -640,12 +496,22 @@ bool	get_dir(void);
 bool	find_dir(unsigned char ch, coord *cp);
 bool	step_ok(unsigned char ch);
 bool	offmap(int y, int x);
-const char	*tr_name(unsigned char type);
+const char	*tr_name(Trap type);
 const char	*vowelstr(const char *str);
 char	goodch(Item *obj);
 int	sign(int nm);
 unsigned char	winat(int y, int x);
 int	spread(int nm);
+/*
+ * How long things last, each spread by 10% (were BEARTIME, SLEEPTIME, ...)
+ */
+inline int	bear_time() { return spread(3); }		/* held by a bear trap */
+inline int	sleep_time() { return spread(5); }		/* asleep from a gas trap or scroll */
+inline int	hold_time() { return spread(2); }		/* paralyzed by a potion */
+inline int	wander_time() { return spread(70); }	/* until the next wandering monster */
+inline int	huh_duration() { return spread(20); }	/* confused */
+inline int	see_duration() { return spread(300); }	/* seeing invisible, or blind */
+inline int	hunger_time() { return spread(1300); }	/* a full stomach */
 int	DISTANCE(int y1, int x1, int y2, int x2);
 int	INDEX(int y, int x);
 
@@ -681,6 +547,3 @@ void	lcase(char *str);
 // wizard.cpp
 void	whatis(void);
 int	teleport(void);
-#ifdef WIZARD
-void	create_obj();
-#endif //WIZARD

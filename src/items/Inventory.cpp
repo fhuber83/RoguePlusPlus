@@ -8,12 +8,13 @@ pack_obj(unsigned char ch, unsigned char *chp)
 {
 	Item *obj;
 	unsigned char och;
+	rogue::Player &player = game().player;
 
-	for (obj = pack.first(), och = 'a'; obj != NULL; obj = pack.after(obj), och++)
+	for (obj = player.body.t_pack.first(), och = 'a'; obj != nullptr; obj = player.body.t_pack.after(obj), och++)
 		if (ch == och)
 			return obj;
 	*chp = och;
-	return NULL;
+	return nullptr;
 }
 
 /*
@@ -25,19 +26,21 @@ pack_obj(unsigned char ch, unsigned char *chp)
 void
 add_pack(Item *obj, bool silent)
 {
-	Item *op, *lp = NULL;
+	Item *op, *lp = nullptr;
 	Creature *mp;
 	bool exact, from_floor;
 	unsigned char floor;
+	rogue::Player &player = game().player;
+	rogue::Level &level = game().level;
 
-	if (obj == NULL)
+	if (obj == nullptr)
 	{
-		from_floor = TRUE;
-		if ((obj = find_obj(hero.y, hero.x)) == NULL)
+		from_floor = true;
+		if ((obj = find_obj(player.body.t_pos.y, player.body.t_pos.x)) == nullptr)
 			return;
 	}
 	else
-		from_floor = FALSE;
+		from_floor = false;
 	/*
 	 * Link it into the pack.  Search the pack for a object of similar type
 	 * if there isn't one, stuff it at the beginning, if there is, look for one
@@ -49,15 +52,15 @@ add_pack(Item *obj, bool silent)
 	 */
 
 	/*
-	 *  bug in original Rogue: it didn't check proom != NULL, as is the case
-	 *  when add_pack() is called from init_player(), which happens before
-	 *  any room even exist. proom is set in enter_room(), which is first
-	 *  called in new_level()
+	 *  bug in original Rogue: it didn't check that the rogue's room (t_room)
+	 *  is not null, as is the case when add_pack() is called from
+	 *  init_player(), which happens before any room even exist. t_room is
+	 *  set in enter_room(), which is first called in new_level()
 	 */
-	floor = (proom != NULL && proom->r_flags.test(RoomFlag::Gone)) ? PASSAGE : FLOOR;
+	floor = (player.body.t_room != nullptr && player.body.t_room->r_flags.test(RoomFlag::Gone)) ? PASSAGE : FLOOR;
 	if (obj->o_group)
 	{
-		for (op = pack.first(); op != NULL; op = pack.after(op))
+		for (op = player.body.t_pack.first(); op != nullptr; op = player.body.t_pack.after(op))
 		{
 			if (op->o_group == obj->o_group)
 			{
@@ -67,9 +70,9 @@ add_pack(Item *obj, bool silent)
 				op->o_count += obj->o_count;
 				if (from_floor)
 				{
-					detach(game().level.objects, obj);
-					display().draw_tile(hero, floor);
-					chat(hero.y, hero.x) = floor;
+					level.objects.remove(obj);
+					display().draw_tile(player.body.t_pos, floor);
+					level.at(player.body.t_pos) = floor;
 				}
 				discard(obj);
 				obj = op;
@@ -80,7 +83,7 @@ add_pack(Item *obj, bool silent)
 	/*
 	 * Check if there is room
 	 */
-	if (game().player.in_pack >= MAXPACK-1)
+	if (player.in_pack >= MAXPACK-1)
 	{
 		msg("you can't carry anything else");
 		return;
@@ -88,13 +91,13 @@ add_pack(Item *obj, bool silent)
 	/*
 	 * Check for and deal with scare monster scrolls
 	 */
-	if (obj->o_type == ItemKind::Scroll && obj->o_which == S_SCARE)
+	if (obj->o_type == ItemKind::Scroll && obj->which<Scroll>() == Scroll::ScareMonster)
 	{
 		if (obj->o_flags.test(rogue::ItemFlag::Found))
 		{
-			detach(game().level.objects, obj);
-			display().draw_tile(hero, floor);
-			chat(hero.y, hero.x) = floor;
+			level.objects.remove(obj);
+			display().draw_tile(player.body.t_pos, floor);
+			level.at(player.body.t_pos) = floor;
 			msg("the scroll turns to dust{}.", noterse(" as you pick it up"));
 			return;
 		}
@@ -102,26 +105,26 @@ add_pack(Item *obj, bool silent)
 			obj->o_flags.set(rogue::ItemFlag::Found);
 	}
 
-	game().player.in_pack++;
+	player.in_pack++;
 	if (from_floor)
 	{
-		detach(game().level.objects, obj);
-		display().draw_tile(hero, floor);
-		chat(hero.y, hero.x) = floor;
+		level.objects.remove(obj);
+		display().draw_tile(player.body.t_pos, floor);
+		level.at(player.body.t_pos) = floor;
 	}
 	/*
 	 * Search for an object of the same type
 	 */
-	exact = FALSE;
-	for (op = pack.first(); op != NULL; op = pack.after(op))
+	exact = false;
+	for (op = player.body.t_pack.first(); op != nullptr; op = player.body.t_pack.after(op))
 		if (obj->o_type == op->o_type)
 			break;
-	if (op == NULL)
+	if (op == nullptr)
 	{
 		/*
 		 * Put it at the end of the pack since it is a new type
 		 */
-		for (op = pack.first(); op != NULL; op = pack.after(op))
+		for (op = player.body.t_pack.first(); op != nullptr; op = player.body.t_pack.after(op))
 		{
 			if (op->o_type != ItemKind::Food)
 				break;
@@ -137,20 +140,20 @@ add_pack(Item *obj, bool silent)
 		{
 			if (op->o_which == obj->o_which)
 			{
-				exact = TRUE;
+				exact = true;
 				break;
 			}
 			lp = op;
-			if ((op = pack.after(op)) == NULL)
+			if ((op = player.body.t_pack.after(op)) == nullptr)
 				break;
 		}
 	}
-	if (op == NULL)
+	if (op == nullptr)
 	{
 		/*
 		 * Didn't find an exact match, just stick it here
 		 */
-		pack.insert_after(lp, obj);	// lp is NULL only when the pack is empty
+		player.body.t_pack.insert_after(lp, obj);	// lp is null only when the pack is empty
 	}
 	else
 	{
@@ -158,21 +161,21 @@ add_pack(Item *obj, bool silent)
 		 * If we found an exact match.  If it is a potion, food, or a
 		 * scroll, increase the count, otherwise put it with its clones.
 		 */
-		if (exact && ISMULT(obj->o_type))
+		if (exact && is_multiple(obj->o_type))
 		{
 			op->o_count++;
 			discard(obj);
 			obj = op;
 			goto picked_up;
 		}
-		pack.insert_before(op, obj);
+		player.body.t_pack.insert_before(op, obj);
 	}
 picked_up:
 	/*
 	 * If this was the object of something's desire, that monster will
 	 * get mad and run at the hero
 	 */
-	for (mp = game().level.monsters.first(); mp != NULL; mp = game().level.monsters.after(mp))
+	for (mp = level.monsters.first(); mp != nullptr; mp = level.monsters.after(mp))
 	{
 		/*
 		 *  compiler bug: jll : 2-7-83
@@ -185,26 +188,26 @@ picked_up:
 		 *  the following should do the same
 		 */
 		/*
-		 * Another bug in Rogue: missed NULL check for t_dest. Monsters could
+		 * Another bug in Rogue: missed null check for t_dest. Monsters could
 		 * be not chasing (sleeping, another room, Ice Monster, etc), so a
 		 * destination could possibly have never been assigned.
 		 */
-		if (mp->t_dest != NULL &&
+		if (mp->t_dest != nullptr &&
 		   (mp->t_dest->x == obj->o_pos.x) && (mp->t_dest->y == obj->o_pos.y))
-			mp->t_dest = &hero;
+			mp->t_dest = &player.body.t_pos;
 	}
 
 	if (obj->o_type == ItemKind::Amulet)
 	{
-		game().player.has_amulet = TRUE;
-		game().player.saw_amulet = TRUE;
+		player.has_amulet = true;
+		player.saw_amulet = true;
 	}
 	/*
 	 * Notify the user
 	 */
 	if (!silent)
 		msg("{}{} ({:c})",noterse("you now have "),
-			inv_name(obj, TRUE), pack_char(obj));
+			inv_name(obj, true), pack_char(obj));
 }
 
 /*
@@ -219,7 +222,7 @@ inventory(const List<Item> &list, ItemFilter type, const char *lstr)
 	int n_objs;
 
 	n_objs = 0;
-	for (ch = 'a', obj = list.first(); obj != NULL; ch++, obj = list.after(obj))
+	for (ch = 'a', obj = list.first(); obj != nullptr; ch++, obj = list.after(obj))
 	{
 		/*
 		 * Don't print this one if:
@@ -231,10 +234,10 @@ inventory(const List<Item> &list, ItemFilter type, const char *lstr)
 		  (obj->o_type == ItemKind::Scroll || obj->o_type == ItemKind::Potion ||
 		  obj->o_type == ItemKind::Ring || obj->o_type == ItemKind::Stick)) &&
 		  !(type.is(ItemKind::Weapon) && obj->o_type == ItemKind::Potion) &&
-		  !(type.is(ItemKind::Stick) && obj->o_enemy && obj->o_charges))
+		  !(type.is(ItemKind::Stick) && obj->o_enemy && obj->charges()))
 			continue;
 		n_objs++;
-		add_line(lstr, std::format("{}) {}", static_cast<char>(ch), inv_name(obj, FALSE)).c_str());
+		add_line(lstr, std::format("{}) {}", static_cast<char>(ch), inv_name(obj, false)).c_str());
 	}
 	if (n_objs == 0)
 	{
@@ -253,6 +256,7 @@ void
 pick_up(unsigned char ch)
 {
 	Item *obj;
+	rogue::Player &player = game().player;
 
 	switch (ch)
 	{
@@ -260,22 +264,22 @@ pick_up(unsigned char ch)
 	{
 		Creature *mp;
 
-		if ((obj = find_obj(hero.y, hero.x)) == NULL)
+		if ((obj = find_obj(player.body.t_pos.y, player.body.t_pos.x)) == nullptr)
 		return;
-		money(obj->o_goldval);
+		money(obj->gold_value());
 		/*
 		 * find_dest() can point a monster's t_dest straight at this gold's
 		 * o_pos. Redirect it to the hero before the gold's pool slot is
 		 * discarded, same as add_pack()'s "picked_up" redirect for other
 		 * floor items, so nothing is left pointing at a freed Item.
 		 */
-		for (mp = game().level.monsters.first(); mp != NULL; mp = game().level.monsters.after(mp))
-			if (mp->t_dest != NULL &&
+		for (mp = game().level.monsters.first(); mp != nullptr; mp = game().level.monsters.after(mp))
+			if (mp->t_dest != nullptr &&
 			   (mp->t_dest->x == obj->o_pos.x) && (mp->t_dest->y == obj->o_pos.y))
-				mp->t_dest = &hero;
-		detach(game().level.objects, obj);
+				mp->t_dest = &player.body.t_pos;
+		game().level.objects.remove(obj);
 		discard(obj);
-		proom->r_goldval = 0;
+		player.body.t_room->r_goldval = 0;
 		break;
 	}
 	default:
@@ -287,7 +291,7 @@ pick_up(unsigned char ch)
 	case AMULET:
 	case RING:
 	case STICK:
-		add_pack(NULL, FALSE);
+		add_pack(nullptr, false);
 		break;
 	}
 }
@@ -304,14 +308,14 @@ get_item(const char *purpose, ItemFilter type)
 	unsigned char och;
 	rogue::Turn &turn = game().turn;
 	unsigned char gi_state;	/* get item sub state */
-	int once_only = FALSE;
+	int once_only = false;
 
 	if (((!strncmp(game().options.menu,"sel",3) && strcmp(purpose,"eat")
 	  && strcmp(purpose,"drop"))) || !strcmp(game().options.menu,"on"))
-		once_only = TRUE;
+		once_only = true;
 
 	gi_state = game().turn.again;
-	if (pack.empty())
+	if (game().player.body.t_pack.empty())
 		msg("you aren't carrying anything");
 	else {
 		ch = turn.last_item_key;
@@ -336,12 +340,12 @@ get_item(const char *purpose, ItemFilter type)
 			ch = readchar();
 			skip:
 			game().message.end = 0;
-			gi_state = FALSE;
-			once_only = FALSE;
+			gi_state = false;
+			once_only = false;
 			if (ch == '*') {
-				if ((ch = inventory(pack, type, purpose)) == 0) {
-					game().turn.after = FALSE;
-					return NULL;
+				if ((ch = inventory(game().player.body.t_pack, type, purpose)) == 0) {
+					game().turn.after = false;
+					return nullptr;
 				}
 				if (ch == ' ')
 					continue;
@@ -351,11 +355,11 @@ get_item(const char *purpose, ItemFilter type)
 			 * Give the poor player a chance to abort the command
 			 */
 			if (ch == ESCAPE) {
-				game().turn.after = FALSE;
+				game().turn.after = false;
 				msg("");
-				return NULL;
+				return nullptr;
 			}
-			if ((obj = pack_obj(ch, &och)) == NULL) {
+			if ((obj = pack_obj(ch, &och)) == nullptr) {
 				ifterse("range is 'a' to '{:c}'","please specify a letter between 'a' and '{:c}'", och-1);
 				continue;
 			} else {
@@ -373,7 +377,7 @@ get_item(const char *purpose, ItemFilter type)
 		   }
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 /*
@@ -385,9 +389,10 @@ pack_char(Item *obj)
 {
 	Item *item;
 	unsigned char c;
+	rogue::Player &player = game().player;
 
 	c = 'a';
-	for (item = pack.first(); item != NULL; item = pack.after(item))
+	for (item = player.body.t_pack.first(); item != nullptr; item = player.body.t_pack.after(item))
 		if (item == obj)
 			return c;
 		else
@@ -403,11 +408,12 @@ void
 money(int value)
 {
 	unsigned char floor;
+	rogue::Player &player = game().player;
 
-	floor = proom->r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
-	game().player.purse += value;
-	display().draw_tile(hero, floor);
-	chat(hero.y, hero.x) = floor;
+	floor = player.body.t_room->r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
+	player.purse += value;
+	display().draw_tile(player.body.t_pos, floor);
+	game().level.at(player.body.t_pos) = floor;
 	if (value > 0)
 	{
 		msg("you found {} gold pieces", value);
@@ -423,14 +429,15 @@ drop(void)
 {
 	unsigned char ch;
 	Item *nobj, *op;
+	rogue::Player &player = game().player;
 
-	ch = chat(hero.y, hero.x);
+	ch = game().level.at(player.body.t_pos);
 	if (ch != FLOOR && ch != PASSAGE)
 	{
 		msg("there is something there already");
 		return;
 	}
-	if ((op = get_item("drop", ItemFilter::all())) == NULL)
+	if ((op = get_item("drop", ItemFilter::all())) == nullptr)
 		return;
 	if (!can_drop(op))
 		return;
@@ -439,31 +446,31 @@ drop(void)
 	 */
 	if (op->o_count >= 2 && op->o_type != ItemKind::Weapon)
 	{
-		if ((nobj = new_item()) == NULL)
+		if ((nobj = new_item()) == nullptr)
 		{
 			msg("{}it appears to be stuck in your pack!",
 				noterse("can't drop it, "));
 			return;
 		}
 		op->o_count--;
-		bcopy(*nobj,*op);
+		*nobj = *op;
 		nobj->o_count = 1;
 		op = nobj;
 		if (op->o_group != 0)
-			game().player.in_pack++;
+			player.in_pack++;
 	}
 	else
-		detach(pack, op);
-	game().player.in_pack--;
+		player.body.t_pack.remove(op);
+	player.in_pack--;
 	/*
 	 * Link it into the level object list
 	 */
-	attach(game().level.objects, op);
-	chat(hero.y, hero.x) = glyph_of(op->o_type);
-	bcopy(op->o_pos,hero);
+	game().level.objects.push_front(op);
+	game().level.at(player.body.t_pos) = glyph_of(op->o_type);
+	op->o_pos = player.body.t_pos;
 	if (op->o_type == ItemKind::Amulet)
-		game().player.has_amulet = FALSE;
-	msg("dropped {}", inv_name(op, TRUE));
+		player.has_amulet = false;
+	msg("dropped {}", inv_name(op, true));
 }
 
 /*
@@ -474,42 +481,43 @@ bool
 can_drop(Item *op)
 {
 	rogue::Player &player = game().player;
-	if (op == NULL)
-		return TRUE;
+	if (op == nullptr)
+		return true;
 	if (op != player.armor && op != player.weapon
-		&& op != player.rings[LEFT] && op != player.rings[RIGHT])
-		return TRUE;
+		&& op != player.rings[Hand::Left] && op != player.rings[Hand::Right])
+		return true;
 	if (op->o_flags.test(ISCURSED)) {
 		msg("you can't.  It appears to be cursed");
-		return FALSE;
+		return false;
 	}
 	if (op == player.weapon)
-		player.weapon = NULL;
+		player.weapon = nullptr;
 	else if (op == player.armor) {
 		waste_time();
-		player.armor = NULL;
+		player.armor = nullptr;
 	} else {
-		int hand;
+		Hand hand;
 
-		if (op != player.rings[hand = LEFT])
-			if (op != player.rings[hand = RIGHT]) {
-#ifdef DEBUG
-				debug("Candrop called with funny thing");
-#endif
-				return TRUE;
+		if (op != player.rings[hand = Hand::Left])
+			if (op != player.rings[hand = Hand::Right]) {
+				if constexpr (rogue::config::debug_checks)
+					debug("Candrop called with funny thing");
+				return true;
 			}
-		player.rings[hand] = NULL;
-		switch (op->o_which) {
-		case R_ADDSTR:
+		player.rings[hand] = nullptr;
+		switch (op->which<Ring>()) {
+		case Ring::AddStrength:
 			chg_str(-op->o_ac);
 			break;
-		case R_SEEINVIS:
+		case Ring::SeeInvisible:
 			unsee();
 			extinguish(Event::Unsee);
 			break;
+		default:
+			break;
 		}
 	}
-	return TRUE;
+	return true;
 }
 
 }  // namespace rogue::items

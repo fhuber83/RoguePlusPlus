@@ -11,25 +11,25 @@
  *	Print the name of a trap
  */
 const char *
-tr_name(unsigned char type)
+tr_name(Trap type)
 {
 	switch (type)
 	{
-	case T_DOOR:
+	case Trap::Door:
 		return "a trapdoor";
-	case T_BEAR:
+	case Trap::Bear:
 		return "a beartrap";
-	case T_SLEEP:
+	case Trap::Sleep:
 		return "a sleeping gas trap";
-	case T_ARROW:
+	case Trap::Arrow:
 		return "an arrow trap";
-	case T_TELEP:
+	case Trap::Teleport:
 		return "a teleport trap";
-	case T_DART:
+	case Trap::Dart:
 		return "a poison dart trap";
 	}
-	msg("wierd trap: {:d}", type);
-	return NULL;
+	msg("wierd trap: {:d}", std::to_underlying(type));
+	return nullptr;
 }
 
 /*
@@ -49,21 +49,21 @@ look(bool wakeup)
 	struct room *rp;
 	int ey, ex;
 	int passcount = 0;
-	unsigned char pfl, *fp;
+	MapFlags pfl, *fp;
 	int sy, sx, sumhero = 0, diffhero = 0;
 
-	rp = proom;
-	index = INDEX(hero.y, hero.x);
+	rp = player.body.t_room;
+	index = INDEX(player.body.t_pos.y, player.body.t_pos.x);
 	pfl = level.flags[index];
 	pch = level.map[index];
 	/*
 	 * if the hero has moved
 	 */
-	if (!(player.old_pos == hero)) {
+	if (!(player.old_pos == player.body.t_pos)) {
 		if (!player.body.t_flags.test(ISBLIND)) {
 			for (x = player.old_pos.x - 1; x <= (player.old_pos.x + 1); x++)
 				for (y = player.old_pos.y - 1; y <= (player.old_pos.y + 1); y++) {
-					if ((y == hero.y && x == hero.x) || offmap(y,x))
+					if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || offmap(y,x))
 						continue;
 					ch = display().tile_at({x, y});
 					if (ch == FLOOR) {
@@ -76,32 +76,32 @@ look(bool wakeup)
 						 * needs to be redrawn (passages once draw always
 						 * stay on) do it now.
 						 */
-						if (((*fp&F_MAZE) || (*fp&F_PASS)) && (ch!=PASSAGE)
+						if ((fp->test(MapFlag::Maze) || fp->test(MapFlag::Passage)) && (ch!=PASSAGE)
 							&& (ch != STAIRS) &&
-							((*fp & F_PNUM) == (pfl & F_PNUM)) )
+							(fp->passage() == pfl.passage()) )
 								display().draw_tile({x, y}, PASSAGE);
 					}
 				}
 		}
-		player.old_pos = hero;
+		player.old_pos = player.body.t_pos;
 		player.old_room = rp;
 	}
-	ey = hero.y + 1;
-	ex = hero.x + 1;
-	sx = hero.x - 1;
-	sy = hero.y - 1;
+	ey = player.body.t_pos.y + 1;
+	ex = player.body.t_pos.x + 1;
+	sx = player.body.t_pos.x - 1;
+	sy = player.body.t_pos.y - 1;
 	if (turn.door_stop && !turn.first_move && turn.running) {
-		sumhero = hero.y + hero.x;
-		diffhero = hero.y - hero.x;
+		sumhero = player.body.t_pos.y + player.body.t_pos.x;
+		diffhero = player.body.t_pos.y - player.body.t_pos.x;
 	}
 	for (y = sy; y <= ey; y++)
 		if (y > 0 && y < maxrow) for (x = sx; x <= ex; x++) {
 			if (x <= 0 || x >= COLS)
 				continue;
 			if (!player.body.t_flags.test(ISBLIND)) {
-				if (y == hero.y && x == hero.x)
+				if (y == player.body.t_pos.y && x == player.body.t_pos.x)
 					continue;
-			} else if (y != hero.y || x != hero.x)
+			} else if (y != player.body.t_pos.y || x != player.body.t_pos.x)
 				continue;
 
 			index = INDEX(y, x);
@@ -118,24 +118,24 @@ look(bool wakeup)
 				/*
 				 * Either hero or other in a passage
 				 */
-				if ((pfl & F_PASS) != (*fp & F_PASS)) {
+				if (pfl.test(MapFlag::Passage) != fp->test(MapFlag::Passage)) {
 					/*
 					 * Neither is in a maze
 					 */
-					if ( ! (pfl & F_MAZE) && ! (*fp & F_MAZE))
+					if ( ! pfl.test(MapFlag::Maze) && ! fp->test(MapFlag::Maze))
 						continue;
 				}
 				/*
 				 * Not in same passage
 				 */
-				else if ((*fp & F_PASS) && (*fp & F_PNUM) != (pfl & F_PNUM))
+				else if (fp->test(MapFlag::Passage) && fp->passage() != pfl.passage())
 					continue;
 			}
 
-			if ((tp = moat(y,x)) != NULL) {
+			if ((tp = moat(y,x)) != nullptr) {
 				if (player.body.t_flags.test(SEEMONST) && tp->t_flags.test(ISINVIS)) {
 					if (turn.door_stop && !turn.first_move)
-						turn.running = FALSE;
+						turn.running = false;
 					continue;
 				} else {
 					if (wakeup)
@@ -153,7 +153,7 @@ look(bool wakeup)
 			 * look right in Inverse
 			 */
 			display().draw_tile({x, y}, ch,
-					((ch!=PASSAGE) && (*fp & (F_PASS | F_MAZE)) && ch != ARMOR)
+					((ch!=PASSAGE) && fp->test(MapFlag::Passage | MapFlag::Maze) && ch != ARMOR)
 						? TileStyle::Inverse : TileStyle::Normal);
 
 			if (turn.door_stop && !turn.first_move && turn.running) {
@@ -193,11 +193,11 @@ look(bool wakeup)
 				}
 				switch (ch) {
 				case DOOR:
-					if (x == hero.x || y == hero.y)
-						turn.running = FALSE;
+					if (x == player.body.t_pos.x || y == player.body.t_pos.y)
+						turn.running = false;
 					break;
 				case PASSAGE:
-					if (x == hero.x || y == hero.y)
+					if (x == player.body.t_pos.x || y == player.body.t_pos.y)
 						passcount++;
 					break;
 				case FLOOR:
@@ -210,23 +210,20 @@ look(bool wakeup)
 				case ' ':
 					break;
 				default:
-					turn.running = FALSE;
+					turn.running = false;
 					break;
 				}
 			}
 		}
 	if (turn.door_stop && !turn.first_move && passcount > 1)
-		turn.running = FALSE;
-	/*
-	 * was_trapped > TRUE: the rogue was teleported by a trap (be_trapped())
-	 */
-	display().draw_tile(hero, PLAYER,
-			((flat(hero.y,hero.x) & F_PASS) || (player.was_trapped > TRUE)
-					|| (flat(hero.y,hero.x) & F_MAZE))
+		turn.running = false;
+	display().draw_tile(player.body.t_pos, PLAYER,
+			(level.flags_at(player.body.t_pos).test(MapFlag::Passage) || (player.was_trapped == rogue::Trapped::Teleported)
+					|| level.flags_at(player.body.t_pos).test(MapFlag::Maze))
 				? TileStyle::Inverse : TileStyle::Normal);
-	if (player.was_trapped) {
+	if (player.was_trapped != rogue::Trapped::None) {
 		display().bell();
-		player.was_trapped = FALSE;
+		player.was_trapped = rogue::Trapped::None;
 	}
 }
 
@@ -239,16 +236,10 @@ find_obj(int y, int x)
 {
 	Item *op;
 
-	for (op = game().level.objects.first(); op != NULL; op = game().level.objects.after(op))
+	for (op = game().level.objects.first(); op != nullptr; op = game().level.objects.after(op))
 		if (op->o_pos.y == y && op->o_pos.x == x)
 			return op;
-#ifdef DEBUG
-	debug("Non-object {:c} {},{}", chat(y, x), y, x);
-	return NULL;
-#else
-	/* NOTREACHED */
-#endif
-	return NULL;
+	return nullptr;
 }
 
 /*
@@ -259,10 +250,10 @@ void
 eat()
 {
 	Item *obj;
-	int which;
+	Food which;
 	rogue::Player &player = game().player;
 
-	if ((obj = get_item("eat", ItemKind::Food)) == NULL)
+	if ((obj = get_item("eat", ItemKind::Food)) == nullptr)
 		return;
 	if (obj->o_type != ItemKind::Food)
 	{
@@ -274,27 +265,27 @@ eat()
 	 * What it is, and whether it was wielded, are checked before the last
 	 * one is discarded. Both were after discard(), reading a freed item.
 	 */
-	which = obj->o_which;
+	which = obj->which<Food>();
 	if (obj == player.weapon)
-		player.weapon = NULL;
+		player.weapon = nullptr;
 	if (--obj->o_count < 1)
 	{
-		detach(pack, obj);
+		player.body.t_pack.remove(obj);
 		discard(obj);
 	}
 	if (player.food_left < 0)
 		player.food_left = 0;
 	if (player.food_left > (STOMACHSIZE - 20))
 		player.no_command += 2 + rnd(5);
-	if ((player.food_left += HUNGERTIME - 200 + rnd(400)) > STOMACHSIZE)
+	if ((player.food_left += hunger_time() - 200 + rnd(400)) > STOMACHSIZE)
 		player.food_left = STOMACHSIZE;
 	player.hungry_state = 0;
-	if (which == 1)
+	if (which == Food::Fruit)
 		msg("my, that was a yummy {}", game().options.fruit);
 	else
 		if (rnd(100) > 70)
 		{
-			pstats.s_exp++;
+			player.body.t_stats.s_exp++;
 			msg("yuk, this food tastes awful");
 			check_level();
 		}
@@ -313,17 +304,18 @@ void
 chg_str(int amt)
 {
 	str_t comp;
+	rogue::Player &player = game().player;
 
 	if (amt == 0)
 	return;
-	add_str(&pstats.s_str, amt);
-	comp = pstats.s_str;
-	if (ISRING(LEFT, R_ADDSTR))
-		add_str(&comp, -game().player.rings[LEFT]->o_ac);
-	if (ISRING(RIGHT, R_ADDSTR))
-		add_str(&comp, -game().player.rings[RIGHT]->o_ac);
-	if (comp > game().player.max_stats.s_str)
-		game().player.max_stats.s_str = comp;
+	add_str(&player.body.t_stats.s_str, amt);
+	comp = player.body.t_stats.s_str;
+	if (player.wears(Hand::Left, Ring::AddStrength))
+		add_str(&comp, -player.rings[Hand::Left]->o_ac);
+	if (player.wears(Hand::Right, Ring::AddStrength))
+		add_str(&comp, -player.rings[Hand::Right]->o_ac);
+	if (comp > player.max_stats.s_str)
+		player.max_stats.s_str = comp;
 }
 
 /*
@@ -354,14 +346,14 @@ add_haste(bool potion)
 		extinguish(Event::NoHaste);
 		player.body.t_flags.unset(ISHASTE);
 		msg("you faint from exhaustion");
-		return FALSE;
+		return false;
 	}
 	else
 	{
 		player.body.t_flags.set(ISHASTE);
 		if (potion)
 			fuse(Event::NoHaste, rnd(4)+10);
-		return TRUE;
+		return true;
 	}
 }
 
@@ -374,7 +366,7 @@ aggravate()
 {
 	Creature *mi;
 
-	for (mi = game().level.monsters.first(); mi != NULL; mi = game().level.monsters.after(mi))
+	for (mi = game().level.monsters.first(); mi != nullptr; mi = game().level.monsters.after(mi))
 		start_run(&mi->t_pos);
 }
 
@@ -406,14 +398,14 @@ vowelstr(const char *str)
 bool
 is_current(Item *obj)
 {
-	if (obj == NULL)
-		return FALSE;
-	if (obj == game().player.armor || obj == game().player.weapon || obj == game().player.rings[LEFT]
-		|| obj == game().player.rings[RIGHT]) {
+	if (obj == nullptr)
+		return false;
+	if (obj == game().player.armor || obj == game().player.weapon || obj == game().player.rings[Hand::Left]
+		|| obj == game().player.rings[Hand::Right]) {
 		msg("That's already in use");
-		return TRUE;
+		return true;
 	}
-	return FALSE;
+	return false;
 }
 
 /*
@@ -428,12 +420,12 @@ get_dir()
 	rogue::Turn &turn = game().turn;
 
 	if (turn.again)
-		return TRUE;
+		return true;
 	msg("which direction? ");
 	do
 		if ((ch = readchar()) == ESCAPE) {
 			msg("");
-			return FALSE;
+			return false;
 		}
 	while (find_dir(ch, &turn.delta) == 0);
 	msg("");
@@ -442,7 +434,7 @@ get_dir()
 			turn.delta.y = rnd(3) - 1;
 			turn.delta.x = rnd(3) - 1;
 		} while (turn.delta.y == 0 && turn.delta.x == 0);
-	return TRUE;
+	return true;
 }
 
 bool
@@ -450,7 +442,7 @@ find_dir(unsigned char ch, coord *cp)
 {
 	bool gotit;
 
-	gotit = TRUE;
+	gotit = true;
 	switch (ch) {
 		case 'h': case'H': cp->y =  0; cp->x = -1; break;
 		case 'j': case'J': cp->y =  1; cp->x =  0; break;
@@ -460,7 +452,7 @@ find_dir(unsigned char ch, coord *cp)
 		case 'u': case'U': cp->y = -1; cp->x =  1; break;
 		case 'b': case'B': cp->y =  1; cp->x = -1; break;
 		case 'n': case'N': cp->y =  1; cp->x =  1; break;
-		default: gotit = FALSE;
+		default: gotit = false;
 	}
 	return gotit;
 }
@@ -524,9 +516,9 @@ step_ok(unsigned char ch)
 	case URWALL:
 	case LLWALL:
 	case LRWALL:
-		return FALSE;
+		return false;
 	default:
-		return (!ismonster(ch));
+		return (!is_monster(ch));
 	}
 }
 
@@ -544,7 +536,7 @@ goodch(Item *obj)
 		ch = BMAGIC;
 	switch (obj->o_type) {
 	case ItemKind::Armor:
-		if (obj->o_ac > a_class[obj->o_which])
+		if (obj->o_ac > a_class[obj->which<ArmorType>()])
 			ch = BMAGIC;
 		break;
 	case ItemKind::Weapon:
@@ -552,44 +544,52 @@ goodch(Item *obj)
 			ch = BMAGIC;
 		break;
 	case ItemKind::Scroll:
-		switch (obj->o_which) {
-		case S_SLEEP:
-		case S_CREATE:
-		case S_AGGR:
+		switch (obj->which<Scroll>()) {
+		case Scroll::Sleep:
+		case Scroll::CreateMonster:
+		case Scroll::AggravateMonsters:
 			ch = BMAGIC;
+			break;
+		default:
 			break;
 		}
 		break;
 	case ItemKind::Potion:
-		switch (obj->o_which) {
-		case P_CONFUSE:
-		case P_PARALYZE:
-		case P_POISON:
-		case P_BLIND:
+		switch (obj->which<Potion>()) {
+		case Potion::Confusion:
+		case Potion::Paralysis:
+		case Potion::Poison:
+		case Potion::Blindness:
 			ch = BMAGIC;
+			break;
+		default:
 			break;
 		}
 		break;
 	case ItemKind::Stick:
-		switch (obj->o_which) {
-		case WS_HASTE_M:
-		case WS_TELTO:
+		switch (obj->which<Stick>()) {
+		case Stick::HasteMonster:
+		case Stick::TeleportTo:
 			ch = BMAGIC;
+			break;
+		default:
 			break;
 		}
 		break;
 	case ItemKind::Ring:
-		switch (obj->o_which) {
-		case R_PROTECT:
-		case R_ADDSTR:
-		case R_ADDDAM:
-		case R_ADDHIT:
+		switch (obj->which<Ring>()) {
+		case Ring::Protection:
+		case Ring::AddStrength:
+		case Ring::IncreaseDamage:
+		case Ring::Dexterity:
 			if (obj->o_ac < 0)
 				ch = BMAGIC;
 			break;
-		case R_AGGR:
-		case R_TELEPORT:
+		case Ring::AggravateMonster:
+		case Ring::Teleportation:
 			ch = BMAGIC;
+			break;
+		default:
 			break;
 		}
 		break;
@@ -613,7 +613,7 @@ help(struct h_list *helpscr)
 	display().open_page();
 	while (*helpscr->h_desc && answer != ESCAPE)
 	{
-		isfull = FALSE;
+		isfull = false;
 		if ((hcount % (game().options.terse?23:46)) == 0)
 			display().clear_page();
 		/*
@@ -624,7 +624,7 @@ help(struct h_list *helpscr)
 		{
 			hrow = hcount % 23;
 			if (hrow == 22)
-				isfull = TRUE;
+				isfull = true;
 		}
 		else
 		{
@@ -632,7 +632,7 @@ help(struct h_list *helpscr)
 			if (hcount % 2)
 				hcol = 40;
 			if (hrow == 22 && hcol == 40)
-				 isfull = TRUE;
+				 isfull = true;
 		}
 
 		display().write_at(hrow, hcol, (const char *)helpscr->h_chstr);
@@ -669,10 +669,9 @@ DISTANCE(int y1, int x1, int y2, int x2)
 int
 INDEX(int y, int x)
 {
-#ifdef DEBUG
-	if (offmap(y,x) && me())
-		fatal("BAD INDEX");
-#endif //DEBUG
+	if constexpr (rogue::config::debug_checks)
+		if (offmap(y,x))
+			fatal("BAD INDEX {},{}\n", y, x);
 	return((x * (maxrow-1)) + y - 1);
 }
 
@@ -685,7 +684,7 @@ offmap(int y, int x)
 unsigned char
 winat(int y, int x)
 {
-	return(moat(y,x) != NULL ? moat(y,x)->t_disguise : chat(y,x));
+	return(moat(y,x) != nullptr ? moat(y,x)->t_disguise : game().level.at(y, x));
 }
 
 /*
@@ -696,21 +695,23 @@ void
 search()
 {
 	int y, x;
-	unsigned char *fp;
+	MapFlags *fp;
 	int ey, ex;
+	rogue::Player &player = game().player;
+	rogue::Level &level = game().level;
 
-	if (game().player.body.t_flags.test(ISBLIND))
+	if (player.body.t_flags.test(ISBLIND))
 		return;
-	ey = hero.y + 1;
-	ex = hero.x + 1;
-	for (y = hero.y - 1; y <= ey; y++)
-		for (x = hero.x - 1; x <= ex; x++)
+	ey = player.body.t_pos.y + 1;
+	ex = player.body.t_pos.x + 1;
+	for (y = player.body.t_pos.y - 1; y <= ey; y++)
+		for (x = player.body.t_pos.x - 1; x <= ex; x++)
 		{
-			if ((y == hero.y && x == hero.x) || offmap(y, x))
+			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || offmap(y, x))
 				continue;
-			fp = &flat(y, x);
-			if (!(*fp & F_REAL))
-				switch (chat(y, x))
+			fp = &level.flags_at(y, x);
+			if (!fp->test(MapFlag::Real))
+				switch (level.at(y, x))
 				{
 					case VWALL:
 					case HWALL:
@@ -720,17 +721,17 @@ search()
 					case LRWALL:
 						if (rnd(5) != 0)
 							break;
-						chat(y, x) = DOOR;
-						*fp |= F_REAL;
-						game().turn.count = game().turn.running = FALSE;
+						level.at(y, x) = DOOR;
+						fp->set(MapFlag::Real);
+						game().turn.count = game().turn.running = false;
 						break;
 					case FLOOR:
 						if (rnd(2) != 0)
 							break;
-						chat(y, x) = TRAP;
-						*fp |= F_REAL;
-						game().turn.count = game().turn.running = FALSE;
-						msg("you found {}", tr_name(*fp & F_TMASK));
+						level.at(y, x) = TRAP;
+						fp->set(MapFlag::Real);
+						game().turn.count = game().turn.running = false;
+						msg("you found {}", tr_name(fp->trap()));
 						break;
 				}
 		}
@@ -744,7 +745,9 @@ search()
 void
 d_level()
 {
-	if (chat(hero.y, hero.x) != STAIRS)
+	rogue::Player &player = game().player;
+
+	if (game().level.at(player.body.t_pos) != STAIRS)
 		msg("I see no way down");
 	else {
 		game().level.depth++;
@@ -759,8 +762,10 @@ d_level()
 void
 u_level()
 {
-	if (chat(hero.y, hero.x) == STAIRS)
-		if (game().player.has_amulet) {
+	rogue::Player &player = game().player;
+
+	if (game().level.at(player.body.t_pos) == STAIRS)
+		if (player.has_amulet) {
 			game().level.depth--;
 			if (game().level.depth == 0)
 				total_winner();
@@ -790,33 +795,33 @@ call()
 	/*
 	 * Make certain that it is somethings that we want to wear
 	 */
-	if (obj == NULL)
+	if (obj == nullptr)
 		return;
 	switch (obj->o_type)
 	{
 	case ItemKind::Ring:
-		guess = (char **)items.r_guess;
-		know = items.r_know;
+		guess = items.r_guess.data();
+		know = items.r_know.data();
 		elsewise = (*guess[obj->o_which] != '\0' ?
-			guess[obj->o_which] : items.r_stones[obj->o_which]);
+			guess[obj->o_which] : items.r_stones[obj->which<Ring>()]);
 		break;
 	case ItemKind::Potion:
-		guess = (char **)items.p_guess;
-		know = items.p_know;
+		guess = items.p_guess.data();
+		know = items.p_know.data();
 		elsewise = (*guess[obj->o_which] != '\0' ?
-			guess[obj->o_which] : items.p_colors[obj->o_which]);
+			guess[obj->o_which] : items.p_colors[obj->which<Potion>()]);
 		break;
 	case ItemKind::Scroll:
-		guess = (char **)items.s_guess;
-		know = items.s_know;
+		guess = items.s_guess.data();
+		know = items.s_know.data();
 		elsewise = (*guess[obj->o_which] != '\0' ?
-			guess[obj->o_which] : items.s_names[obj->o_which].storage);
+			guess[obj->o_which] : items.s_names[obj->which<Scroll>()].storage);
 		break;
 	case ItemKind::Stick:
-		guess = (char **)items.ws_guess;
-		know = items.ws_know;
+		guess = items.ws_guess.data();
+		know = items.ws_know.data();
 		elsewise = (*guess[obj->o_which] != '\0' ?
-			guess[obj->o_which] : items.ws_made[obj->o_which]);
+			guess[obj->o_which] : items.ws_made[obj->which<Stick>()]);
 		break;
 	default:
 		msg("you can't call that anything");
@@ -849,7 +854,7 @@ do_macro(char *buf, int sz)
 	msg("F9 was {}, enter new macro: ",buf);
 	if (input().read_line(line.data(),sz-1) != ESCAPE)
 		do {
-			if (*cp != CTRL('F'))
+			if (*cp != ctrl('F'))
 				*buf++ = *cp;
 		} while (*cp++) ;
 	msg("");

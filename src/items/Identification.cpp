@@ -14,14 +14,15 @@ static std::string	nothing(ItemKind type);
 std::string
 inv_name(const Item *obj, bool drop)
 {
-	int which = obj->o_which;
 	std::string name;
 	rogue::Items &items = game().items;
 	bool brief = game().options.brief();
 
 	switch (obj->o_type)
 	{
-	case ItemKind::Scroll:
+	case ItemKind::Scroll: {
+		Scroll which = obj->which<Scroll>();
+
 		if (obj->o_count == 1)
 			name = "A scroll ";
 		else
@@ -35,7 +36,10 @@ inv_name(const Item *obj, bool drop)
 		else
 			name += std::format("titled '{}'", static_cast<const char *>(items.s_names[which].storage));
 		break;
-	case ItemKind::Potion:
+	}
+	case ItemKind::Potion: {
+		Potion which = obj->which<Potion>();
+
 		if (obj->o_count == 1)
 			name = "A potion ";
 		else
@@ -52,8 +56,11 @@ inv_name(const Item *obj, bool drop)
 		else
 			name = std::format("{} {} potions", obj->o_count, items.p_colors[which]);
 		break;
-	case ItemKind::Food:
-		if (which == 1)
+	}
+	case ItemKind::Food: {
+		Food which = obj->which<Food>();
+
+		if (which == Food::Fruit)
 			if (obj->o_count == 1)
 				name = std::format("A{} {}", vowelstr(game().options.fruit),
 					static_cast<const char *>(game().options.fruit));
@@ -66,7 +73,10 @@ inv_name(const Item *obj, bool drop)
 			else
 				name = std::format("{} rations of food", obj->o_count);
 		break;
-	case ItemKind::Weapon:
+	}
+	case ItemKind::Weapon: {
+		WeaponType which = obj->which<WeaponType>();
+
 		if (obj->o_count > 1)
 			name = std::format("{} ", obj->o_count);
 		else
@@ -81,7 +91,10 @@ inv_name(const Item *obj, bool drop)
 		if (obj->o_enemy && obj->o_flags.test(ISREVEAL))
 			name += std::format(" of {} slaying", monsters[obj->o_enemy-'A'].m_name);
 		break;
-	case ItemKind::Armor:
+	}
+	case ItemKind::Armor: {
+		ArmorType which = obj->which<ArmorType>();
+
 		if (!obj->o_flags.test(ISKNOW))
 			name = a_names[which];
 		else if (brief)
@@ -91,10 +104,13 @@ inv_name(const Item *obj, bool drop)
 			name = std::format("{} {} [armor class {}]", num(a_class[which] - obj->o_ac, 0, ARMOR),
 				a_names[which], -(obj->o_ac-11));
 		break;
+	}
 	case ItemKind::Amulet:
 		name = "The Amulet of Yendor";
 		break;
-	case ItemKind::Stick:
+	case ItemKind::Stick: {
+		Stick which = obj->which<Stick>();
+
 		name = std::format("A{} {} ", vowelstr(items.ws_type[which]), items.ws_type[which]);
 		if (items.ws_know[which])
 			name += brief ? std::format("of {}{}", items.ws_magic[which].mi_name, charge_str(obj))
@@ -112,7 +128,10 @@ inv_name(const Item *obj, bool drop)
 			name += std::format("{} {}", items.ws_made[which], items.ws_type[which]);
 		}
 		break;
-	case ItemKind::Ring:
+	}
+	case ItemKind::Ring: {
+		Ring which = obj->which<Ring>();
+
 		if (items.r_know[which])
 			name = brief ? std::format("A{} ring of {}", ring_num(obj), items.r_magic[which].mi_name)
 				: std::format("A{} ring of {}({})", ring_num(obj),
@@ -124,30 +143,29 @@ inv_name(const Item *obj, bool drop)
 			name = std::format("A{} {} ring", vowelstr(items.r_stones[which]),
 				items.r_stones[which]);
 		break;
-#ifdef DEBUG
-	case ItemKind::Gold:
-		name = std::format("Gold at {},{}", obj->o_pos.y, obj->o_pos.x);
+	}
+	default:	// the other kinds of item: nothing, except to the checks
+		if constexpr (rogue::config::debug_checks) {
+			if (obj->o_type == ItemKind::Gold)
+				name = std::format("Gold at {},{}", obj->o_pos.y, obj->o_pos.x);
+			else {
+				debug("Picked up someting bizzare {}", io_unctrl(glyph_of(obj->o_type)));
+				name = std::format("Something bizarre {}({})", static_cast<char>(glyph_of(obj->o_type)),
+					static_cast<int>(obj->o_type));
+			}
+		}
 		break;
-	default:
-		debug("Picked up someting bizzare {}", io_unctrl(glyph_of(obj->o_type)));
-		name = std::format("Something bizarre {}({})", static_cast<char>(glyph_of(obj->o_type)),
-			static_cast<int>(obj->o_type));
-		break;
-#else
-	default:	// the other kinds of item: nothing
-		break;
-#endif
 	}
 	if (obj == game().player.armor)
 		name += " (being worn)";
 	if (obj == game().player.weapon)
 		name += " (weapon in hand)";
-	if (obj == game().player.rings[LEFT])
+	if (obj == game().player.rings[Hand::Left])
 		name += " (on left hand)";
-	else if (obj == game().player.rings[RIGHT])
+	else if (obj == game().player.rings[Hand::Right])
 		name += " (on right hand)";
 	if (!name.empty()) {
-		if (drop && ismonster(name[0]))
+		if (drop && is_monster(name[0]))
 			name[0] = tolower(name[0]);
 		else if (!drop && is_lower(name[0]))
 			name[0] = toupper(name[0]);
@@ -179,40 +197,38 @@ discovered(void)
  *	Print what we've discovered of type 'type'
  */
 
-#define MAX(a,b,c,d) (a>b?(a>c?(a>d?a:d):(c>d?c:d)):(b>c?(b>d?b:d):(c>d?c:d)))
-
 static
 void
 print_disc(ItemKind type)
 {
-	bool *know = NULL;
-	char **guess = NULL;
+	bool *know = nullptr;
+	char **guess = nullptr;
 	int i, maxnum = 0, num_found;
 	static Item obj;
-	static short order[MAX(MAXSCROLLS, MAXPOTIONS, MAXRINGS, MAXSTICKS)];
+	static short order[std::max({kind_count<Scroll>, kind_count<Potion>, kind_count<Ring>, kind_count<Stick>})];
 	rogue::Items &items = game().items;
 
 	switch (type)
 	{
 	case ItemKind::Scroll:
-		maxnum = MAXSCROLLS;
-		know = items.s_know;
-		guess = items.s_guess;
+		maxnum = kind_count<Scroll>;
+		know = items.s_know.data();
+		guess = items.s_guess.data();
 		break;
 	case ItemKind::Potion:
-		maxnum = MAXPOTIONS;
-		know = items.p_know;
-		guess = items.p_guess;
+		maxnum = kind_count<Potion>;
+		know = items.p_know.data();
+		guess = items.p_guess.data();
 		break;
 	case ItemKind::Ring:
-		maxnum = MAXRINGS;
-		know = items.r_know;
-		guess = items.r_guess;
+		maxnum = kind_count<Ring>;
+		know = items.r_know.data();
+		guess = items.r_guess.data();
 		break;
 	case ItemKind::Stick:
-		maxnum = MAXSTICKS;
-		know = items.ws_know;
-		guess = items.ws_guess;
+		maxnum = kind_count<Stick>;
+		know = items.ws_know.data();
+		guess = items.ws_guess.data();
 		break;
 	default:	// the other kinds of item: nothing
 		break;
@@ -226,7 +242,7 @@ print_disc(ItemKind type)
 		{
 			obj.o_type = type;
 			obj.o_which = order[i];
-			add_line(nullstr, inv_name(&obj, FALSE).c_str());
+			add_line(nullstr, inv_name(&obj, false).c_str());
 			num_found++;
 		}
 	if (num_found == 0)
@@ -257,7 +273,7 @@ set_order(short *order, int numthings)
 
 /*
  * add_line:
- *	Add a line to the list of discoveries; NULL ends the page
+ *	Add a line to the list of discoveries; null ends the page
  *	(end_line())
  */
 unsigned char
@@ -269,7 +285,7 @@ add_line(const char *use, const char *line)
 		display().open_page();
 		display().clear_page();
 	}
-	if (line_cnt >= LINES - 1 || line == NULL)
+	if (line_cnt >= LINES - 1 || line == nullptr)
 	{
 		if (*use)
 			display().write_at(LINES-1, 0,
@@ -282,7 +298,7 @@ add_line(const char *use, const char *line)
 		display().clear_page();
 		line_cnt = 0;
 	}
-	if (line != NULL && !(line_cnt == 0 && *line == '\0'))
+	if (line != nullptr && !(line_cnt == 0 && *line == '\0'))
 	{
 		coord end;
 
@@ -306,7 +322,7 @@ end_line(const char *use)
 {
 	int retchar;
 
-	retchar = add_line(use, NULL);
+	retchar = add_line(use, nullptr);
 	display().close_page();
 	line_cnt = 0;
 	return(retchar);

@@ -12,13 +12,13 @@ wear()
 	Item *obj;
 	std::string sp;
 
-	if (game().player.armor != NULL) {
+	if (game().player.armor != nullptr) {
 		msg("you are already wearing some{}.",
 			noterse(".  You'll have to take it off first"));
-		game().turn.after = FALSE;
+		game().turn.after = false;
 		return;
 	}
-	if ((obj = get_item("wear", ItemKind::Armor)) == NULL)
+	if ((obj = get_item("wear", ItemKind::Armor)) == nullptr)
 		return;
 	if (obj->o_type != ItemKind::Armor) {
 		msg("you can't wear that");
@@ -26,7 +26,7 @@ wear()
 	}
 	waste_time();
 	obj->o_flags.set(ISKNOW);
-	sp = inv_name(obj, TRUE);
+	sp = inv_name(obj, true);
 	game().player.armor = obj;
 	msg("you are now wearing {}", sp);
 }
@@ -40,15 +40,15 @@ take_off()
 {
 	Item *obj;
 
-	if ((obj = game().player.armor) == NULL) {
-		game().turn.after = FALSE;
+	if ((obj = game().player.armor) == nullptr) {
+		game().turn.after = false;
 		msg("you aren't wearing any armor");
 		return;
 	}
 	if (!can_drop(game().player.armor))
 		return;
-	game().player.armor = NULL;
-	msg("you used to be wearing {:c}) {}", pack_char(obj), inv_name(obj, TRUE));
+	game().player.armor = nullptr;
+	msg("you used to be wearing {:c}) {}", pack_char(obj), inv_name(obj, true));
 }
 
 /*

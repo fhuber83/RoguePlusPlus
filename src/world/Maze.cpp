@@ -9,10 +9,10 @@
 
 namespace rogue::world {
 
-#define MAXFRNT 100
+constexpr int MAXFRNT = 100;
 
-#define FRONTIER 'F'
-#define NOTHING ' '
+constexpr unsigned char FRONTIER = 'F';
+constexpr unsigned char NOTHING = ' ';
 
 static int frcnt, ny, nx, topy, topx;
 static int maxx, maxy;
@@ -32,6 +32,7 @@ draw_maze(struct room *rp)
 	int fy[MAXFRNT], fx[MAXFRNT];
 	int psgcnt;
 	coord spos;
+	rogue::Level &level = game().level;
 
 	fr_y = fy;
 	fr_x = fx;
@@ -76,10 +77,10 @@ draw_maze(struct room *rp)
 		rnd_pos(rp, &spos);
 		for (psgcnt = 0,cp = ld,sh = 1; cp < &ld[4]; sh <<= 1,cp++) {
 			y = cp->y + spos.y; x = cp->x + spos.x;
-			if (!offmap(y, x) && chat(y, x) == PASSAGE)
+			if (!offmap(y, x) && level.at(y, x) == PASSAGE)
 				psgcnt += sh;
 		}
-	} while (chat(spos.y, spos.x) == PASSAGE || psgcnt % 5);
+	} while (level.at(spos) == PASSAGE || psgcnt % 5);
 	splat(spos.y, spos.x);
 }
 
@@ -95,13 +96,14 @@ new_frontier(int y, int x)
 void
 add_frnt(int y, int x)
 {
-#ifdef DEBUG
-	if (frcnt == MAXFRNT - 1)
-		debug("MAZE DRAWING ERROR #3\n");
-#endif
-	if (inrange(y, x) && chat(y, x) == NOTHING)
+	rogue::Level &level = game().level;
+
+	if constexpr (rogue::config::debug_checks)
+		if (frcnt == MAXFRNT - 1)
+			debug("MAZE DRAWING ERROR #3");
+	if (inrange(y, x) && level.at(y, x) == NOTHING)
 	{
-		chat(y, x) = FRONTIER;
+		level.at(y, x) = FRONTIER;
 		fr_y[frcnt] = y;
 		fr_x[frcnt++] = x;
 	}
@@ -161,27 +163,26 @@ con_frnt()
 bool
 maze_at(int y, int x)
 {
-	return (inrange(y, x) && chat(y, x) == PASSAGE);
+	return (inrange(y, x) && game().level.at(y, x) == PASSAGE);
 }
 
 void
 splat(int y, int x)
 {
-	chat(y, x) = PASSAGE;
-	flat(y, x) = F_MAZE|F_REAL;
+	rogue::Level &level = game().level;
+
+	level.at(y, x) = PASSAGE;
+	level.flags_at(y, x) = MapFlag::Maze | MapFlag::Real;
 	if (x > maxx)
 		maxx = x;
 	if (y > maxy)
 		maxy = y;
 }
 
-#define MAXY (topy+((maxrow+1)/3))
-#define MAXX (topx+COLS/3)
-
 bool
 inrange(int y, int x)
 {
-	return(y >= topy && y < MAXY && x >= topx && x < MAXX);
+	return y >= topy && y < topy + (maxrow + 1) / 3 && x >= topx && x < topx + COLS / 3;
 }
 
 }  // namespace rogue::world

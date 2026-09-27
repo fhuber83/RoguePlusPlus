@@ -16,6 +16,7 @@
 #include <ctime>
 #include <format>
 #include <optional>
+#include <array>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -90,15 +91,15 @@ inline constexpr int LAMPDIST = 3;
  */
 struct h_list {
 	unsigned char h_chstr[6];  // either (ch) or (ch,sep,ch2) appended with ": "
-	const char *h_desc;
+	std::string_view h_desc;
 
 	// A line of text; an empty one ends the list (were H_STR and H_END)
-	constexpr h_list(const char *desc) : h_chstr{}, h_desc(desc) {}
+	constexpr h_list(std::string_view desc) : h_chstr{}, h_desc(desc) {}
 	// A glyph and what it is (was H_CHSTR)
-	constexpr h_list(unsigned char ch, const char *desc)
+	constexpr h_list(unsigned char ch, std::string_view desc)
 		: h_chstr{ch, ':', ' ', '\0'}, h_desc(desc) {}
 	// Two glyphs with a separator, "A-Z" (was H_CH2STR)
-	constexpr h_list(unsigned char first, unsigned char sep, unsigned char last, const char *desc)
+	constexpr h_list(unsigned char first, unsigned char sep, unsigned char last, std::string_view desc)
 		: h_chstr{first, sep, last, ':', ' ', '\0'}, h_desc(desc) {}
 };
 
@@ -122,7 +123,7 @@ typedef unsigned int str_t;
  */
 
 struct magic_item {
-	const char *mi_name;
+	std::string_view mi_name;
 	int mi_prob;
 	short mi_worth;
 };
@@ -238,7 +239,7 @@ inline constexpr rogue::CreatureFlag ISFLY = rogue::CreatureFlag::Flying;
  * Array containing information on all the various types of monsters
  */
 struct monster {
-	const char *m_name;			/* What to call the monster */
+	std::string_view m_name;		/* What to call the monster */
 	int m_carry;			/* Probability of carrying something */
 	CreatureFlags m_flags;		/* Things about the monster */
 	struct stats m_stats;		/* Initial stats */
@@ -367,18 +368,17 @@ using rogue::execcom;
  * fixed tables and strings (extern.cpp, init.cpp).
  */
 
-extern char nullstr[];
-extern const char *it, *you, *no_mem;
-
-extern const char *he_man[], *intense;
+// The ranks, by experience level (he_man[level - 1])
+extern const std::array<std::string_view, 21> he_man;
+inline constexpr std::string_view intense = " of intense white light";
 // Weapon names, and the name of the WeaponType::Flame that fire_bolt() throws
-extern KindTable<WeaponType, const char *, kind_count<WeaponType> + 1> w_names;
-extern const KindTable<ArmorType, const char *> a_names;
+extern KindTable<WeaponType, std::string_view, kind_count<WeaponType> + 1> w_names;
+extern const KindTable<ArmorType, std::string_view> a_names;
 // a std::format string for msg()
-inline constexpr const char *flashmsg = "your {} gives off a flash{}";
-extern struct h_list helpcoms[], helpobjs[];
+inline constexpr std::string_view flashmsg = "your {} gives off a flash{}";
+extern const struct h_list helpcoms[], helpobjs[];
 extern const KindTable<ArmorType, int> a_chances, a_class;
-extern struct monster	monsters[];
+extern const struct monster monsters[];
 
 // the experience level table (init.cpp)
 extern const long e_levels[20];
@@ -484,7 +484,7 @@ void	chg_str(int amt);
 void	add_str(str_t *sp, int amt);
 void	aggravate(void);
 void	call_it(bool know, char **guess);
-void	help(struct h_list *helpscr);
+void	help(const struct h_list *helpscr);
 void	search(void);
 void	d_level(void);
 void	u_level(void);

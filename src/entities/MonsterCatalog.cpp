@@ -62,7 +62,7 @@ randmonster(bool wander)
 void
 new_monster(Creature *tp, unsigned char type, coord *cp)
 {
-	struct monster *mp;
+	const struct monster *mp;
 	int lev_add;
 
 	if ((lev_add = game().level.depth - AMULETLEVEL) < 0)
@@ -111,7 +111,7 @@ new_monster(Creature *tp, unsigned char type, coord *cp)
 void
 f_restor(void)
 {
-	struct monster *mp = &monsters['F'-'A'];
+	const struct monster *mp = &monsters['F'-'A'];
 
 	game().player.fung_hit = 0;
 	strcpy(game().player.flytrap_damage, mp->m_stats.s_dmg);

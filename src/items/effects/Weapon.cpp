@@ -132,8 +132,8 @@ std::string
 short_name(Item *obj)
 {
 	switch (obj->o_type) {
-		case ItemKind::Weapon: return w_names[obj->which<WeaponType>()];
-		case ItemKind::Armor: return a_names[obj->which<ArmorType>()];
+		case ItemKind::Weapon: return std::string(w_names[obj->which<WeaponType>()]);
+		case ItemKind::Armor: return std::string(a_names[obj->which<ArmorType>()]);
 		case ItemKind::Food: return "food";
 		case ItemKind::Potion:
 		case ItemKind::Scroll:

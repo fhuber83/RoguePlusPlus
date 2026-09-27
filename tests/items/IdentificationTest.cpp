@@ -62,7 +62,7 @@ TEST_F(Names, Scrolls)
 	strcpy(game().items.s_guess[scroll], "boom");
 	EXPECT_EQ(inv_name(&obj, false), "3 scrolls called boom");
 	game().items.s_know[scroll] = true;
-	EXPECT_EQ(inv_name(&obj, false), std::string("3 scrolls of ") + game().items.s_magic[scroll].mi_name);
+	EXPECT_EQ(inv_name(&obj, false), std::format("3 scrolls of {}", game().items.s_magic[scroll].mi_name));
 }
 
 TEST_F(Names, Potions)
@@ -72,7 +72,7 @@ TEST_F(Names, Potions)
 	obj.o_count = 2;
 	EXPECT_EQ(inv_name(&obj, false), "2 red potions");
 	game().items.p_know[Potion::Poison] = true;
-	EXPECT_EQ(inv_name(&obj, false), std::string("2 potions of ") + game().items.p_magic[Potion::Poison].mi_name + "(red)");
+	EXPECT_EQ(inv_name(&obj, false), std::format("2 potions of {}(red)", game().items.p_magic[Potion::Poison].mi_name));
 }
 
 TEST_F(Names, FoodUsesTheFruit)
@@ -128,7 +128,7 @@ TEST_F(Names, RingsAndHands)
 	game().items.r_know[Ring::Protection] = true;
 	obj.o_flags.set(ISKNOW);
 	EXPECT_EQ(inv_name(&obj, false),
-		std::string("A +2 ring of ") + game().items.r_magic[Ring::Protection].mi_name + "(opal) (on left hand)");
+		std::format("A +2 ring of {}(opal) (on left hand)", game().items.r_magic[Ring::Protection].mi_name));
 }
 
 // Dropping lowercases a capital first letter, listing capitalises it

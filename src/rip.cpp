@@ -190,7 +190,7 @@ pr_scores(int newrank, struct sc_ent *top10)
 		}
 		text.clear();
 		if ((signed)(strlen(top10->sc_name) + 10 +
-			strlen(he_man[top10->sc_rank-1])) < COLS)
+			he_man[top10->sc_rank-1].size()) < COLS)
 		{
 			if (top10->sc_rank > 1 && (strlen(top10->sc_name)))
 				text = std::format(" \"{}\"", he_man[top10->sc_rank - 1]);
@@ -374,7 +374,7 @@ total_winner(void)
 std::string
 killname(unsigned char monst, bool doart)
 {
-	const char *sp;
+	std::string_view sp;
 	bool article;
 
 	article = true;
@@ -407,6 +407,6 @@ killname(unsigned char monst, bool doart)
 	}
 	if (doart && article)
 		return std::format("a{} {}", vowelstr(sp), sp);
-	return sp;
+	return std::string(sp);
 }
 

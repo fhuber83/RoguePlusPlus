@@ -307,5 +307,5 @@ SIG2(void)
 const char *
 noterse(const char *str)
 {
-	return( game().options.brief() ? nullstr : str);
+	return( game().options.brief() ? "" : str);
 }

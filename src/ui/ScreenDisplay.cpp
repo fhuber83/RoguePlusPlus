@@ -20,7 +20,7 @@ constexpr int CurtainTime = 1500;
 constexpr Style Bright{Color::White};
 
 
-constexpr const char *hunger_names[] = {"      ", "Hungry", "Weak", "Faint", "?"};
+constexpr std::string_view hunger_names[] = {"      ", "Hungry", "Weak", "Faint", "?"};
 
 } // namespace
 

@@ -603,7 +603,7 @@ goodch(Item *obj)
  * help: prints out help screens
  */
 void
-help(struct h_list *helpscr)
+help(const struct h_list *helpscr)
 {
 	int hcount = 0;
 	int hrow, hcol;
@@ -611,7 +611,7 @@ help(struct h_list *helpscr)
 	unsigned char answer = 0;
 
 	display().open_page();
-	while (*helpscr->h_desc && answer != ESCAPE)
+	while (!helpscr->h_desc.empty() && answer != ESCAPE)
 	{
 		isfull = false;
 		if ((hcount % (game().options.terse?23:46)) == 0)
@@ -642,9 +642,9 @@ help(struct h_list *helpscr)
 		/*
 		 * decide if we need print a continue type message
 		 */
-		if ( (*helpscr->h_desc == 0) || isfull)
+		if (helpscr->h_desc.empty() || isfull)
 		{
-			if (*helpscr->h_desc == 0)
+			if (helpscr->h_desc.empty())
 				display().write_at(24, 0, "--press space to continue--");
 			else if (game().options.terse)
 				display().write_at(24, 0, "--Space for more, Esc to continue--");

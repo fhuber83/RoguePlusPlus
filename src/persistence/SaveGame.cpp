@@ -37,10 +37,10 @@ static_assert(map_rows == maxrow - 1 && map_cols == COLS);
  * then update the size (measured on x86-64 Linux, where these hold).
  */
 #if defined(__x86_64__) && defined(__linux__)
-static_assert(sizeof(Game) == 17704, "a Game member was added or removed: save it");
+static_assert(sizeof(Game) == 18216, "a Game member was added or removed: save it");
 static_assert(sizeof(Player) == 264, "a Player field was added or removed: save it");
 static_assert(sizeof(Level) == 6488, "a Level field was added or removed: save it");
-static_assert(sizeof(Items) == 3968, "an Items field was added or removed: save it");
+static_assert(sizeof(Items) == 4480, "an Items field was added or removed: save it");
 static_assert(sizeof(Pool) == 1336, "a Pool field was added or removed: save it");
 static_assert(sizeof(Turn) == 56, "a Turn field was added or removed: save it");
 static_assert(sizeof(MessageLine) == 268, "a MessageLine field was added or removed: save it");

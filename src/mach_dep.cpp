@@ -80,7 +80,7 @@ md_nanosleep(long nanoseconds)
 void
 flush_type()
 {
-	game().turn.typeahead = nullstr;
+	game().turn.typeahead = "";
 }
 
 /*

@@ -183,13 +183,13 @@ void
 discovered(void)
 {
 	print_disc(ItemKind::Potion);
-	add_line(nullstr, " ");
+	add_line("", " ");
 	print_disc(ItemKind::Scroll);
-	add_line(nullstr, " ");
+	add_line("", " ");
 	print_disc(ItemKind::Ring);
-	add_line(nullstr, " ");
+	add_line("", " ");
 	print_disc(ItemKind::Stick);
-	end_line(nullstr);
+	end_line("");
 }
 
 /*
@@ -242,11 +242,11 @@ print_disc(ItemKind type)
 		{
 			obj.o_type = type;
 			obj.o_which = order[i];
-			add_line(nullstr, inv_name(&obj, false).c_str());
+			add_line("", inv_name(&obj, false).c_str());
 			num_found++;
 		}
 	if (num_found == 0)
-		add_line(nullstr, nothing(type).c_str());
+		add_line("", nothing(type).c_str());
 }
 
 /*

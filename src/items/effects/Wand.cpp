@@ -41,7 +41,7 @@ do_zap()
 	Item *obj;
 	Creature *tp;
 	int y, x;
-	const char *name;
+	std::string_view name;
 	Stick which_one;
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
@@ -343,7 +343,7 @@ drain()
  *	Fire a bolt in a given direction from a specific starting place
  */
 void
-fire_bolt(coord *start, coord *dir, const char *name)
+fire_bolt(coord *start, coord *dir, std::string_view name)
 {
 	unsigned char dirch = 0, ch;
 	Creature *tp;
@@ -358,7 +358,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 	Item bolt;
 	bool is_frost;
 
-	is_frost = (strcmp(name, "frost") == 0);
+	is_frost = (name == "frost");
 	bolt.o_type = ItemKind::Weapon;
 	bolt.set_which(WeaponType::Flame);
 	bolt.o_damage = bolt.o_hurldmg = "6d6";
@@ -408,7 +408,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 				if (!save_throw(SaveThrow::Magic, tp) || is_frost) {
 					bolt.o_pos = pos;
 					used = true;
-					if (tp->t_type == 'D' && strcmp(name, "flame") == 0)
+					if (tp->t_type == 'D' && name == "flame")
 						msg("the flame bounces off the dragon");
 					else {
 						hit_monster(pos.y, pos.x, &bolt);

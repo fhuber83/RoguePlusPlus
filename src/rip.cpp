@@ -45,7 +45,7 @@ score(int amount, int flags, char monst)
 	{
 		wait_msg("see rankings");
 	}
-	while ((file = fopen(game().options.score_file, "r")) == nullptr)
+	while ((file = fopen(game().options.score_file.c_str(), "r")) == nullptr)
 	{
 		display().write("\n");
 		if (game().noscore || (amount == 0))
@@ -56,7 +56,7 @@ reread:
 		{
 		case 'c':
 		case 'C':
-			fclose(fopen(game().options.score_file, "w"));
+			fclose(fopen(game().options.score_file.c_str(), "w"));
 			break;
 		case 'r':
 		case 'R':
@@ -74,7 +74,7 @@ reread:
 
 	if (game().noscore != true)
 	{
-		strcpy(his_score.sc_name,game().options.name);
+		strcpy(his_score.sc_name,game().options.name.c_str());
 		his_score.sc_gold = amount;
 		his_score.sc_fate = flags ? flags : monst;
 		his_score.sc_level = game().player.max_level;

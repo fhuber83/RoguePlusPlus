@@ -79,7 +79,7 @@ TEST_F(Names, FoodUsesTheFruit)
 {
 	Item obj = item(ItemKind::Food, Food::Fruit);
 	EXPECT_EQ(inv_name(&obj, false), "A Slime Mold");
-	strcpy(game().options.fruit, "apple");
+	game().options.fruit = "apple";
 	EXPECT_EQ(inv_name(&obj, false), "An apple");
 	obj.o_count = 4;
 	EXPECT_EQ(inv_name(&obj, false), "4 apples");

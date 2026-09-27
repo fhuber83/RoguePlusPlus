@@ -840,14 +840,14 @@ call()
  * prompt player for definition of macro
  */
 void
-do_macro(char *buf, int sz)
+do_macro(std::string &macro)
 {
-	msg("F9 was {}, enter new macro: ",buf);
-	if (auto line = input().read_line(sz-1)) {
+	msg("F9 was {}, enter new macro: ",macro);
+	if (auto line = input().read_line(rogue::Options::macro_length)) {
+		macro.clear();
 		for (char c : *line)
 			if (c != ctrl('F'))
-				*buf++ = c;
-		*buf = '\0';
+				macro += c;
 	}
 	msg("");
 	flush_type();

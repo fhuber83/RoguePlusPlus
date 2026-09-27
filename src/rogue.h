@@ -56,8 +56,7 @@ inline constexpr int maxrow = MAXLINES - 2;
  */
 inline constexpr int REV = 1;		/* the version, 1.48 */
 inline constexpr int VER = 48;
-inline constexpr const char *ENVFILE = "rogue.opt";
-inline constexpr int MACROSZ = 41;
+inline constexpr std::string_view ENVFILE = "rogue.opt";
 
 /*
  * Maximum number of different things
@@ -468,7 +467,7 @@ list_free(rogue::List<T> &list)
 
 // playit.cpp
 void	endit(void);
-void	playit(char *sname);
+void	playit(const std::optional<std::string> &sname);
 void	quit(void);
 void	leave(void);
 // legacy wrappers around rogue::rng()
@@ -489,7 +488,7 @@ void	search(void);
 void	d_level(void);
 void	u_level(void);
 void	call(void);
-void	do_macro(char *buf, int sz);
+void	do_macro(std::string &macro);
 Item	*find_obj(int y, int x);
 bool	add_haste(bool potion);
 bool	is_current(Item *obj);
@@ -531,7 +530,7 @@ std::string	killname(unsigned char monst, bool doart);
 
 // save.cpp
 void	save_game(void);
-void	restore(char *savefile);
+void	restore(const std::string &savefile);
 
 // strings.cpp
 bool	is_alpha(char ch);

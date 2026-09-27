@@ -245,7 +245,7 @@ execcom()
 				? "Ok, I'll be brief"
 				: "Goodie, I can use big words again!");
 			break;
-		case Command::Macro: do_macro(game().options.macro, MACROSZ); break;
+		case Command::Macro: do_macro(game().options.macro); break;
 		case Command::TypeMacro: turn.typeahead = game().options.macro; break;
 		case Command::RepeatMessage: msg("{}", game().message.last); break;
 		case Command::Version:

@@ -310,8 +310,8 @@ get_item(const char *purpose, ItemFilter type)
 	unsigned char gi_state;	/* get item sub state */
 	int once_only = false;
 
-	if (((!strncmp(game().options.menu,"sel",3) && strcmp(purpose,"eat")
-	  && strcmp(purpose,"drop"))) || !strcmp(game().options.menu,"on"))
+	if (((game().options.menu.starts_with("sel") && strcmp(purpose,"eat")
+	  && strcmp(purpose,"drop"))) || game().options.menu == "on")
 		once_only = true;
 
 	gi_state = game().turn.again;

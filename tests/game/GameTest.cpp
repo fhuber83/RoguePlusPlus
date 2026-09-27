@@ -8,13 +8,13 @@
 TEST(Options, Defaults)
 {
 	rogue::Options o;
-	EXPECT_STREQ(o.name, "Rodney");
-	EXPECT_STREQ(o.fruit, "Slime Mold");
-	EXPECT_STREQ(o.macro, "v");
-	EXPECT_STREQ(o.score_file, "rogue.scr");
-	EXPECT_STREQ(o.save_file, "rogue.sav");
-	EXPECT_STREQ(o.menu, "on");
-	EXPECT_STREQ(o.screen, "");
+	EXPECT_EQ(o.name, "Rodney");
+	EXPECT_EQ(o.fruit, "Slime Mold");
+	EXPECT_EQ(o.macro, "v");
+	EXPECT_EQ(o.score_file, "rogue.scr");
+	EXPECT_EQ(o.save_file, "rogue.sav");
+	EXPECT_EQ(o.menu, "on");
+	EXPECT_EQ(o.screen, "");
 	EXPECT_FALSE(o.monochrome);
 	EXPECT_FALSE(o.brief());
 }

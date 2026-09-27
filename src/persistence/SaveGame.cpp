@@ -37,14 +37,14 @@ static_assert(map_rows == maxrow - 1 && map_cols == COLS);
  * then update the size (measured on x86-64 Linux, where these hold).
  */
 #if defined(__x86_64__) && defined(__linux__)
-static_assert(sizeof(Game) == 18216, "a Game member was added or removed: save it");
+static_assert(sizeof(Game) == 18360, "a Game member was added or removed: save it");
 static_assert(sizeof(Player) == 264, "a Player field was added or removed: save it");
 static_assert(sizeof(Level) == 6488, "a Level field was added or removed: save it");
 static_assert(sizeof(Items) == 4480, "an Items field was added or removed: save it");
 static_assert(sizeof(Pool) == 1336, "a Pool field was added or removed: save it");
-static_assert(sizeof(Turn) == 56, "a Turn field was added or removed: save it");
+static_assert(sizeof(Turn) == 80, "a Turn field was added or removed: save it");
 static_assert(sizeof(MessageLine) == 268, "a MessageLine field was added or removed: save it");
-static_assert(sizeof(Options) == 137, "an Options field was added or removed: decide whether to save it");
+static_assert(sizeof(Options) == 264, "an Options field was added or removed: decide whether to save it");
 static_assert(sizeof(Creature) == 112, "a Creature field was added or removed: save it");
 static_assert(sizeof(Item) == 80, "an Item field was added or removed: save it");
 static_assert(sizeof(struct room) == 132, "a room field was added or removed: save it");
@@ -471,6 +471,18 @@ void text_into(char *buf, std::size_t size, const json &j, const char *key)
 	buf[bytes.size()] = '\0';
 }
 
+// Text of at most max bytes
+std::string text_of(const json &j, const char *key, std::size_t max = std::string::npos)
+{
+	const json &v = field(j, key);
+	if (!v.is_string())
+		fail(std::string("\"") + key + "\" is not text");
+	std::string bytes = utf8_to_bytes(v.get<std::string>());
+	if (bytes.size() > max)
+		fail(std::string("\"") + key + "\" is too long");
+	return bytes;
+}
+
 // Null, or text kept for the rest of the program
 const char *kept_text(const json &v, const char *what)
 {
@@ -842,9 +854,7 @@ void turn_from(Game &g, const json &j)
 	t.fast_mode = flag(j, "fast_mode");
 	t.fast_state = flag(j, "fast_state");
 	t.delta = coord_of(j, "delta");
-	t.typeahead = kept_text(field(j, "typeahead"), "\"typeahead\"");
-	if (t.typeahead == nullptr)
-		fail("\"typeahead\" is null");
+	t.typeahead = text_of(j, "typeahead");
 	t.bailout = flag(j, "bailout");
 	t.last_count = num<int>(j, "last_count");
 	t.last_ch = num<unsigned char>(j, "last_ch");
@@ -879,8 +889,8 @@ void game_from(Game &g, MapView &view, const json &doc)
 		fail("\"random\" is not a generator state");
 
 	const json &options = field(doc, "options");
-	text_into(g.options.name, sizeof g.options.name, options, "name");
-	text_into(g.options.fruit, sizeof g.options.fruit, options, "fruit");
+	g.options.name = text_of(options, "name", Options::name_length);
+	g.options.fruit = text_of(options, "fruit", Options::name_length);
 	g.options.terse = flag(options, "terse");
 	g.options.expert = flag(options, "expert");
 

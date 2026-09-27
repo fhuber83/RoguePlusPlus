@@ -161,14 +161,14 @@ TEST(OptionsFile, ApplySetsEachOption)
 	EXPECT_TRUE(apply_option(o, {"drive", "c"}));
 	EXPECT_TRUE(apply_option(o, {"menu", "sel"}));
 	EXPECT_TRUE(apply_option(o, {"screen", "bw"}));
-	EXPECT_STREQ(o.name, "Fred");
-	EXPECT_STREQ(o.fruit, "fig");
-	EXPECT_STREQ(o.macro, "ss");
-	EXPECT_STREQ(o.score_file, "a.scr");
-	EXPECT_STREQ(o.save_file, "a.sav");
-	EXPECT_STREQ(o.drive, "c");
-	EXPECT_STREQ(o.menu, "sel");
-	EXPECT_STREQ(o.screen, "bw");
+	EXPECT_EQ(o.name, "Fred");
+	EXPECT_EQ(o.fruit, "fig");
+	EXPECT_EQ(o.macro, "ss");
+	EXPECT_EQ(o.score_file, "a.scr");
+	EXPECT_EQ(o.save_file, "a.sav");
+	EXPECT_EQ(o.drive, "c");
+	EXPECT_EQ(o.menu, "sel");
+	EXPECT_EQ(o.screen, "bw");
 }
 
 TEST(OptionsFile, ApplyIgnoresUnknownLabels)
@@ -176,20 +176,20 @@ TEST(OptionsFile, ApplyIgnoresUnknownLabels)
 	rogue::Options o;
 	EXPECT_FALSE(apply_option(o, {"nam", "Fred"}));
 	EXPECT_FALSE(apply_option(o, {"name ", "Fred"}));
-	EXPECT_STREQ(o.name, "Rodney");
+	EXPECT_EQ(o.name, "Rodney");
 }
 
 TEST(OptionsFile, ApplyCutsToTheOption)
 {
 	rogue::Options o;
 	apply_option(o, {"fruit", "abcdefghijklmnopqrstuvwx"});
-	EXPECT_STREQ(o.fruit, "abcdefghijklmnopqrstuvw");
+	EXPECT_EQ(o.fruit, "abcdefghijklmnopqrstuvw");
 	apply_option(o, {"scorefile", "abcdefghijklmnopq"});
-	EXPECT_STREQ(o.score_file, "abcdefghijklmn");
+	EXPECT_EQ(o.score_file, "abcdefghijklmn");
 	apply_option(o, {"menu", "select"});
-	EXPECT_STREQ(o.menu, "sel");
+	EXPECT_EQ(o.menu, "sel");
 	apply_option(o, {"drive", "cd"});
-	EXPECT_STREQ(o.drive, "c");
+	EXPECT_EQ(o.drive, "c");
 }
 
 TEST(OptionsFile, LoadReadsAFile)
@@ -198,18 +198,18 @@ TEST(OptionsFile, LoadReadsAFile)
 		"scorefile=my.scr\nfruit_is_not_a_label=x\nfruit=Durian\n");
 	rogue::Options o;
 	EXPECT_EQ(load_options(file.path(), o), LoadResult::Loaded);
-	EXPECT_STREQ(o.name, "Optimus");
-	EXPECT_STREQ(o.fruit, "Durian");
-	EXPECT_STREQ(o.menu, "sel");
-	EXPECT_STREQ(o.score_file, "my.scr");
-	EXPECT_STREQ(o.macro, "v");
+	EXPECT_EQ(o.name, "Optimus");
+	EXPECT_EQ(o.fruit, "Durian");
+	EXPECT_EQ(o.menu, "sel");
+	EXPECT_EQ(o.score_file, "my.scr");
+	EXPECT_EQ(o.macro, "v");
 }
 
 TEST(OptionsFile, LoadMissingFile)
 {
 	rogue::Options o;
 	EXPECT_EQ(load_options("/nonexistent/rogue.opt", o), LoadResult::Missing);
-	EXPECT_STREQ(o.name, "Rodney");
+	EXPECT_EQ(o.name, "Rodney");
 }
 
 TEST(OptionsFile, LoadBadFileChangesNothing)
@@ -217,5 +217,5 @@ TEST(OptionsFile, LoadBadFileChangesNothing)
 	TempFile file("rogue_options_bad.opt", "name=Fred\njunk");
 	rogue::Options o;
 	EXPECT_EQ(load_options(file.path(), o), LoadResult::BadFormat);
-	EXPECT_STREQ(o.name, "Rodney");
+	EXPECT_EQ(o.name, "Rodney");
 }

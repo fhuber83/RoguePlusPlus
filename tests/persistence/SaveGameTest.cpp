@@ -116,8 +116,8 @@ protected:
 		strcpy(g.items.p_guess[Potion::Poison], "fizzy");
 		g.items.p_know[Potion::SeeInvisible] = true;
 		fuse(rogue::rules::Event::Unconfuse, 9);
-		strcpy(g.options.macro, "sss");
-		g.turn.typeahead = g.options.macro + 1;
+		g.options.macro = "sss";
+		g.turn.typeahead = "ss";
 		g.turn.last_item = p.weapon;
 		g.turn.last_item_key = 'a';
 		strcpy(g.message.last, "you feel a bite in your leg");
@@ -185,7 +185,7 @@ TEST_F(SaveGame, PointersPointIntoTheGame)
 	EXPECT_TRUE(rogue::pool_problems(g).empty());
 	EXPECT_TRUE(g.player.body.t_pack.contains(g.player.rings[Hand::Right]));
 	EXPECT_STREQ(g.items.p_guess[Potion::Poison], "fizzy");
-	EXPECT_STREQ(g.turn.typeahead, "ss");
+	EXPECT_EQ(g.turn.typeahead, "ss");
 	EXPECT_EQ(g.turn.last_item, g.player.weapon);
 	EXPECT_EQ(g.scheduler.time_left(rogue::rules::Event::Unconfuse), 9);
 	int flytraps = 0;

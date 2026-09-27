@@ -18,18 +18,22 @@ namespace rogue {
 
 /*
  * Player settings: read from rogue.opt (see persistence/OptionsFile), the
- * name prompt and the in-game toggles. The character buffers keep their
- * original sizes.
+ * name prompt and the in-game toggles. The texts keep the longest lengths
+ * of the original buffers.
  */
 struct Options {
-	char name[24] = "Rodney";		/* whoami: the rogue's name */
-	char fruit[24] = "Slime Mold";	/* What the player likes to eat */
-	char macro[42] = "v";			/* Keys the F9 macro types */
-	char score_file[15] = "rogue.scr";
-	char save_file[15] = "rogue.sav";
-	char drive[2] = "?";			/* Unused DOS drive letter */
-	char menu[4] = "on";			/* Item menus: "on", "sel" or off */
-	char screen[8] = "";			/* "bw" forces monochrome */
+	static constexpr std::size_t name_length = 23;		/* also the fruit's */
+	static constexpr std::size_t macro_length = 40;
+	static constexpr std::size_t file_length = 14;		/* the score and save files' */
+
+	std::string name = "Rodney";		/* whoami: the rogue's name */
+	std::string fruit = "Slime Mold";	/* What the player likes to eat */
+	std::string macro = "v";			/* Keys the F9 macro types */
+	std::string score_file = "rogue.scr";
+	std::string save_file = "rogue.sav";
+	std::string drive = "?";			/* Unused DOS drive letter */
+	std::string menu = "on";			/* Item menus: "on", "sel" or off */
+	std::string screen = "";			/* "bw" forces monochrome */
 	bool monochrome = false;		/* Draw without colours (bwflag) */
 	bool terse = false;				/* Short messages */
 	bool expert = false;			/* Even shorter messages */
@@ -66,7 +70,7 @@ struct Turn {
 	bool fast_mode = false;			/* Run until you see something */
 	bool fast_state = false;		/* Toggle for find (see above) */
 	coord delta = {};				/* Change indicated to get_dir() */
-	const char *typeahead = "";		/* typebuf: keys a macro still types */
+	std::string typeahead;			/* typebuf: keys a macro still types */
 	bool bailout = false;			/* The hero is nowhere: fall through */
 	/* What the last command was, for repeating it (command.cpp) */
 	int last_count = 0;

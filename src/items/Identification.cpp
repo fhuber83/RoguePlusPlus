@@ -63,10 +63,10 @@ inv_name(const Item *obj, bool drop)
 		if (which == Food::Fruit)
 			if (obj->o_count == 1)
 				name = std::format("A{} {}", vowelstr(game().options.fruit),
-					static_cast<const char *>(game().options.fruit));
+					game().options.fruit);
 			else
 				name = std::format("{} {}s", obj->o_count,
-					static_cast<const char *>(game().options.fruit));
+					game().options.fruit);
 		else
 			if (obj->o_count == 1)
 				name = "Some food";

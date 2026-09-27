@@ -32,13 +32,13 @@ endit()
  *	refreshing things and looking at the proper times.
  */
 void
-playit(char *sname)
+playit(const std::optional<std::string> &sname)
 {
 	rogue::Player &player = game().player;
 
 	if (sname) {
 		setup();			// first: the save has the terse and expert toggles
-		restore(sname);
+		restore(*sname);
 		display().show_cursor(false);
 	} else {
 		player.old_pos.x = player.body.t_pos.x;

@@ -64,14 +64,14 @@ save_game()
  *	the game where it was left.
  */
 void
-restore(char *file)
+restore(const std::string &file)
 {
 	MapView view;
 
 	start_terminal();
 	if (auto loaded = rogue::persistence::read_save(file, game(), view); !loaded)
 		fatal("Can't restore {}: {}\n", file, loaded.error().detail);
-	if (std::remove(file) != 0)
+	if (std::remove(file.c_str()) != 0)
 		fatal("Can't delete {} after restoring it, so the game is not restored\n", file);
 	for (int r = 0; r < rogue::persistence::map_rows; r++)
 		for (int x = 0; x < rogue::persistence::map_cols; x++)

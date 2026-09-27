@@ -91,7 +91,7 @@ read_scroll()
 		 */
 		items.s_know[Scroll::Identify] = true;
 		msg("this scroll is an identify scroll");
-		if (! strcmp(game().options.menu,"on") || !strcmp(game().options.menu,"sel"))
+		if (game().options.menu == "on" || game().options.menu == "sel")
 			more(" More ");
 		whatis();
 		break;

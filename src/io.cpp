@@ -60,7 +60,7 @@ endmsg(void)
 	if (message.remember)
 		strcpy(message.last, message.text);
 	if (message.end) {
-		look(FALSE);
+		look(false);
 		more_at(" More ", message.end);
 	}
 	/*
@@ -183,7 +183,7 @@ status(void)
 	/*
 	 * The armor class shown ignores rings of protection, as it always did
 	 */
-	ac = player.armor != NULL ? player.armor->o_ac : player.body.t_stats.s_arm;
+	ac = player.armor != nullptr ? player.armor->o_ac : player.body.t_stats.s_arm;
 
 	st.level = game().level.depth;
 	st.hp = player.body.t_stats.s_hpt;
@@ -215,7 +215,7 @@ wait_for(unsigned char ch)
 void
 wait_msg(const char *msg)
 {
-	display().show_cursor(TRUE);
+	display().show_cursor(true);
 	display().write_at(LINES-1, 0,
 		*msg ? std::format("[Press Enter to {}]", msg) : "[Press Enter]");
 	flush_type();
@@ -276,14 +276,14 @@ str_attr(const char *str)
  *	Periodic status update: draws the clock in the bottom-right corner.
  *	The original also showed NUM LOCK/CAP LOCK and toggled "Fast Play" via
  *	Scroll Lock by reading keyboard LEDs through BIOS; terminals cannot
- *	report those, so faststate stays FALSE.
+ *	report those, so faststate stays false.
  */
 void
 SIG2(void)
 {
 	static int bighand, littlehand;
 	static long cur_time = 0;
-	int showtime = FALSE;
+	int showtime = false;
 	long new_time = md_time();
 
 	/*
@@ -297,7 +297,7 @@ SIG2(void)
 		bighand = local->hour % 12;
 		littlehand = local->minute;
 		cur_time = new_time - local->second;
-		showtime = TRUE;
+		showtime = true;
 	}
 
 	if (showtime)

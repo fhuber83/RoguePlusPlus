@@ -1,7 +1,5 @@
 /*
  * Functions for dealing with linked lists of goodies
- * Functions with names starting with an "_" have compainion #defines
- * in rogue.h which take the address of the first argument and pass it on.
  *
  * list.c	1.4 (A.I. Design) 12/5/85
  */
@@ -24,8 +22,8 @@ talloc(rogue::Slots<T, MAXITEMS> &slots)
 	rogue::Pool &pool = game().pool;
 	T *thing;
 
-	if (pool.total >= MAXITEMS || (thing = slots.take()) == NULL)
-		return NULL;
+	if (pool.total >= MAXITEMS || (thing = slots.take()) == nullptr)
+		return nullptr;
 	++pool.total;
 	return thing;
 }
@@ -74,7 +72,7 @@ discard(Item *item)
 	 * too, so forget it.
 	 */
 	if (game().turn.last_item == item)
-		game().turn.last_item = NULL;
+		game().turn.last_item = nullptr;
 	/*
 	 * A monster after this item goes for the hero instead. add_pack() does
 	 * this when the rogue picks the item up, but not when it merges into a

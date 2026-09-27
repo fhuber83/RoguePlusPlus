@@ -15,7 +15,7 @@ namespace rogue::world {
 
 /*
  * roomin:
- *	Find	what room some coordinates are in. NULL	means they aren't
+ *	Find	what room some coordinates are in. null	means they aren't
  *	in any room.
  */
 struct room *
@@ -33,8 +33,8 @@ roomin(coord *cp)
 		return	&game().level.passages[fp->passage()];
 	if constexpr (rogue::config::debug_checks)
 		debug("in some bizarre place ({}, {})", cp->y, cp->x);
-	game().turn.bailout = TRUE;
-	return NULL;
+	game().turn.bailout = true;
+	return nullptr;
 }
 
 /*
@@ -47,7 +47,7 @@ diag_ok(coord *sp, coord *ep)
 	rogue::Level &level = game().level;
 
 	if (ep->x == sp->x || ep->y	== sp->y)
-		return	TRUE;
+		return	true;
 	return (step_ok(level.at(ep->y, sp->x))	&& step_ok(level.at(sp->y, ep->x)));
 }
 
@@ -63,9 +63,9 @@ cansee(int y, int x)
 	rogue::Player &player = game().player;
 
 	if (player.body.t_flags.test(ISBLIND))
-		return	FALSE;
+		return	false;
 	if (DISTANCE(y, x, player.body.t_pos.y, player.body.t_pos.x) < LAMPDIST)
-		return	TRUE;
+		return	true;
 	/*
 	 * We can only see if the hero in the same room as
 	 * the coordinate and the room is lit or if	it is close.
@@ -114,7 +114,7 @@ enter_room(coord *cp)
 				 * chase code now
 				 */
 				tp = moat(y, x);
-				if (tp == NULL || !see_monst(tp))
+				if (tp == nullptr || !see_monst(tp))
 					display().draw_tile({x, y}, level.at(y, x));
 				else {
 					tp->t_oldch = level.at(y, x);

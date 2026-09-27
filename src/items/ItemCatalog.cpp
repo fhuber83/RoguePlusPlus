@@ -49,8 +49,8 @@ new_thing()
 	int k;
 	rogue::Items &items = game().items;
 
-	if ((cur = new_item()) == NULL)
-		return NULL;
+	if ((cur = new_item()) == nullptr)
+		return nullptr;
 	cur->o_hplus = cur->o_dplus = 0;
 	cur->o_damage = cur->o_hurldmg = "0d0";
 	cur->o_ac = 11;

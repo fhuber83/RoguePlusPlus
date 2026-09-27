@@ -300,7 +300,7 @@ json player_json(const Game &g)
 		{"max_level", p.max_level}, {"no_command", p.no_command}, {"no_move", p.no_move},
 		{"quiet", p.quiet}, {"fungus_hits", p.fung_hit},
 		{"flytrap_damage", bytes_to_utf8(p.flytrap_damage)},
-		{"was_trapped", p.was_trapped},
+		{"was_trapped", std::to_underlying(p.was_trapped)},
 		{"old_pos", coord_json(p.old_pos)}, {"old_room", room_ref(g, p.old_room)},
 	};
 }
@@ -816,7 +816,7 @@ void player_from(Game &g, const json &j)
 	p.quiet = num<int>(j, "quiet");
 	p.fung_hit = num<int>(j, "fungus_hits");
 	text_into(p.flytrap_damage, sizeof p.flytrap_damage, j, "flytrap_damage");
-	p.was_trapped = num<unsigned char>(j, "was_trapped");
+	p.was_trapped = static_cast<Trapped>(num_in<unsigned char>(j, "was_trapped", 0, 2));
 	p.old_pos = coord_of(j, "old_pos");
 	p.old_room = room_at(g, field(j, "old_room"), "\"old_room\"");
 }

@@ -34,7 +34,7 @@ void show_count();
  * resume_saved_game:
  *	A restored game goes on where it was saved: in the middle of a turn,
  *	waiting for a key. The next command() and get_prefix() then skip what
- *	was done before the save (the haste roll, look(TRUE)), which could roll
+ *	was done before the save (the haste roll, look(true)), which could roll
  *	dice again and make the game go differently.
  */
 void resume_saved_game();

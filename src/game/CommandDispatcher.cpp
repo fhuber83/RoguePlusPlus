@@ -104,20 +104,20 @@ get_prefix()
 	unsigned char retch, ch;
 	rogue::Turn &turn = game().turn;
 
-	turn.after = TRUE;
+	turn.after = true;
 	turn.fast_mode = turn.fast_state;
 	if (resuming)
 		resuming = false;	// the save was made after this look()
 	else
-		look(TRUE); // draw player in updated position on every non-sleep frame
+		look(true); // draw player in updated position on every non-sleep frame
 	if (!turn.running)
-		turn.door_stop = FALSE;
-	turn.do_take = TRUE;
-	turn.again = FALSE;
+		turn.door_stop = false;
+	turn.do_take = true;
+	turn.again = false;
 	if (--turn.count > 0) {
 		turn.do_take = turn.last_take;
 		retch = turn.last_ch;
-		turn.fast_mode = FALSE;
+		turn.fast_mode = false;
 		display().flush();  // repeated commands, ie, "10s"
 	} else {
 		turn.count = 0;
@@ -139,17 +139,17 @@ get_prefix()
 						turn.fast_mode = !turn.fast_mode;
 						break;
 					case 'g':
-						turn.do_take = FALSE;
+						turn.do_take = false;
 						break;
 					case 'a':
 						retch = turn.last_ch;
 						turn.count = turn.last_count;
 						turn.do_take = turn.last_take;
-						turn.again = TRUE;
+						turn.again = true;
 						break;
 					case ' ':	/* Spaces are ignored */ break;
 					case ESCAPE:
-						turn.door_stop = FALSE;
+						turn.door_stop = false;
 						turn.count = 0;
 						show_count();
 						break;
@@ -160,12 +160,12 @@ get_prefix()
 		}
 	}
 	if (turn.count)
-		turn.fast_mode = FALSE;
+		turn.fast_mode = false;
 	// Which commands a count repeats is in game/Command.cpp
 	if (command_of(retch) == Command::Move && turn.fast_mode && !turn.running) {
 		if (!game().player.body.t_flags.test(ISBLIND)) {
-			turn.door_stop = TRUE;
-			turn.first_move = TRUE;
+			turn.door_stop = true;
+			turn.first_move = true;
 		}
 		retch = toupper(retch);
 	}
@@ -201,7 +201,7 @@ execcom()
 		ch = get_prefix();
 		Command cmd = command_of(ch);
 		if (!takes_turn(cmd))
-			turn.after = FALSE;
+			turn.after = false;
 		switch (cmd) {
 		case Command::Move:
 			find_dir(ch, &mv);
@@ -214,7 +214,7 @@ execcom()
 			if (get_dir())
 				missile(turn.delta.y, turn.delta.x);
 			else
-				turn.after = FALSE;
+				turn.after = false;
 			break;
 		case Command::Quit: quit(); break;
 		case Command::Inventory: inventory(player.body.t_pack, ItemFilter::all(), ""); break;
@@ -237,7 +237,7 @@ execcom()
 			if (get_dir())
 				do_zap();
 			else
-				turn.after = FALSE;
+				turn.after = false;
 			break;
 		case Command::Discoveries: discovered(); break;
 		case Command::ToggleBrief:
@@ -270,17 +270,17 @@ execcom()
 		case Command::Options: msg("i don't have any options, oh my!"); break;
 		case Command::Redraw: msg("the screen looks fine to me (jll was here)"); break;
 		case Command::Illegal:
-			game().message.remember = FALSE;
+			game().message.remember = false;
 			msg("illegal command '{}'", io_unctrl(ch));
 			turn.count = 0;
-			game().message.remember = TRUE;
+			game().message.remember = true;
 		}
 		if (turn.take && turn.do_take)
 			pick_up(turn.take);
 		turn.take = 0;
 		if (!turn.running)
-			turn.door_stop = FALSE;
-	} while (turn.after == FALSE);
+			turn.door_stop = false;
+	} while (turn.after == false);
 }
 
 }  // namespace rogue

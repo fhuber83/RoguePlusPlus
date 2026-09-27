@@ -26,7 +26,7 @@ runners()
 	int dist;
 	rogue::Player &player = game().player;
 
-	for (tp = game().level.monsters.first(); tp != NULL; tp = game().level.monsters.after(tp)) {
+	for (tp = game().level.monsters.first(); tp != nullptr; tp = game().level.monsters.after(tp)) {
 		if (!tp->t_flags.test(ISHELD) && tp->t_flags.test(ISRUN)) {
 			dist = DISTANCE(player.body.t_pos.y, player.body.t_pos.x, tp->t_pos.y, tp->t_pos.x);
 			if	(!(tp->t_flags.test(ISSLOW) || (tp->t_type == 'S' && dist > 3)) || tp->t_turn)
@@ -49,7 +49,7 @@ runners()
 				do_chase(tp);
 			if (!game().level.monsters.contains(tp))
 				continue;
-			tp->t_turn ^= TRUE;
+			tp->t_turn ^= true;
 		}
 	}
 }
@@ -76,7 +76,7 @@ do_chase(Creature *th)
 	ree	= player.body.t_room;
 	if (th->t_dest != &player.body.t_pos)	/*	Find room of chasee */
 		ree = roomin(th->t_dest);
-	if (ree == NULL)
+	if (ree == nullptr)
 		return;
 	/*
 	 * We don't	count doors as inside rooms for	this routine
@@ -101,7 +101,7 @@ over:
 		}
 		if (door) {
 			rer = &level.passages[level.flags_at(th->t_pos).passage()];
-			door = FALSE;
+			door = false;
 			goto over;
 		}
 	} else {
@@ -118,7 +118,7 @@ over:
 			 && dist <= BOLT_LENGTH	* BOLT_LENGTH)
 			&&	!th->t_flags.test(ISCANC) && rnd(DRAGONSHOT) == 0)
 		{
-			game().turn.running = FALSE;
+			game().turn.running = false;
 			game().turn.delta.y = sign(player.body.t_pos.y - th->t_pos.y);
 			game().turn.delta.x = sign(player.body.t_pos.x - th->t_pos.x);
 			fire_bolt(&th->t_pos,&game().turn.delta,th->t_type == 'D' ? "flame" : "frost");
@@ -135,7 +135,7 @@ over:
 		attack(th);
 		return;
 	} else if (ch_ret == *th->t_dest) {
-		for (obj = level.objects.first(); obj != NULL; obj = level.objects.after(obj))
+		for (obj = level.objects.first(); obj != nullptr; obj = level.objects.after(obj))
 			if	(th->t_dest == &obj->o_pos) {
 				unsigned char oldchar;
 
@@ -167,7 +167,7 @@ over:
 	oroom = th->t_room;
 	if (!(ch_ret == th->t_pos))
 	{
-		if ((th->t_room = roomin(&ch_ret)) == NULL) {
+		if ((th->t_room = roomin(&ch_ret)) == nullptr) {
 			th->t_room	= oroom;
 			return;
 		}
@@ -195,31 +195,31 @@ over:
 
 /*
  * see_monst:
- *	Return TRUE if the hero can see the monster
+ *	Return true if the hero can see the monster
  */
 bool
 see_monst(Creature *mp)
 {
 	rogue::Player &player = game().player;
 	if (player.body.t_flags.test(ISBLIND))
-		return	FALSE;
+		return	false;
 	if (mp->t_flags.test(ISINVIS) && !player.body.t_flags.test(CANSEE))
-		return	FALSE;
+		return	false;
 	if (DISTANCE(mp->t_pos.y, mp->t_pos.x, player.body.t_pos.y, player.body.t_pos.x) >= LAMPDIST &&
 	  ((mp->t_room != player.body.t_room || mp->t_room->r_flags.test(RoomFlag::Dark) ||
 	  mp->t_room->r_flags.test(RoomFlag::Maze))))
-		return FALSE;
+		return false;
 	/*
 	 * If we are seeing	the enemy of a vorpally	enchanted weapon for the first
 	 * time, give the player a hint as to what that weapon is good for.
 	 */
-	if (player.weapon != NULL && mp->t_type == player.weapon->o_enemy
+	if (player.weapon != nullptr && mp->t_type == player.weapon->o_enemy
 	  && !player.weapon->o_flags.test(DIDFLASH))
 	{
 		player.weapon->o_flags.set(DIDFLASH);
 		msg(flashmsg, w_names[player.weapon->which<WeaponType>()], game().options.brief() ? "" : intense);
 	}
-	return TRUE;
+	return true;
 }
 
 /*
@@ -236,7 +236,7 @@ start_run(coord *runner)
 	 * If we couldn't find him,	something is funny
 	 */
 	tp = moat(runner->y, runner->x);
-	if (tp != NULL) {
+	if (tp != nullptr) {
 		/*
 		 *	Start the beastie running
 		 */
@@ -245,7 +245,7 @@ start_run(coord *runner)
 		tp->t_dest	= find_dest(tp);
 	}
 	else if constexpr (rogue::config::debug_checks)
-		debug("start_run: moat == NULL ???");
+		debug("start_run: moat == null ???");
 }
 
 /*
@@ -318,12 +318,12 @@ chase(Creature *tp, coord *ee)
 					 */
 					if (ch ==	SCROLL)
 					{
-						for (obj = game().level.objects.first(); obj != NULL; obj = game().level.objects.after(obj))
+						for (obj = game().level.objects.first(); obj != nullptr; obj = game().level.objects.after(obj))
 						{
 							if (y ==	obj->o_pos.y &&	x == obj->o_pos.x)
 								break;
 						}
-						if (obj != NULL && obj->which<Scroll>() == Scroll::ScareMonster)
+						if (obj != nullptr && obj->which<Scroll>() == Scroll::ScareMonster)
 							continue;
 					}
 					/*
@@ -364,16 +364,16 @@ find_dest(Creature *tp)
 	|| see_monst(tp))
 		return &player.body.t_pos;
 	rp = tp->t_room;
-	for (obj = game().level.objects.first(); obj != NULL; obj = game().level.objects.after(obj))
+	for (obj = game().level.objects.first(); obj != nullptr; obj = game().level.objects.after(obj))
 	{
 	if (obj->o_type == ItemKind::Scroll && obj->which<Scroll>() == Scroll::ScareMonster)
 		continue;
 	if (roomin(&obj->o_pos) == rp && rnd(100) < prob)
 	{
-		for (tp = game().level.monsters.first(); tp != NULL; tp = game().level.monsters.after(tp))
+		for (tp = game().level.monsters.first(); tp != nullptr; tp = game().level.monsters.after(tp))
 		if (tp->t_dest == &obj->o_pos)
 			break;
-		if	(tp == NULL)
+		if	(tp == nullptr)
 		return &obj->o_pos;
 	}
 	}
@@ -400,7 +400,7 @@ slime_split(Creature *tp)
 {
 	Creature *nslime;
 
-	if (!new_slime(tp) || (nslime = new_creature()) == NULL)
+	if (!new_slime(tp) || (nslime = new_creature()) == nullptr)
 		return;
 	msg("The slime divides.  Ick!");
 	new_monster(nslime, 'S', &slimy);
@@ -420,7 +420,7 @@ new_slime(Creature *tp)
 	Creature *ntp;
 	coord sp;
 
-	ret = FALSE;
+	ret = false;
 	tp->t_flags.set(ISFLY);
 	if (!plop_monster((ty = tp->t_pos.y), (tx = tp->t_pos.x), &sp)) {
 		/*
@@ -438,7 +438,7 @@ new_slime(Creature *tp)
 					}
 				}
 	} else {
-		ret = TRUE;
+		ret = true;
 		slimy = sp;
 	}
 	tp->t_flags.unset(ISFLY);
@@ -449,10 +449,10 @@ new_slime(Creature *tp)
  * Pick an appropriate spot around a central spot for a new monster to spawn
  * (r, c): row, col of central spot
  * cp: pointer to coordinate for the new monster, if any
- * Return FALSE if no suitable spot around (r, c) is found
+ * Return false if no suitable spot around (r, c) is found
  *
  * Original return value was somewhat an abuse of the bool convention,
- * used both as TRUE/FALSE and as an integer for calculating odds.
+ * used both as true/false and as an integer for calculating odds.
  * To avoid that, 'inv_odds' was created for the rnd() call,
  * and 'appear' is now "strictly" boolean
  */
@@ -460,7 +460,7 @@ bool
 plop_monster(int r, int c, coord *cp)
 {
 	int y, x, inv_odds = 0;
-	bool appear = FALSE;
+	bool appear = false;
 	unsigned char ch;
 	rogue::Player &player = game().player;
 
@@ -482,7 +482,7 @@ plop_monster(int r, int c, coord *cp)
 				 * then randomly change to next available spot, if any,
 				 * with decreasing 1-to-n odds (50%, 33%, 25%, 20%,...)
 				 */
-				appear = TRUE;
+				appear = true;
 				if (rnd(++inv_odds) == 0) {
 					cp->y = y;
 					cp->x = x;

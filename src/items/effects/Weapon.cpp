@@ -1,3 +1,6 @@
+#include <chrono>
+#include <thread>
+
 #include "rogue.h"
 
 namespace rogue::items::effects {
@@ -39,7 +42,7 @@ missile(int ydelta, int xdelta)
 	/*
 	 * Get which thing we are hurling
 	 */
-	if ((obj = get_item("throw", ItemKind::Weapon)) == NULL)
+	if ((obj = get_item("throw", ItemKind::Weapon)) == nullptr)
 		return;
 	if (!can_drop(obj) || is_current(obj))
 		return;
@@ -56,7 +59,7 @@ missile(int ydelta, int xdelta)
 		/*
 		 * here is a quick hack to check if we can get a new item
 		 */
-		if ((nitem = new_item()) == NULL) {
+		if ((nitem = new_item()) == nullptr) {
 			obj->o_count = 1;
 			msg("something in your pack explodes!!!");
 			goto hack;
@@ -64,7 +67,7 @@ missile(int ydelta, int xdelta)
 		obj->o_count--;
 		if (obj->o_group == 0)
 			game().player.in_pack--;
-		bcopy(*nitem,*obj);
+		*nitem = *obj;
 		nitem->o_count = 1;
 		obj = nitem;
 	}
@@ -73,9 +76,9 @@ missile(int ydelta, int xdelta)
 	 * AHA! Here it has hit something.  If it is a wall or a door,
 	 * or if it misses (combat) the monster, put it on the floor
 	 */
-	if (moat(obj->o_pos.y, obj->o_pos.x) == NULL
+	if (moat(obj->o_pos.y, obj->o_pos.x) == nullptr
 		|| !hit_monster(obj->o_pos.y, obj->o_pos.x, obj))
-			fall(obj, TRUE);
+			fall(obj, true);
 }
 
 /*
@@ -92,7 +95,7 @@ do_motion(Item *obj, int ydelta, int xdelta)
 	/*
 	 * Come fly with us ...
 	 */
-	bcopy(obj->o_pos,player.body.t_pos);
+	obj->o_pos = player.body.t_pos;
 	for (;;) {
 		int ch;
 
@@ -138,7 +141,7 @@ short_name(Item *obj)
 		case ItemKind::Stick:
 		case ItemKind::Ring:
 		{
-			std::string name = inv_name(obj, TRUE);
+			std::string name = inv_name(obj, true);
 			return name.substr(name.find(' ') + 1);
 		}
 		default:
@@ -162,14 +165,14 @@ fall(Item *obj, bool pr)
 	case 1:
 		index = INDEX(fpos.y, fpos.x);
 		level.map[index] = glyph_of(obj->o_type);
-		bcopy(obj->o_pos,fpos);
+		obj->o_pos = fpos;
 		if (cansee(fpos.y, fpos.x))
 		{
 			display().draw_tile(fpos, glyph_of(obj->o_type),
 					(level.flags_at(obj->o_pos).test(MapFlag::Passage) ||
 					 level.flags_at(obj->o_pos).test(MapFlag::Maze))
 						? TileStyle::Inverse : TileStyle::Normal);
-			if (moat(fpos.y,fpos.x) != NULL)
+			if (moat(fpos.y,fpos.x) != nullptr)
 				moat(fpos.y,fpos.x)->t_oldch = glyph_of(obj->o_type);
 		}
 		level.objects.push_front(obj);
@@ -220,9 +223,9 @@ hit_monster(int y, int x, Item *obj)
 	if (mo) {
 		mp.y = y;
 		mp.x = x;
-		return fight(&mp, mo->t_type, obj, TRUE);
+		return fight(&mp, mo->t_type, obj, true);
 	}
-	return FALSE;
+	return false;
 }
 
 /*
@@ -257,10 +260,10 @@ wield(void)
 		return;
 	}
 	player.weapon = oweapon;
-	if ((obj = get_item("wield", ItemKind::Weapon)) == NULL)
+	if ((obj = get_item("wield", ItemKind::Weapon)) == nullptr)
 	{
 bad:
-		game().turn.after = FALSE;
+		game().turn.after = false;
 		return;
 	}
 
@@ -272,7 +275,7 @@ bad:
 	if (is_current(obj))
 		goto bad;
 
-	sp = inv_name(obj, TRUE);
+	sp = inv_name(obj, true);
 	player.weapon = obj;
 	ifterse("now wielding {} ({:c})", "you are now wielding {} ({:c})",
 		sp, pack_char(obj));
@@ -326,7 +329,7 @@ void
 tick_pause(void)
 {
 	display().flush();
-	msleep(55);
+	std::this_thread::sleep_for(std::chrono::milliseconds(55));
 }
 
 }  // namespace rogue::items::effects

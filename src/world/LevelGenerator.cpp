@@ -39,12 +39,12 @@ new_level(void)
 	/*
 	 * Clean things off from last level
 	 */
-	setmem(level.map, ((MAXLINES-3)*MAXCOLS),' ');
+	std::ranges::fill(level.map, ' ');
 	std::ranges::fill(level.flags, MapFlags(MapFlag::Real));
 	/*
 	 * Free up the monsters on the last level
 	 */
-	for (tp = level.monsters.first(); tp != NULL; tp = level.monsters.after(tp))
+	for (tp = level.monsters.first(); tp != nullptr; tp = level.monsters.after(tp))
 		list_free(tp->t_pack);
 	list_free(level.monsters);
 	/*
@@ -98,15 +98,15 @@ new_level(void)
 		rnd_pos(&level.rooms[rm], &player.body.t_pos);
 		index = INDEX(player.body.t_pos.y, player.body.t_pos.x);
 	} while (!(is_floor(level.map[index]) && level.flags[index].test(MapFlag::Real)
-				&& moat(player.body.t_pos.y, player.body.t_pos.x) == NULL));
+				&& moat(player.body.t_pos.y, player.body.t_pos.x) == nullptr));
 
 	game().message.end = 0;
 	enter_room(&player.body.t_pos);
 	display().draw_tile(player.body.t_pos, PLAYER);
-	bcopy(player.old_pos,player.body.t_pos);
+	player.old_pos = player.body.t_pos;
 	player.old_room = player.body.t_room;
 	if (player.body.t_flags.test(SEEMONST))
-		turn_see(FALSE);
+		turn_see(false);
 }
 
 /*
@@ -153,7 +153,7 @@ put_things(void)
 		 * hope of getting the amulet
 		 */
 		if (level.depth >= AMULETLEVEL && !game().player.saw_amulet) {
-			if ((cur = new_item()) != NULL) {
+			if ((cur = new_item()) != nullptr) {
 				level.objects.push_front(cur);
 				cur->o_hplus = cur->o_dplus = 0;
 				cur->o_damage = cur->o_hurldmg = "0d0";
@@ -167,7 +167,7 @@ put_things(void)
 					rnd_pos(&level.rooms[rm], &tp);
 				} while (!is_floor(winat(tp.y, tp.x)));
 				level.at(tp) = AMULET;
-				bcopy(cur->o_pos,tp);
+				cur->o_pos = tp;
 			}
 		}
 		/*
@@ -194,7 +194,7 @@ put_things(void)
 				rnd_pos(&level.rooms[rm], &tp);
 			} while (!is_floor(level.at(tp)));
 			level.at(tp) = glyph_of(cur->o_type);
-			bcopy(cur->o_pos,tp);
+			cur->o_pos = tp;
 		}
 }
 
@@ -229,7 +229,7 @@ treas_room(void)
 			index = INDEX(mp.y, mp.x);
 		} while (!is_floor(level.map[index]));
 		obj = new_thing();
-		bcopy(obj->o_pos,mp);
+		obj->o_pos = mp;
 		level.objects.push_front(obj);
 		level.map[index] = glyph_of(obj->o_type);
 	}
@@ -250,14 +250,14 @@ treas_room(void)
 		{
 			rnd_pos(rp, &mp);
 			index = INDEX(mp.y, mp.x);
-			if (is_floor(level.map[index]) && moat(mp.y, mp.x) == NULL)
+			if (is_floor(level.map[index]) && moat(mp.y, mp.x) == nullptr)
 				break;
 		}
 		if (spots != MAXTRIES)
 		{
-			if ((tp = new_creature()) != NULL)
+			if ((tp = new_creature()) != nullptr)
 			{
-				new_monster(tp, randmonster(FALSE), &mp);
+				new_monster(tp, randmonster(false), &mp);
 				tp->t_flags.set(ISMEAN);	/* no sloughers in THIS room */
 				give_pack(tp);
 			}
@@ -372,7 +372,7 @@ do_rooms(void)
 		if ((rnd(2) == 0) && (!game().player.saw_amulet || (level.depth >= game().player.max_level))) {
 			Item *gold;
 
-			if ((gold = new_item()) != NULL) {
+			if ((gold = new_item()) != nullptr) {
 				gold->gold_value() = rp->r_goldval = gold_calc();
 				while (1) {
 					unsigned char gch;
@@ -382,7 +382,7 @@ do_rooms(void)
 					if (is_floor(gch))
 						break;
 				}
-				bcopy(gold->o_pos,rp->r_gold);
+				gold->o_pos = rp->r_gold;
 				gold->o_flags = ISMANY;
 				gold->o_group = GOLDGRP;
 				gold->o_type = ItemKind::Gold;
@@ -394,14 +394,14 @@ do_rooms(void)
 		 * Put the monster in
 		 */
 		if (rnd(100) < (rp->r_goldval > 0 ? 80 : 25)) {
-			if ((tp = new_creature()) != NULL) {
+			if ((tp = new_creature()) != nullptr) {
 				unsigned char mch;
 
 				do {
 					rnd_pos(rp, &mp);
 					mch = winat(mp.y, mp.x);
 				} while (!is_floor(mch));
-				new_monster(tp, randmonster(FALSE), &mp);
+				new_monster(tp, randmonster(false), &mp);
 				give_pack(tp);
 			}
 		}

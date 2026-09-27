@@ -15,7 +15,7 @@ ring_on()
 	std::optional<Hand> ring;
 	rogue::Player &player = game().player;
 
-	if ((obj = get_item("put on", ItemKind::Ring)) == NULL)
+	if ((obj = get_item("put on", ItemKind::Ring)) == nullptr)
 		goto no_ring;
 	/*
 	 * Make certain that it is somethings that we want to wear
@@ -31,11 +31,11 @@ ring_on()
 	if (is_current(obj))
 		goto no_ring;
 
-	if (player.rings[Hand::Left] == NULL)
+	if (player.rings[Hand::Left] == nullptr)
 		ring = Hand::Left;
-	if (player.rings[Hand::Right] == NULL)
+	if (player.rings[Hand::Right] == nullptr)
 		ring = Hand::Right;
-	if (player.rings[Hand::Left] == NULL && player.rings[Hand::Right] == NULL)
+	if (player.rings[Hand::Left] == nullptr && player.rings[Hand::Right] == nullptr)
 		if (!(ring = gethand()))
 			goto no_ring;
 	if (!ring) {
@@ -62,11 +62,11 @@ ring_on()
 	}
 
 	msg("{}wearing {} ({:c})", noterse("you are now "),
-		inv_name(obj, TRUE), pack_char(obj));
+		inv_name(obj, true), pack_char(obj));
 	return ;
 
 no_ring:
-	game().turn.after = FALSE;
+	game().turn.after = false;
 	return;
 }
 
@@ -82,13 +82,13 @@ ring_off(void)
 	char packchar;
 	rogue::Player &player = game().player;
 
-	if (player.rings[Hand::Left] == NULL && player.rings[Hand::Right] == NULL) {
+	if (player.rings[Hand::Left] == nullptr && player.rings[Hand::Right] == nullptr) {
 		msg("you aren't wearing any rings");
-		game().turn.after = FALSE;
+		game().turn.after = false;
 		return;
-	} else if (player.rings[Hand::Left] == NULL)
+	} else if (player.rings[Hand::Left] == nullptr)
 		ring = Hand::Right;
-	else if (player.rings[Hand::Right] == NULL)
+	else if (player.rings[Hand::Right] == nullptr)
 		ring = Hand::Left;
 	else if (std::optional<Hand> hand = gethand())
 		ring = *hand;
@@ -96,14 +96,14 @@ ring_off(void)
 		return;
 	game().message.end = 0;
 	obj = player.rings[ring];
-	if (obj == NULL) {
+	if (obj == nullptr) {
 		msg("not wearing such a ring");
-		game().turn.after = FALSE;
+		game().turn.after = false;
 		return;
 	}
 	packchar = pack_char(obj);
 	if (can_drop(obj))
-		msg("was wearing {}({:c})", inv_name(obj, TRUE), packchar);
+		msg("was wearing {}({:c})", inv_name(obj, true), packchar);
 }
 
 /*
@@ -119,7 +119,7 @@ gethand(void)
 	for (;;) {
 		msg("left hand or right hand? ");
 		if ((c = readchar()) == ESCAPE)  {
-			game().turn.after = FALSE;
+			game().turn.after = false;
 			return std::nullopt;
 		}
 		game().message.end = 0;
@@ -138,7 +138,7 @@ gethand(void)
 int
 ring_eat(Hand hand)
 {
-	if (game().player.rings[hand] == NULL)
+	if (game().player.rings[hand] == nullptr)
 		return 0;
 	switch (game().player.rings[hand]->which<Ring>()) {
 	case Ring::Regeneration:

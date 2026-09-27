@@ -52,6 +52,8 @@ TARGET_COMPILE_OPTIONS(rogue_game PUBLIC "-iquote${CMAKE_CURRENT_SOURCE_DIR}/src
 TARGET_COMPILE_OPTIONS(rogue_game PRIVATE ${ROGUE_WARNINGS})
 TARGET_LINK_LIBRARIES(rogue_game PUBLIC ${CURSES_LIBRARIES})
 TARGET_LINK_LIBRARIES(rogue_game PRIVATE nlohmann_json::nlohmann_json)
+# The wide-character curses API, for the only file that includes <curses.h>
+SET_SOURCE_FILES_PROPERTIES(src/ui/curses/CursesTerminal.cpp PROPERTIES COMPILE_DEFINITIONS NCURSES_WIDECHAR=1)
 
 ADD_EXECUTABLE(rogue++ src/app/main.cpp)
 TARGET_COMPILE_OPTIONS(rogue++ PRIVATE ${ROGUE_WARNINGS})

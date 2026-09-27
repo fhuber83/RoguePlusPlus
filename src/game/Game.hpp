@@ -11,8 +11,7 @@ int INDEX(int y, int x);
  *
  * Included by rogue.h after the legacy types it holds (Creature, Item,
  * struct room,
- * ...). Game files include rogue.h, not this header. Member names must not
- * collide with the lowercase macros of extern.h (access, bcopy, setmem, ...).
+ * ...). Game files include rogue.h, not this header.
  */
 
 namespace rogue {
@@ -80,6 +79,16 @@ struct Turn {
 };
 
 /*
+ * What the last trap did, for look() to show (was_trapped). The original
+ * counted it past TRUE: a teleport trap made it TRUE + 1.
+ */
+enum class Trapped : unsigned char {
+	None,
+	Sprung,			/* a trap was sprung */
+	Teleported,		/* a teleport trap moved the rogue */
+};
+
+/*
  * The rogue: the creature itself, what he carries and wears, his condition.
  */
 struct Player {
@@ -100,11 +109,7 @@ struct Player {
 	int quiet = 0;					/* Number of quiet turns */
 	int fung_hit = 0;				/* Number of time fungi has hit */
 	char flytrap_damage[10] = "";	/* f_damage: the venus flytrap's attack, grows per hit */
-	/*
-	 * Not only a flag: a teleport trap makes it TRUE + 1 (be_trapped() in
-	 * move.cpp), which look() in misc.cpp checks for.
-	 */
-	unsigned char was_trapped = FALSE;	/* Was a trap sprung */
+	Trapped was_trapped = Trapped::None;	/* Was a trap sprung (be_trapped(), look()) */
 	coord old_pos = {};				/* oldpos: position before last look() call */
 	struct room *old_room = nullptr;	/* oldrp: roomin(&old_pos) */
 

@@ -24,7 +24,7 @@ whatis(void)
 	}
 
 	for (;;) {
-		if ((obj = get_item("identify", ItemFilter::all())) == NULL) {
+		if ((obj = get_item("identify", ItemFilter::all())) == nullptr) {
 			msg("You must identify something");
 			msg(" ");
 			game().message.end = 0;
@@ -34,15 +34,15 @@ whatis(void)
 
 	switch (obj->o_type) {
 	case ItemKind::Scroll:
-		items.s_know[obj->which<Scroll>()] = TRUE;
+		items.s_know[obj->which<Scroll>()] = true;
 		*items.s_guess[obj->which<Scroll>()] = '\0';
 		break;
 	case ItemKind::Potion:
-		items.p_know[obj->which<Potion>()] = TRUE;
+		items.p_know[obj->which<Potion>()] = true;
 		*items.p_guess[obj->which<Potion>()] = '\0';
 		break;
 	case ItemKind::Stick:
-		items.ws_know[obj->which<Stick>()] = TRUE;
+		items.ws_know[obj->which<Stick>()] = true;
 		obj->o_flags.set(ISKNOW);
 		*items.ws_guess[obj->which<Stick>()] = '\0';
 		break;
@@ -51,7 +51,7 @@ whatis(void)
 		obj->o_flags.set(ISKNOW);
 		break;
 	case ItemKind::Ring:
-		items.r_know[obj->which<Ring>()] = TRUE;
+		items.r_know[obj->which<Ring>()] = true;
 		obj->o_flags.set(ISKNOW);
 		*items.r_guess[obj->which<Ring>()] = '\0';
 		break;
@@ -64,7 +64,7 @@ whatis(void)
 	 */
 	if (obj->o_enemy)
 		obj->o_flags.set(ISREVEAL);
-	msg("{}", inv_name(obj, FALSE));
+	msg("{}", inv_name(obj, false));
 }
 
 
@@ -88,13 +88,13 @@ teleport(void)
 	if (&game().level.rooms[rm] != player.body.t_room)
 	{
 		leave_room(&player.body.t_pos);
-		bcopy(player.body.t_pos,c);
+		player.body.t_pos = c;
 		enter_room(&player.body.t_pos);
 	}
 	else
 	{
-		bcopy(player.body.t_pos,c);
-		look(TRUE);
+		player.body.t_pos = c;
+		look(true);
 	}
 	display().draw_tile(player.body.t_pos, PLAYER);
 	/*
@@ -107,7 +107,7 @@ teleport(void)
 	}
 	player.no_move = 0;
 	game().turn.count = 0;
-	game().turn.running = FALSE;
+	game().turn.running = false;
 	flush_type();
 	/*
 	 * Teleportation can be a confusing experience

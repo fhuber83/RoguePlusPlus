@@ -32,7 +32,7 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 	 * Find the monster we want to fight
 	 */
 	if ((tp = moat(mp->y, mp->x)) == 0)
-		return FALSE;
+		return false;
 	/*
 	 * Since we are fighting, things are not quiet so no healing takes
 	 * place.  Cancel any command counts so player can recover.
@@ -45,20 +45,20 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 	if (tp->t_type == 'X' && tp->t_disguise != 'X' && !player.body.t_flags.test(ISBLIND)) {
 		mn = tp->t_disguise = 'X';
 		if (thrown)
-			return FALSE;
+			return false;
 		msg("wait! That's a Xeroc!");
 	}
 	mname = monsters[mn-'A'].m_name;
 	if (player.body.t_flags.test(ISBLIND))
 		mname = it;
 	if (roll_em(&player.body, tp, weap, thrown)||(weap && weap->o_type == ItemKind::Potion)) {
-		bool did_huh = FALSE;
+		bool did_huh = false;
 
 		if (thrown)
 			thunk(weap, mname, "hits", "hit");
 		else
-			hit(NULL, mname);
-		// original missed NULL check for weap
+			hit(nullptr, mname);
+		// original missed null check for weap
 		if (weap && weap->o_type == ItemKind::Potion) {
 			th_effect(weap, tp);
 			if (!thrown) {
@@ -68,28 +68,28 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 					player.body.t_pack.remove(weap);
 					discard(weap);
 				}
-				player.weapon = NULL;
+				player.weapon = nullptr;
 			}
 		}
 		if (player.body.t_flags.test(CANHUH)) {
-			did_huh = TRUE;
+			did_huh = true;
 			tp->t_flags.set(ISHUH);
 			player.body.t_flags.unset(CANHUH);
 			msg("your hands stop glowing red");
 		}
 		if (tp->t_stats.s_hpt <= 0)
-			killed(tp, TRUE);
+			killed(tp, true);
 		else if (did_huh && !player.body.t_flags.test(ISBLIND))
 			msg("the {} appears confused", mname);
-		return TRUE;
+		return true;
 	}
 	if (thrown)
 		thunk(weap, mname, "misses", "missed");
 	else
-		miss(NULL, mname);
+		miss(nullptr, mname);
 	if (tp->t_type == 'S' && rnd(100) > 25)
 		slime_split(tp);
-	return FALSE;
+	return false;
 }
 
 /*
@@ -106,15 +106,15 @@ attack(Creature *mp)
 	 * Since this is an attack, stop running and any healing that was
 	 * going on at the time.
 	 */
-	game().turn.running = FALSE;
+	game().turn.running = false;
 	game().turn.count = player.quiet = 0;
 	if (mp->t_type == 'X' && !player.body.t_flags.test(ISBLIND))
 		mp->t_disguise = 'X';
 	mname = monsters[mp->t_type-'A'].m_name;
 	if (player.body.t_flags.test(ISBLIND))
 		mname = it;
-	if (roll_em(mp, &player.body, NULL, FALSE)) {
-		hit(mname, NULL);
+	if (roll_em(mp, &player.body, nullptr, false)) {
+		hit(mname, nullptr);
 		if (player.body.t_stats.s_hpt <= 0)
 			death(mp->t_type);	/* Bye bye life ... */
 		if (!mp->t_flags.test(ISCANC))
@@ -125,7 +125,7 @@ attack(Creature *mp)
 			 * If a rust monster hits, you lose armor, unless
 			 * that armor is leather or there is a magic ring
 			 */
-			if (player.armor != NULL && player.armor->o_ac < 9
+			if (player.armor != nullptr && player.armor->o_ac < 9
 			  && player.armor->which<ArmorType>() != ArmorType::Leather)
 			{
 				if (player.wears(Ring::MaintainArmor))
@@ -216,7 +216,7 @@ attack(Creature *mp)
 			player.purse -= gold_calc() + gold_calc() + gold_calc() + gold_calc();
 			if (player.purse < 0)
 			player.purse = 0;
-			remove_monster(&mp->t_pos, mp, FALSE);
+			remove_monster(&mp->t_pos, mp, false);
 			if (player.purse != lastpurse)
 			msg("your purse feels lighter");
 		}
@@ -231,15 +231,15 @@ attack(Creature *mp)
 			 * Nymph's steal a magic item, look through the pack
 			 * and pick out one we like.
 			 */
-			steal = NULL;
-			for (nobj = 0, obj = player.body.t_pack.first(); obj != NULL; obj = player.body.t_pack.after(obj))
+			steal = nullptr;
+			for (nobj = 0, obj = player.body.t_pack.first(); obj != nullptr; obj = player.body.t_pack.after(obj))
 			if (obj != player.armor && obj != player.weapon
 				&& obj != player.rings[Hand::Left] && obj != player.rings[Hand::Right]
 				&& is_magic(obj) && rnd(++nobj) == 0)
 				steal = obj;
-			if (steal != NULL)
+			if (steal != nullptr)
 			{
-				remove_monster(&mp->t_pos, mp, FALSE);
+				remove_monster(&mp->t_pos, mp, false);
 				player.in_pack--;
 				if (steal->o_count > 1 && steal->o_group == 0)
 				{
@@ -247,13 +247,13 @@ attack(Creature *mp)
 
 					oc = steal->o_count--;
 					steal->o_count = 1;
-					msg(she_stole, inv_name(steal, TRUE));
+					msg(she_stole, inv_name(steal, true));
 					steal->o_count = oc;
 				}
 				else
 				{
 					// inv_name() must run before discard() frees steal
-					std::string name = inv_name(steal, TRUE);
+					std::string name = inv_name(steal, true);
 					player.body.t_pack.remove(steal);
 					discard(steal);
 					msg(she_stole, name);
@@ -273,7 +273,7 @@ attack(Creature *mp)
 		if (player.body.t_stats.s_hpt <= 0)
 		death(mp->t_type);	/* Bye bye life ... */
 	}
-	miss(mname, NULL);
+	miss(mname, nullptr);
 	}
 	flush_type();
 	game().turn.count = 0;
@@ -330,13 +330,13 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 	struct stats *att, *def;
 	const char *cp;
 	int def_arm;
-	bool did_hit = FALSE;
+	bool did_hit = false;
 	int hplus;
 	int dplus;
 	int damage;
 	att = &thatt->t_stats;
 	def = &thdef->t_stats;
-	if (weap == NULL)
+	if (weap == nullptr)
 	{
 		cp = att->s_dmg;
 		dplus = 0;
@@ -366,7 +366,7 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 				hplus += player.rings[Hand::Right]->o_ac;
 		}
 		cp = weap->o_damage;
-		if (hurl && weap->o_flags.test(ISMISL) && player.weapon != NULL &&
+		if (hurl && weap->o_flags.test(ISMISL) && player.weapon != nullptr &&
 			  launched_by(player.weapon->which<WeaponType>()) == weap->o_launch)
 		{
 			cp = weap->o_hurldmg;
@@ -385,10 +385,10 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 		}
 	}
 
-	// New NULL check to prevent segfault on parsing
-	if (cp == NULL)
+	// New null check to prevent segfault on parsing
+	if (cp == nullptr)
 	{
-		return FALSE;
+		return false;
 	}
 
 	/*
@@ -400,7 +400,7 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 	def_arm = def->s_arm;
 	if (def == &player.body.t_stats)
 	{
-		if (player.armor != NULL)
+		if (player.armor != nullptr)
 			def_arm = player.armor->o_ac;
 		if (player.wears(Hand::Left, Ring::Protection))
 			def_arm -= player.rings[Hand::Left]->o_ac;
@@ -421,7 +421,7 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 				  */
 						damage = (damage+1) / 2;
 			def->s_hpt -= std::max(0, damage);
-			did_hit = TRUE;
+			did_hit = true;
 		}
 	}
 	return did_hit;
@@ -456,7 +456,7 @@ hit(const char *er, const char *ee)
 {
 	const char *s = "";
 
-	addmsg("{}", prname(er, TRUE));
+	addmsg("{}", prname(er, true));
 	switch (game().options.brief() ? 1 : rnd(4))
 	{
 		case 0: s = " scored an excellent hit on "; break;
@@ -465,7 +465,7 @@ hit(const char *er, const char *ee)
 		case 3: s = (er == 0 ? " swing and hit " : " swings and hits ");
 		break;
 	}
-	msg("{}{}",s,prname(ee, FALSE));
+	msg("{}{}",s,prname(ee, false));
 }
 
 /*
@@ -478,7 +478,7 @@ miss(const char *er, const char *ee)
 	const char *s = "";
 
 
-	addmsg("{}", prname(er, TRUE));
+	addmsg("{}", prname(er, true));
 	switch (game().options.brief() ? 1 : rnd(4))
 	{
 		case 0: s = (er == 0 ? " swing and miss" : " swings and misses"); break;
@@ -487,7 +487,7 @@ miss(const char *er, const char *ee)
 		case 3: s = (er == 0 ? " don't hit" : " doesn't hit");
 		break;
 	}
-	msg("{} {}",s,prname(ee, FALSE));
+	msg("{} {}",s,prname(ee, false));
 }
 
 /*
@@ -615,16 +615,16 @@ remove_monster(coord *mp, Creature *tp, bool waskill)
 	Item *obj, *nexti;
 	TileStyle style;
 
-	if (tp == NULL)
+	if (tp == nullptr)
 		return;
 
-	for (obj = tp->t_pack.first(); obj != NULL; obj = nexti)
+	for (obj = tp->t_pack.first(); obj != nullptr; obj = nexti)
 	{
 		nexti = tp->t_pack.after(obj);
-		bcopy(obj->o_pos,tp->t_pos);
+		obj->o_pos = tp->t_pos;
 		tp->t_pack.remove(obj);
 		if (waskill)
-			fall(obj, FALSE);
+			fall(obj, false);
 		else
 			discard(obj);
 	}
@@ -655,11 +655,11 @@ is_magic(Item *obj)
 	case ItemKind::Stick:
 	case ItemKind::Ring:
 	case ItemKind::Amulet:
-		return TRUE;
+		return true;
 	default:	// the other kinds of item: nothing
 		break;
 	}
-	return FALSE;
+	return false;
 }
 
 /*
@@ -684,7 +684,7 @@ killed(Creature *tp, bool pr)
 	case 'L':;
 		Item *gold;
 
-		if ((gold = new_item()) == NULL)
+		if ((gold = new_item()) == nullptr)
 			return;
 		gold->o_type = ItemKind::Gold;
 		gold->gold_value() = gold_calc();
@@ -696,7 +696,7 @@ killed(Creature *tp, bool pr)
 	/*
 	 * Get rid of the monster.
 	 */
-	remove_monster(&tp->t_pos, tp, TRUE);
+	remove_monster(&tp->t_pos, tp, true);
 	if (pr)
 	{
 	addmsg("you have defeated ");

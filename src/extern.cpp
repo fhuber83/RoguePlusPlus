@@ -21,7 +21,7 @@ KindTable<WeaponType, const char *, kind_count<WeaponType> + 1> w_names = {	/* N
 	"crossbow",
 	"crossbow bolt",
 	"spear",
-	NULL				/* fake entry for dragon's breath, set by fire_bolt() */
+	nullptr				/* fake entry for dragon's breath, set by fire_bolt() */
 };
 const KindTable<ArmorType, const char *> a_names = {		/* Names of armor types */
 	"leather armor",
@@ -261,11 +261,11 @@ const char *he_man[] = {
 	"Bug Chaser"
 };
 
-/* bool askme = TRUE; */			/* Ask about unidentified things */
-/* bool fight_flush = TRUE;	*/	/* True if toilet input */
-/* bool jump = FALSE;	*/		/* Show running as series of jumps */
-/* bool passgo = TRUE;	*/		/* Follow passages */
-/* bool slow_invent = FALSE; */		/* Inventory one line at a time */
+/* bool askme = true; */			/* Ask about unidentified things */
+/* bool fight_flush = true;	*/	/* True if toilet input */
+/* bool jump = false;	*/		/* Show running as series of jumps */
+/* bool passgo = true;	*/		/* Follow passages */
+/* bool slow_invent = false; */		/* Inventory one line at a time */
 /* char *release;	*/			/* Release number of rogue */
 /* WINDOW *hw;				 Used as a scratch window */
 

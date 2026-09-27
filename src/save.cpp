@@ -40,7 +40,7 @@ save_game()
 {
 	char file[MAXSTR];
 
-	game().turn.after = FALSE;
+	game().turn.after = false;
 	msg("save file ({})? ", game().options.save_file);
 	if (input().read_line(file, sizeof file - 1) == ESCAPE) {
 		msg("");

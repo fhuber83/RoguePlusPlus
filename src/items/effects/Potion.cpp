@@ -11,11 +11,11 @@ quaff(void)
 {
 	Item *obj;
 	Creature *th;
-	bool discardit = FALSE;
+	bool discardit = false;
 	rogue::Player &player = game().player;
 	rogue::Items &items = game().items;
 
-	if ((obj = get_item("quaff", ItemKind::Potion)) == NULL)
+	if ((obj = get_item("quaff", ItemKind::Potion)) == nullptr)
 		return;
 	/*
 	 * Make certain that it is somethings that we want to drink
@@ -26,7 +26,7 @@ quaff(void)
 		return;
 	}
 	if (obj == player.weapon)
-		player.weapon = NULL;
+		player.weapon = nullptr;
 
 	/*
 	 * Calculate the effect it has on the poor guy.
@@ -34,7 +34,7 @@ quaff(void)
 	switch (obj->which<Potion>())
 	{
 	case Potion::Confusion:
-		items.p_know[Potion::Confusion] = TRUE;
+		items.p_know[Potion::Confusion] = true;
 		if (!player.body.t_flags.test(ISHUH))
 			{
 			if (player.body.t_flags.test(ISHUH))
@@ -49,7 +49,7 @@ quaff(void)
 		{
 		constexpr const char *sick = "you feel {} sick.";
 
-		items.p_know[Potion::Poison] = TRUE;
+		items.p_know[Potion::Poison] = true;
 		if (!player.wears(Ring::SustainStrength))
 		{
 			chg_str(-(rnd(3)+1));
@@ -60,14 +60,14 @@ quaff(void)
 		}
 		break;
 	case Potion::Healing:
-		items.p_know[Potion::Healing] = TRUE;
+		items.p_know[Potion::Healing] = true;
 		if ((player.body.t_stats.s_hpt += roll(player.body.t_stats.s_lvl, 4)) > player.body.t_stats.s_maxhp)
 			player.body.t_stats.s_hpt = ++player.body.t_stats.s_maxhp;
 		sight();
 		msg("you begin to feel better");
 		break;
 	case Potion::GainStrength:
-		items.p_know[Potion::GainStrength] = TRUE;
+		items.p_know[Potion::GainStrength] = true;
 		chg_str(1);
 		msg("you feel stronger. What bulging muscles!");
 		break;
@@ -78,9 +78,9 @@ quaff(void)
 				noterse(" for a moment"));
 		else
 		{
-			if (turn_see(FALSE))
+			if (turn_see(false))
 			{
-				items.p_know[Potion::MonsterDetection] = TRUE;
+				items.p_know[Potion::MonsterDetection] = true;
 			}
 			msg("");
 		}
@@ -96,25 +96,25 @@ quaff(void)
 			Item *tp;
 			bool show;
 
-			show = FALSE;
-			for (tp = game().level.objects.first(); tp != NULL; tp = game().level.objects.after(tp))
+			show = false;
+			for (tp = game().level.objects.first(); tp != nullptr; tp = game().level.objects.after(tp))
 			{
 				if (is_magic(tp))
 				{
-					show = TRUE;
+					show = true;
 					display().draw_tile(tp->o_pos, goodch(tp));
-					items.p_know[Potion::MagicDetection] = TRUE;
+					items.p_know[Potion::MagicDetection] = true;
 				}
 			}
-			for (th = game().level.monsters.first(); th != NULL; th = game().level.monsters.after(th))
+			for (th = game().level.monsters.first(); th != nullptr; th = game().level.monsters.after(th))
 			{
-				for (tp = th->t_pack.first(); tp != NULL; tp = th->t_pack.after(tp))
+				for (tp = th->t_pack.first(); tp != nullptr; tp = th->t_pack.after(tp))
 				{
 					if (is_magic(tp))
 					{
-						show = TRUE;
+						show = true;
 						display().draw_tile(th->t_pos, MAGIC);
-						items.p_know[Potion::MagicDetection] = TRUE;
+						items.p_know[Potion::MagicDetection] = true;
 					}
 				}
 			}
@@ -128,7 +128,7 @@ quaff(void)
 				noterse(", then it passes"));
 		break;
 	case Potion::Paralysis:
-		items.p_know[Potion::Paralysis] = TRUE;
+		items.p_know[Potion::Paralysis] = true;
 		player.no_command = hold_time();
 		player.body.t_flags.unset(ISRUN);
 		msg("you can't move");
@@ -136,19 +136,19 @@ quaff(void)
 	case Potion::SeeInvisible:
 		if (!player.body.t_flags.test(CANSEE)) {
 			fuse(Event::Unsee, see_duration());
-			look(FALSE);
+			look(false);
 			invis_on();
 		}
 		sight();
 		msg("this potion tastes like {} juice", game().options.fruit);
 		break;
 	case Potion::RaiseLevel:
-		items.p_know[Potion::RaiseLevel] = TRUE;
+		items.p_know[Potion::RaiseLevel] = true;
 		msg("you suddenly feel much more skillful");
 		raise_level();
 		break;
 	case Potion::ExtraHealing:
-		items.p_know[Potion::ExtraHealing] = TRUE;
+		items.p_know[Potion::ExtraHealing] = true;
 		if ((player.body.t_stats.s_hpt += roll(player.body.t_stats.s_lvl, 8)) > player.body.t_stats.s_maxhp)
 		{
 			if (player.body.t_stats.s_hpt > player.body.t_stats.s_maxhp + player.body.t_stats.s_lvl + 1)
@@ -159,8 +159,8 @@ quaff(void)
 		msg("you begin to feel much better");
 		break;
 	case Potion::Haste:
-		items.p_know[Potion::Haste] = TRUE;
-		if (add_haste(TRUE))
+		items.p_know[Potion::Haste] = true;
+		if (add_haste(true))
 			msg("you feel yourself moving much faster");
 		break;
 	case Potion::RestoreStrength:
@@ -178,12 +178,12 @@ quaff(void)
 			noterse("hey, this tastes great.  It makes "));
 		break;
 	case Potion::Blindness:
-		items.p_know[Potion::Blindness] = TRUE;
+		items.p_know[Potion::Blindness] = true;
 		if (!player.body.t_flags.test(ISBLIND))
 		{
 			player.body.t_flags.set(ISBLIND);
 			fuse(Event::Sight, see_duration());
-			look(FALSE);
+			look(false);
 		}
 		msg("a cloak of darkness falls around you");
 		break;
@@ -204,7 +204,7 @@ quaff(void)
 	else
 	{
 		player.body.t_pack.remove(obj);
-		discardit = TRUE;
+		discardit = true;
 	}
 
 	call_it(items.p_know[obj->which<Potion>()], &items.p_guess[obj->which<Potion>()]);
@@ -223,7 +223,7 @@ invis_on(void)
 	Creature *th;
 
 	game().player.body.t_flags.set(CANSEE);
-	for (th = game().level.monsters.first(); th != NULL; th = game().level.monsters.after(th))
+	for (th = game().level.monsters.first(); th != nullptr; th = game().level.monsters.after(th))
 	if (th->t_flags.test(ISINVIS) && see_monst(th))
 	{
 		display().draw_tile(th->t_pos, th->t_disguise);
@@ -241,8 +241,8 @@ turn_see(bool turn_off)
 	bool can_see, add_new;
 	unsigned char was_there = ' ';
 
-	add_new = FALSE;
-	for (mp = game().level.monsters.first(); mp != NULL; mp = game().level.monsters.after(mp)) {
+	add_new = false;
+	for (mp = game().level.monsters.first(); mp != nullptr; mp = game().level.monsters.after(mp)) {
 		can_see = (see_monst(mp) || (was_there = display().tile_at(mp->t_pos)) == mp->t_type);
 		if (turn_off) {
 			if (!see_monst(mp) && mp->t_oldch != '@')
@@ -250,7 +250,7 @@ turn_see(bool turn_off)
 		} else {
 			if (!can_see) {
 				mp->t_oldch = was_there;
-				add_new = TRUE;
+				add_new = true;
 			}
 			display().draw_tile(mp->t_pos, mp->t_type,
 					can_see ? TileStyle::Normal : TileStyle::Inverse);

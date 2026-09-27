@@ -29,7 +29,7 @@ tr_name(Trap type)
 		return "a poison dart trap";
 	}
 	msg("wierd trap: {:d}", std::to_underlying(type));
-	return NULL;
+	return nullptr;
 }
 
 /*
@@ -132,10 +132,10 @@ look(bool wakeup)
 					continue;
 			}
 
-			if ((tp = moat(y,x)) != NULL) {
+			if ((tp = moat(y,x)) != nullptr) {
 				if (player.body.t_flags.test(SEEMONST) && tp->t_flags.test(ISINVIS)) {
 					if (turn.door_stop && !turn.first_move)
-						turn.running = FALSE;
+						turn.running = false;
 					continue;
 				} else {
 					if (wakeup)
@@ -194,7 +194,7 @@ look(bool wakeup)
 				switch (ch) {
 				case DOOR:
 					if (x == player.body.t_pos.x || y == player.body.t_pos.y)
-						turn.running = FALSE;
+						turn.running = false;
 					break;
 				case PASSAGE:
 					if (x == player.body.t_pos.x || y == player.body.t_pos.y)
@@ -210,23 +210,20 @@ look(bool wakeup)
 				case ' ':
 					break;
 				default:
-					turn.running = FALSE;
+					turn.running = false;
 					break;
 				}
 			}
 		}
 	if (turn.door_stop && !turn.first_move && passcount > 1)
-		turn.running = FALSE;
-	/*
-	 * was_trapped > TRUE: the rogue was teleported by a trap (be_trapped())
-	 */
+		turn.running = false;
 	display().draw_tile(player.body.t_pos, PLAYER,
-			(level.flags_at(player.body.t_pos).test(MapFlag::Passage) || (player.was_trapped > TRUE)
+			(level.flags_at(player.body.t_pos).test(MapFlag::Passage) || (player.was_trapped == rogue::Trapped::Teleported)
 					|| level.flags_at(player.body.t_pos).test(MapFlag::Maze))
 				? TileStyle::Inverse : TileStyle::Normal);
-	if (player.was_trapped) {
+	if (player.was_trapped != rogue::Trapped::None) {
 		display().bell();
-		player.was_trapped = FALSE;
+		player.was_trapped = rogue::Trapped::None;
 	}
 }
 
@@ -239,10 +236,10 @@ find_obj(int y, int x)
 {
 	Item *op;
 
-	for (op = game().level.objects.first(); op != NULL; op = game().level.objects.after(op))
+	for (op = game().level.objects.first(); op != nullptr; op = game().level.objects.after(op))
 		if (op->o_pos.y == y && op->o_pos.x == x)
 			return op;
-	return NULL;
+	return nullptr;
 }
 
 /*
@@ -256,7 +253,7 @@ eat()
 	Food which;
 	rogue::Player &player = game().player;
 
-	if ((obj = get_item("eat", ItemKind::Food)) == NULL)
+	if ((obj = get_item("eat", ItemKind::Food)) == nullptr)
 		return;
 	if (obj->o_type != ItemKind::Food)
 	{
@@ -270,7 +267,7 @@ eat()
 	 */
 	which = obj->which<Food>();
 	if (obj == player.weapon)
-		player.weapon = NULL;
+		player.weapon = nullptr;
 	if (--obj->o_count < 1)
 	{
 		player.body.t_pack.remove(obj);
@@ -349,14 +346,14 @@ add_haste(bool potion)
 		extinguish(Event::NoHaste);
 		player.body.t_flags.unset(ISHASTE);
 		msg("you faint from exhaustion");
-		return FALSE;
+		return false;
 	}
 	else
 	{
 		player.body.t_flags.set(ISHASTE);
 		if (potion)
 			fuse(Event::NoHaste, rnd(4)+10);
-		return TRUE;
+		return true;
 	}
 }
 
@@ -369,7 +366,7 @@ aggravate()
 {
 	Creature *mi;
 
-	for (mi = game().level.monsters.first(); mi != NULL; mi = game().level.monsters.after(mi))
+	for (mi = game().level.monsters.first(); mi != nullptr; mi = game().level.monsters.after(mi))
 		start_run(&mi->t_pos);
 }
 
@@ -401,14 +398,14 @@ vowelstr(const char *str)
 bool
 is_current(Item *obj)
 {
-	if (obj == NULL)
-		return FALSE;
+	if (obj == nullptr)
+		return false;
 	if (obj == game().player.armor || obj == game().player.weapon || obj == game().player.rings[Hand::Left]
 		|| obj == game().player.rings[Hand::Right]) {
 		msg("That's already in use");
-		return TRUE;
+		return true;
 	}
-	return FALSE;
+	return false;
 }
 
 /*
@@ -423,12 +420,12 @@ get_dir()
 	rogue::Turn &turn = game().turn;
 
 	if (turn.again)
-		return TRUE;
+		return true;
 	msg("which direction? ");
 	do
 		if ((ch = readchar()) == ESCAPE) {
 			msg("");
-			return FALSE;
+			return false;
 		}
 	while (find_dir(ch, &turn.delta) == 0);
 	msg("");
@@ -437,7 +434,7 @@ get_dir()
 			turn.delta.y = rnd(3) - 1;
 			turn.delta.x = rnd(3) - 1;
 		} while (turn.delta.y == 0 && turn.delta.x == 0);
-	return TRUE;
+	return true;
 }
 
 bool
@@ -445,7 +442,7 @@ find_dir(unsigned char ch, coord *cp)
 {
 	bool gotit;
 
-	gotit = TRUE;
+	gotit = true;
 	switch (ch) {
 		case 'h': case'H': cp->y =  0; cp->x = -1; break;
 		case 'j': case'J': cp->y =  1; cp->x =  0; break;
@@ -455,7 +452,7 @@ find_dir(unsigned char ch, coord *cp)
 		case 'u': case'U': cp->y = -1; cp->x =  1; break;
 		case 'b': case'B': cp->y =  1; cp->x = -1; break;
 		case 'n': case'N': cp->y =  1; cp->x =  1; break;
-		default: gotit = FALSE;
+		default: gotit = false;
 	}
 	return gotit;
 }
@@ -519,7 +516,7 @@ step_ok(unsigned char ch)
 	case URWALL:
 	case LLWALL:
 	case LRWALL:
-		return FALSE;
+		return false;
 	default:
 		return (!is_monster(ch));
 	}
@@ -616,7 +613,7 @@ help(struct h_list *helpscr)
 	display().open_page();
 	while (*helpscr->h_desc && answer != ESCAPE)
 	{
-		isfull = FALSE;
+		isfull = false;
 		if ((hcount % (game().options.terse?23:46)) == 0)
 			display().clear_page();
 		/*
@@ -627,7 +624,7 @@ help(struct h_list *helpscr)
 		{
 			hrow = hcount % 23;
 			if (hrow == 22)
-				isfull = TRUE;
+				isfull = true;
 		}
 		else
 		{
@@ -635,7 +632,7 @@ help(struct h_list *helpscr)
 			if (hcount % 2)
 				hcol = 40;
 			if (hrow == 22 && hcol == 40)
-				 isfull = TRUE;
+				 isfull = true;
 		}
 
 		display().write_at(hrow, hcol, (const char *)helpscr->h_chstr);
@@ -687,7 +684,7 @@ offmap(int y, int x)
 unsigned char
 winat(int y, int x)
 {
-	return(moat(y,x) != NULL ? moat(y,x)->t_disguise : game().level.at(y, x));
+	return(moat(y,x) != nullptr ? moat(y,x)->t_disguise : game().level.at(y, x));
 }
 
 /*
@@ -726,14 +723,14 @@ search()
 							break;
 						level.at(y, x) = DOOR;
 						fp->set(MapFlag::Real);
-						game().turn.count = game().turn.running = FALSE;
+						game().turn.count = game().turn.running = false;
 						break;
 					case FLOOR:
 						if (rnd(2) != 0)
 							break;
 						level.at(y, x) = TRAP;
 						fp->set(MapFlag::Real);
-						game().turn.count = game().turn.running = FALSE;
+						game().turn.count = game().turn.running = false;
 						msg("you found {}", tr_name(fp->trap()));
 						break;
 				}
@@ -798,7 +795,7 @@ call()
 	/*
 	 * Make certain that it is somethings that we want to wear
 	 */
-	if (obj == NULL)
+	if (obj == nullptr)
 		return;
 	switch (obj->o_type)
 	{

@@ -20,8 +20,8 @@ static Trap	be_trapped(coord *tc);
 void
 do_run(unsigned char ch)
 {
-	game().turn.running = TRUE;
-	game().turn.after = FALSE;
+	game().turn.running = true;
+	game().turn.after = false;
 	game().turn.run_dir = ch;
 }
 
@@ -40,9 +40,9 @@ do_move(int dy, int dx)
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 
-	turn.first_move = FALSE;
+	turn.first_move = false;
 	if (turn.bailout) {
-		turn.bailout = FALSE;
+		turn.bailout = false;
 		msg("the crack widens ... ");
 		descend("");
 		return ;
@@ -71,8 +71,8 @@ over:
 	if (offmap(nh.y, nh.x))
 		goto hit_bound;
 	if (!diag_ok(&player.body.t_pos, &nh)) {
-		turn.after = FALSE;
-		turn.running = FALSE;
+		turn.after = false;
+		turn.running = false;
 		return;
 	}
 	/*
@@ -80,7 +80,7 @@ over:
 	 * not get you anywhere stop running
 	 */
 	if (turn.running && (player.body.t_pos == nh))
-		turn.after = turn.running = FALSE;
+		turn.after = turn.running = false;
 	fl = level.flags_at(nh);
 	ch = winat(nh.y, nh.x);
 	/*
@@ -88,7 +88,7 @@ over:
 	 * to run until he enters the room all the way
 	 */
 	if ((level.at(player.body.t_pos) == DOOR) && (ch == FLOOR))
-		turn.running = FALSE;
+		turn.running = false;
 	if (!fl.test(MapFlag::Real) && ch == FLOOR) {
 		level.at(nh) = ch = TRAP;
 		level.flags_at(nh).set(MapFlag::Real);
@@ -151,10 +151,10 @@ hit_bound:
 				goto over;
 			}
 		}
-		turn.after = turn.running = FALSE;
+		turn.after = turn.running = false;
 		break;
 	case DOOR:
-		turn.running = FALSE;
+		turn.running = false;
 		if (level.flags_at(player.body.t_pos).test(MapFlag::Passage))
 			enter_room(&nh);
 		goto move_stuff;
@@ -170,11 +170,11 @@ hit_bound:
 			be_trapped(&player.body.t_pos);
 		goto move_stuff;
 	default:
-		turn.running = FALSE;
+		turn.running = false;
 		if (is_monster(ch) || moat(nh.y, nh.x))
-			fight(&nh, ch, player.weapon, FALSE);
+			fight(&nh, ch, player.weapon, false);
 		else {
-			turn.running = FALSE;
+			turn.running = false;
 			if (ch != STAIRS)
 				turn.take = ch;
 move_stuff:
@@ -184,7 +184,7 @@ move_stuff:
 				leave_room(&nh);
 			if (fl.test(MapFlag::Maze) && !level.flags_at(player.old_pos).test(MapFlag::Maze))
 				enter_room(&nh);
-			bcopy(player.body.t_pos,nh);
+			player.body.t_pos = nh;
 		}
 		break;
 	}
@@ -209,7 +209,7 @@ door_open(struct room *rp)
 				/* move(j, k); Why do this,?????? */
 				if (is_monster(ch)) {
 					tp = wake_monster(j, k);
-					if (tp == NULL)
+					if (tp == nullptr)
 					{
 						continue;
 					}
@@ -232,11 +232,11 @@ be_trapped(coord *tc)
 	int index;
 	rogue::Player &player = game().player;
 
-	game().turn.count = game().turn.running = FALSE;
+	game().turn.count = game().turn.running = false;
 	index = INDEX(tc->y, tc->x);
 	game().level.map[index] = TRAP;
 	tr = game().level.flags[index].trap();
-	player.was_trapped = TRUE;
+	player.was_trapped = rogue::Trapped::Sprung;
 	switch (tr) {
 	case Trap::Door:
 		descend("you fell into a trap!");
@@ -263,13 +263,13 @@ be_trapped(coord *tc)
 		else {
 			Item *arrow;
 
-			if ((arrow = new_item()) != NULL) {
+			if ((arrow = new_item()) != nullptr) {
 				arrow->o_type = ItemKind::Weapon;
 				arrow->set_which(WeaponType::Arrow);
 				init_weapon(arrow, WeaponType::Arrow);
 				arrow->o_count = 1;
-				bcopy(arrow->o_pos,player.body.t_pos);
-				fall(arrow, FALSE);
+				arrow->o_pos = player.body.t_pos;
+				fall(arrow, false);
 			}
 			msg("an arrow shoots past you");
 		}
@@ -278,10 +278,7 @@ be_trapped(coord *tc)
 		teleport();
 		display().draw_tile(*tc, TRAP); /* since the hero's leaving, look()
 						won't put it on for us */
-		/*
-		 * TRUE + 1 tells look() that this was a teleport trap
-		 */
-		player.was_trapped++;
+		player.was_trapped = rogue::Trapped::Teleported;
 		break;
 	case Trap::Dart:
 		if (swing(player.body.t_stats.s_lvl+1, player.body.t_stats.s_arm, 1)) {
@@ -345,16 +342,16 @@ rndmove(Creature *who, coord *newmv)
 		if (!step_ok(ch))
 			goto bad;
 		if (ch == SCROLL) {
-			for (obj = game().level.objects.first(); obj != NULL; obj = game().level.objects.after(obj))
+			for (obj = game().level.objects.first(); obj != nullptr; obj = game().level.objects.after(obj))
 				if (y == obj->o_pos.y && x == obj->o_pos.x)
 					break;
-			if (obj != NULL && obj->which<Scroll>() == Scroll::ScareMonster)
+			if (obj != nullptr && obj->which<Scroll>() == Scroll::ScareMonster)
 				goto bad;
 		}
 	}
 	return;
 
 bad:
-	bcopy((*newmv),who->t_pos);
+	(*newmv) = who->t_pos;
 	return;
 }

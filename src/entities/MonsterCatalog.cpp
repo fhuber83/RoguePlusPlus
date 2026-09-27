@@ -70,7 +70,7 @@ new_monster(Creature *tp, unsigned char type, coord *cp)
 	game().level.monsters.push_front(tp);
 	tp->t_type = type;
 	tp->t_disguise = type;
-	bcopy(tp->t_pos,*cp);
+	tp->t_pos = *cp;
 	tp->t_oldch = '@';
 	tp->t_room = roomin(cp);
 	mp = &monsters[tp->t_type-'A'];
@@ -81,7 +81,7 @@ new_monster(Creature *tp, unsigned char type, coord *cp)
 	tp->t_stats.s_str = mp->m_stats.s_str;
 	tp->t_stats.s_exp = mp->m_stats.s_exp + lev_add * 10 + exp_add(tp);
 	tp->t_flags = mp->m_flags;
-	tp->t_turn = TRUE;
+	tp->t_turn = true;
 	tp->t_pack.clear();
 	if (game().player.wears(Ring::AggravateMonster))
 		start_run(cp);
@@ -154,7 +154,7 @@ wanderer(void)
 	/*
 	 * can we allocate a new monster
 	 */
-	if ((tp = new_creature()) == NULL)
+	if ((tp = new_creature()) == nullptr)
 		return;
 	do {
 		i = rnd_room();
@@ -162,7 +162,7 @@ wanderer(void)
 			continue;
 		rnd_pos(rp, &cp);
 	} while (!(rp != player.body.t_room && step_ok(winat(cp.y, cp.x))));
-	new_monster(tp, randmonster(TRUE), &cp);
+	new_monster(tp, randmonster(true), &cp);
 	start_run(&tp->t_pos);
 }
 
@@ -179,7 +179,7 @@ wake_monster(int y, int x)
 	int dst;
 	rogue::Player &player = game().player;
 
-	if ((tp = moat(y, x)) == NULL)
+	if ((tp = moat(y, x)) == nullptr)
 		return tp;
 	ch = tp->t_type;
 	/*
@@ -196,7 +196,7 @@ wake_monster(int y, int x)
 	{
 		rp = player.body.t_room;
 		dst = DISTANCE(y, x, player.body.t_pos.y, player.body.t_pos.x);
-		if ((rp != NULL && !rp->r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
+		if ((rp != nullptr && !rp->r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
 			tp->t_flags.set(ISFOUND);
 			if (!save(SaveThrow::Magic)) {
 				if (player.body.t_flags.test(ISHUH))
@@ -257,7 +257,7 @@ pick_mons(void)
 /*
  * moat(x,y)
  *    returns pointer to monster at coordinate
- *	  if no monster there return NULL
+ *	  if no monster there return null
  */
 
 Creature *
@@ -265,10 +265,10 @@ moat(int my, int mx)
 {
 	Creature *tp;
 
-	for (tp = game().level.monsters.first(); tp != NULL; tp = game().level.monsters.after(tp))
+	for (tp = game().level.monsters.first(); tp != nullptr; tp = game().level.monsters.after(tp))
 		if (tp->t_pos.x == mx  && tp->t_pos.y == my)
 			return(tp);
-	return(NULL);
+	return(nullptr);
 }
 
 }  // namespace rogue::entities

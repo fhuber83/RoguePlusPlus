@@ -16,8 +16,7 @@
 #include "ui/ScreenDisplay.hpp"
 #include "glyphs.h"
 
-#define NCURSES_WIDECHAR 1
-#include <curses.h>
+#include <curses.h>	// with NCURSES_WIDECHAR=1 (CMakeLists.txt)
 
 namespace rogue::ui {
 
@@ -416,8 +415,8 @@ CursesTerminal::open(int rows, int cols)
 	start_color();
 	cbreak();  // do not buffer input until ENTER
 	noecho();  // do not echo typed characters
-	nodelay(stdscr, FALSE); // use a blocking getch() (already the default)
-	keypad(stdscr, TRUE);   // enable directional arrows, keypad, home, etc
+	nodelay(stdscr, false); // use a blocking getch() (already the default)
+	keypad(stdscr, true);   // enable directional arrows, keypad, home, etc
 
 	resize_screen();
 	define_keys();
@@ -504,7 +503,7 @@ CursesTerminal::read_key(int timeout_ms)
 
 	wtimeout(stdscr, timeout_ms);
 	ret = wget_wch(stdscr, &wch);
-	nodelay(stdscr, FALSE);
+	nodelay(stdscr, false);
 
 	// we're only interested in ASCII input and special keys
 	if (ret == ERR || (ret == OK && wch > 0x7f))

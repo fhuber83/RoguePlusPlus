@@ -15,7 +15,7 @@ void
 init_player()
 {
 	Item *obj;
-	bcopy(game().player.body.t_stats,game().player.max_stats);
+	game().player.body.t_stats = game().player.max_stats;
 	game().player.food_left = hunger_time();
 	/*
 	 * initialize things
@@ -33,7 +33,7 @@ init_player()
 	obj->o_flags.set(ISKNOW);
 	obj->o_count = 1;
 	obj->o_group = 0;
-	add_pack(obj, TRUE);
+	add_pack(obj, true);
 	game().player.weapon = obj;
 	/*
 	 * Now a +1 bow
@@ -47,7 +47,7 @@ init_player()
 	obj->o_count = 1;
 	obj->o_group = 0;
 	obj->o_flags.set(ISKNOW);
-	add_pack(obj, TRUE);
+	add_pack(obj, true);
 	/*
 	 * Now some arrows
 	 */
@@ -58,7 +58,7 @@ init_player()
 	obj->o_count = rnd(15) + 25;
 	obj->o_hplus = obj->o_dplus = 0;
 	obj->o_flags.set(ISKNOW);
-	add_pack(obj, TRUE);
+	add_pack(obj, true);
 	/*
 	 * And his suit of armor
 	 */
@@ -70,7 +70,7 @@ init_player()
 	obj->o_count = 1;
 	obj->o_group = 0;
 	game().player.armor = obj;
-	add_pack(obj, TRUE);
+	add_pack(obj, true);
 	/*
 	 * Give him some food too
 	 */
@@ -79,7 +79,7 @@ init_player()
 	obj->o_count = 1;
 	obj->set_which(Food::Ration);
 	obj->o_group = 0;
-	add_pack(obj, TRUE);
+	add_pack(obj, true);
 }
 
 /*
@@ -262,15 +262,15 @@ init_colors()
 	rogue::Items &items = game().items;
 
 	for (i = 0; i < NCOLORS; i++)
-		used[i] = FALSE;
+		used[i] = false;
 	for (Potion p : kinds<Potion>())
 	{
 		do
 			j = rnd(NCOLORS);
 		while (used[j]);
-		used[j] = TRUE;
+		used[j] = true;
 		items.p_colors[p] = rainbow[j];
-		items.p_know[p] = FALSE;
+		items.p_know[p] = false;
 		items.p_guess[p] = (char *)&items.guesses[items.iguess++];
 	}
 	accumulate_odds(items.p_magic);
@@ -308,7 +308,7 @@ init_names()
 		name += ' ';
 	}
 	name.pop_back();
-	items.s_know[s] = FALSE;
+	items.s_know[s] = false;
 	items.s_guess[s] = (char *)&items.guesses[items.iguess++];
 	strcpy(items.s_names[s].storage, name.c_str());
 	}
@@ -353,15 +353,15 @@ init_stones()
 	rogue::Items &items = game().items;
 
 	for (i = 0; i < NSTONES; i++)
-		used[i] = FALSE;
+		used[i] = false;
 	for (Ring r : kinds<Ring>())
 	{
 		do
 			j = rnd(NSTONES);
 		while (used[j]);
-		used[j] = TRUE;
+		used[j] = true;
 		items.r_stones[r] = stones[j].st_name;
-		items.r_know[r] = FALSE;
+		items.r_know[r] = false;
 		items.r_guess[r] = (char *)&items.guesses[items.iguess++];
 		items.r_magic[r].mi_worth += stones[j].st_value;
 	}
@@ -381,9 +381,9 @@ init_materials()
 	rogue::Items &items = game().items;
 
 	for (i = 0; i < NWOOD; i++)
-		woodused[i] = FALSE;
+		woodused[i] = false;
 	for (i = 0; i < NMETAL; i++)
-		metused[i] = FALSE;
+		metused[i] = false;
 	for (Stick w : kinds<Stick>())
 	{
 		for (;;)
@@ -394,7 +394,7 @@ init_materials()
 				{
 					items.ws_type[w] = "wand";
 					str = metal[j];
-					metused[j] = TRUE;
+					metused[j] = true;
 					break;
 				}
 			}
@@ -405,12 +405,12 @@ init_materials()
 				{
 					items.ws_type[w] = "staff";
 					str = wood[j];
-					woodused[j] = TRUE;
+					woodused[j] = true;
 					break;
 				}
 			}
 		items.ws_made[w] = str;
-		items.ws_know[w] = FALSE;
+		items.ws_know[w] = false;
 		items.ws_guess[w] = (char *)&items.guesses[items.iguess++];
 	}
 	accumulate_odds(items.ws_magic);

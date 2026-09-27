@@ -4,14 +4,22 @@
  * rogue.h	1.4 (AI Design) 12/14/84
  */
 
-/*
- * Modern headers first: extern.h and this file define macros such as max(),
- * pack and when that would break standard library headers.
- */
+#pragma once
+
+#include <cctype>
+#include <cerrno>
+#include <clocale>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
 #include <format>
 #include <optional>
 #include <string>
 #include <vector>
+
+#include <unistd.h>
 
 #include "core/Config.hpp"
 #include "core/Coord.hpp"
@@ -27,8 +35,8 @@
 #include "world/MapFlags.hpp"
 #include "world/Trap.hpp"
 
-#include "extern.h"
 #include "glyphs.h"
+#include "mach_dep.h"
 
 /*
  * Screen size. Fixed at 80x25 (see rogue::ui::Screen); these used to be the
@@ -376,7 +384,7 @@ extern const long e_levels[20];
 
 /*
  * Function types
- * mach_dep.cpp functions are declared in extern.h
+ * mach_dep.cpp functions are declared in mach_dep.h
  */
 
 // init.cpp
@@ -450,7 +458,7 @@ list_free(rogue::List<T> &list)
 {
 	T *item;
 
-	while ((item = list.first()) != NULL)
+	while ((item = list.first()) != nullptr)
 	{
 	list.remove(item);
 	discard(item);

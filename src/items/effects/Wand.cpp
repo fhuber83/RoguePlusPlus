@@ -46,7 +46,7 @@ do_zap()
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
 
-	if ((obj = get_item("zap with", ItemKind::Stick)) == NULL)
+	if ((obj = get_item("zap with", ItemKind::Stick)) == nullptr)
 		return;
 	which_one = obj->which<Stick>();
 	if (obj->o_type != ItemKind::Stick)
@@ -56,7 +56,7 @@ do_zap()
 		else
 		{
 			msg("you can't zap with that!");
-			turn.after = FALSE;
+			turn.after = false;
 			return;
 		}
 	}
@@ -75,7 +75,7 @@ do_zap()
 			msg("you feel a warm glow around you");
 		else
 		{
-			game().items.ws_know[Stick::Light] = TRUE;
+			game().items.ws_know[Stick::Light] = true;
 			if (player.body.t_room->r_flags.test(RoomFlag::Gone))
 				msg("the corridor glows and then fades");
 			else
@@ -121,7 +121,7 @@ do_zap()
 			y += turn.delta.y;
 			x += turn.delta.x;
 		}
-		if ((tp = moat(y, x)) != NULL)
+		if ((tp = moat(y, x)) != nullptr)
 		{
 			unsigned char omonst;
 
@@ -134,7 +134,7 @@ do_zap()
 				{
 					msg("the {} vanishes in a puff of smoke",
 						monsters[monster-'A'].m_name);
-					killed(tp, FALSE);
+					killed(tp, false);
 				}
 				else
 					msg("you hear a maniacal chuckle in the distance.");
@@ -201,16 +201,16 @@ do_zap()
 	{
 		Item bolt;
 
-		game().items.ws_know[Stick::MagicMissile] = TRUE;
+		game().items.ws_know[Stick::MagicMissile] = true;
 		bolt.o_type = ItemKind::Missile;
 		bolt.o_hurldmg = "1d8";
 		bolt.o_hplus = 1000;
 		bolt.o_dplus = 1;
 		bolt.o_flags = ISMISL;
-		if (player.weapon != NULL)
+		if (player.weapon != nullptr)
 			bolt.o_launch = launched_by(player.weapon->which<WeaponType>());
 		do_motion(&bolt, turn.delta.y, turn.delta.x);
-		if ((tp = moat(bolt.o_pos.y, bolt.o_pos.x)) != NULL && !save_throw(SaveThrow::Magic, tp))
+		if ((tp = moat(bolt.o_pos.y, bolt.o_pos.x)) != nullptr && !save_throw(SaveThrow::Magic, tp))
 			hit_monster(bolt.o_pos.y, bolt.o_pos.x, &bolt);
 		else
 		msg("the missle vanishes with a puff of smoke");
@@ -219,7 +219,7 @@ do_zap()
 	case Stick::Striking:
 		turn.delta.y += player.body.t_pos.y;
 		turn.delta.x += player.body.t_pos.x;
-		if ((tp = moat(turn.delta.y, turn.delta.x)) != NULL)
+		if ((tp = moat(turn.delta.y, turn.delta.x)) != nullptr)
 		{
 			if (rnd(20) == 0)
 			{
@@ -231,7 +231,7 @@ do_zap()
 				obj->o_damage = "2d8";
 				obj->o_dplus = 4;
 			}
-			fight(&turn.delta, tp->t_type, obj, FALSE);
+			fight(&turn.delta, tp->t_type, obj, false);
 		}
 		break;
 	case Stick::HasteMonster:
@@ -243,7 +243,7 @@ do_zap()
 			y += turn.delta.y;
 			x += turn.delta.x;
 		}
-		if ((tp = moat(y, x)) != NULL)
+		if ((tp = moat(y, x)) != nullptr)
 		{
 			if (which_one == Stick::HasteMonster)
 			{
@@ -258,7 +258,7 @@ do_zap()
 					tp->t_flags.unset(ISHASTE);
 				else
 					tp->t_flags.set(ISSLOW);
-				tp->t_turn = TRUE;
+				tp->t_turn = true;
 			}
 			turn.delta.y = y;
 			turn.delta.x = x;
@@ -275,7 +275,7 @@ do_zap()
 		else
 			name = "ice";
 		fire_bolt(&player.body.t_pos, &turn.delta, name);
-		game().items.ws_know[which_one] = TRUE;
+		game().items.ws_know[which_one] = true;
 		break;
 	default:
 		if constexpr (rogue::config::debug_checks)
@@ -309,10 +309,10 @@ drain()
 	if (level.at(player.body.t_pos) == DOOR)
 		corp = &level.passages[level.flags_at(player.body.t_pos).passage()];
 	else
-		corp = NULL;
+		corp = nullptr;
 	inpass = player.body.t_room->r_flags.test(RoomFlag::Gone);
 	dp = drainee;
-	for (mp = level.monsters.first(); mp != NULL; mp = level.monsters.after(mp))
+	for (mp = level.monsters.first(); mp != nullptr; mp = level.monsters.after(mp))
 		if (mp->t_room == player.body.t_room || mp->t_room == corp ||
 			(inpass && level.at(mp->t_pos) == DOOR &&
 			&level.passages[level.flags_at(mp->t_pos).passage()] == player.body.t_room))
@@ -322,7 +322,7 @@ drain()
 		msg("you have a tingling feeling");
 		return;
 	}
-	*dp = NULL;
+	*dp = nullptr;
 	player.body.t_stats.s_hpt /= 2;
 	cnt = player.body.t_stats.s_hpt / cnt + 1;
 	/*
@@ -373,8 +373,8 @@ fire_bolt(coord *start, coord *dir, const char *name)
 	}
 	pos = *start;
 	hit_hero = (start != &player.body.t_pos);
-	used = FALSE;
-	changed = FALSE;
+	used = false;
+	changed = false;
 	for (i = 0; i < BOLT_LENGTH && !used; i++) {
 		pos.y += dir->y;
 		pos.x += dir->x;
@@ -393,21 +393,21 @@ fire_bolt(coord *start, coord *dir, const char *name)
 		case ' ':
 			if (!changed)
 				hit_hero = !hit_hero;
-			changed = FALSE;
+			changed = false;
 			dir->y = -dir->y;
 			dir->x = -dir->x;
 			i--;
 			msg("the {} bounces", name);
 			break;
 		default:
-			if (!hit_hero && (tp = moat(pos.y, pos.x)) != NULL) {
-				hit_hero = TRUE;
+			if (!hit_hero && (tp = moat(pos.y, pos.x)) != nullptr) {
+				hit_hero = true;
 				changed = !changed;
 				if (tp->t_oldch != '@')
 					tp->t_oldch = game().level.at(pos);
 				if (!save_throw(SaveThrow::Magic, tp) || is_frost) {
 					bolt.o_pos = pos;
-					used = TRUE;
+					used = true;
 					if (tp->t_type == 'D' && strcmp(name, "flame") == 0)
 						msg("the flame bounces off the dragon");
 					else {
@@ -422,7 +422,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 						name, monsters[ch-'A'].m_name);
 				}
 			} else if (hit_hero && (pos == player.body.t_pos)) {
-				hit_hero = FALSE;
+				hit_hero = false;
 				changed = !changed;
 				if (!save(SaveThrow::Magic)) {
 					if (is_frost) {
@@ -436,7 +436,7 @@ fire_bolt(coord *start, coord *dir, const char *name)
 						else
 							death(moat(start->y, start->x)->t_type);
 					}
-					used = TRUE;
+					used = true;
 					if (!is_frost)
 						msg("you are hit by the {}", name);
 				} else

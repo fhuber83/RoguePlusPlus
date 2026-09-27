@@ -5,8 +5,8 @@ namespace rogue {
 /*
  * A position or offset on the 80x25 screen grid (x = column, y = row).
  *
- * Kept a trivial aggregate: legacy code copies creatures and items, which
- * hold coords, with bcopy() (memmove).
+ * Kept a trivial aggregate, so the creatures and items that hold coords stay
+ * trivially copyable.
  */
 struct Coord {
 	int x;

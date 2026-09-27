@@ -28,7 +28,7 @@ enum class Event : unsigned char {
 	Unsee,			/* unsee(): see invisible wears off */
 	Sight,			/* sight(): blindness wears off */
 	NoHaste,		/* nohaste(): haste self wears off */
-	TurnSeeOff,		/* turn_see(TRUE): monster detection wears off */
+	TurnSeeOff,		/* turn_see(true): monster detection wears off */
 };
 
 class Scheduler {

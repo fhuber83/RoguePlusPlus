@@ -256,7 +256,7 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
 - **9.4 No port annotations.** The `//@` and `/*@` markers (and the `@` notes inside original comments) that set the Linux port's and this project's changes apart from the 1980s code are gone; after phases 4–9 unmarked code is no longer original anyway. Notes that only told history ("moved from rogue.h", "was prbuf", "renamed from remove()"), commented-out code (the old `<ctype.h>` functions, `wait_for()`'s line-ending loop, the "not found" declarations in `rogue.h`) and asides went. Explanations stayed as plain comments, and the stale ones were fixed: `extern.h`'s header, `init_ds()` in `Game.hpp`, the source file names over `rogue.h`'s prototypes, `was_trapped`, `chase()`'s return value. `extern.h` no longer includes `<stdbool.h>`, which does nothing in C++.
   - Verified: the 42 objects of `rogue_game` have identical `.text` to the 9.3 commit's; `.rodata` differs only in `SaveGame.cpp` and `HighScores.cpp`, by the nlohmann/json path in its assertions (the two builds fetched it into different directories). `rogue_tests` passes (173 tests).
 
-## Constants instead of macros (in progress)
+## Constants instead of macros (done)
 
 - **10.1 No wizard mode.** Wizard mode was the original's debug mode: `C` created any item, teleporting didn't confuse, `debug()` messages showed, and the game didn't score. Nothing could turn it on, since nothing ever set `wizard`, and `WIZARD` builds did not compile. The 16 `#ifdef WIZARD` blocks are gone, with `create_obj()`, `get_num()`, `show_map()`, `add_pass()`, `Command::CreateObject` and the `wizard` flag. `whatis()` and `teleport()` stay in `wizard.cpp`, because the game uses them. `debug()` was a macro for "a message if the rogue is a wizard"; it is a function now, used only by the `DEBUG` checks, which makes a `DEBUG` build get as far as one old error (see the notes). `noscore` keeps its other use, `-s`.
   - Verified: the 42 objects of `rogue_game` are identical to `main`'s, `.text`, `.rodata` and `.data`, since all of the deleted code was inside blocks that no build compiled. `rogue_tests` passes (173 tests).
@@ -284,6 +284,12 @@ Goal: turn the PC Rogue 1.48 C sources into modern, modular C++23. Gameplay, rul
   - Only `extern.h`'s lowercase macros are left (`access`, `bcopy`, `setmem`, `stpchr`, `msleep`, `isascii`), so members may now be named `pack`, `hero` or `max`. 13 `#define`s are left: 12 in `extern.h`, and the curses backend's `NCURSES_WIDECHAR`.
   - Verified: each commit builds without warnings and passes `rogue_tests` (180 tests). At `-O2` 22 of the 42 objects are identical to 10.6's: `game()` is not inlined, and a function now calls it once where each macro called it again. Replays of the whole of 10.7 against 10.6, with the ASan/UBSan build: 12 seeds × 600 keys and 8 dives × 300 keys, all 40 final screens identical, no sanitizer reports, the differing frames level wipes and the screens after a death; the resume check matches for the 7 games alive at the save.
   - `tools/replay/make-trees.sh` patches out `d_level()`'s stairs test by its text, which 10.7 changed; it now knows both forms, so a tree from before 10.7 still gets patched.
+- **10.8 No `extern.h`.** `extern.h` is deleted, and no source file defines a macro any more: `grep -rn '#define' src` finds nothing.
+  - `TRUE`/`FALSE` are `true`/`false` and `NULL` is `nullptr` (in comments too, lowercased), about 440 uses. `bcopy(a, b)` is `a = b` (it was `memmove` of `sizeof a`: one call resolved to libc's own `bcopy()` once the macro was gone, which the compiler rejected). `setmem` is `std::ranges::fill`, `msleep(55)` is `std::this_thread::sleep_for`, and `strings.cpp` has its own `is_ascii()` for `isascii`. `access`, `stpchr` and `UNUSED` were no longer used, nor were `newmem()` and `swap_bits()`, which are gone.
+  - `was_trapped`, which a teleport trap counted up to `TRUE + 1`, is `enum class Trapped` (`None`, `Sprung`, `Teleported`), with the same numbers in the save file; loading rejects any other.
+  - `mach_dep.cpp`'s declarations and `fatal()` are in `mach_dep.h`. `rogue.h` includes the C++ versions of the standard headers `extern.h` included, and has `#pragma once` (it had no guard).
+  - Feature macros: `NCURSES_WIDECHAR=1` is a compile definition of `ui/curses/CursesTerminal.cpp` in `CMakeLists.txt`. `_XOPEN_SOURCE` went without a replacement: g++ predefines `_GNU_SOURCE`, with which glibc's `<features.h>` sets `_XOPEN_SOURCE` itself (to 800 with this glibc), so `extern.h`'s 700 never took effect; the unchanged objects below show it.
+  - Verified: `rogue_tests` passes (180 tests). At `-O2` 33 of the 42 objects are identical to 10.7's, among them the curses backend, `strings.cpp` and every file where only `TRUE`/`FALSE`/`NULL` changed. The others differ where expected: assignment for `bcopy`, `sleep_for`, the deleted functions, the save code and `look()`'s test for a teleport trap. Replays against 10.7, with the ASan/UBSan build: 12 seeds × 600 keys and 8 dives × 300 keys, all 40 final screens identical, no sanitizer reports; the differing frames are the clock (several games ran across a minute change) and level wipes. The resume check matches for the 7 games alive at the save.
 
 ## Where things stand after phase 9
 
@@ -383,7 +389,7 @@ Each phase is a series of small commits that each build and play.
    - *Done:* `msg()`/`addmsg()` and the other printf-style functions take `std::format` strings (9.3).
    - *Done:* remove `when`/`otherwise`/`on()`/`until()` and `shint`/`byte` (9.1). `ce()` went in phase 3.
    - *Done:* remove the `//@` port annotations (9.4).
-10. **Constants instead of macros.** When done, `grep -rn '#define' src` finds nothing. The feature macros that system headers need (`_XOPEN_SOURCE`, `NCURSES_WIDECHAR`) become compile definitions of the curses backend in CMake. Steps:
+10. **Constants instead of macros** (*done*, see above). When done, `grep -rn '#define' src` finds nothing. The feature macros that system headers need (`_XOPEN_SOURCE`, `NCURSES_WIDECHAR`) become compile definitions of the curses backend in CMake. Steps:
     1. *Done:* wizard mode is deleted (see above).
     2. *Done:* build switches are constants in `core/Config.hpp`, and the `DEBUG` checks compile in every build (see above).
     3. *Done:* numbers, glyphs and `ctrl()` are constants (see above).
@@ -391,8 +397,8 @@ Each phase is a series of small commits that each build and play.
     5. *Done:* map flags are `MapFlags`, with accessors for the passage number and the trap kind (see above).
     6. *Done:* function-like macros are functions (see above).
     7. *Done:* the game-state macros are gone (see above).
-    8. `extern.h` goes: `true`/`false`, `nullptr`, plain assignment for `bcopy`, `std::fill` for `setmem`, `std::filesystem::exists` for `access`, `std::this_thread::sleep_for` for `msleep`, `[[maybe_unused]]` for `UNUSED`, and `#pragma once` for include guards. `was_trapped`, which counts past `TRUE`, becomes an enum (`none`, `sprung`, `teleported`). `mach_dep.cpp`'s declarations move to their own header, and `newmem()` goes.
-    - Verified mostly by object identity at `-O2` (constants get storage without optimisation, see 10.3): 10.3 and 10.6 should leave the optimised code unchanged. 10.2 changes it only in debug builds, 10.4 and 10.5 change it slightly where parameters, loops and bit updates are typed (see above). Every step also gets replays.
+    8. *Done:* `extern.h` is gone (see above).
+    - Verified by object identity at `-O2` where the code stayed the same (10.1 to 10.3), and by the replays, which every step got: from 10.4 on the typed parameters and loops, the functions that call `game()` once and the removed `memmove`s change the instructions but not the game. See each step above.
 11. **Strings instead of `char *`.** When done, no `char *`, no `char` array and no `str*`/`mem*` call is left outside the curses backend. Steps:
     1. Constant tables of text (monster names, weapon and armor names, ranks, help, potion colours, stones, woods, metals, syllables) become `constexpr` arrays of `std::string_view`.
     2. Text the game changes becomes `std::string`: `Options` (and `persistence/OptionsFile`), `MessageLine`, the guesses and scroll titles (`struct array` goes), `o_text`, and the macro's `typeahead`. `Input::read_line()` returns a `std::string`.
@@ -413,7 +419,7 @@ Each phase is a series of small commits that each build and play.
     4. `init.cpp` and `extern.cpp`: each table goes to the module that uses it (monsters to `entities/MonsterCatalog`, items to `items/ItemCatalog`, help to `game/Help`, `e_levels` to `rules/`), and `init_*()` to `game/NewGame`.
     5. `rip.cpp` to `game/Endings`, `save.cpp` to `persistence/`, `playit.cpp` to `game/GameLoop`, `list.cpp` to `game/Pool`, `wizard.cpp` (`whatis()` and `teleport()`, which are not wizard commands) to `items/` and `world/`, `mach_dep.cpp` to `platform/` (time, sleep, exit) and `ui/` (key translation, title).
     6. `rules/Daemons` is split into `rules/Hunger`, `rules/Regeneration` and the wandering monsters, as the target architecture says.
-14. **The legacy headers go.** `rogue.h`'s 100 `using rogue::...` lines go, and every file includes the module headers it uses. `glyphs.h` becomes `core/Glyphs.hpp`. `rogue.h`, `extern.h` and `glyphs.h` are deleted, and `CLAUDE.md` loses the include-order and macro-name rules. A headless `Display`/`Input` pair drives scripted play tests, which the target architecture mentions and the replays have stood in for.
+14. **The legacy headers go.** `rogue.h`'s 100 `using rogue::...` lines go, and every file includes the module headers it uses. `glyphs.h` becomes `core/Glyphs.hpp`, and `mach_dep.h` goes with `mach_dep.cpp` (13.5). `rogue.h` and `glyphs.h` are deleted (`extern.h` went in 10.8), and `CLAUDE.md` loses the include-order rule. A headless `Display`/`Input` pair drives scripted play tests, which the target architecture mentions and the replays have stood in for.
 
 Open questions, to settle before the phase that needs them:
 

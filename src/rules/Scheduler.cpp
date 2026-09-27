@@ -133,7 +133,7 @@ fire(Event event)
 		case Event::Unsee: unsee(); break;
 		case Event::Sight: sight(); break;
 		case Event::NoHaste: nohaste(); break;
-		case Event::TurnSeeOff: turn_see(TRUE); break;
+		case Event::TurnSeeOff: turn_see(true); break;
 		case Event::None: break;
 	}
 }

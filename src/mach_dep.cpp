@@ -7,18 +7,6 @@
 #include	"rogue.h"
 
 
-unsigned char swap_bits(
-	unsigned char data,
-	unsigned i,      // positions of bit sequences to swap
-	unsigned j,
-	unsigned length  // number of consecutive bits in each sequence
-)
-{
-	unsigned char x = ((data >> i) ^ (data >> j)) & ((1U << length) - 1);
-	return data ^ ((x << i) | (x << j));
-}
-
-
 /*
  * setup:
  *	Get starting setup for all games
@@ -26,7 +14,7 @@ unsigned char swap_bits(
 void
 setup()
 {
-	game().options.terse = FALSE;
+	game().options.terse = false;
 	game().options.expert = game().options.terse;
 }
 
@@ -49,7 +37,7 @@ start_terminal()
 long
 md_time(void)
 {
-	return (long)time(NULL);
+	return (long)time(nullptr);
 }
 
 
@@ -61,7 +49,7 @@ TM *
 md_localtime()
 {
 	static TM md_local;
-	time_t secs = time(NULL);
+	time_t secs = time(nullptr);
 	struct tm *local = localtime(&secs);
 	md_local.second = local->tm_sec;
 	md_local.minute = local->tm_min;
@@ -81,7 +69,7 @@ void
 md_nanosleep(long nanoseconds)
 {
 	struct timespec ts = {0, nanoseconds};
-	nanosleep(&ts, NULL);
+	nanosleep(&ts, nullptr);
 }
 
 
@@ -191,22 +179,8 @@ readchar()
 
 
 /*
- * newmem:
- *	Allocate memory, or exit. Callers free() what they get.
- */
-char *
-newmem(unsigned int nbytes)
-{
-	void * newaddr;
-	if ((newaddr = (char *) malloc(nbytes)) == NULL)
-		fatal("No Memory");
-	return (char *)newaddr;
-}
-
-
-/*
  *  fatal: exit with a message
- *  fatal() formats it with std::format (extern.h) and calls this, which
+ *  fatal() formats it with std::format (mach_dep.h) and calls this, which
  *  prints it after closing the terminal
  */
 void

@@ -92,7 +92,7 @@ unsee(void)
 {
 	Creature *th;
 
-	for (th = game().level.monsters.first(); th != NULL; th = game().level.monsters.after(th))
+	for (th = game().level.monsters.first(); th != nullptr; th = game().level.monsters.after(th))
 		if (th->t_flags.test(ISINVIS) && see_monst(th) && th->t_oldch != '@')
 			display().draw_tile(th->t_pos, th->t_oldch);
 	game().player.body.t_flags.unset(CANSEE);
@@ -149,7 +149,7 @@ stomach(void)
 			return;
 		player.no_command += rnd(8) + 4;
 		player.body.t_flags.unset(ISRUN);
-		game().turn.running = FALSE;
+		game().turn.running = false;
 		game().turn.count = 0;
 		player.hungry_state = 3;
 		msg("{}you faint from lack of food",noterse("you feel very weak. "));

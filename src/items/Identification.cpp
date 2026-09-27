@@ -201,8 +201,8 @@ static
 void
 print_disc(ItemKind type)
 {
-	bool *know = NULL;
-	char **guess = NULL;
+	bool *know = nullptr;
+	char **guess = nullptr;
 	int i, maxnum = 0, num_found;
 	static Item obj;
 	static short order[std::max({kind_count<Scroll>, kind_count<Potion>, kind_count<Ring>, kind_count<Stick>})];
@@ -242,7 +242,7 @@ print_disc(ItemKind type)
 		{
 			obj.o_type = type;
 			obj.o_which = order[i];
-			add_line(nullstr, inv_name(&obj, FALSE).c_str());
+			add_line(nullstr, inv_name(&obj, false).c_str());
 			num_found++;
 		}
 	if (num_found == 0)
@@ -273,7 +273,7 @@ set_order(short *order, int numthings)
 
 /*
  * add_line:
- *	Add a line to the list of discoveries; NULL ends the page
+ *	Add a line to the list of discoveries; null ends the page
  *	(end_line())
  */
 unsigned char
@@ -285,7 +285,7 @@ add_line(const char *use, const char *line)
 		display().open_page();
 		display().clear_page();
 	}
-	if (line_cnt >= LINES - 1 || line == NULL)
+	if (line_cnt >= LINES - 1 || line == nullptr)
 	{
 		if (*use)
 			display().write_at(LINES-1, 0,
@@ -298,7 +298,7 @@ add_line(const char *use, const char *line)
 		display().clear_page();
 		line_cnt = 0;
 	}
-	if (line != NULL && !(line_cnt == 0 && *line == '\0'))
+	if (line != nullptr && !(line_cnt == 0 && *line == '\0'))
 	{
 		coord end;
 
@@ -322,7 +322,7 @@ end_line(const char *use)
 {
 	int retchar;
 
-	retchar = add_line(use, NULL);
+	retchar = add_line(use, nullptr);
 	display().close_page();
 	line_cnt = 0;
 	return(retchar);

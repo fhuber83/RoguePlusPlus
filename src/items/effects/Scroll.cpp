@@ -17,13 +17,13 @@ read_scroll()
 	Item *op;
 	Creature *mo;
 	int index;
-	bool discardit = FALSE;
+	bool discardit = false;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 	rogue::Items &items = game().items;
 
 	obj = get_item("read", ItemKind::Scroll);
-	if (obj == NULL)
+	if (obj == nullptr)
 		return;
 	if (obj->o_type != ItemKind::Scroll){
 		msg("there is nothing on it to read");
@@ -34,7 +34,7 @@ read_scroll()
 	 * Calculate the effect it has on the poor guy.
 	 */
 	if (obj == player.weapon)
-		player.weapon = NULL;
+		player.weapon = nullptr;
 	switch (obj->which<Scroll>()){
 	case Scroll::MonsterConfusion:
 		/*
@@ -44,7 +44,7 @@ read_scroll()
 		msg("your hands begin to glow red");
 		break;
 	case Scroll::EnchantArmor:
-		if (player.armor != NULL) {
+		if (player.armor != nullptr) {
 			player.armor->o_ac--;
 			player.armor->o_flags.unset(ISCURSED);
 			ifterse("your armor glows faintly",
@@ -60,7 +60,7 @@ read_scroll()
 		for (x = player.body.t_pos.x - 3; x <= player.body.t_pos.x + 3; x++)
 			if (x >= 0 && x < COLS)
 				for (y = player.body.t_pos.y - 3; y <= player.body.t_pos.y + 3; y++)
-					if ((y > 0 && y < maxrow) && ((mo=moat(y, x)) != NULL)) {
+					if ((y > 0 && y < maxrow) && ((mo=moat(y, x)) != nullptr)) {
 						mo->t_flags.unset(ISRUN);
 						mo->t_flags.set(ISHELD);
 					}
@@ -69,7 +69,7 @@ read_scroll()
 		/*
 		 * Scroll which makes you fall asleep
 		 */
-		items.s_know[Scroll::Sleep] = TRUE;
+		items.s_know[Scroll::Sleep] = true;
 		player.no_command += rnd(sleep_time()) + 4;
 		player.body.t_flags.unset(ISRUN);
 		msg("you fall asleep");
@@ -78,8 +78,8 @@ read_scroll()
 		{
 		coord mp;
 
-		if (plop_monster(player.body.t_pos.y, player.body.t_pos.x, &mp) && (mo=new_creature()) != NULL)
-			new_monster(mo, randmonster(FALSE), &mp);
+		if (plop_monster(player.body.t_pos.y, player.body.t_pos.x, &mp) && (mo=new_creature()) != nullptr)
+			new_monster(mo, randmonster(false), &mp);
 		else
 			ifterse("you hear a faint cry of anguish",
 				"you hear a faint cry of anguish in the distance");
@@ -89,7 +89,7 @@ read_scroll()
 		/*
 		 * Identify, let the rogue figure something out
 		 */
-		items.s_know[Scroll::Identify] = TRUE;
+		items.s_know[Scroll::Identify] = true;
 		msg("this scroll is an identify scroll");
 		if (! strcmp(game().options.menu,"on") || !strcmp(game().options.menu,"sel"))
 			more(" More ");
@@ -99,7 +99,7 @@ read_scroll()
 		/*
 		 * Scroll of magic mapping.
 		 */
-		items.s_know[Scroll::MagicMapping] = TRUE;
+		items.s_know[Scroll::MagicMapping] = true;
 		msg("oh, now this scroll has a map on it");
 		/*
 		 * Take all the things we want to keep hidden out of the window
@@ -123,7 +123,7 @@ read_scroll()
 				case DOOR:
 				case PASSAGE:
 				case STAIRS:
-					if ((mo = moat(y, x)) != NULL)
+					if ((mo = moat(y, x)) != nullptr)
 						if (mo->t_oldch == ' ')
 							mo->t_oldch = ch;
 					break;
@@ -140,19 +140,19 @@ read_scroll()
 		/*
 		 * Scroll of food detection
 		 */
-		ch = FALSE;
-		for (op = level.objects.first(); op != NULL; op = level.objects.after(op)) {
+		ch = false;
+		for (op = level.objects.first(); op != nullptr; op = level.objects.after(op)) {
 			if (op->o_type == ItemKind::Food) {
-				ch = TRUE;
+				ch = true;
 				display().draw_tile(op->o_pos, FOOD, TileStyle::Inverse);
 			} else /* as a bonus this will detect amulets as well */
 			if (op->o_type == ItemKind::Amulet) {
-				ch = TRUE;
+				ch = true;
 				display().draw_tile(op->o_pos, AMULET, TileStyle::Inverse);
 			}
 		}
 		if (ch) {
-			items.s_know[Scroll::FoodDetection] = TRUE;
+			items.s_know[Scroll::FoodDetection] = true;
 			msg("your nose tingles as you sense food");
 		} else
 			ifterse("you hear a growling noise close by","you hear a growling noise very close to you");
@@ -168,11 +168,11 @@ read_scroll()
 		cur_room = player.body.t_room;
 		teleport();
 		if (cur_room != player.body.t_room)
-			items.s_know[Scroll::Teleportation] = TRUE;
+			items.s_know[Scroll::Teleportation] = true;
 		}
 		break;
 	case Scroll::EnchantWeapon:
-		if (player.weapon == NULL || player.weapon->o_type != ItemKind::Weapon)
+		if (player.weapon == nullptr || player.weapon->o_type != ItemKind::Weapon)
 		msg("you feel a strange sense of loss");
 		else
 		{
@@ -192,13 +192,13 @@ read_scroll()
 			msg(laugh, game().options.brief() ? "" : in_dist);
 		break;
 	case Scroll::RemoveCurse:
-		if (player.armor != NULL)
+		if (player.armor != nullptr)
 			player.armor->o_flags.unset(ISCURSED);
-		if (player.weapon != NULL)
+		if (player.weapon != nullptr)
 			player.weapon->o_flags.unset(ISCURSED);
-		if (player.rings[Hand::Left] != NULL)
+		if (player.rings[Hand::Left] != nullptr)
 			player.rings[Hand::Left]->o_flags.unset(ISCURSED);
-		if (player.rings[Hand::Right] != NULL)
+		if (player.rings[Hand::Right] != nullptr)
 			player.rings[Hand::Right]->o_flags.unset(ISCURSED);
 		ifterse("somebody is watching over you","you feel as if somebody is watching over you");
 		break;
@@ -229,7 +229,7 @@ read_scroll()
 		 *
 		 * If he doesn't have a weapon I get to chortle again!
 		 */
-		if (player.weapon == NULL || player.weapon->o_type != ItemKind::Weapon)
+		if (player.weapon == nullptr || player.weapon->o_type != ItemKind::Weapon)
 			msg(laugh, game().options.brief() ? "" : in_dist);
 		else {
 			/*
@@ -240,7 +240,7 @@ read_scroll()
 				w_names[player.weapon->which<WeaponType>()]);
 				player.body.t_pack.remove(player.weapon);
 				discard(player.weapon);
-				player.weapon = NULL;
+				player.weapon = nullptr;
 			} else {
 				player.weapon->o_enemy = pick_mons();
 				player.weapon->o_hplus++;
@@ -255,7 +255,7 @@ read_scroll()
 						cur_weapon->o_flags.set(ISCURSED);
 						if (!save(SaveThrow::Magic)) {
 							cur_weapon->o_flags.set(ISEGO|ISREVEAL);
-							s_know[Scroll::Vorpalize] = TRUE;
+							s_know[Scroll::Vorpalize] = true;
 							msg("you feel a sudden desire to kill {}s.",
 							monsters[cur_weapon->o_enemy-'A'].m_name);
 						}
@@ -268,7 +268,7 @@ read_scroll()
 		msg("what a puzzling scroll!");
 		return;
 	}
-	look(TRUE);	/* put the result of the scroll on the screen */
+	look(true);	/* put the result of the scroll on the screen */
 	status();
 	/*
 	 * Get rid of the thing
@@ -279,7 +279,7 @@ read_scroll()
 	else
 	{
 	player.body.t_pack.remove(obj);
-	discardit = TRUE;
+	discardit = true;
 	}
 	call_it(items.s_know[obj->which<Scroll>()], &items.s_guess[obj->which<Scroll>()]);
 

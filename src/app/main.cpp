@@ -29,7 +29,7 @@ main(int argc, char **argv)
 	 * "bw", then we force black and white mode.
 	 */
 	if (strncmp(game().options.screen, "bw", 2) == 0)
-		game().options.monochrome = TRUE;
+		game().options.monochrome = true;
 	while (--argc) {
 		curarg = *(++argv);
 		if (*curarg == '-' || *curarg == '/')
@@ -41,7 +41,7 @@ main(int argc, char **argv)
 					 break;
 				case 's': case 'S':
 					start_terminal();
-					game().noscore = TRUE;
+					game().noscore = true;
 					score(0,0,0);
 					fatal("");
 					break;

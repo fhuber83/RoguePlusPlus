@@ -21,7 +21,7 @@ static void	psplat(int y, int x);
 void
 conn(int r1, int r2)
 {
-	struct room *rpf, *rpt = NULL;
+	struct room *rpf, *rpt = nullptr;
 	int rmt, rm;
 	int distance = 0, turn_spot, turn_distance;
 	int direc;
@@ -180,7 +180,7 @@ do_passages()
 	{ { 0, 0, 0, 0, 1, 0, 1, 0, 1 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0 },
 	{ { 0, 0, 0, 0, 0, 1, 0, 1, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0 }
 	};
-	struct rdes *r1, *r2 = NULL;
+	struct rdes *r1, *r2 = nullptr;
 
 	/*
 	 * reinitialize room graph description
@@ -188,8 +188,8 @@ do_passages()
 	for (r1 = rdes; r1 < &rdes[MAXROOMS]; r1++)
 	{
 		for (j = 0; j < MAXROOMS; j++)
-			r1->isconn[j] = FALSE;
-		r1->ingraph = FALSE;
+			r1->isconn[j] = false;
+		r1->ingraph = false;
 	}
 
 	/*
@@ -198,7 +198,7 @@ do_passages()
 	 */
 	roomcount = 1;
 	r1 = &rdes[rnd(MAXROOMS)];
-	r1->ingraph = TRUE;
+	r1->ingraph = true;
 	do
 	{
 		/*
@@ -224,12 +224,12 @@ do_passages()
 		 */
 		else
 		{
-			r2->ingraph = TRUE;
+			r2->ingraph = true;
 			i = r1 - rdes;
 			j = r2 - rdes;
 			conn(i, j);
-			r1->isconn[j] = TRUE;
-			r2->isconn[i] = TRUE;
+			r1->isconn[j] = true;
+			r2->isconn[i] = true;
 			roomcount++;
 		}
 	} while (roomcount < MAXROOMS);
@@ -257,8 +257,8 @@ do_passages()
 			i = r1 - rdes;
 			j = r2 - rdes;
 			conn(i, j);
-			r1->isconn[j] = TRUE;
-			r2->isconn[i] = TRUE;
+			r1->isconn[j] = true;
+			r2->isconn[i] = true;
 		}
 	}
 	passnum();
@@ -303,7 +303,7 @@ passnum()
 	int i;
 
 	pnum = 0;
-	newpnum = FALSE;
+	newpnum = false;
 	for (rp = game().level.passages; rp < &game().level.passages[MAXPASS]; rp++)
 		rp->r_nexits = 0;
 	for (rp = game().level.rooms; rp < &game().level.rooms[MAXROOMS]; rp++)
@@ -332,7 +332,7 @@ numpass(int y, int x)
 		return;
 	if (newpnum) {
 		pnum++;
-		newpnum = FALSE;
+		newpnum = false;
 	}
 	/*
 	 * check to see if it is a door or secret door, i.e., a new exit,

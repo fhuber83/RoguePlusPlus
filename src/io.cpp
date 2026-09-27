@@ -68,7 +68,7 @@ endmsg(void)
 	 * start with a pack addressing character
 	 */
 	if (is_lower(message.text[0]) && message.text[1] != ')')
-		message.text[0] = toupper(message.text[0]);
+		message.text[0] = to_upper(message.text[0]);
 	putmsg(message.text);
 	message.end = message.next_end;
 	message.next_end = 0;

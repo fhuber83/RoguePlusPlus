@@ -24,6 +24,7 @@
 #include <unistd.h>
 
 #include "core/Config.hpp"
+#include "core/Ascii.hpp"
 #include "core/Coord.hpp"
 #include "core/Dice.hpp"
 #include "core/Flags.hpp"
@@ -529,17 +530,15 @@ std::string	killname(unsigned char monst, bool doart);
 void	save_game(void);
 void	restore(const std::string &savefile);
 
-// strings.cpp
-bool	is_alpha(char ch);
-bool	is_upper(char ch);
-bool	is_lower(char ch);
-bool	is_digit(char ch);
-bool	is_space(char ch);
-bool	is_print(char ch);
-char	*stccpy(char *s1, char *s2, int count);
-char	*stpblk(char *str);
-char	*endblk(char *str);
-void	lcase(char *str);
+// ASCII character tests (core/Ascii.hpp)
+using rogue::is_alpha;
+using rogue::is_upper;
+using rogue::is_lower;
+using rogue::is_digit;
+using rogue::is_space;
+using rogue::is_print;
+using rogue::to_upper;
+using rogue::to_lower;
 
 // wizard.cpp
 void	whatis(void);

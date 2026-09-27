@@ -167,7 +167,7 @@ get_prefix()
 			turn.door_stop = true;
 			turn.first_move = true;
 		}
-		retch = toupper(retch);
+		retch = to_upper(retch);
 	}
 	if (!repeatable(command_of(retch)))
 		turn.count = 0;
@@ -208,7 +208,7 @@ execcom()
 			do_move(mv.y, mv.x);
 			break;
 		case Command::Run:
-			do_run(tolower(ch));
+			do_run(to_lower(ch));
 			break;
 		case Command::Throw:
 			if (get_dir())

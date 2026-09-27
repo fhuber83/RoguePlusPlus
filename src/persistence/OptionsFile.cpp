@@ -4,8 +4,6 @@
  */
 
 #include <algorithm>
-#include <cctype>
-#include <cstring>
 #include <fstream>
 #include <iterator>
 #include <optional>
@@ -22,8 +20,7 @@ constexpr char dos_eof = 26;
 
 bool is_blank(char ch)
 {
-	auto c = static_cast<unsigned char>(ch);
-	return c < 128 && std::isspace(c);
+	return is_space(ch);
 }
 
 // The next character of the file, or nothing at its end
@@ -61,7 +58,8 @@ void finish(std::string &s, std::size_t max)
 		s.resize(max);
 	if (is_blank(s.back()))
 		s.pop_back();
-	s.resize(std::strlen(s.c_str()));
+	if (std::size_t nul = s.find('\0'); nul != std::string::npos)
+		s.resize(nul);
 }
 
 }  // namespace
@@ -104,8 +102,7 @@ parse_options(std::string_view text)
 		}
 		finish(setting.label, max_option_label);
 		for (char &c : setting.label)
-			if (c >= 'A' && c <= 'Z')
-				c = c - 'A' + 'a';
+			c = to_lower(c);
 
 		do {
 			auto next = in.next();

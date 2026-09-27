@@ -166,9 +166,9 @@ inv_name(const Item *obj, bool drop)
 		name += " (on right hand)";
 	if (!name.empty()) {
 		if (drop && is_monster(name[0]))
-			name[0] = tolower(name[0]);
+			name[0] = to_lower(name[0]);
 		else if (!drop && is_lower(name[0]))
-			name[0] = toupper(name[0]);
+			name[0] = to_upper(name[0]);
 	}
 	return name;
 }

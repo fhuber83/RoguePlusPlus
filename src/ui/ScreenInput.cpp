@@ -1,7 +1,6 @@
 #include "ui/ScreenInput.hpp"
 
-#include <cctype>
-
+#include "core/Ascii.hpp"
 #include "ui/Terminal.hpp"
 
 namespace rogue::ui {
@@ -58,7 +57,7 @@ std::optional<std::string> ScreenInput::read_line(std::size_t max_length)
 				screen_.bell();
 				break;
 			}
-			if (ch > 0x7f || !std::isprint(ch))
+			if (!is_print(ch))
 				break;
 			screen_.put(static_cast<std::uint8_t>(ch));
 			line += static_cast<char>(ch);

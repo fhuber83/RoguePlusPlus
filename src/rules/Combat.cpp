@@ -443,7 +443,7 @@ prname(Who who, bool upper)
 	else
 		name = std::format("the {}", *who);
 	if (upper && !name.empty())
-		name[0] = toupper(name[0]);
+		name[0] = to_upper(name[0]);
 	return name;
 }
 

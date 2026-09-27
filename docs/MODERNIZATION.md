@@ -420,6 +420,7 @@ Each phase is a series of small commits that each build and play.
     2. *Done:* text the game changes becomes `std::string`: `Options` (and `persistence/OptionsFile`), `MessageLine`, the guesses and scroll titles (`struct array` goes), `o_text`, and the macro's `typeahead`. `Input::read_line()` returns a `std::string`.
     3. Damage becomes `Dice` values, parsed once: an `Attacks` list for `s_dmg`, `o_damage` and `o_hurldmg`. The monster, weapon and player tables parse their strings with a `consteval` parser. The venus flytrap's growing damage becomes a number that makes its `Dice`. The save file keeps writing damage as text, so its format stays.
     4. `strings.cpp` goes: `is_alpha()` and friends become `constexpr` ASCII helpers in `core/`, and `stccpy()`, `stpblk()`, `endblk()` and `lcase()` become `std::string` operations.
+    5. The `const char *` parameters and locals left (about 50 after 11.4: `get_item()`'s purpose, `noterse()`, `tr_name()`, `SaveGame`'s keys and labels, ...) become `std::string_view`, or `std::string` where the text is built. Added after 11.2, which found that no step covered them.
     - Verified like 9.2 (a harness that prints every name and message from both builds), plus replays and the resume check.
 12. **References and handles instead of raw pointers.** When done, `T *` only appears at system APIs and inside `Slots`. Steps:
     1. `Coord` goes by value. Out-parameters (`find_dir()`, `plop_monster()`, `fallpos()`, `rnd_pos()`, ...) return `std::optional<Coord>` instead.

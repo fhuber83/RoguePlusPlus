@@ -71,7 +71,7 @@ enum class LoadResult {
  * load_options:
  *	Read the options file at path into options.
  */
-LoadResult load_options(const char *path, Options &options);
+LoadResult load_options(const std::string &path, Options &options);
 
 }  // namespace persistence
 }  // namespace rogue

@@ -38,25 +38,24 @@ map_view()
 void
 save_game()
 {
-	char file[MAXSTR];
-
 	game().turn.after = false;
 	msg("save file ({})? ", game().options.save_file);
-	if (input().read_line(file, sizeof file - 1) == ESCAPE) {
+	auto file = input().read_line(MAXSTR - 1);
+	if (!file) {
 		msg("");
 		return;
 	}
-	if (*file == '\0')
-		strcpy(file, game().options.save_file);
+	if (file->empty())
+		*file = game().options.save_file;
 	if (auto problems = rogue::pool_problems(game()); !problems.empty()) {
 		msg("can't save: {}", problems.front());
 		return;
 	}
-	if (auto saved = rogue::persistence::write_save(file, game(), map_view()); !saved) {
+	if (auto saved = rogue::persistence::write_save(*file, game(), map_view()); !saved) {
 		msg("can't save: {}", saved.error().detail);
 		return;
 	}
-	fatal("Saved the game in {}\n", file);
+	fatal("Saved the game in {}\n", *file);
 }
 
 /*

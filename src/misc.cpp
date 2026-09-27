@@ -490,12 +490,9 @@ call_it(bool know, char **guess)
 	if (know && **guess)
 		**guess = '\0';
 	else if (!know && **guess == '\0') {
-		char buf[MAXNAME+1];
-
 		msg("{}call it? ",noterse("what do you want to "));
-		input().read_line(buf,MAXNAME);
-		if (*buf != ESCAPE)
-			strcpy(*guess, buf);
+		if (auto name = input().read_line(MAXNAME))
+			strcpy(*guess, name->c_str());
 		msg("");
 	}
 }
@@ -833,12 +830,9 @@ call()
 		return;
 	}
 	msg("Was called \"{}\"", elsewise);
-	char buf[MAXNAME+1];
-
 	msg("what do you want to call it? ");
-	input().read_line(buf,MAXNAME);
-	if (*buf && *buf != ESCAPE)
-		strcpy(guess[obj->o_which], buf);
+	if (auto name = input().read_line(MAXNAME); name && !name->empty())
+		strcpy(guess[obj->o_which], name->c_str());
 	msg("");
 }
 
@@ -848,15 +842,13 @@ call()
 void
 do_macro(char *buf, int sz)
 {
-	std::vector<char> line(sz);
-	char *cp = line.data();
-
 	msg("F9 was {}, enter new macro: ",buf);
-	if (input().read_line(line.data(),sz-1) != ESCAPE)
-		do {
-			if (*cp != ctrl('F'))
-				*buf++ = *cp;
-		} while (*cp++) ;
+	if (auto line = input().read_line(sz-1)) {
+		for (char c : *line)
+			if (c != ctrl('F'))
+				*buf++ = c;
+		*buf = '\0';
+	}
 	msg("");
 	flush_type();
 }

@@ -12,7 +12,7 @@ public:
 	explicit ScreenInput(Screen &screen) : screen_(screen) {}
 
 	int read_key(int timeout_ms) override;
-	int read_line(char *buf, int size) override;
+	std::optional<std::string> read_line(std::size_t max_length) override;
 
 private:
 	void backspace();

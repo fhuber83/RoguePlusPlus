@@ -90,13 +90,9 @@ flush_type()
 void
 credits()
 {
-
-	char tname[25];
-
 	display().draw_title();
-	input().read_line(tname,23);
-	if (*tname && *tname != ESCAPE)
-		strcpy(game().options.name, tname);
+	if (auto name = input().read_line(23); name && !name->empty())
+		strcpy(game().options.name, name->c_str());
 	display().end_title();
 }
 

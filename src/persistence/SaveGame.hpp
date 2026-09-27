@@ -82,12 +82,12 @@ std::expected<void, SaveError> parse_save(std::string_view text, Game &game, Map
  * write_save:
  *	Write a save to path, through a temporary file renamed over it.
  */
-std::expected<void, SaveError> write_save(const char *path, const Game &game, const MapView &view);
+std::expected<void, SaveError> write_save(const std::string &path, const Game &game, const MapView &view);
 
 /*
  * read_save:
  *	Read and load the save at path.
  */
-std::expected<void, SaveError> read_save(const char *path, Game &game, MapView &view);
+std::expected<void, SaveError> read_save(const std::string &path, Game &game, MapView &view);
 
 }  // namespace rogue::persistence

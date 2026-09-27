@@ -173,7 +173,7 @@ format_scores(std::span<const ScoreEntry> entries)
 }
 
 std::expected<ScoreList, ScoresError>
-load_scores(const char *path)
+load_scores(const std::string &path)
 {
 	std::ifstream file(path, std::ios::binary);
 	if (!file)
@@ -185,9 +185,9 @@ load_scores(const char *path)
 }
 
 bool
-save_scores(const char *path, std::span<const ScoreEntry> entries)
+save_scores(const std::string &path, std::span<const ScoreEntry> entries)
 {
-	std::string temp = std::string(path) + ".tmp";
+	std::string temp = path + ".tmp";
 	{
 		std::ofstream file(temp, std::ios::binary | std::ios::trunc);
 		file << format_scores(entries);
@@ -197,7 +197,7 @@ save_scores(const char *path, std::span<const ScoreEntry> entries)
 			return false;
 		}
 	}
-	if (std::rename(temp.c_str(), path) != 0) {
+	if (std::rename(temp.c_str(), path.c_str()) != 0) {
 		std::remove(temp.c_str());
 		return false;
 	}

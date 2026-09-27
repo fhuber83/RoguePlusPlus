@@ -82,7 +82,7 @@ std::string format_scores(std::span<const ScoreEntry> entries);
  * load_scores:
  *	Read and parse the score file at path.
  */
-std::expected<ScoreList, ScoresError> load_scores(const char *path);
+std::expected<ScoreList, ScoresError> load_scores(const std::string &path);
 
 /*
  * save_scores:
@@ -90,6 +90,6 @@ std::expected<ScoreList, ScoresError> load_scores(const char *path);
  *	renamed over it, so a failed write leaves the old file. Returns false
  *	if it could not be written.
  */
-bool save_scores(const char *path, std::span<const ScoreEntry> entries);
+bool save_scores(const std::string &path, std::span<const ScoreEntry> entries);
 
 }  // namespace rogue::persistence

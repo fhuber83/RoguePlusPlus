@@ -157,7 +157,7 @@ apply_option(Options &options, const OptionSetting &setting)
 }
 
 LoadResult
-load_options(const char *path, Options &options)
+load_options(const std::string &path, Options &options)
 {
 	std::ifstream file(path, std::ios::binary);
 	if (!file)

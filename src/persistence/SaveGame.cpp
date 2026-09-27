@@ -983,9 +983,9 @@ parse_save(std::string_view text, Game &g, MapView &view)
 }
 
 std::expected<void, SaveError>
-write_save(const char *path, const Game &g, const MapView &view)
+write_save(const std::string &path, const Game &g, const MapView &view)
 {
-	std::string temp = std::string(path) + ".tmp";
+	std::string temp = path + ".tmp";
 	{
 		std::ofstream file(temp, std::ios::binary | std::ios::trunc);
 		file << format_save(g, view);
@@ -995,7 +995,7 @@ write_save(const char *path, const Game &g, const MapView &view)
 			return std::unexpected(SaveError{SaveError::Kind::Unreadable, std::string("can't write ") + temp});
 		}
 	}
-	if (std::rename(temp.c_str(), path) != 0) {
+	if (std::rename(temp.c_str(), path.c_str()) != 0) {
 		std::remove(temp.c_str());
 		return std::unexpected(SaveError{SaveError::Kind::Unreadable, std::string("can't write ") + path});
 	}
@@ -1003,7 +1003,7 @@ write_save(const char *path, const Game &g, const MapView &view)
 }
 
 std::expected<void, SaveError>
-read_save(const char *path, Game &g, MapView &view)
+read_save(const std::string &path, Game &g, MapView &view)
 {
 	std::ifstream file(path, std::ios::binary);
 	if (!file)

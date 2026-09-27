@@ -376,9 +376,9 @@ aggravate()
  *	"an".
  */
 const char *
-vowelstr(const char *str)
+vowelstr(std::string_view str)
 {
-	switch (*str)
+	switch (str.empty() ? '\0' : str.front())
 	{
 	case 'a': case 'A':
 	case 'e': case 'E':
@@ -787,7 +787,7 @@ call()
 {
 	Item *obj;
 	char **guess;
-	const char *elsewise;
+	std::string_view elsewise;
 	bool *know;
 	rogue::Items &items = game().items;
 

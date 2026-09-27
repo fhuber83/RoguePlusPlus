@@ -87,7 +87,7 @@ init_player()
  * potions and scrolls
  */
 
-static const char *rainbow[] = {
+constexpr auto rainbow = std::to_array<std::string_view>({
 	"amber",
 	"aquamarine",
 	"black",
@@ -115,19 +115,19 @@ static const char *rainbow[] = {
 	"violet",
 	"white",
 	"yellow"
-};
+});
 
 constexpr std::size_t NCOLORS = std::size(rainbow);
 
-static const char *c_set = "bcdfghjklmnpqrstvwxyz";
-static const char *v_set = "aeiou";
+constexpr std::string_view c_set = "bcdfghjklmnpqrstvwxyz";
+constexpr std::string_view v_set = "aeiou";
 
-typedef struct {
-	const char	*st_name;
-	int		st_value;
-} STONE;
+struct Stone {
+	std::string_view st_name;
+	int st_value;
+};
 
-static STONE stones[] = {
+constexpr auto stones = std::to_array<Stone>({
 	{ "agate",		 25},
 	{ "alexandrite",	 40},
 	{ "amethyst",	 50},
@@ -154,11 +154,11 @@ static STONE stones[] = {
 	{ "turquoise",	 70},
 	{ "taaffeite",	300},
 	{ "zircon",	 	 80}
-};
+});
 
 constexpr std::size_t NSTONES = std::size(stones);
 
-static const char *wood[] = {
+constexpr auto wood = std::to_array<std::string_view>({
 	"avocado wood",
 	"balsa",
 	"bamboo",
@@ -192,11 +192,11 @@ static const char *wood[] = {
 	"teak",
 	"walnut",
 	"zebrawood"
-};
+});
 
 constexpr std::size_t NWOOD = std::size(wood);
 
-static const char *metal[] = {
+constexpr auto metal = std::to_array<std::string_view>({
 	"aluminum",
 	"beryllium",
 	"bone",
@@ -219,7 +219,7 @@ static const char *metal[] = {
 	"titanium",
 	"tungsten",
 	"zinc"
-};
+});
 
 constexpr std::size_t NMETAL = std::size(metal);
 
@@ -336,9 +336,9 @@ getsyl()
  *    return random character in given string
  */
 char
-rchr(const char *string)
+rchr(std::string_view string)
 {
-	return(string[rnd(strlen(string))]);
+	return(string[rnd(string.size())]);
 }
 
 /*
@@ -376,7 +376,7 @@ void
 init_materials()
 {
 	unsigned int i, j;
-	const char *str;
+	std::string_view str;
 	bool metused[NMETAL], woodused[NWOOD];
 	rogue::Items &items = game().items;
 

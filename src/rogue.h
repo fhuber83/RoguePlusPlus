@@ -17,6 +17,7 @@
 #include <format>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <unistd.h>
@@ -395,7 +396,7 @@ void	init_names(void);
 void	init_stones(void);
 void	init_materials(void);
 char	*getsyl(void);
-char	rchr(const char *string);
+char	rchr(std::string_view string);
 
 // io.cpp
 // msg(), addmsg() and ifterse() take std::format strings. An empty msg() clears the line.
@@ -497,7 +498,7 @@ bool	find_dir(unsigned char ch, coord *cp);
 bool	step_ok(unsigned char ch);
 bool	offmap(int y, int x);
 const char	*tr_name(Trap type);
-const char	*vowelstr(const char *str);
+const char	*vowelstr(std::string_view str);
 char	goodch(Item *obj);
 int	sign(int nm);
 unsigned char	winat(int y, int x);

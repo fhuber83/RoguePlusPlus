@@ -170,10 +170,10 @@ struct Items {
 	struct magic_item things[NUMTHINGS];	/* Odds of each type of item */
 	/* How the kinds look in this game */
 	KindTable<Scroll, array> s_names = {};	/* Names of the scrolls */
-	KindTable<Potion, const char *> p_colors = {};	/* Colors of the potions */
-	KindTable<Ring, const char *> r_stones = {};	/* Stone settings of the rings */
-	KindTable<Stick, const char *> ws_made = {};	/* What sticks are made of */
-	KindTable<Stick, const char *> ws_type = {};	/* Is it a wand or a staff */
+	KindTable<Potion, std::string_view> p_colors = {};	/* Colors of the potions */
+	KindTable<Ring, std::string_view> r_stones = {};	/* Stone settings of the rings */
+	KindTable<Stick, std::string_view> ws_made = {};	/* What sticks are made of */
+	KindTable<Stick, std::string_view> ws_type = {};	/* Is it a wand or a staff */
 	/* What the rogue knows, and what he has called the kinds he doesn't */
 	KindTable<Scroll, bool> s_know = {};			/* Does he know what a scroll does */
 	KindTable<Potion, bool> p_know = {};			/* Does he know what a potion does */

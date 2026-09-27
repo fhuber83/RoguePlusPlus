@@ -9,7 +9,7 @@ namespace rogue::items::effects {
 void
 fix_stick(Item *cur)
 {
-	if (strcmp(game().items.ws_type[cur->which<Stick>()], "staff") == 0)
+	if (game().items.ws_type[cur->which<Stick>()] == "staff")
 		cur->o_damage = "2d3";
 	else
 		cur->o_damage = "1d1";

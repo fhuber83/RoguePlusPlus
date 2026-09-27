@@ -37,10 +37,10 @@ static_assert(map_rows == maxrow - 1 && map_cols == COLS);
  * then update the size (measured on x86-64 Linux, where these hold).
  */
 #if defined(__x86_64__) && defined(__linux__)
-static_assert(sizeof(Game) == 17256, "a Game member was added or removed: save it");
+static_assert(sizeof(Game) == 17704, "a Game member was added or removed: save it");
 static_assert(sizeof(Player) == 264, "a Player field was added or removed: save it");
 static_assert(sizeof(Level) == 6488, "a Level field was added or removed: save it");
-static_assert(sizeof(Items) == 3520, "an Items field was added or removed: save it");
+static_assert(sizeof(Items) == 3968, "an Items field was added or removed: save it");
 static_assert(sizeof(Pool) == 1336, "a Pool field was added or removed: save it");
 static_assert(sizeof(Turn) == 56, "a Turn field was added or removed: save it");
 static_assert(sizeof(MessageLine) == 268, "a MessageLine field was added or removed: save it");
@@ -85,6 +85,11 @@ json text_json(const char *text)
 {
 	if (text == nullptr)
 		return nullptr;
+	return bytes_to_utf8(text);
+}
+
+json text_json(std::string_view text)
+{
 	return bytes_to_utf8(text);
 }
 
@@ -666,11 +671,13 @@ void odds_from(struct magic_item *items, std::size_t n, const json &j, const cha
 }
 
 template <KindEnum E>
-void kept_texts_from(KindTable<E, const char *> &texts, const json &j, const char *key)
+void kept_texts_from(KindTable<E, std::string_view> &texts, const json &j, const char *key)
 {
 	const json &list = array_of(j, key, texts.size());
-	for (std::size_t i = 0; i < texts.size(); i++)
-		texts.data()[i] = kept_text(list[i], key);
+	for (std::size_t i = 0; i < texts.size(); i++) {
+		const char *text = kept_text(list[i], key);
+		texts.data()[i] = text != nullptr ? text : "";
+	}
 }
 
 template <KindEnum E>

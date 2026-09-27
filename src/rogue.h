@@ -434,7 +434,7 @@ ifterse(std::format_string<Args...> tfmt, std::format_string<Args...> fmt, Args 
 void	wait_msg(const char *msg);
 void	endmsg(void);
 void	more(const char *msg);
-void	putmsg(char *msg);
+void	putmsg(std::string_view msg);
 void	status(void);
 void	wait_for(unsigned char ch);
 void	show_win(char *message);

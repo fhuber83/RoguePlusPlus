@@ -120,7 +120,7 @@ protected:
 		g.turn.typeahead = "ss";
 		g.turn.last_item = p.weapon;
 		g.turn.last_item_key = 'a';
-		strcpy(g.message.last, "you feel a bite in your leg");
+		g.message.last = "you feel a bite in your leg";
 		// Monsters after everything a monster can be after
 		Item *floor = g.level.objects.first();
 		int n = 0;

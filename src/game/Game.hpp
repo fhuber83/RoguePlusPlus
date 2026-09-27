@@ -47,8 +47,8 @@ struct Options {
  * kept for ^R.
  */
 struct MessageLine {
-	char text[BUFSIZE] = "";		/* msgbuf: the message being built */
-	char last[BUFSIZE] = "";		/* huh: the last message printed */
+	std::string text;				/* msgbuf: the message being built, at most BUFSIZE - 1 */
+	std::string last;				/* huh: the last message printed */
 	int end = 0;					/* mpos: where the shown message ends, 0 if none */
 	int next_end = 0;				/* newpos: where the message being built ends */
 	bool remember = true;			/* save_msg: keep the message for ^R */

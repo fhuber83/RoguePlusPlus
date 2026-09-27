@@ -37,13 +37,13 @@ static_assert(map_rows == maxrow - 1 && map_cols == COLS);
  * then update the size (measured on x86-64 Linux, where these hold).
  */
 #if defined(__x86_64__) && defined(__linux__)
-static_assert(sizeof(Game) == 18360, "a Game member was added or removed: save it");
+static_assert(sizeof(Game) == 18168, "a Game member was added or removed: save it");
 static_assert(sizeof(Player) == 264, "a Player field was added or removed: save it");
 static_assert(sizeof(Level) == 6488, "a Level field was added or removed: save it");
 static_assert(sizeof(Items) == 4480, "an Items field was added or removed: save it");
 static_assert(sizeof(Pool) == 1336, "a Pool field was added or removed: save it");
 static_assert(sizeof(Turn) == 80, "a Turn field was added or removed: save it");
-static_assert(sizeof(MessageLine) == 268, "a MessageLine field was added or removed: save it");
+static_assert(sizeof(MessageLine) == 80, "a MessageLine field was added or removed: save it");
 static_assert(sizeof(Options) == 264, "an Options field was added or removed: decide whether to save it");
 static_assert(sizeof(Creature) == 112, "a Creature field was added or removed: save it");
 static_assert(sizeof(Item) == 80, "an Item field was added or removed: save it");
@@ -921,8 +921,8 @@ void game_from(Game &g, MapView &view, const json &doc)
 	g.scheduler.set_slots(table);
 
 	const json &message = field(doc, "message");
-	text_into(g.message.text, sizeof g.message.text, message, "text");
-	text_into(g.message.last, sizeof g.message.last, message, "last");
+	g.message.text = text_of(message, "text", BUFSIZE - 1);
+	g.message.last = text_of(message, "last", BUFSIZE - 1);
 	g.message.end = num_in<int>(message, "end", 0, COLS);
 	g.message.next_end = num_in<int>(message, "next_end", 0, BUFSIZE);
 	g.message.remember = flag(message, "remember");

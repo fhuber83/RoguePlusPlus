@@ -58,7 +58,7 @@ endmsg(void)
 {
 	rogue::MessageLine &message = game().message;
 	if (message.remember)
-		strcpy(message.last, message.text);
+		message.last = message.text;
 	if (message.end) {
 		look(false);
 		more_at(" More ", message.end);
@@ -106,12 +106,15 @@ void
 add_msg(std::string_view text)
 {
 	rogue::MessageLine &message = game().message;
-	size_t room = BUFSIZE - 1 - message.next_end;
-	size_t len = std::min(text.size(), room);
+	std::size_t room = BUFSIZE - 1 - message.next_end;
 
-	text.copy(&message.text[message.next_end], len);
-	message.text[message.next_end + len] = '\0';
-	message.next_end = strlen(message.text);
+	// Written where the message being built ends; a shown one is kept till then
+	message.text.resize(message.next_end);
+	message.text += text.substr(0, room);
+	// A NUL ended the C string this was
+	if (std::size_t nul = message.text.find('\0'); nul != std::string::npos)
+		message.text.resize(nul);
+	message.next_end = static_cast<int>(message.text.size());
 }
 
 /*
@@ -120,31 +123,36 @@ add_msg(std::string_view text)
  *  scroll msg sideways until he has read it all
  */
 void
-putmsg(char *msg)
+putmsg(std::string_view msg)
 {
-	char *curmsg, *lastmsg=0, *tmpmsg;
+	std::string_view cur = msg;		/* what is left to show */
 	int curlen;
 
-	curmsg = msg;
 	do {
-		rogue::ui::display().draw_message(curmsg);
-		game().message.next_end = curlen = strlen(curmsg);
+		rogue::ui::display().draw_message(cur);
+		game().message.next_end = curlen = static_cast<int>(cur.size());
 		if (curlen > COLS) {
 			more_at(" Cont ", curlen);
-			lastmsg = curmsg;
-			do {
-				tmpmsg = strpbrk(curmsg," ");
+			/*
+			 * Go on after the last blank that the line showed, or after the
+			 * line's width if its first word is longer
+			 */
+			const std::string_view shown = cur;
+			for (;;) {
+				std::size_t blank = cur.find(' ');
+				std::size_t at = (blank == std::string_view::npos) ? blank
+					: static_cast<std::size_t>(cur.data() - shown.data()) + blank;
 				/*
 				 * If there are no blanks in line
 				 */
-				if ((tmpmsg==0 || tmpmsg>=&lastmsg[COLS]) && lastmsg==curmsg) {
-					curmsg = &lastmsg[COLS];
+				if (at >= static_cast<std::size_t>(COLS) && cur.data() == shown.data()) {
+					cur = shown.substr(COLS);
 					break;
 				}
-				if ((tmpmsg >= (lastmsg+COLS)) || ((signed)strlen(curmsg) < COLS))
+				if (at >= static_cast<std::size_t>(COLS) || cur.size() < static_cast<std::size_t>(COLS))
 					break;
-				curmsg = tmpmsg + 1;
-			} while (1);
+				cur = shown.substr(at + 1);
+			}
 		}
 	} while (curlen > COLS);
 }

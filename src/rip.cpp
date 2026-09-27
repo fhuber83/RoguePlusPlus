@@ -157,13 +157,13 @@ pr_scores(int newrank, struct sc_ent *top10)
 	std::string dthstr;
 	std::string texts[TOPSCORES];
 	rogue::ui::ScoreLine lines[TOPSCORES];
-	const char *altmsg;
+	std::optional<std::string_view> altmsg;
 
 	for (i=0,n=0;i<TOPSCORES;i++,top10++)
 	{
 		std::string &text = texts[n];
 
-		altmsg = nullptr;
+		altmsg.reset();
 		if (top10->sc_gold <=0 )
 			break;
 		if (top10->sc_level >= 26)
@@ -195,10 +195,10 @@ pr_scores(int newrank, struct sc_ent *top10)
 			if (top10->sc_rank > 1 && (strlen(top10->sc_name)))
 				text = std::format(" \"{}\"", he_man[top10->sc_rank - 1]);
 		}
-		if (altmsg == nullptr)
+		if (!altmsg)
 			text += std::format("{} on level {}", dthstr, top10->sc_level);
 		else
-			text += altmsg;
+			text += *altmsg;
 		lines[n].gold = top10->sc_gold;
 		lines[n].name = top10->sc_name;
 		lines[n].text = text;

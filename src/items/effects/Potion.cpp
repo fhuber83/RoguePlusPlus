@@ -47,7 +47,7 @@ quaff(void)
 		break;
 	case Potion::Poison:
 		{
-		constexpr const char *sick = "you feel {} sick.";
+		constexpr std::string_view sick = "you feel {} sick.";
 
 		items.p_know[Potion::Poison] = true;
 		if (!player.wears(Ring::SustainStrength))

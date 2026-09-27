@@ -10,7 +10,7 @@
  * tr_name:
  *	Print the name of a trap
  */
-const char *
+std::string_view
 tr_name(Trap type)
 {
 	switch (type)
@@ -29,7 +29,7 @@ tr_name(Trap type)
 		return "a poison dart trap";
 	}
 	msg("wierd trap: {:d}", std::to_underlying(type));
-	return nullptr;
+	return "";
 }
 
 /*
@@ -375,7 +375,7 @@ aggravate()
  *      For printfs: if string starts with a vowel, return "n" for an
  *	"an".
  */
-const char *
+std::string_view
 vowelstr(std::string_view str)
 {
 	switch (str.empty() ? '\0' : str.front())
@@ -632,7 +632,7 @@ help(const struct h_list *helpscr)
 				 isfull = true;
 		}
 
-		display().write_at(hrow, hcol, (const char *)helpscr->h_chstr);
+		display().write_at(hrow, hcol, helpscr->glyphs());
 		display().write(helpscr->h_desc);
 		helpscr++;
 

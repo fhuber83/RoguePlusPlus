@@ -27,9 +27,9 @@ static int	exp_add(Creature *tp);
  * intended behavior.
  */
 
-static const char *vorp_mons = "KEBHISORZLCAQNYTWFPUGMXVJD";
-static const char *lvl_mons =  "K BHISOR LCA NYTWFP GMXVJD";
-static const char *wand_mons = "KEBHISORZ CAQ YTW PUGM VJ ";
+constexpr std::string_view vorp_mons = "KEBHISORZLCAQNYTWFPUGMXVJD";
+constexpr std::string_view lvl_mons =  "K BHISOR LCA NYTWFP GMXVJD";
+constexpr std::string_view wand_mons = "KEBHISORZ CAQ YTW PUGM VJ ";
 
 /*
  * randmonster:
@@ -40,9 +40,8 @@ char
 randmonster(bool wander)
 {
 	int d;
-	const char *mons;
+	std::string_view mons = wander ? wand_mons : lvl_mons;
 
-	mons = wander ? wand_mons : lvl_mons;
 	do {
 		int r10 = rnd(5) + rnd(6);
 
@@ -253,13 +252,13 @@ give_pack(Creature *tp)
 char
 pick_mons(void)
 {
-	const char *cp = vorp_mons + strlen(vorp_mons);
+	int i = static_cast<int>(vorp_mons.size());
 
-	while (--cp >= vorp_mons && rnd(10))
+	while (--i >= 0 && rnd(10))
 		;
-	if (cp < vorp_mons)
+	if (i < 0)
 		return 'M';
-	return *cp;
+	return vorp_mons[i];
 }
 
 

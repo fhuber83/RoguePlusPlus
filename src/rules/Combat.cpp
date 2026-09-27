@@ -226,7 +226,7 @@ attack(Creature *mp)
 		{
 			Item *obj, *steal;
 			int nobj;
-			constexpr const char *she_stole = "she stole {}!";
+			constexpr std::string_view she_stole = "she stole {}!";
 
 			/*
 			 * Nymph's steal a magic item, look through the pack
@@ -454,7 +454,7 @@ prname(Who who, bool upper)
 static void
 hit(Who er, Who ee)
 {
-	const char *s = "";
+	std::string_view s = "";
 
 	addmsg("{}", prname(er, true));
 	switch (game().options.brief() ? 1 : rnd(4))
@@ -475,7 +475,7 @@ hit(Who er, Who ee)
 static void
 miss(Who er, Who ee)
 {
-	const char *s = "";
+	std::string_view s = "";
 
 
 	addmsg("{}", prname(er, true));

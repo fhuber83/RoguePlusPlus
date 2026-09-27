@@ -41,11 +41,11 @@ pool_problems(const Game &g)
 	int item_refs[MAXITEMS] = {};
 	int creature_refs[MAXITEMS] = {};
 
-	auto count_items = [&](const List<Item> &list, const char *where) {
+	auto count_items = [&](const List<Item> &list, std::string_view where) {
 		for (const Item *obj : list) {
 			int slot = pool.items.slot_of(obj);
 			if (slot < 0)
-				problem(std::string("an item outside the pool in ") + where);
+				problem(std::format("an item outside the pool in {}", where));
 			else
 				item_refs[slot]++;
 		}

@@ -299,10 +299,10 @@ be_trapped(coord *tc)
 }
 
 void
-descend(const char *mesg)
+descend(std::string_view mesg)
 {
 	game().level.depth++;
-	if (*mesg == 0)
+	if (mesg.empty())
 		msg(" ");
 	new_level();
 	msg("");

@@ -41,11 +41,11 @@ static_assert(sizeof(LegacyRecord) == 56);
 
 std::string cut_name(std::string name)
 {
-	name.resize(std::min(std::strlen(name.c_str()), max_score_name));
+	name.resize(std::min({name.find('\0'), name.size(), max_score_name}));
 	return name;
 }
 
-std::optional<int> get_int(const json &entry, const char *key)
+std::optional<int> get_int(const json &entry, std::string_view key)
 {
 	auto it = entry.find(key);
 	if (it == entry.end() || !it->is_number_integer())

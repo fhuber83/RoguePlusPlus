@@ -90,17 +90,22 @@ inline constexpr int LAMPDIST = 3;
  * Help list
  */
 struct h_list {
-	unsigned char h_chstr[6];  // either (ch) or (ch,sep,ch2) appended with ": "
+	std::array<char, 5> h_chstr{};	// either (ch) or (ch,sep,ch2) appended with ": "
+	std::size_t h_chlen = 0;
 	std::string_view h_desc;
 
 	// A line of text; an empty one ends the list (were H_STR and H_END)
-	constexpr h_list(std::string_view desc) : h_chstr{}, h_desc(desc) {}
+	constexpr h_list(std::string_view desc) : h_desc(desc) {}
 	// A glyph and what it is (was H_CHSTR)
 	constexpr h_list(unsigned char ch, std::string_view desc)
-		: h_chstr{ch, ':', ' ', '\0'}, h_desc(desc) {}
+		: h_chstr{static_cast<char>(ch), ':', ' '}, h_chlen(3), h_desc(desc) {}
 	// Two glyphs with a separator, "A-Z" (was H_CH2STR)
 	constexpr h_list(unsigned char first, unsigned char sep, unsigned char last, std::string_view desc)
-		: h_chstr{first, sep, last, ':', ' ', '\0'}, h_desc(desc) {}
+		: h_chstr{static_cast<char>(first), static_cast<char>(sep), static_cast<char>(last), ':', ' '},
+		  h_chlen(5), h_desc(desc) {}
+
+	// The glyph column, "" for a line of text
+	constexpr std::string_view glyphs() const { return {h_chstr.data(), h_chlen}; }
 };
 
 /*
@@ -430,16 +435,16 @@ ifterse(std::format_string<Args...> tfmt, std::format_string<Args...> fmt, Args 
 	msg(game().options.expert ? tfmt : fmt, std::forward<Args>(args)...);
 }
 
-void	wait_msg(const char *msg);
+void	wait_msg(std::string_view msg);
 void	endmsg(void);
-void	more(const char *msg);
+void	more(std::string_view msg);
 void	putmsg(std::string_view msg);
 void	status(void);
 void	wait_for(unsigned char ch);
-void	str_attr(const char *str);
+void	str_attr(std::string_view str);
 void	SIG2(void);
 std::string	io_unctrl(unsigned char ch);
-const char	*noterse(const char *str);
+std::string_view	noterse(std::string_view str);
 
 // list.cpp
 Item	*new_item(void);
@@ -494,8 +499,8 @@ bool	get_dir(void);
 bool	find_dir(unsigned char ch, coord *cp);
 bool	step_ok(unsigned char ch);
 bool	offmap(int y, int x);
-const char	*tr_name(Trap type);
-const char	*vowelstr(std::string_view str);
+std::string_view	tr_name(Trap type);
+std::string_view	vowelstr(std::string_view str);
 char	goodch(Item *obj);
 int	sign(int nm);
 unsigned char	winat(int y, int x);
@@ -517,7 +522,7 @@ int	INDEX(int y, int x);
 void	do_run(unsigned char ch);
 void	do_move(int dy, int dx);
 void	door_open(struct room *rp);
-void	descend(const char *mesg);
+void	descend(std::string_view mesg);
 void	rndmove(Creature *who, coord *newmv);
 
 // rip.cpp

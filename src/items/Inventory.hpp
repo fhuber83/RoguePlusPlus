@@ -33,13 +33,13 @@ void pick_up(unsigned char ch);
  * get_item:
  *	Pick something out of a pack for a purpose (prompts the player).
  */
-Item *get_item(const char *purpose, ItemFilter type);
+Item *get_item(std::string_view purpose, ItemFilter type);
 
 /*
  * inventory:
  *	List what is in a pack (or another item list) through a page.
  */
-unsigned char inventory(const List<Item> &list, ItemFilter type, const char *lstr);
+unsigned char inventory(const List<Item> &list, ItemFilter type, std::string_view lstr);
 
 /*
  * pack_char:

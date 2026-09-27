@@ -2,8 +2,8 @@
 
 namespace rogue::items::effects {
 
-static constexpr const char *laugh = "you hear maniacal laughter{}.";
-const char *in_dist = " in the distance";
+constexpr std::string_view laugh = "you hear maniacal laughter{}.";
+constexpr std::string_view in_dist = " in the distance";
 /*
  * read_scroll:
  *	Read a scroll from the pack and do the appropriate thing

@@ -242,11 +242,11 @@ print_disc(ItemKind type)
 		{
 			obj.o_type = type;
 			obj.o_which = order[i];
-			add_line("", inv_name(&obj, false).c_str());
+			add_line("", inv_name(&obj, false));
 			num_found++;
 		}
 	if (num_found == 0)
-		add_line("", nothing(type).c_str());
+		add_line("", nothing(type));
 }
 
 /*
@@ -277,7 +277,7 @@ set_order(short *order, int numthings)
  *	(end_line())
  */
 unsigned char
-add_line(const char *use, const char *line)
+add_line(std::string_view use, std::optional<std::string_view> line)
 {
 	unsigned char retchar = ' ';
 	if (line_cnt == 0)
@@ -285,9 +285,9 @@ add_line(const char *use, const char *line)
 		display().open_page();
 		display().clear_page();
 	}
-	if (line_cnt >= LINES - 1 || line == nullptr)
+	if (line_cnt >= LINES - 1 || !line)
 	{
-		if (*use)
+		if (!use.empty())
 			display().write_at(LINES-1, 0,
 				std::format("-Select item to {}. Esc to cancel-", use));
 		else
@@ -298,11 +298,11 @@ add_line(const char *use, const char *line)
 		display().clear_page();
 		line_cnt = 0;
 	}
-	if (line != nullptr && !(line_cnt == 0 && *line == '\0'))
+	if (line && !(line_cnt == 0 && line->empty()))
 	{
 		coord end;
 
-		end = display().write_at(line_cnt, 0, line);
+		end = display().write_at(line_cnt, 0, *line);
 		/*
 		 * if the line wrapped but nothing was printed on this
 		 * line you might as well use it for the next item
@@ -318,11 +318,11 @@ add_line(const char *use, const char *line)
  *	End the list of lines
  */
 unsigned char
-end_line(const char *use)
+end_line(std::string_view use)
 {
 	int retchar;
 
-	retchar = add_line(use, nullptr);
+	retchar = add_line(use, std::nullopt);
 	display().close_page();
 	line_cnt = 0;
 	return(retchar);
@@ -336,7 +336,7 @@ static
 std::string
 nothing(ItemKind type)
 {
-	const char *tystr;
+	std::string_view tystr;
 
 	switch (type)
 	{

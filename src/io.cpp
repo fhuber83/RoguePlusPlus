@@ -22,7 +22,7 @@ armor_class(int ac)
  *	Display a message at the top of the screen.
  */
 
-static void more_at(const char *msg, int col);
+static void more_at(std::string_view msg, int col);
 
 /*
  * msg(), addmsg() and ifterse() are templates in rogue.h that format with
@@ -80,14 +80,14 @@ endmsg(void)
  *  The prompt goes after the current message. Drawing is the display's
  */
 void
-more(const char *msg)
+more(std::string_view msg)
 {
 	more_at(msg, game().message.end);
 }
 
 // more() for a message line text that ends in column col
 static void
-more_at(const char *msg, int col)
+more_at(std::string_view msg, int col)
 {
 	rogue::ui::Display &display = rogue::ui::display();
 
@@ -221,11 +221,11 @@ wait_for(unsigned char ch)
  *	Wait with a message until the user presses Enter
  */
 void
-wait_msg(const char *msg)
+wait_msg(std::string_view msg)
 {
 	display().show_cursor(true);
 	display().write_at(LINES-1, 0,
-		*msg ? std::format("[Press Enter to {}]", msg) : "[Press Enter]");
+		!msg.empty() ? std::format("[Press Enter to {}]", msg) : "[Press Enter]");
 	flush_type();
 	wait_for('\n');
 	display().write_at(LINES-1, 0, "");
@@ -251,16 +251,17 @@ wait_msg(const char *msg)
  *     printf certainly '%' isn't a good choice of characters.  jll.
  */
 void
-str_attr(const char *str)
+str_attr(std::string_view str)
 {
-	while (*str)
+	for (std::size_t i = 0; i < str.size(); i++)
 	{
 		rogue::ui::Ink ink = rogue::ui::Ink::Normal;
-		if (*str == '%') {
-			str++;
+		if (str[i] == '%') {
+			if (++i == str.size())
+				break;
 			ink = rogue::ui::Ink::Reverse;
 		}
-		display().write(std::string_view(str++, 1), ink);
+		display().write(str.substr(i, 1), ink);
 	}
 }
 
@@ -297,8 +298,8 @@ SIG2(void)
 		rogue::ui::display().draw_clock(bighand ? bighand : 12, littlehand);
 }
 
-const char *
-noterse(const char *str)
+std::string_view
+noterse(std::string_view str)
 {
 	return( game().options.brief() ? "" : str);
 }

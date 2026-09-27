@@ -85,8 +85,6 @@ new_monster(Creature *tp, unsigned char type, coord *cp)
 	tp->t_pack.clear();
 	if (game().player.wears(Ring::AggravateMonster))
 		start_run(cp);
-	if (type == 'F')
-		tp->t_stats.s_dmg = game().player.flytrap_damage;
 	if (type == 'X')
 	{
 		switch (rnd(game().level.depth > 25 ? 9 : 8))
@@ -106,15 +104,26 @@ new_monster(Creature *tp, unsigned char type, coord *cp)
 }
 
 /*
- *  f_restor(): restor initial damage string for flytraps
+ *  f_restor(): restore the initial damage of flytraps
  */
 void
 f_restor(void)
 {
-	const struct monster *mp = &monsters['F'-'A'];
-
 	game().player.fung_hit = 0;
-	strcpy(game().player.flytrap_damage, mp->m_stats.s_dmg);
+}
+
+/*
+ * flytrap_attacks:
+ *	Every venus flytrap's attack: the table's until one hits, then one die
+ *	of one side per hit (was the f_damage buffer that all their s_dmg
+ *	pointed at)
+ */
+rogue::Attacks
+flytrap_attacks(int hits)
+{
+	if (hits == 0)
+		return monsters['F'-'A'].m_stats.s_dmg;
+	return rogue::Attacks(rogue::Dice{hits, 1});
 }
 
 /*

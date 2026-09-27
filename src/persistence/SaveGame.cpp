@@ -37,18 +37,18 @@ static_assert(map_rows == maxrow - 1 && map_cols == COLS);
  * then update the size (measured on x86-64 Linux, where these hold).
  */
 #if defined(__x86_64__) && defined(__linux__)
-static_assert(sizeof(Game) == 18496, "a Game member was added or removed: save it");
-static_assert(sizeof(Player) == 264, "a Player field was added or removed: save it");
+static_assert(sizeof(Game) == 18552, "a Game member was added or removed: save it");
+static_assert(sizeof(Player) == 320, "a Player field was added or removed: save it");
 static_assert(sizeof(Level) == 6488, "a Level field was added or removed: save it");
 static_assert(sizeof(Items) == 4808, "an Items field was added or removed: save it");
 static_assert(sizeof(Pool) == 1336, "a Pool field was added or removed: save it");
 static_assert(sizeof(Turn) == 80, "a Turn field was added or removed: save it");
 static_assert(sizeof(MessageLine) == 80, "a MessageLine field was added or removed: save it");
 static_assert(sizeof(Options) == 264, "an Options field was added or removed: decide whether to save it");
-static_assert(sizeof(Creature) == 112, "a Creature field was added or removed: save it");
-static_assert(sizeof(Item) == 64, "an Item field was added or removed: save it");
+static_assert(sizeof(Creature) == 144, "a Creature field was added or removed: save it");
+static_assert(sizeof(Item) == 128, "an Item field was added or removed: save it");
 static_assert(sizeof(struct room) == 132, "a room field was added or removed: save it");
-static_assert(sizeof(struct stats) == 48, "a stats field was added or removed: save it");
+static_assert(sizeof(struct stats) == 80, "a stats field was added or removed: save it");
 #endif
 
 // A wrong or missing value while loading
@@ -80,13 +80,6 @@ bool points_into(const T *p, const T *first, std::size_t n)
 }
 
 // Writing
-
-json text_json(const char *text)
-{
-	if (text == nullptr)
-		return nullptr;
-	return bytes_to_utf8(text);
-}
 
 json text_json(std::string_view text)
 {
@@ -133,18 +126,28 @@ json dest_ref(const Game &g, const coord *dest)
 	throw std::logic_error("a monster is after something that can't be saved");
 }
 
-json damage_json(const Game &g, const char *dmg)
+// Damage as its text, null for none
+json attacks_json(const Attacks &attacks)
 {
-	if (dmg == g.player.flytrap_damage)
-		return json{{"alias", "flytrap"}};
-	return text_json(dmg);
+	if (attacks.empty())
+		return nullptr;
+	return attacks.to_string();
 }
 
-json stats_json(const Game &g, const struct stats &s)
+// The alias every venus flytrap's damage is saved as (see flytrap_attacks())
+const json flytrap_alias = {{"alias", "flytrap"}};
+
+// A monster that fights with the flytraps' growing attack
+bool is_flytrap(const Game &g, const Creature &c)
+{
+	return c.t_type == 'F' && &c != &g.player.body;
+}
+
+json stats_json(const struct stats &s, bool flytrap)
 {
 	return {
 		{"str", s.s_str}, {"exp", s.s_exp}, {"level", s.s_lvl}, {"armor", s.s_arm},
-		{"hp", s.s_hpt}, {"damage", damage_json(g, s.s_dmg)}, {"max_hp", s.s_maxhp},
+		{"hp", s.s_hpt}, {"damage", flytrap ? flytrap_alias : attacks_json(s.s_dmg)}, {"max_hp", s.s_maxhp},
 	};
 }
 
@@ -161,7 +164,7 @@ json creature_json(const Game &g, const Creature &c)
 	return {
 		{"pos", coord_json(c.t_pos)}, {"turn", c.t_turn}, {"type", c.t_type},
 		{"disguise", c.t_disguise}, {"oldch", c.t_oldch}, {"dest", dest_ref(g, c.t_dest)},
-		{"flags", c.t_flags.bits()}, {"stats", stats_json(g, c.t_stats)},
+		{"flags", c.t_flags.bits()}, {"stats", stats_json(c.t_stats, is_flytrap(g, c))},
 		{"room", room_ref(g, c.t_room)}, {"pack", item_list(g, c.t_pack)},
 	};
 }
@@ -170,7 +173,7 @@ json item_json(const Item &o)
 {
 	return {
 		{"kind", static_cast<int>(o.o_type)}, {"pos", coord_json(o.o_pos)},
-		{"launch", o.o_launch}, {"damage", text_json(o.o_damage)}, {"hurl", text_json(o.o_hurldmg)},
+		{"launch", o.o_launch}, {"damage", attacks_json(o.o_damage)}, {"hurl", attacks_json(o.o_hurldmg)},
 		{"count", o.o_count}, {"which", o.o_which}, {"hplus", o.o_hplus}, {"dplus", o.o_dplus},
 		{"ac", o.o_ac}, {"flags", o.o_flags.bits()}, {"enemy", o.o_enemy}, {"group", o.o_group},
 	};
@@ -300,7 +303,7 @@ json player_json(const Game &g)
 	const Player &p = g.player;
 	return {
 		{"body", creature_json(g, p.body)},
-		{"max_stats", stats_json(g, p.max_stats)},
+		{"max_stats", stats_json(p.max_stats, false)},
 		{"purse", p.purse}, {"in_pack", p.in_pack},
 		{"armor", item_ref(g, p.armor)}, {"weapon", item_ref(g, p.weapon)},
 		{"rings", json::array({item_ref(g, p.rings[Hand::Left]), item_ref(g, p.rings[Hand::Right])})},
@@ -308,7 +311,7 @@ json player_json(const Game &g)
 		{"has_amulet", p.has_amulet}, {"saw_amulet", p.saw_amulet},
 		{"max_level", p.max_level}, {"no_command", p.no_command}, {"no_move", p.no_move},
 		{"quiet", p.quiet}, {"fungus_hits", p.fung_hit},
-		{"flytrap_damage", bytes_to_utf8(p.flytrap_damage)},
+		{"flytrap_damage", flytrap_attacks(p.fung_hit).to_string()},
 		{"was_trapped", std::to_underlying(p.was_trapped)},
 		{"old_pos", coord_json(p.old_pos)}, {"old_room", room_ref(g, p.old_room)},
 	};
@@ -463,18 +466,6 @@ coord coord_of(const json &j, const char *key)
 }
 
 // Text into a char buffer of the given size (with its NUL)
-void text_into(char *buf, std::size_t size, const json &j, const char *key)
-{
-	const json &v = field(j, key);
-	if (!v.is_string())
-		fail(std::string("\"") + key + "\" is not text");
-	std::string bytes = utf8_to_bytes(v.get<std::string>());
-	if (bytes.size() >= size)
-		fail(std::string("\"") + key + "\" is too long");
-	bytes.copy(buf, bytes.size());
-	buf[bytes.size()] = '\0';
-}
-
 // Text of at most max bytes
 std::string text_of(const json &j, const char *key, std::size_t max = std::string::npos)
 {
@@ -553,17 +544,20 @@ coord *dest_at(Game &g, const json &v)
 	fail("\"dest\" is not the hero, gold or an item");
 }
 
-const char *damage_at(Game &g, const json &v)
+// Damage from its text, none for null
+Attacks attacks_of(const json &v, const char *what)
 {
-	if (v.is_object()) {
-		if (v == json{{"alias", "flytrap"}})
-			return g.player.flytrap_damage;
-		fail("\"damage\" is an unknown alias");
-	}
-	return kept_text(v, "\"damage\"");
+	if (v.is_null())
+		return {};
+	if (!v.is_string())
+		fail(std::string(what) + " is not text");
+	auto attacks = Attacks::parse(utf8_to_bytes(v.get<std::string>()));
+	if (!attacks)
+		fail(std::string(what) + " is not damage like \"1d2/1d5\"");
+	return *attacks;
 }
 
-struct stats stats_from(Game &g, const json &j)
+struct stats stats_from(const json &j, bool flytrap)
 {
 	struct stats s{};
 	s.s_str = num<str_t>(j, "str");
@@ -571,7 +565,11 @@ struct stats stats_from(Game &g, const json &j)
 	s.s_lvl = num<int>(j, "level");
 	s.s_arm = num<int>(j, "armor");
 	s.s_hpt = num<int>(j, "hp");
-	s.s_dmg = damage_at(g, field(j, "damage"));
+	const json &damage = field(j, "damage");
+	if (flytrap != (damage == flytrap_alias))
+		fail(flytrap ? "a venus flytrap's \"damage\" is not the flytrap alias"
+			: "only a venus flytrap's \"damage\" is the flytrap alias");
+	s.s_dmg = flytrap ? monsters['F'-'A'].m_stats.s_dmg : attacks_of(damage, "\"damage\"");
 	s.s_maxhp = num<int>(j, "max_hp");
 	return s;
 }
@@ -600,7 +598,7 @@ void creature_from(Game &g, Creature &c, const json &j)
 	c.t_oldch = num<unsigned char>(j, "oldch");
 	c.t_dest = dest_at(g, field(j, "dest"));
 	c.t_flags = CreatureFlags::from_bits(num<CreatureFlags::Bits>(j, "flags"));
-	c.t_stats = stats_from(g, field(j, "stats"));
+	c.t_stats = stats_from(field(j, "stats"), is_flytrap(g, c));
 	c.t_room = room_at(g, field(j, "room"), "\"room\"");
 	items_into(g, c.t_pack, field(j, "pack"), "\"pack\"");
 }
@@ -610,8 +608,8 @@ void item_from(Item &o, const json &j)
 	o.o_type = static_cast<ItemKind>(num_in<int>(j, "kind", 0, static_cast<int>(ItemKind::Missile)));
 	o.o_pos = coord_of(j, "pos");
 	o.o_launch = num<char>(j, "launch");
-	o.o_damage = kept_text(field(j, "damage"), "\"damage\"");
-	o.o_hurldmg = kept_text(field(j, "hurl"), "\"hurl\"");
+	o.o_damage = attacks_of(field(j, "damage"), "\"damage\"");
+	o.o_hurldmg = attacks_of(field(j, "hurl"), "\"hurl\"");
 	o.o_count = num<int>(j, "count");
 	o.o_which = num<int>(j, "which");
 	o.o_hplus = num<int>(j, "hplus");
@@ -820,7 +818,7 @@ void player_from(Game &g, const json &j)
 {
 	Player &p = g.player;
 	creature_from(g, p.body, field(j, "body"));
-	p.max_stats = stats_from(g, field(j, "max_stats"));
+	p.max_stats = stats_from(field(j, "max_stats"), false);
 	p.purse = num<int>(j, "purse");
 	p.in_pack = num<int>(j, "in_pack");
 	p.armor = item_at(g, field(j, "armor"), "\"armor\"");
@@ -837,7 +835,8 @@ void player_from(Game &g, const json &j)
 	p.no_move = num<int>(j, "no_move");
 	p.quiet = num<int>(j, "quiet");
 	p.fung_hit = num<int>(j, "fungus_hits");
-	text_into(p.flytrap_damage, sizeof p.flytrap_damage, j, "flytrap_damage");
+	if (text_of(j, "flytrap_damage") != flytrap_attacks(p.fung_hit).to_string())
+		fail("\"flytrap_damage\" does not follow from \"fungus_hits\"");
 	p.was_trapped = static_cast<Trapped>(num_in<unsigned char>(j, "was_trapped", 0, 2));
 	p.old_pos = coord_of(j, "old_pos");
 	p.old_room = room_at(g, field(j, "old_room"), "\"old_room\"");

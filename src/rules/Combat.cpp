@@ -202,9 +202,7 @@ attack(Creature *mp)
 			 * Violet fungi stops the poor guy from moving
 			 */
 			player.body.t_flags.set(ISHELD);
-			// cut to fit
-			*std::format_to_n(player.flytrap_damage, sizeof player.flytrap_damage - 1,
-				"{}d1", ++player.fung_hit).out = '\0';
+			++player.fung_hit;
 			break;
 		case 'L':
 		{
@@ -331,7 +329,7 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 {
 	rogue::Player &player = game().player;
 	struct stats *att, *def;
-	const char *cp;
+	rogue::Attacks attacks;
 	int def_arm;
 	bool did_hit = false;
 	int hplus;
@@ -341,7 +339,8 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 	def = &thdef->t_stats;
 	if (weap == nullptr)
 	{
-		cp = att->s_dmg;
+		// every flytrap has the one growing attack
+		attacks = (thatt->t_type == 'F' && thatt != &player.body) ? flytrap_attacks(player.fung_hit) : att->s_dmg;
 		dplus = 0;
 		hplus = 0;
 	}
@@ -368,11 +367,11 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 			else if (player.wears(Hand::Right, Ring::Dexterity))
 				hplus += player.rings[Hand::Right]->o_ac;
 		}
-		cp = weap->o_damage;
+		attacks = weap->o_damage;
 		if (hurl && weap->o_flags.test(ISMISL) && player.weapon != nullptr &&
 			  launched_by(player.weapon->which<WeaponType>()) == weap->o_launch)
 		{
-			cp = weap->o_hurldmg;
+			attacks = weap->o_hurldmg;
 			hplus += player.weapon->o_hplus;
 			dplus += player.weapon->o_dplus;
 		}
@@ -382,17 +381,15 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 		if (weap->o_type == ItemKind::Stick && weap->which<Stick>() == Stick::Striking
 			&& --weap->charges() < 0)
 		{
-			cp = weap->o_damage = "0d0";
+			attacks = weap->o_damage = "0d0";
 			weap->o_hplus = weap->o_dplus = 0;
 			weap->charges() = 0;
 		}
 	}
 
-	// New null check to prevent segfault on parsing
-	if (cp == nullptr)
-	{
+	// No damage at all: no swing either (was a null damage string)
+	if (attacks.empty())
 		return false;
-	}
 
 	/*
 	 * If the creature being attacked is not running (alseep or held)
@@ -410,7 +407,7 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 		if (player.wears(Hand::Right, Ring::Protection))
 			def_arm -= player.rings[Hand::Right]->o_ac;
 	}
-	for (const rogue::Dice &attack : rogue::parse_attacks(cp))
+	for (const rogue::Dice &attack : attacks)
 	{
 		if (swing(att->s_lvl, def_arm, hplus + str_plus(att->s_str)))
 		{

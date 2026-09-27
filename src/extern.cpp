@@ -286,7 +286,7 @@ const struct monster monsters[26] =
 	{ "centaur",	 15,	{},	{ XX, 25,   4,   4, NA, "1d6/1d6", NA } },
 	{ "dragon",	 100,	ISMEAN,	{ XX,6800, 10,  -1, NA, "1d8/1d8/3d10", NA } },
 	{ "emu",	 0,	ISMEAN,	{ XX,  2,   1,   7, NA, "1d2", NA } },
-		/* damage is overwritten per game via flytrap_damage, see new_monster() */
+		/* until one hits; then every flytrap does fung_hit d1, see flytrap_attacks() */
 		/* string with others, since it is written on in the program */
 	{ "venus flytrap",0,	ISMEAN,	{ XX, 80,   8,   3, NA, "0d0", NA } },
 	{ "griffin",	 20,	ISMEAN|ISFLY|ISREGEN,	{XX,2000, 13, 2,NA, "4d3/3d5/4d3", NA } },

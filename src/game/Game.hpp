@@ -111,8 +111,7 @@ struct Player {
 	int no_command = 0;				/* Number of turns asleep */
 	int no_move = 0;				/* Number of turns held in place */
 	int quiet = 0;					/* Number of quiet turns */
-	int fung_hit = 0;				/* Number of time fungi has hit */
-	char flytrap_damage[10] = "";	/* f_damage: the venus flytrap's attack, grows per hit */
+	int fung_hit = 0;				/* Number of times the venus flytrap has hit; its attack is fung_hit d1 */
 	Trapped was_trapped = Trapped::None;	/* Was a trap sprung (be_trapped(), look()) */
 	coord old_pos = {};				/* oldpos: position before last look() call */
 	struct room *old_room = nullptr;	/* oldrp: roomin(&old_pos) */

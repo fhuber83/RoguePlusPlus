@@ -8,8 +8,8 @@ namespace rogue::items::effects {
 constexpr char NONE = 100;
 
 struct init_weps {
-	const char *iw_dam;	/* Damage when wielded */
-	const char *iw_hrl;	/* Damage when thrown */
+	rogue::Attacks iw_dam;	/* Damage when wielded */
+	rogue::Attacks iw_hrl;	/* Damage when thrown */
 	char iw_launch;	/* Launching weapon */
 	ItemFlags iw_flags;	/* Miscellaneous flags */
 };

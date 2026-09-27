@@ -168,7 +168,7 @@ struct stats {
 	int s_lvl;			/* Level of mastery */
 	int s_arm;			/* Armor class */
 	int s_hpt;			/* Hit points */
-	const char *s_dmg;			/* String describing damage done */
+	rogue::Attacks s_dmg;		/* Damage done, per attack */
 	int s_maxhp;			/* Max hit points */
 };
 
@@ -336,6 +336,7 @@ using rogue::entities::randmonster;
 using rogue::entities::pick_mons;
 using rogue::entities::new_monster;
 using rogue::entities::f_restor;
+using rogue::entities::flytrap_attacks;
 using rogue::entities::wanderer;
 using rogue::entities::give_pack;
 using rogue::entities::wake_monster;

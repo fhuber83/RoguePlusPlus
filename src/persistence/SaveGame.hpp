@@ -23,11 +23,12 @@
  *	- a monster's t_dest as "hero", {"room_gold": i}, {"passage_gold": i}
  *	  or {"item": slot} (a floor item's position);
  *	- rooms as {"room": i} or {"passage": i};
- *	- damage texts, potion colours, stones, materials and macro typeahead
- *	  by their text, which the loader keeps for the rest of the program;
- *	  a venus flytrap's damage is {"alias": "flytrap"}, since it is the
- *	  rogue's flytrap_damage buffer, which grows;
- *	- guesses by their index in Items::guesses.
+ *	- potion colours, stones and materials by their text, which the loader
+ *	  keeps for the rest of the program;
+ *	- guesses by their index in a pool of them, as the original kept them.
+ * Damage is its text ("1d2/1d5", null for none). A venus flytrap's is
+ * {"alias": "flytrap"}: all of them share the attack that grows with the
+ * rogue's fungus_hits, which flytrap_damage also gives as text.
  * Bytes of game text are written as the code points of the same values
  * (see ByteText.hpp). The map, its flags and the screen are rows of hex.
  *

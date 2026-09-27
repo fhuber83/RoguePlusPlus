@@ -34,9 +34,15 @@ void new_monster(Creature *tp, unsigned char type, coord *cp);
 
 /*
  * f_restor:
- *	Restore the initial damage string for flytraps.
+ *	Restore the initial damage of flytraps.
  */
 void f_restor();
+
+/*
+ * flytrap_attacks:
+ *	What a venus flytrap does in a fight after hits hits (Player::fung_hit).
+ */
+rogue::Attacks flytrap_attacks(int hits);
 
 /*
  * wanderer:

@@ -10,7 +10,7 @@
  * tr_name:
  *	Print the name of a trap
  */
-const char *
+std::string_view
 tr_name(Trap type)
 {
 	switch (type)
@@ -29,7 +29,7 @@ tr_name(Trap type)
 		return "a poison dart trap";
 	}
 	msg("wierd trap: {:d}", std::to_underlying(type));
-	return nullptr;
+	return "";
 }
 
 /*
@@ -375,10 +375,10 @@ aggravate()
  *      For printfs: if string starts with a vowel, return "n" for an
  *	"an".
  */
-const char *
-vowelstr(const char *str)
+std::string_view
+vowelstr(std::string_view str)
 {
-	switch (*str)
+	switch (str.empty() ? '\0' : str.front())
 	{
 	case 'a': case 'A':
 	case 'e': case 'E':
@@ -485,17 +485,14 @@ spread(int nm)
  *	Call an object something after use.
  */
 void
-call_it(bool know, char **guess)
+call_it(bool know, std::string &guess)
 {
-	if (know && **guess)
-		**guess = '\0';
-	else if (!know && **guess == '\0') {
-		char buf[MAXNAME+1];
-
+	if (know && !guess.empty())
+		guess.clear();
+	else if (!know && guess.empty()) {
 		msg("{}call it? ",noterse("what do you want to "));
-		input().read_line(buf,MAXNAME);
-		if (*buf != ESCAPE)
-			strcpy(*guess, buf);
+		if (auto name = input().read_line(MAXNAME))
+			guess = *name;
 		msg("");
 	}
 }
@@ -603,7 +600,7 @@ goodch(Item *obj)
  * help: prints out help screens
  */
 void
-help(struct h_list *helpscr)
+help(const struct h_list *helpscr)
 {
 	int hcount = 0;
 	int hrow, hcol;
@@ -611,7 +608,7 @@ help(struct h_list *helpscr)
 	unsigned char answer = 0;
 
 	display().open_page();
-	while (*helpscr->h_desc && answer != ESCAPE)
+	while (!helpscr->h_desc.empty() && answer != ESCAPE)
 	{
 		isfull = false;
 		if ((hcount % (game().options.terse?23:46)) == 0)
@@ -635,16 +632,16 @@ help(struct h_list *helpscr)
 				 isfull = true;
 		}
 
-		display().write_at(hrow, hcol, (const char *)helpscr->h_chstr);
+		display().write_at(hrow, hcol, helpscr->glyphs());
 		display().write(helpscr->h_desc);
 		helpscr++;
 
 		/*
 		 * decide if we need print a continue type message
 		 */
-		if ( (*helpscr->h_desc == 0) || isfull)
+		if (helpscr->h_desc.empty() || isfull)
 		{
-			if (*helpscr->h_desc == 0)
+			if (helpscr->h_desc.empty())
 				display().write_at(24, 0, "--press space to continue--");
 			else if (game().options.terse)
 				display().write_at(24, 0, "--Space for more, Esc to continue--");
@@ -786,8 +783,8 @@ void
 call()
 {
 	Item *obj;
-	char **guess;
-	const char *elsewise;
+	std::string *guess;
+	std::string_view elsewise;
 	bool *know;
 	rogue::Items &items = game().items;
 
@@ -802,25 +799,25 @@ call()
 	case ItemKind::Ring:
 		guess = items.r_guess.data();
 		know = items.r_know.data();
-		elsewise = (*guess[obj->o_which] != '\0' ?
+		elsewise = (!guess[obj->o_which].empty() ?
 			guess[obj->o_which] : items.r_stones[obj->which<Ring>()]);
 		break;
 	case ItemKind::Potion:
 		guess = items.p_guess.data();
 		know = items.p_know.data();
-		elsewise = (*guess[obj->o_which] != '\0' ?
+		elsewise = (!guess[obj->o_which].empty() ?
 			guess[obj->o_which] : items.p_colors[obj->which<Potion>()]);
 		break;
 	case ItemKind::Scroll:
 		guess = items.s_guess.data();
 		know = items.s_know.data();
-		elsewise = (*guess[obj->o_which] != '\0' ?
-			guess[obj->o_which] : items.s_names[obj->which<Scroll>()].storage);
+		elsewise = (!guess[obj->o_which].empty() ?
+			guess[obj->o_which] : items.s_names[obj->which<Scroll>()]);
 		break;
 	case ItemKind::Stick:
 		guess = items.ws_guess.data();
 		know = items.ws_know.data();
-		elsewise = (*guess[obj->o_which] != '\0' ?
+		elsewise = (!guess[obj->o_which].empty() ?
 			guess[obj->o_which] : items.ws_made[obj->which<Stick>()]);
 		break;
 	default:
@@ -833,12 +830,9 @@ call()
 		return;
 	}
 	msg("Was called \"{}\"", elsewise);
-	char buf[MAXNAME+1];
-
 	msg("what do you want to call it? ");
-	input().read_line(buf,MAXNAME);
-	if (*buf && *buf != ESCAPE)
-		strcpy(guess[obj->o_which], buf);
+	if (auto name = input().read_line(MAXNAME); name && !name->empty())
+		guess[obj->o_which] = *name;
 	msg("");
 }
 
@@ -846,17 +840,15 @@ call()
  * prompt player for definition of macro
  */
 void
-do_macro(char *buf, int sz)
+do_macro(std::string &macro)
 {
-	std::vector<char> line(sz);
-	char *cp = line.data();
-
-	msg("F9 was {}, enter new macro: ",buf);
-	if (input().read_line(line.data(),sz-1) != ESCAPE)
-		do {
-			if (*cp != ctrl('F'))
-				*buf++ = *cp;
-		} while (*cp++) ;
+	msg("F9 was {}, enter new macro: ",macro);
+	if (auto line = input().read_line(rogue::Options::macro_length)) {
+		macro.clear();
+		for (char c : *line)
+			if (c != ctrl('F'))
+				macro += c;
+	}
 	msg("");
 	flush_type();
 }

@@ -215,7 +215,7 @@ picked_up:
  *	List what is in the pack
  */
 unsigned char
-inventory(const List<Item> &list, ItemFilter type, const char *lstr)
+inventory(const List<Item> &list, ItemFilter type, std::string_view lstr)
 {
 	unsigned char ch;
 	Item *obj;
@@ -237,7 +237,7 @@ inventory(const List<Item> &list, ItemFilter type, const char *lstr)
 		  !(type.is(ItemKind::Stick) && obj->o_enemy && obj->charges()))
 			continue;
 		n_objs++;
-		add_line(lstr, std::format("{}) {}", static_cast<char>(ch), inv_name(obj, false)).c_str());
+		add_line(lstr, std::format("{}) {}", static_cast<char>(ch), inv_name(obj, false)));
 	}
 	if (n_objs == 0)
 	{
@@ -301,7 +301,7 @@ pick_up(unsigned char ch)
  *	Pick something out of a pack for a purpose
  */
 Item *
-get_item(const char *purpose, ItemFilter type)
+get_item(std::string_view purpose, ItemFilter type)
 {
 	Item *obj;
 	unsigned char ch;
@@ -310,8 +310,8 @@ get_item(const char *purpose, ItemFilter type)
 	unsigned char gi_state;	/* get item sub state */
 	int once_only = false;
 
-	if (((!strncmp(game().options.menu,"sel",3) && strcmp(purpose,"eat")
-	  && strcmp(purpose,"drop"))) || !strcmp(game().options.menu,"on"))
+	if (((game().options.menu.starts_with("sel") && purpose != "eat"
+	  && purpose != "drop")) || game().options.menu == "on")
 		once_only = true;
 
 	gi_state = game().turn.again;
@@ -369,7 +369,7 @@ get_item(const char *purpose, ItemFilter type)
 				 * is going to change the pack.  If he detaches the
 				 * thing from the pack later this flag will get set.
 				 */
-				if (strcmp(purpose, "identify")) {
+				if (purpose != "identify") {
 					turn.last_item_key = ch;
 					turn.last_item = obj;
 				}

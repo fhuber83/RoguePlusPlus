@@ -30,8 +30,8 @@ void discovered();
  *	Build a paged list of lines (inventory, discoveries) through the
  *	display, one call per line. end_line closes the page.
  */
-unsigned char add_line(const char *use, const char *line);
-unsigned char end_line(const char *use);
+unsigned char add_line(std::string_view use, std::optional<std::string_view> line);
+unsigned char end_line(std::string_view use);
 
 }  // namespace items
 }  // namespace rogue

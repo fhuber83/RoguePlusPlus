@@ -41,11 +41,11 @@ static_assert(sizeof(LegacyRecord) == 56);
 
 std::string cut_name(std::string name)
 {
-	name.resize(std::min(std::strlen(name.c_str()), max_score_name));
+	name.resize(std::min({name.find('\0'), name.size(), max_score_name}));
 	return name;
 }
 
-std::optional<int> get_int(const json &entry, const char *key)
+std::optional<int> get_int(const json &entry, std::string_view key)
 {
 	auto it = entry.find(key);
 	if (it == entry.end() || !it->is_number_integer())
@@ -173,7 +173,7 @@ format_scores(std::span<const ScoreEntry> entries)
 }
 
 std::expected<ScoreList, ScoresError>
-load_scores(const char *path)
+load_scores(const std::string &path)
 {
 	std::ifstream file(path, std::ios::binary);
 	if (!file)
@@ -185,9 +185,9 @@ load_scores(const char *path)
 }
 
 bool
-save_scores(const char *path, std::span<const ScoreEntry> entries)
+save_scores(const std::string &path, std::span<const ScoreEntry> entries)
 {
-	std::string temp = std::string(path) + ".tmp";
+	std::string temp = path + ".tmp";
 	{
 		std::ofstream file(temp, std::ios::binary | std::ios::trunc);
 		file << format_scores(entries);
@@ -197,7 +197,7 @@ save_scores(const char *path, std::span<const ScoreEntry> entries)
 			return false;
 		}
 	}
-	if (std::rename(temp.c_str(), path) != 0) {
+	if (std::rename(temp.c_str(), path.c_str()) != 0) {
 		std::remove(temp.c_str());
 		return false;
 	}

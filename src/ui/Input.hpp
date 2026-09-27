@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cstddef>
+#include <optional>
+#include <string>
+
 namespace rogue::ui {
 
 /// Values read_key() returns besides plain characters (0-255).
@@ -38,12 +42,10 @@ public:
 	/// Whatever was drawn becomes visible first.
 	virtual int read_key(int timeout_ms) = 0;
 
-	/// Lets the player type up to `size` printable characters at the
-	/// cursor, echoing them, with backspace. `buf` needs room for `size`
-	/// characters and a terminating '\0'.
-	/// Returns '\n' (or key::Enter) when done. Escape clears what was typed,
-	/// leaves ESCAPE and '\0' in `buf` and returns ESCAPE.
-	virtual int read_line(char *buf, int size) = 0;
+	/// Lets the player type up to `max_length` printable characters at the
+	/// cursor, echoing them, with backspace, and returns them when Enter is
+	/// pressed. Escape clears what was typed and returns nullopt.
+	virtual std::optional<std::string> read_line(std::size_t max_length) = 0;
 };
 
 /// The input the game uses.

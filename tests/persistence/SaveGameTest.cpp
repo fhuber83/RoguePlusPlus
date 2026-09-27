@@ -113,14 +113,14 @@ protected:
 		ring->o_damage = ring->o_hurldmg = "0d0";
 		p.body.t_pack.push_front(ring);
 		p.rings[Hand::Right] = ring;
-		strcpy(g.items.p_guess[Potion::Poison], "fizzy");
+		g.items.p_guess[Potion::Poison] = "fizzy";
 		g.items.p_know[Potion::SeeInvisible] = true;
 		fuse(rogue::rules::Event::Unconfuse, 9);
-		strcpy(g.options.macro, "sss");
-		g.turn.typeahead = g.options.macro + 1;
+		g.options.macro = "sss";
+		g.turn.typeahead = "ss";
 		g.turn.last_item = p.weapon;
 		g.turn.last_item_key = 'a';
-		strcpy(g.message.last, "you feel a bite in your leg");
+		g.message.last = "you feel a bite in your leg";
 		// Monsters after everything a monster can be after
 		Item *floor = g.level.objects.first();
 		int n = 0;
@@ -129,10 +129,10 @@ protected:
 			case 0: tp->t_dest = &p.body.t_pos; break;
 			case 1: tp->t_dest = &g.level.rooms[0].r_gold; break;
 			case 2: tp->t_dest = floor ? &floor->o_pos : nullptr; break;
-			case 3: tp->t_stats.s_dmg = p.flytrap_damage; break;
+			case 3: tp->t_type = 'F'; break;	// a venus flytrap, whose attack grows
 			}
 		}
-		strcpy(p.flytrap_damage, "3d1");
+		p.fung_hit = 3;
 	}
 };
 
@@ -184,15 +184,17 @@ TEST_F(SaveGame, PointersPointIntoTheGame)
 	rogue::Game &g = game();
 	EXPECT_TRUE(rogue::pool_problems(g).empty());
 	EXPECT_TRUE(g.player.body.t_pack.contains(g.player.rings[Hand::Right]));
-	EXPECT_STREQ(g.items.p_guess[Potion::Poison], "fizzy");
-	EXPECT_STREQ(g.turn.typeahead, "ss");
+	EXPECT_EQ(g.items.p_guess[Potion::Poison], "fizzy");
+	EXPECT_EQ(g.turn.typeahead, "ss");
 	EXPECT_EQ(g.turn.last_item, g.player.weapon);
 	EXPECT_EQ(g.scheduler.time_left(rogue::rules::Event::Unconfuse), 9);
 	int flytraps = 0;
 	for (Creature *tp : g.level.monsters)
-		if (tp->t_stats.s_dmg == g.player.flytrap_damage)
+		if (tp->t_type == 'F')
 			flytraps++;
 	EXPECT_GT(flytraps, 0);
+	EXPECT_EQ(g.player.fung_hit, 3);
+	EXPECT_EQ(flytrap_attacks(g.player.fung_hit), rogue::Attacks("3d1"));
 }
 
 TEST_F(SaveGame, TheScreenComesBack)
@@ -243,6 +245,30 @@ TEST_F(SaveGame, RejectsBrokenReferences)
 	std::string outside = text;
 	outside.replace(outside.find("\"objects\": ["), 12, "\"objects\": [9999, ");
 	EXPECT_EQ(load_error(outside), SaveError::Kind::BadFormat);
+}
+
+TEST_F(SaveGame, RejectsDamageThatIsntDamage)
+{
+	new_game(42, 5);
+	stir();
+	const std::string text = save();
+	auto changed = [&](const std::string &from, const std::string &to) {
+		std::string t = text;
+		auto at = t.find(from);
+		EXPECT_NE(at, std::string::npos) << from;
+		return at == std::string::npos ? t : t.replace(at, from.size(), to);
+	};
+	// A flytrap's damage is the alias, and only a flytrap's
+	std::string not_alias = text;
+	auto alias = not_alias.find(R"("alias": "flytrap")");
+	ASSERT_NE(alias, std::string::npos);
+	auto open = not_alias.rfind('{', alias), close = not_alias.find('}', alias);
+	not_alias.replace(open, close + 1 - open, R"("1d1")");
+	EXPECT_EQ(load_error(not_alias), SaveError::Kind::BadFormat);
+	EXPECT_EQ(load_error(changed(R"("damage": "1d4")", R"("damage": {"alias": "flytrap"})")), SaveError::Kind::BadFormat);
+	// The flytraps' attack follows from their hits
+	EXPECT_EQ(load_error(changed(R"("flytrap_damage": "3d1")", R"("flytrap_damage": "4d1")")), SaveError::Kind::BadFormat);
+	EXPECT_EQ(load_error(changed(R"("damage": "0d0")", R"("damage": "1x1")")), SaveError::Kind::BadFormat);
 }
 
 TEST_F(SaveGame, WriteAndRead)

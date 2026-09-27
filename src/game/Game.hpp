@@ -18,18 +18,22 @@ namespace rogue {
 
 /*
  * Player settings: read from rogue.opt (see persistence/OptionsFile), the
- * name prompt and the in-game toggles. The character buffers keep their
- * original sizes.
+ * name prompt and the in-game toggles. The texts keep the longest lengths
+ * of the original buffers.
  */
 struct Options {
-	char name[24] = "Rodney";		/* whoami: the rogue's name */
-	char fruit[24] = "Slime Mold";	/* What the player likes to eat */
-	char macro[42] = "v";			/* Keys the F9 macro types */
-	char score_file[15] = "rogue.scr";
-	char save_file[15] = "rogue.sav";
-	char drive[2] = "?";			/* Unused DOS drive letter */
-	char menu[4] = "on";			/* Item menus: "on", "sel" or off */
-	char screen[8] = "";			/* "bw" forces monochrome */
+	static constexpr std::size_t name_length = 23;		/* also the fruit's */
+	static constexpr std::size_t macro_length = 40;
+	static constexpr std::size_t file_length = 14;		/* the score and save files' */
+
+	std::string name = "Rodney";		/* whoami: the rogue's name */
+	std::string fruit = "Slime Mold";	/* What the player likes to eat */
+	std::string macro = "v";			/* Keys the F9 macro types */
+	std::string score_file = "rogue.scr";
+	std::string save_file = "rogue.sav";
+	std::string drive = "?";			/* Unused DOS drive letter */
+	std::string menu = "on";			/* Item menus: "on", "sel" or off */
+	std::string screen = "";			/* "bw" forces monochrome */
 	bool monochrome = false;		/* Draw without colours (bwflag) */
 	bool terse = false;				/* Short messages */
 	bool expert = false;			/* Even shorter messages */
@@ -43,8 +47,8 @@ struct Options {
  * kept for ^R.
  */
 struct MessageLine {
-	char text[BUFSIZE] = "";		/* msgbuf: the message being built */
-	char last[BUFSIZE] = "";		/* huh: the last message printed */
+	std::string text;				/* msgbuf: the message being built, at most BUFSIZE - 1 */
+	std::string last;				/* huh: the last message printed */
 	int end = 0;					/* mpos: where the shown message ends, 0 if none */
 	int next_end = 0;				/* newpos: where the message being built ends */
 	bool remember = true;			/* save_msg: keep the message for ^R */
@@ -66,7 +70,7 @@ struct Turn {
 	bool fast_mode = false;			/* Run until you see something */
 	bool fast_state = false;		/* Toggle for find (see above) */
 	coord delta = {};				/* Change indicated to get_dir() */
-	const char *typeahead = "";		/* typebuf: keys a macro still types */
+	std::string typeahead;			/* typebuf: keys a macro still types */
 	bool bailout = false;			/* The hero is nowhere: fall through */
 	/* What the last command was, for repeating it (command.cpp) */
 	int last_count = 0;
@@ -107,8 +111,7 @@ struct Player {
 	int no_command = 0;				/* Number of turns asleep */
 	int no_move = 0;				/* Number of turns held in place */
 	int quiet = 0;					/* Number of quiet turns */
-	int fung_hit = 0;				/* Number of time fungi has hit */
-	char flytrap_damage[10] = "";	/* f_damage: the venus flytrap's attack, grows per hit */
+	int fung_hit = 0;				/* Number of times the venus flytrap has hit; its attack is fung_hit d1 */
 	Trapped was_trapped = Trapped::None;	/* Was a trap sprung (be_trapped(), look()) */
 	coord old_pos = {};				/* oldpos: position before last look() call */
 	struct room *old_room = nullptr;	/* oldrp: roomin(&old_pos) */
@@ -169,23 +172,21 @@ struct Items {
 	KindTable<Stick, magic_item> ws_magic;
 	struct magic_item things[NUMTHINGS];	/* Odds of each type of item */
 	/* How the kinds look in this game */
-	KindTable<Scroll, array> s_names = {};	/* Names of the scrolls */
-	KindTable<Potion, const char *> p_colors = {};	/* Colors of the potions */
-	KindTable<Ring, const char *> r_stones = {};	/* Stone settings of the rings */
-	KindTable<Stick, const char *> ws_made = {};	/* What sticks are made of */
-	KindTable<Stick, const char *> ws_type = {};	/* Is it a wand or a staff */
+	KindTable<Scroll, std::string> s_names;	/* Names of the scrolls */
+	KindTable<Potion, std::string_view> p_colors = {};	/* Colors of the potions */
+	KindTable<Ring, std::string_view> r_stones = {};	/* Stone settings of the rings */
+	KindTable<Stick, std::string_view> ws_made = {};	/* What sticks are made of */
+	KindTable<Stick, std::string_view> ws_type = {};	/* Is it a wand or a staff */
 	/* What the rogue knows, and what he has called the kinds he doesn't */
 	KindTable<Scroll, bool> s_know = {};			/* Does he know what a scroll does */
 	KindTable<Potion, bool> p_know = {};			/* Does he know what a potion does */
 	KindTable<Ring, bool> r_know = {};				/* Does he know what a ring does */
 	KindTable<Stick, bool> ws_know = {};			/* Does he know what a stick does */
-	KindTable<Scroll, char *> s_guess = {};			/* Players guess at what scroll is */
-	KindTable<Potion, char *> p_guess = {};			/* Players guess at what potion is */
-	KindTable<Ring, char *> r_guess = {};			/* Players guess at what ring is */
-	KindTable<Stick, char *> ws_guess = {};			/* Players guess at what wand is */
-	/* storage for the guesses (was _guesses) */
-	struct array guesses[kind_count<Scroll> + kind_count<Potion> + kind_count<Ring> + kind_count<Stick>] = {};
-	int iguess = 0;
+	/* What he has called each kind, at most MAXNAME characters; "" for nothing */
+	KindTable<Scroll, std::string> s_guess;
+	KindTable<Potion, std::string> p_guess;
+	KindTable<Ring, std::string> r_guess;
+	KindTable<Stick, std::string> ws_guess;
 	int group = 2;							/* Current group number */
 
 	Items();

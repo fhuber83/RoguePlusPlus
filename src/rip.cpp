@@ -45,7 +45,7 @@ score(int amount, int flags, char monst)
 	{
 		wait_msg("see rankings");
 	}
-	while ((file = fopen(game().options.score_file, "r")) == nullptr)
+	while ((file = fopen(game().options.score_file.c_str(), "r")) == nullptr)
 	{
 		display().write("\n");
 		if (game().noscore || (amount == 0))
@@ -56,7 +56,7 @@ reread:
 		{
 		case 'c':
 		case 'C':
-			fclose(fopen(game().options.score_file, "w"));
+			fclose(fopen(game().options.score_file.c_str(), "w"));
 			break;
 		case 'r':
 		case 'R':
@@ -74,7 +74,7 @@ reread:
 
 	if (game().noscore != true)
 	{
-		strcpy(his_score.sc_name,game().options.name);
+		strcpy(his_score.sc_name,game().options.name.c_str());
 		his_score.sc_gold = amount;
 		his_score.sc_fate = flags ? flags : monst;
 		his_score.sc_level = game().player.max_level;
@@ -157,13 +157,13 @@ pr_scores(int newrank, struct sc_ent *top10)
 	std::string dthstr;
 	std::string texts[TOPSCORES];
 	rogue::ui::ScoreLine lines[TOPSCORES];
-	const char *altmsg;
+	std::optional<std::string_view> altmsg;
 
 	for (i=0,n=0;i<TOPSCORES;i++,top10++)
 	{
 		std::string &text = texts[n];
 
-		altmsg = nullptr;
+		altmsg.reset();
 		if (top10->sc_gold <=0 )
 			break;
 		if (top10->sc_level >= 26)
@@ -190,15 +190,15 @@ pr_scores(int newrank, struct sc_ent *top10)
 		}
 		text.clear();
 		if ((signed)(strlen(top10->sc_name) + 10 +
-			strlen(he_man[top10->sc_rank-1])) < COLS)
+			he_man[top10->sc_rank-1].size()) < COLS)
 		{
 			if (top10->sc_rank > 1 && (strlen(top10->sc_name)))
 				text = std::format(" \"{}\"", he_man[top10->sc_rank - 1]);
 		}
-		if (altmsg == nullptr)
+		if (!altmsg)
 			text += std::format("{} on level {}", dthstr, top10->sc_level);
 		else
-			text += altmsg;
+			text += *altmsg;
 		lines[n].gold = top10->sc_gold;
 		lines[n].name = top10->sc_name;
 		lines[n].text = text;
@@ -374,7 +374,7 @@ total_winner(void)
 std::string
 killname(unsigned char monst, bool doart)
 {
-	const char *sp;
+	std::string_view sp;
 	bool article;
 
 	article = true;
@@ -407,6 +407,6 @@ killname(unsigned char monst, bool doart)
 	}
 	if (doart && article)
 		return std::format("a{} {}", vowelstr(sp), sp);
-	return sp;
+	return std::string(sp);
 }
 

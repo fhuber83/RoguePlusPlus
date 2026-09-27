@@ -47,7 +47,7 @@ quaff(void)
 		break;
 	case Potion::Poison:
 		{
-		constexpr const char *sick = "you feel {} sick.";
+		constexpr std::string_view sick = "you feel {} sick.";
 
 		items.p_know[Potion::Poison] = true;
 		if (!player.wears(Ring::SustainStrength))
@@ -207,7 +207,7 @@ quaff(void)
 		discardit = true;
 	}
 
-	call_it(items.p_know[obj->which<Potion>()], &items.p_guess[obj->which<Potion>()]);
+	call_it(items.p_know[obj->which<Potion>()], items.p_guess[obj->which<Potion>()]);
 
 	if (discardit)
 		discard(obj);

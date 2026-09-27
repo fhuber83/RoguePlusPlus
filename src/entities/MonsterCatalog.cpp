@@ -27,9 +27,9 @@ static int	exp_add(Creature *tp);
  * intended behavior.
  */
 
-static const char *vorp_mons = "KEBHISORZLCAQNYTWFPUGMXVJD";
-static const char *lvl_mons =  "K BHISOR LCA NYTWFP GMXVJD";
-static const char *wand_mons = "KEBHISORZ CAQ YTW PUGM VJ ";
+constexpr std::string_view vorp_mons = "KEBHISORZLCAQNYTWFPUGMXVJD";
+constexpr std::string_view lvl_mons =  "K BHISOR LCA NYTWFP GMXVJD";
+constexpr std::string_view wand_mons = "KEBHISORZ CAQ YTW PUGM VJ ";
 
 /*
  * randmonster:
@@ -40,9 +40,8 @@ char
 randmonster(bool wander)
 {
 	int d;
-	const char *mons;
+	std::string_view mons = wander ? wand_mons : lvl_mons;
 
-	mons = wander ? wand_mons : lvl_mons;
 	do {
 		int r10 = rnd(5) + rnd(6);
 
@@ -62,7 +61,7 @@ randmonster(bool wander)
 void
 new_monster(Creature *tp, unsigned char type, coord *cp)
 {
-	struct monster *mp;
+	const struct monster *mp;
 	int lev_add;
 
 	if ((lev_add = game().level.depth - AMULETLEVEL) < 0)
@@ -85,8 +84,6 @@ new_monster(Creature *tp, unsigned char type, coord *cp)
 	tp->t_pack.clear();
 	if (game().player.wears(Ring::AggravateMonster))
 		start_run(cp);
-	if (type == 'F')
-		tp->t_stats.s_dmg = game().player.flytrap_damage;
 	if (type == 'X')
 	{
 		switch (rnd(game().level.depth > 25 ? 9 : 8))
@@ -106,15 +103,26 @@ new_monster(Creature *tp, unsigned char type, coord *cp)
 }
 
 /*
- *  f_restor(): restor initial damage string for flytraps
+ *  f_restor(): restore the initial damage of flytraps
  */
 void
 f_restor(void)
 {
-	struct monster *mp = &monsters['F'-'A'];
-
 	game().player.fung_hit = 0;
-	strcpy(game().player.flytrap_damage, mp->m_stats.s_dmg);
+}
+
+/*
+ * flytrap_attacks:
+ *	Every venus flytrap's attack: the table's until one hits, then one die
+ *	of one side per hit (was the f_damage buffer that all their s_dmg
+ *	pointed at)
+ */
+rogue::Attacks
+flytrap_attacks(int hits)
+{
+	if (hits == 0)
+		return monsters['F'-'A'].m_stats.s_dmg;
+	return rogue::Attacks(rogue::Dice{hits, 1});
 }
 
 /*
@@ -244,13 +252,13 @@ give_pack(Creature *tp)
 char
 pick_mons(void)
 {
-	const char *cp = vorp_mons + strlen(vorp_mons);
+	int i = static_cast<int>(vorp_mons.size());
 
-	while (--cp >= vorp_mons && rnd(10))
+	while (--i >= 0 && rnd(10))
 		;
-	if (cp < vorp_mons)
+	if (i < 0)
 		return 'M';
-	return *cp;
+	return vorp_mons[i];
 }
 
 

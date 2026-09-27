@@ -16,12 +16,15 @@
 #include <ctime>
 #include <format>
 #include <optional>
+#include <array>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <unistd.h>
 
 #include "core/Config.hpp"
+#include "core/Ascii.hpp"
 #include "core/Coord.hpp"
 #include "core/Dice.hpp"
 #include "core/Flags.hpp"
@@ -54,8 +57,7 @@ inline constexpr int maxrow = MAXLINES - 2;
  */
 inline constexpr int REV = 1;		/* the version, 1.48 */
 inline constexpr int VER = 48;
-inline constexpr const char *ENVFILE = "rogue.opt";
-inline constexpr int MACROSZ = 41;
+inline constexpr std::string_view ENVFILE = "rogue.opt";
 
 /*
  * Maximum number of different things
@@ -88,17 +90,22 @@ inline constexpr int LAMPDIST = 3;
  * Help list
  */
 struct h_list {
-	unsigned char h_chstr[6];  // either (ch) or (ch,sep,ch2) appended with ": "
-	const char *h_desc;
+	std::array<char, 5> h_chstr{};	// either (ch) or (ch,sep,ch2) appended with ": "
+	std::size_t h_chlen = 0;
+	std::string_view h_desc;
 
 	// A line of text; an empty one ends the list (were H_STR and H_END)
-	constexpr h_list(const char *desc) : h_chstr{}, h_desc(desc) {}
+	constexpr h_list(std::string_view desc) : h_desc(desc) {}
 	// A glyph and what it is (was H_CHSTR)
-	constexpr h_list(unsigned char ch, const char *desc)
-		: h_chstr{ch, ':', ' ', '\0'}, h_desc(desc) {}
+	constexpr h_list(unsigned char ch, std::string_view desc)
+		: h_chstr{static_cast<char>(ch), ':', ' '}, h_chlen(3), h_desc(desc) {}
 	// Two glyphs with a separator, "A-Z" (was H_CH2STR)
-	constexpr h_list(unsigned char first, unsigned char sep, unsigned char last, const char *desc)
-		: h_chstr{first, sep, last, ':', ' ', '\0'}, h_desc(desc) {}
+	constexpr h_list(unsigned char first, unsigned char sep, unsigned char last, std::string_view desc)
+		: h_chstr{static_cast<char>(first), static_cast<char>(sep), static_cast<char>(last), ':', ' '},
+		  h_chlen(5), h_desc(desc) {}
+
+	// The glyph column, "" for a line of text
+	constexpr std::string_view glyphs() const { return {h_chstr.data(), h_chlen}; }
 };
 
 /*
@@ -121,14 +128,11 @@ typedef unsigned int str_t;
  */
 
 struct magic_item {
-	const char *mi_name;
+	std::string_view mi_name;
 	int mi_prob;
 	short mi_worth;
 };
 
-struct array {
-	char storage[MAXNAME+1];
-};
 
 /*
  * Room structure
@@ -170,7 +174,7 @@ struct stats {
 	int s_lvl;			/* Level of mastery */
 	int s_arm;			/* Armor class */
 	int s_hpt;			/* Hit points */
-	const char *s_dmg;			/* String describing damage done */
+	rogue::Attacks s_dmg;		/* Damage done, per attack */
 	int s_maxhp;			/* Max hit points */
 };
 
@@ -237,7 +241,7 @@ inline constexpr rogue::CreatureFlag ISFLY = rogue::CreatureFlag::Flying;
  * Array containing information on all the various types of monsters
  */
 struct monster {
-	const char *m_name;			/* What to call the monster */
+	std::string_view m_name;		/* What to call the monster */
 	int m_carry;			/* Probability of carrying something */
 	CreatureFlags m_flags;		/* Things about the monster */
 	struct stats m_stats;		/* Initial stats */
@@ -338,6 +342,7 @@ using rogue::entities::randmonster;
 using rogue::entities::pick_mons;
 using rogue::entities::new_monster;
 using rogue::entities::f_restor;
+using rogue::entities::flytrap_attacks;
 using rogue::entities::wanderer;
 using rogue::entities::give_pack;
 using rogue::entities::wake_monster;
@@ -366,18 +371,17 @@ using rogue::execcom;
  * fixed tables and strings (extern.cpp, init.cpp).
  */
 
-extern char nullstr[];
-extern const char *it, *you, *no_mem;
-
-extern const char *he_man[], *intense;
+// The ranks, by experience level (he_man[level - 1])
+extern const std::array<std::string_view, 21> he_man;
+inline constexpr std::string_view intense = " of intense white light";
 // Weapon names, and the name of the WeaponType::Flame that fire_bolt() throws
-extern KindTable<WeaponType, const char *, kind_count<WeaponType> + 1> w_names;
-extern const KindTable<ArmorType, const char *> a_names;
+extern KindTable<WeaponType, std::string_view, kind_count<WeaponType> + 1> w_names;
+extern const KindTable<ArmorType, std::string_view> a_names;
 // a std::format string for msg()
-inline constexpr const char *flashmsg = "your {} gives off a flash{}";
-extern struct h_list helpcoms[], helpobjs[];
+inline constexpr std::string_view flashmsg = "your {} gives off a flash{}";
+extern const struct h_list helpcoms[], helpobjs[];
 extern const KindTable<ArmorType, int> a_chances, a_class;
-extern struct monster	monsters[];
+extern const struct monster monsters[];
 
 // the experience level table (init.cpp)
 extern const long e_levels[20];
@@ -395,7 +399,7 @@ void	init_names(void);
 void	init_stones(void);
 void	init_materials(void);
 char	*getsyl(void);
-char	rchr(const char *string);
+char	rchr(std::string_view string);
 
 // io.cpp
 // msg(), addmsg() and ifterse() take std::format strings. An empty msg() clears the line.
@@ -431,17 +435,16 @@ ifterse(std::format_string<Args...> tfmt, std::format_string<Args...> fmt, Args 
 	msg(game().options.expert ? tfmt : fmt, std::forward<Args>(args)...);
 }
 
-void	wait_msg(const char *msg);
+void	wait_msg(std::string_view msg);
 void	endmsg(void);
-void	more(const char *msg);
-void	putmsg(char *msg);
+void	more(std::string_view msg);
+void	putmsg(std::string_view msg);
 void	status(void);
 void	wait_for(unsigned char ch);
-void	show_win(char *message);
-void	str_attr(const char *str);
+void	str_attr(std::string_view str);
 void	SIG2(void);
 std::string	io_unctrl(unsigned char ch);
-const char	*noterse(const char *str);
+std::string_view	noterse(std::string_view str);
 
 // list.cpp
 Item	*new_item(void);
@@ -467,7 +470,7 @@ list_free(rogue::List<T> &list)
 
 // playit.cpp
 void	endit(void);
-void	playit(char *sname);
+void	playit(const std::optional<std::string> &sname);
 void	quit(void);
 void	leave(void);
 // legacy wrappers around rogue::rng()
@@ -482,13 +485,13 @@ void	eat(void);
 void	chg_str(int amt);
 void	add_str(str_t *sp, int amt);
 void	aggravate(void);
-void	call_it(bool know, char **guess);
-void	help(struct h_list *helpscr);
+void	call_it(bool know, std::string &guess);
+void	help(const struct h_list *helpscr);
 void	search(void);
 void	d_level(void);
 void	u_level(void);
 void	call(void);
-void	do_macro(char *buf, int sz);
+void	do_macro(std::string &macro);
 Item	*find_obj(int y, int x);
 bool	add_haste(bool potion);
 bool	is_current(Item *obj);
@@ -496,8 +499,8 @@ bool	get_dir(void);
 bool	find_dir(unsigned char ch, coord *cp);
 bool	step_ok(unsigned char ch);
 bool	offmap(int y, int x);
-const char	*tr_name(Trap type);
-const char	*vowelstr(const char *str);
+std::string_view	tr_name(Trap type);
+std::string_view	vowelstr(std::string_view str);
 char	goodch(Item *obj);
 int	sign(int nm);
 unsigned char	winat(int y, int x);
@@ -519,7 +522,7 @@ int	INDEX(int y, int x);
 void	do_run(unsigned char ch);
 void	do_move(int dy, int dx);
 void	door_open(struct room *rp);
-void	descend(const char *mesg);
+void	descend(std::string_view mesg);
 void	rndmove(Creature *who, coord *newmv);
 
 // rip.cpp
@@ -530,19 +533,17 @@ std::string	killname(unsigned char monst, bool doart);
 
 // save.cpp
 void	save_game(void);
-void	restore(char *savefile);
+void	restore(const std::string &savefile);
 
-// strings.cpp
-bool	is_alpha(char ch);
-bool	is_upper(char ch);
-bool	is_lower(char ch);
-bool	is_digit(char ch);
-bool	is_space(char ch);
-bool	is_print(char ch);
-char	*stccpy(char *s1, char *s2, int count);
-char	*stpblk(char *str);
-char	*endblk(char *str);
-void	lcase(char *str);
+// ASCII character tests (core/Ascii.hpp)
+using rogue::is_alpha;
+using rogue::is_upper;
+using rogue::is_lower;
+using rogue::is_digit;
+using rogue::is_space;
+using rogue::is_print;
+using rogue::to_upper;
+using rogue::to_lower;
 
 // wizard.cpp
 void	whatis(void);

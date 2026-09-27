@@ -9,6 +9,8 @@
  */
 
 #include <optional>
+
+#include "core/Dice.hpp"
 #include <type_traits>
 #include <utility>
 
@@ -123,10 +125,9 @@ using ItemFlags = Flags<ItemFlag>;
 struct Item {
 	ItemKind o_type;			/* What kind of object it is */
 	coord o_pos;				/* Where it lives on the screen */
-	char *o_text;				/* What it says if you read it */
 	char o_launch;				/* What you need to launch it */
-	const char *o_damage;		/* Damage if used like sword */
-	const char *o_hurldmg;		/* Damage if thrown */
+	rogue::Attacks o_damage;	/* Damage if used like sword */
+	rogue::Attacks o_hurldmg;	/* Damage if thrown */
 	int o_count;				/* Count for plural objects */
 	int o_which;				/* Which object of a type it is: use which<E>() */
 	int o_hplus;				/* Plusses to hit */

@@ -16,19 +16,20 @@
 int
 main(int argc, char **argv)
 {
-	char *curarg, *savfile=0;
+	char *curarg;
+	std::optional<std::string> savfile;
 	rogue::Random::Seed seed = rogue::Random::from_clock();
 
 	// Allow non-ASCII output in <curses.h>
 	setlocale(LC_ALL, "");
 
-	if (rogue::persistence::load_options(ENVFILE, game().options) == rogue::persistence::LoadResult::BadFormat)
+	if (rogue::persistence::load_options(std::string(ENVFILE), game().options) == rogue::persistence::LoadResult::BadFormat)
 		fatal("rogue.opt: incorrect file format\n");
 	/*
 	 * Parse the screen environment variable.  if the string starts with
 	 * "bw", then we force black and white mode.
 	 */
-	if (strncmp(game().options.screen, "bw", 2) == 0)
+	if (game().options.screen.starts_with("bw"))
 		game().options.monochrome = true;
 	while (--argc) {
 		curarg = *(++argv);
@@ -53,10 +54,10 @@ main(int argc, char **argv)
 					break;
 			}
 		}
-		else if (savfile == 0)
+		else if (!savfile)
 			savfile = curarg;
 	}
-	if (savfile == 0) {
+	if (!savfile) {
 		rogue::rng().reseed(seed);
 		start_terminal();
 		credits();

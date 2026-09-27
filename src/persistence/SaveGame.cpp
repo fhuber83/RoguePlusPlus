@@ -37,18 +37,18 @@ static_assert(map_rows == maxrow - 1 && map_cols == COLS);
  * then update the size (measured on x86-64 Linux, where these hold).
  */
 #if defined(__x86_64__) && defined(__linux__)
-static_assert(sizeof(Game) == 17256, "a Game member was added or removed: save it");
-static_assert(sizeof(Player) == 264, "a Player field was added or removed: save it");
+static_assert(sizeof(Game) == 18552, "a Game member was added or removed: save it");
+static_assert(sizeof(Player) == 320, "a Player field was added or removed: save it");
 static_assert(sizeof(Level) == 6488, "a Level field was added or removed: save it");
-static_assert(sizeof(Items) == 3520, "an Items field was added or removed: save it");
+static_assert(sizeof(Items) == 4808, "an Items field was added or removed: save it");
 static_assert(sizeof(Pool) == 1336, "a Pool field was added or removed: save it");
-static_assert(sizeof(Turn) == 56, "a Turn field was added or removed: save it");
-static_assert(sizeof(MessageLine) == 268, "a MessageLine field was added or removed: save it");
-static_assert(sizeof(Options) == 137, "an Options field was added or removed: decide whether to save it");
-static_assert(sizeof(Creature) == 112, "a Creature field was added or removed: save it");
-static_assert(sizeof(Item) == 80, "an Item field was added or removed: save it");
+static_assert(sizeof(Turn) == 80, "a Turn field was added or removed: save it");
+static_assert(sizeof(MessageLine) == 80, "a MessageLine field was added or removed: save it");
+static_assert(sizeof(Options) == 264, "an Options field was added or removed: decide whether to save it");
+static_assert(sizeof(Creature) == 144, "a Creature field was added or removed: save it");
+static_assert(sizeof(Item) == 128, "an Item field was added or removed: save it");
 static_assert(sizeof(struct room) == 132, "a room field was added or removed: save it");
-static_assert(sizeof(struct stats) == 48, "a stats field was added or removed: save it");
+static_assert(sizeof(struct stats) == 80, "a stats field was added or removed: save it");
 #endif
 
 // A wrong or missing value while loading
@@ -66,10 +66,10 @@ struct LoadError : std::runtime_error {
  * kept for the rest of the program, as the string literals they stand for
  * were.
  */
-const char *intern(std::string_view text)
+std::string_view intern(std::string_view text)
 {
 	static std::set<std::string, std::less<>> texts;
-	return texts.emplace(text).first->c_str();
+	return *texts.emplace(text).first;
 }
 
 template <class T>
@@ -81,10 +81,8 @@ bool points_into(const T *p, const T *first, std::size_t n)
 
 // Writing
 
-json text_json(const char *text)
+json text_json(std::string_view text)
 {
-	if (text == nullptr)
-		return nullptr;
 	return bytes_to_utf8(text);
 }
 
@@ -128,18 +126,28 @@ json dest_ref(const Game &g, const coord *dest)
 	throw std::logic_error("a monster is after something that can't be saved");
 }
 
-json damage_json(const Game &g, const char *dmg)
+// Damage as its text, null for none
+json attacks_json(const Attacks &attacks)
 {
-	if (dmg == g.player.flytrap_damage)
-		return json{{"alias", "flytrap"}};
-	return text_json(dmg);
+	if (attacks.empty())
+		return nullptr;
+	return attacks.to_string();
 }
 
-json stats_json(const Game &g, const struct stats &s)
+// The alias every venus flytrap's damage is saved as (see flytrap_attacks())
+const json flytrap_alias = {{"alias", "flytrap"}};
+
+// A monster that fights with the flytraps' growing attack
+bool is_flytrap(const Game &g, const Creature &c)
+{
+	return c.t_type == 'F' && &c != &g.player.body;
+}
+
+json stats_json(const struct stats &s, bool flytrap)
 {
 	return {
 		{"str", s.s_str}, {"exp", s.s_exp}, {"level", s.s_lvl}, {"armor", s.s_arm},
-		{"hp", s.s_hpt}, {"damage", damage_json(g, s.s_dmg)}, {"max_hp", s.s_maxhp},
+		{"hp", s.s_hpt}, {"damage", flytrap ? flytrap_alias : attacks_json(s.s_dmg)}, {"max_hp", s.s_maxhp},
 	};
 }
 
@@ -156,7 +164,7 @@ json creature_json(const Game &g, const Creature &c)
 	return {
 		{"pos", coord_json(c.t_pos)}, {"turn", c.t_turn}, {"type", c.t_type},
 		{"disguise", c.t_disguise}, {"oldch", c.t_oldch}, {"dest", dest_ref(g, c.t_dest)},
-		{"flags", c.t_flags.bits()}, {"stats", stats_json(g, c.t_stats)},
+		{"flags", c.t_flags.bits()}, {"stats", stats_json(c.t_stats, is_flytrap(g, c))},
 		{"room", room_ref(g, c.t_room)}, {"pack", item_list(g, c.t_pack)},
 	};
 }
@@ -165,7 +173,7 @@ json item_json(const Item &o)
 {
 	return {
 		{"kind", static_cast<int>(o.o_type)}, {"pos", coord_json(o.o_pos)},
-		{"launch", o.o_launch}, {"damage", text_json(o.o_damage)}, {"hurl", text_json(o.o_hurldmg)},
+		{"launch", o.o_launch}, {"damage", attacks_json(o.o_damage)}, {"hurl", attacks_json(o.o_hurldmg)},
 		{"count", o.o_count}, {"which", o.o_which}, {"hplus", o.o_hplus}, {"dplus", o.o_dplus},
 		{"ac", o.o_ac}, {"flags", o.o_flags.bits()}, {"enemy", o.o_enemy}, {"group", o.o_group},
 	};
@@ -183,7 +191,7 @@ json room_json(const struct room &r)
 	};
 }
 
-const char hex_digits[] = "0123456789abcdef";
+constexpr std::string_view hex_digits = "0123456789abcdef";
 
 // The map rows of a column-major level grid (see INDEX()), as hex
 // A grid is saved as its bytes: the map's glyphs, or the MapFlags' bits
@@ -233,16 +241,21 @@ json bools_json(const auto &values)
 	return out;
 }
 
+/*
+ * The guesses were buffers in one pool, handed out in the order main() calls
+ * init_names(), init_colors(), init_stones() and init_materials(); the file
+ * keeps that: "guesses" is the pool and "guessed" each kind's index in it.
+ */
+constexpr std::size_t guess_pool_size =
+	kind_count<Scroll> + kind_count<Potion> + kind_count<Ring> + kind_count<Stick>;
+
 template <KindEnum E>
-json guess_refs(const Items &items, const KindTable<E, char *> &guesses)
+json guess_refs(const KindTable<E, std::string> &guesses, json &pool)
 {
 	json out = json::array();
-	for (const char *guess : guesses) {
-		const struct array *slot = reinterpret_cast<const struct array *>(guess);
-		if (points_into(slot, items.guesses, std::size(items.guesses)))
-			out.push_back(slot - items.guesses);
-		else
-			out.push_back(nullptr);
+	for (const std::string &guess : guesses) {
+		out.push_back(pool.size());
+		pool.push_back(bytes_to_utf8(guess));
 	}
 	return out;
 }
@@ -250,11 +263,15 @@ json guess_refs(const Items &items, const KindTable<E, char *> &guesses)
 json items_json(const Items &items)
 {
 	json names = json::array();
-	for (const struct array &a : items.s_names)
-		names.push_back(bytes_to_utf8(a.storage));
+	for (const std::string &name : items.s_names)
+		names.push_back(bytes_to_utf8(name));
 	json guesses = json::array();
-	for (const struct array &a : items.guesses)
-		guesses.push_back(bytes_to_utf8(a.storage));
+	json guessed = {
+		{"scrolls", guess_refs(items.s_guess, guesses)},
+		{"potions", guess_refs(items.p_guess, guesses)},
+		{"rings", guess_refs(items.r_guess, guesses)},
+		{"sticks", guess_refs(items.ws_guess, guesses)},
+	};
 	return {
 		{"odds", {
 			{"scrolls", odds_json(items.s_magic.data(), items.s_magic.size())},
@@ -275,13 +292,8 @@ json items_json(const Items &items)
 			{"sticks", bools_json(items.ws_know)},
 		}},
 		{"guesses", std::move(guesses)},
-		{"guessed", {
-			{"scrolls", guess_refs(items, items.s_guess)},
-			{"potions", guess_refs(items, items.p_guess)},
-			{"rings", guess_refs(items, items.r_guess)},
-			{"sticks", guess_refs(items, items.ws_guess)},
-		}},
-		{"next_guess", items.iguess},
+		{"guessed", std::move(guessed)},
+		{"next_guess", guess_pool_size},
 		{"group", items.group},
 	};
 }
@@ -291,7 +303,7 @@ json player_json(const Game &g)
 	const Player &p = g.player;
 	return {
 		{"body", creature_json(g, p.body)},
-		{"max_stats", stats_json(g, p.max_stats)},
+		{"max_stats", stats_json(p.max_stats, false)},
 		{"purse", p.purse}, {"in_pack", p.in_pack},
 		{"armor", item_ref(g, p.armor)}, {"weapon", item_ref(g, p.weapon)},
 		{"rings", json::array({item_ref(g, p.rings[Hand::Left]), item_ref(g, p.rings[Hand::Right])})},
@@ -299,7 +311,7 @@ json player_json(const Game &g)
 		{"has_amulet", p.has_amulet}, {"saw_amulet", p.saw_amulet},
 		{"max_level", p.max_level}, {"no_command", p.no_command}, {"no_move", p.no_move},
 		{"quiet", p.quiet}, {"fungus_hits", p.fung_hit},
-		{"flytrap_damage", bytes_to_utf8(p.flytrap_damage)},
+		{"flytrap_damage", flytrap_attacks(p.fung_hit).to_string()},
 		{"was_trapped", std::to_underlying(p.was_trapped)},
 		{"old_pos", coord_json(p.old_pos)}, {"old_room", room_ref(g, p.old_room)},
 	};
@@ -373,13 +385,13 @@ json screen_json(const MapView &view)
 
 // Reading
 
-const json &field(const json &j, const char *key)
+const json &field(const json &j, std::string_view key)
 {
 	if (!j.is_object())
-		fail(std::string("expected an object holding \"") + key + "\"");
+		fail(std::format("expected an object holding \"{}\"", key));
 	auto it = j.find(key);
 	if (it == j.end())
-		fail(std::string("\"") + key + "\" is missing");
+		fail(std::format("\"{}\" is missing", key));
 	return *it;
 }
 
@@ -389,90 +401,90 @@ using RangeOf = std::conditional_t<std::is_same_v<T, char>,
 	std::conditional_t<std::is_signed_v<char>, signed char, unsigned char>, T>;
 
 template <class T>
-T num(const json &j, const char *key)
+T num(const json &j, std::string_view key)
 {
 	const json &v = field(j, key);
 	if (!v.is_number_integer())
-		fail(std::string("\"") + key + "\" is not a whole number");
+		fail(std::format("\"{}\" is not a whole number", key));
 	if (v.is_number_unsigned()) {
 		auto u = v.get<unsigned long long>();
 		if (!std::in_range<RangeOf<T>>(u))
-			fail(std::string("\"") + key + "\" is out of range");
+			fail(std::format("\"{}\" is out of range", key));
 		return static_cast<T>(u);
 	}
 	auto n = v.get<long long>();
 	if (!std::in_range<RangeOf<T>>(n))
-		fail(std::string("\"") + key + "\" is out of range");
+		fail(std::format("\"{}\" is out of range", key));
 	return static_cast<T>(n);
 }
 
 template <class T>
-T num_in(const json &j, const char *key, T lo, T hi)
+T num_in(const json &j, std::string_view key, T lo, T hi)
 {
 	T n = num<T>(j, key);
 	if (n < lo || n > hi)
-		fail(std::string("\"") + key + "\" is out of range");
+		fail(std::format("\"{}\" is out of range", key));
 	return n;
 }
 
-bool flag(const json &j, const char *key)
+bool flag(const json &j, std::string_view key)
 {
 	const json &v = field(j, key);
 	if (!v.is_boolean())
-		fail(std::string("\"") + key + "\" is not true or false");
+		fail(std::format("\"{}\" is not true or false", key));
 	return v.get<bool>();
 }
 
-const json &array_of(const json &j, const char *key, std::size_t size)
+const json &array_of(const json &j, std::string_view key, std::size_t size)
 {
 	const json &v = field(j, key);
 	if (!v.is_array() || v.size() != size)
-		fail(std::string("\"") + key + "\" should be a list of " + std::to_string(size));
+		fail(std::format("\"{}\" should be a list of {}", key, size));
 	return v;
 }
 
-int whole(const json &v, const char *what)
+int whole(const json &v, std::string_view what)
 {
 	if (!v.is_number_integer())
-		fail(std::string(what) + " is not a whole number");
+		fail(std::format("{} is not a whole number", what));
 	auto n = v.get<long long>();
 	if (!std::in_range<int>(n))
-		fail(std::string(what) + " is out of range");
+		fail(std::format("{} is out of range", what));
 	return static_cast<int>(n);
 }
 
-coord to_coord(const json &v, const char *what)
+coord to_coord(const json &v, std::string_view what)
 {
 	if (!v.is_array() || v.size() != 2)
-		fail(std::string(what) + " should be [x, y]");
+		fail(std::format("{} should be [x, y]", what));
 	return coord{whole(v[0], what), whole(v[1], what)};
 }
 
-coord coord_of(const json &j, const char *key)
+coord coord_of(const json &j, std::string_view key)
 {
 	return to_coord(field(j, key), key);
 }
 
 // Text into a char buffer of the given size (with its NUL)
-void text_into(char *buf, std::size_t size, const json &j, const char *key)
+// Text of at most max bytes
+std::string text_of(const json &j, std::string_view key, std::size_t max = std::string::npos)
 {
 	const json &v = field(j, key);
 	if (!v.is_string())
-		fail(std::string("\"") + key + "\" is not text");
+		fail(std::format("\"{}\" is not text", key));
 	std::string bytes = utf8_to_bytes(v.get<std::string>());
-	if (bytes.size() >= size)
-		fail(std::string("\"") + key + "\" is too long");
-	bytes.copy(buf, bytes.size());
-	buf[bytes.size()] = '\0';
+	if (bytes.size() > max)
+		fail(std::format("\"{}\" is too long", key));
+	return bytes;
 }
 
-// Null, or text kept for the rest of the program
-const char *kept_text(const json &v, const char *what)
+// Text kept for the rest of the program, "" for null
+std::string_view kept_text(const json &v, std::string_view what)
 {
 	if (v.is_null())
-		return nullptr;
+		return "";
 	if (!v.is_string())
-		fail(std::string(what) + " is not text");
+		fail(std::format("{} is not text", what));
 	return intern(utf8_to_bytes(v.get<std::string>()));
 }
 
@@ -481,18 +493,18 @@ const char *kept_text(const json &v, const char *what)
  * without, a free slot gives nullptr (a save made before discard() forgot
  * the last item picked can name the freed slot).
  */
-Item *item_at(Game &g, const json &v, const char *what, bool used = true)
+Item *item_at(Game &g, const json &v, std::string_view what, bool used = true)
 {
 	if (v.is_null())
 		return nullptr;
 	int slot = whole(v, what);
 	Item *obj = g.pool.items.at(slot);
 	if (slot < 0 || slot >= MAXITEMS || (used && obj == nullptr))
-		fail(std::string(what) + " is not an item in use");
+		fail(std::format("{} is not an item in use", what));
 	return obj;
 }
 
-struct room *room_at(Game &g, const json &v, const char *what)
+struct room *room_at(Game &g, const json &v, std::string_view what)
 {
 	if (v.is_null())
 		return nullptr;
@@ -507,7 +519,7 @@ struct room *room_at(Game &g, const json &v, const char *what)
 				return &g.level.passages[i];
 		}
 	}
-	fail(std::string(what) + " is not a room or passage");
+	fail(std::format("{} is not a room or passage", what));
 }
 
 coord *dest_at(Game &g, const json &v)
@@ -532,17 +544,20 @@ coord *dest_at(Game &g, const json &v)
 	fail("\"dest\" is not the hero, gold or an item");
 }
 
-const char *damage_at(Game &g, const json &v)
+// Damage from its text, none for null
+Attacks attacks_of(const json &v, std::string_view what)
 {
-	if (v.is_object()) {
-		if (v == json{{"alias", "flytrap"}})
-			return g.player.flytrap_damage;
-		fail("\"damage\" is an unknown alias");
-	}
-	return kept_text(v, "\"damage\"");
+	if (v.is_null())
+		return {};
+	if (!v.is_string())
+		fail(std::format("{} is not text", what));
+	auto attacks = Attacks::parse(utf8_to_bytes(v.get<std::string>()));
+	if (!attacks)
+		fail(std::format("{} is not damage like \"1d2/1d5\"", what));
+	return *attacks;
 }
 
-struct stats stats_from(Game &g, const json &j)
+struct stats stats_from(const json &j, bool flytrap)
 {
 	struct stats s{};
 	s.s_str = num<str_t>(j, "str");
@@ -550,21 +565,25 @@ struct stats stats_from(Game &g, const json &j)
 	s.s_lvl = num<int>(j, "level");
 	s.s_arm = num<int>(j, "armor");
 	s.s_hpt = num<int>(j, "hp");
-	s.s_dmg = damage_at(g, field(j, "damage"));
+	const json &damage = field(j, "damage");
+	if (flytrap != (damage == flytrap_alias))
+		fail(flytrap ? "a venus flytrap's \"damage\" is not the flytrap alias"
+			: "only a venus flytrap's \"damage\" is the flytrap alias");
+	s.s_dmg = flytrap ? monsters['F'-'A'].m_stats.s_dmg : attacks_of(damage, "\"damage\"");
 	s.s_maxhp = num<int>(j, "max_hp");
 	return s;
 }
 
-void items_into(Game &g, List<Item> &list, const json &slots, const char *what)
+void items_into(Game &g, List<Item> &list, const json &slots, std::string_view what)
 {
 	if (!slots.is_array())
-		fail(std::string(what) + " is not a list");
+		fail(std::format("{} is not a list", what));
 	// Kept in their order: push each to the back
 	const Item *last = nullptr;
 	for (const json &v : slots) {
 		Item *obj = item_at(g, v, what);
 		if (obj == nullptr)
-			fail(std::string(what) + " holds a null");
+			fail(std::format("{} holds a null", what));
 		list.insert_after(last, obj);
 		last = obj;
 	}
@@ -579,7 +598,7 @@ void creature_from(Game &g, Creature &c, const json &j)
 	c.t_oldch = num<unsigned char>(j, "oldch");
 	c.t_dest = dest_at(g, field(j, "dest"));
 	c.t_flags = CreatureFlags::from_bits(num<CreatureFlags::Bits>(j, "flags"));
-	c.t_stats = stats_from(g, field(j, "stats"));
+	c.t_stats = stats_from(field(j, "stats"), is_flytrap(g, c));
 	c.t_room = room_at(g, field(j, "room"), "\"room\"");
 	items_into(g, c.t_pack, field(j, "pack"), "\"pack\"");
 }
@@ -588,10 +607,9 @@ void item_from(Item &o, const json &j)
 {
 	o.o_type = static_cast<ItemKind>(num_in<int>(j, "kind", 0, static_cast<int>(ItemKind::Missile)));
 	o.o_pos = coord_of(j, "pos");
-	o.o_text = nullptr;
 	o.o_launch = num<char>(j, "launch");
-	o.o_damage = kept_text(field(j, "damage"), "\"damage\"");
-	o.o_hurldmg = kept_text(field(j, "hurl"), "\"hurl\"");
+	o.o_damage = attacks_of(field(j, "damage"), "\"damage\"");
+	o.o_hurldmg = attacks_of(field(j, "hurl"), "\"hurl\"");
 	o.o_count = num<int>(j, "count");
 	o.o_which = num<int>(j, "which");
 	o.o_hplus = num<int>(j, "hplus");
@@ -625,23 +643,23 @@ int hex_value(char c)
 }
 
 // A row of COLS bytes as hex
-std::vector<unsigned char> hex_row(const json &v, const char *what)
+std::vector<unsigned char> hex_row(const json &v, std::string_view what)
 {
 	if (!v.is_string() || v.get_ref<const std::string &>().size() != 2 * COLS)
-		fail(std::string(what) + " rows should be " + std::to_string(2 * COLS) + " hex digits");
+		fail(std::format("{} rows should be {} hex digits", what, 2 * COLS));
 	const std::string &s = v.get_ref<const std::string &>();
 	std::vector<unsigned char> out;
 	for (int x = 0; x < COLS; x++) {
 		int hi = hex_value(s[2 * x]), lo = hex_value(s[2 * x + 1]);
 		if (hi < 0 || lo < 0)
-			fail(std::string(what) + " rows should be hex digits");
+			fail(std::format("{} rows should be hex digits", what));
 		out.push_back(static_cast<unsigned char>(hi << 4 | lo));
 	}
 	return out;
 }
 
 template <class Cell>
-void grid_from(Cell *grid, const json &j, const char *key)
+void grid_from(Cell *grid, const json &j, std::string_view key)
 {
 	const json &rows = array_of(j, key, map_rows);
 	for (int y = 1; y < maxrow; y++) {
@@ -651,52 +669,54 @@ void grid_from(Cell *grid, const json &j, const char *key)
 	}
 }
 
-void odds_from(struct magic_item *items, std::size_t n, const json &j, const char *key)
+void odds_from(struct magic_item *items, std::size_t n, const json &j, std::string_view key)
 {
 	const json &list = array_of(j, key, n);
 	for (std::size_t i = 0; i < n; i++) {
 		if (!list[i].is_array() || list[i].size() != 2)
-			fail(std::string("\"") + key + "\" entries should be [odds, worth]");
+			fail(std::format("\"{}\" entries should be [odds, worth]", key));
 		items[i].mi_prob = whole(list[i][0], key);
 		int worth = whole(list[i][1], key);
 		if (!std::in_range<short>(worth))
-			fail(std::string("\"") + key + "\" is out of range");
+			fail(std::format("\"{}\" is out of range", key));
 		items[i].mi_worth = static_cast<short>(worth);
 	}
 }
 
 template <KindEnum E>
-void kept_texts_from(KindTable<E, const char *> &texts, const json &j, const char *key)
+void kept_texts_from(KindTable<E, std::string_view> &texts, const json &j, std::string_view key)
 {
 	const json &list = array_of(j, key, texts.size());
-	for (std::size_t i = 0; i < texts.size(); i++)
+	for (std::size_t i = 0; i < texts.size(); i++) {
 		texts.data()[i] = kept_text(list[i], key);
+	}
 }
 
 template <KindEnum E>
-void bools_from(KindTable<E, bool> &values, const json &j, const char *key)
+void bools_from(KindTable<E, bool> &values, const json &j, std::string_view key)
 {
 	const json &list = array_of(j, key, values.size());
 	for (std::size_t i = 0; i < values.size(); i++) {
 		if (!list[i].is_boolean())
-			fail(std::string("\"") + key + "\" should hold true or false");
+			fail(std::format("\"{}\" should hold true or false", key));
 		values.data()[i] = list[i].get<bool>();
 	}
 }
 
 template <KindEnum E>
-void guess_refs_from(Items &items, KindTable<E, char *> &guesses, const json &j, const char *key)
+void guess_refs_from(KindTable<E, std::string> &guesses, const std::vector<std::string> &pool,
+	const json &j, std::string_view key)
 {
 	const json &list = array_of(j, key, guesses.size());
 	for (std::size_t i = 0; i < guesses.size(); i++) {
-		if (list[i].is_null()) {
-			guesses.data()[i] = nullptr;
+		if (list[i].is_null()) {			/* a game saved before init_*() */
+			guesses.data()[i].clear();
 			continue;
 		}
 		int n = whole(list[i], key);
-		if (n < 0 || n >= static_cast<int>(std::size(items.guesses)))
-			fail(std::string("\"") + key + "\" is out of range");
-		guesses.data()[i] = items.guesses[n].storage;
+		if (n < 0 || n >= static_cast<int>(pool.size()))
+			fail(std::format("\"{}\" is out of range", key));
+		guesses.data()[i] = pool[n];
 	}
 }
 
@@ -710,10 +730,8 @@ void items_from(Items &items, const json &j)
 	odds_from(items.things, NUMTHINGS, odds, "things");
 
 	const json &names = array_of(j, "scroll_names", items.s_names.size());
-	for (std::size_t i = 0; i < items.s_names.size(); i++) {
-		struct array &name = items.s_names.data()[i];
-		text_into(name.storage, sizeof name.storage, json{{"name", names[i]}}, "name");
-	}
+	for (std::size_t i = 0; i < items.s_names.size(); i++)
+		items.s_names.data()[i] = text_of(json{{"name", names[i]}}, "name", MAXNAME);
 	kept_texts_from(items.p_colors, j, "potion_colors");
 	kept_texts_from(items.r_stones, j, "ring_stones");
 	kept_texts_from(items.ws_made, j, "stick_materials");
@@ -725,15 +743,16 @@ void items_from(Items &items, const json &j)
 	bools_from(items.r_know, known, "rings");
 	bools_from(items.ws_know, known, "sticks");
 
-	const json &texts = array_of(j, "guesses", std::size(items.guesses));
-	for (std::size_t i = 0; i < std::size(items.guesses); i++)
-		text_into(items.guesses[i].storage, sizeof items.guesses[i].storage, json{{"guess", texts[i]}}, "guess");
+	const json &texts = array_of(j, "guesses", guess_pool_size);
+	std::vector<std::string> pool;
+	for (const json &text : texts)
+		pool.push_back(text_of(json{{"guess", text}}, "guess", MAXNAME));
 	const json &guessed = field(j, "guessed");
-	guess_refs_from(items, items.s_guess, guessed, "scrolls");
-	guess_refs_from(items, items.p_guess, guessed, "potions");
-	guess_refs_from(items, items.r_guess, guessed, "rings");
-	guess_refs_from(items, items.ws_guess, guessed, "sticks");
-	items.iguess = num_in<int>(j, "next_guess", 0, std::size(items.guesses));
+	guess_refs_from(items.s_guess, pool, guessed, "scrolls");
+	guess_refs_from(items.p_guess, pool, guessed, "potions");
+	guess_refs_from(items.r_guess, pool, guessed, "rings");
+	guess_refs_from(items.ws_guess, pool, guessed, "sticks");
+	num_in<int>(j, "next_guess", 0, guess_pool_size);	// the pool's use, no longer needed
 	items.group = num<int>(j, "group");
 }
 
@@ -798,7 +817,7 @@ void player_from(Game &g, const json &j)
 {
 	Player &p = g.player;
 	creature_from(g, p.body, field(j, "body"));
-	p.max_stats = stats_from(g, field(j, "max_stats"));
+	p.max_stats = stats_from(field(j, "max_stats"), false);
 	p.purse = num<int>(j, "purse");
 	p.in_pack = num<int>(j, "in_pack");
 	p.armor = item_at(g, field(j, "armor"), "\"armor\"");
@@ -815,7 +834,8 @@ void player_from(Game &g, const json &j)
 	p.no_move = num<int>(j, "no_move");
 	p.quiet = num<int>(j, "quiet");
 	p.fung_hit = num<int>(j, "fungus_hits");
-	text_into(p.flytrap_damage, sizeof p.flytrap_damage, j, "flytrap_damage");
+	if (text_of(j, "flytrap_damage") != flytrap_attacks(p.fung_hit).to_string())
+		fail("\"flytrap_damage\" does not follow from \"fungus_hits\"");
 	p.was_trapped = static_cast<Trapped>(num_in<unsigned char>(j, "was_trapped", 0, 2));
 	p.old_pos = coord_of(j, "old_pos");
 	p.old_room = room_at(g, field(j, "old_room"), "\"old_room\"");
@@ -835,9 +855,7 @@ void turn_from(Game &g, const json &j)
 	t.fast_mode = flag(j, "fast_mode");
 	t.fast_state = flag(j, "fast_state");
 	t.delta = coord_of(j, "delta");
-	t.typeahead = kept_text(field(j, "typeahead"), "\"typeahead\"");
-	if (t.typeahead == nullptr)
-		fail("\"typeahead\" is null");
+	t.typeahead = text_of(j, "typeahead");
 	t.bailout = flag(j, "bailout");
 	t.last_count = num<int>(j, "last_count");
 	t.last_ch = num<unsigned char>(j, "last_ch");
@@ -872,8 +890,8 @@ void game_from(Game &g, MapView &view, const json &doc)
 		fail("\"random\" is not a generator state");
 
 	const json &options = field(doc, "options");
-	text_into(g.options.name, sizeof g.options.name, options, "name");
-	text_into(g.options.fruit, sizeof g.options.fruit, options, "fruit");
+	g.options.name = text_of(options, "name", Options::name_length);
+	g.options.fruit = text_of(options, "fruit", Options::name_length);
 	g.options.terse = flag(options, "terse");
 	g.options.expert = flag(options, "expert");
 
@@ -904,8 +922,8 @@ void game_from(Game &g, MapView &view, const json &doc)
 	g.scheduler.set_slots(table);
 
 	const json &message = field(doc, "message");
-	text_into(g.message.text, sizeof g.message.text, message, "text");
-	text_into(g.message.last, sizeof g.message.last, message, "last");
+	g.message.text = text_of(message, "text", BUFSIZE - 1);
+	g.message.last = text_of(message, "last", BUFSIZE - 1);
 	g.message.end = num_in<int>(message, "end", 0, COLS);
 	g.message.next_end = num_in<int>(message, "next_end", 0, BUFSIZE);
 	g.message.remember = flag(message, "remember");
@@ -976,9 +994,9 @@ parse_save(std::string_view text, Game &g, MapView &view)
 }
 
 std::expected<void, SaveError>
-write_save(const char *path, const Game &g, const MapView &view)
+write_save(const std::string &path, const Game &g, const MapView &view)
 {
-	std::string temp = std::string(path) + ".tmp";
+	std::string temp = path + ".tmp";
 	{
 		std::ofstream file(temp, std::ios::binary | std::ios::trunc);
 		file << format_save(g, view);
@@ -988,7 +1006,7 @@ write_save(const char *path, const Game &g, const MapView &view)
 			return std::unexpected(SaveError{SaveError::Kind::Unreadable, std::string("can't write ") + temp});
 		}
 	}
-	if (std::rename(temp.c_str(), path) != 0) {
+	if (std::rename(temp.c_str(), path.c_str()) != 0) {
 		std::remove(temp.c_str());
 		return std::unexpected(SaveError{SaveError::Kind::Unreadable, std::string("can't write ") + path});
 	}
@@ -996,7 +1014,7 @@ write_save(const char *path, const Game &g, const MapView &view)
 }
 
 std::expected<void, SaveError>
-read_save(const char *path, Game &g, MapView &view)
+read_save(const std::string &path, Game &g, MapView &view)
 {
 	std::ifstream file(path, std::ios::binary);
 	if (!file)

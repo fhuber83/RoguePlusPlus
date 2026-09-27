@@ -1,10 +1,12 @@
 #include <gtest/gtest.h>
 
+#include <vector>
+
 #include "core/Dice.hpp"
 #include "core/Random.hpp"
 
 using rogue::Dice;
-using rogue::parse_attacks;
+using rogue::Attacks;
 
 TEST(Dice, ParsesSimpleExpression)
 {
@@ -36,15 +38,40 @@ TEST(Dice, RollStaysWithinBounds)
 	}
 }
 
-TEST(Dice, ParsesAttackLists)
+TEST(Attacks, ParsesAttackLists)
 {
-	EXPECT_EQ(parse_attacks("1d8"), (std::vector<Dice>{{1, 8}}));
-	EXPECT_EQ(parse_attacks("1d2/1d5/1d5"), (std::vector<Dice>{{1, 2}, {1, 5}, {1, 5}}));
+	auto one = Attacks::parse("1d8");
+	ASSERT_TRUE(one);
+	EXPECT_EQ(std::vector<Dice>(one->begin(), one->end()), (std::vector<Dice>{{1, 8}}));
+	auto three = Attacks::parse("1d2/1d5/1d5");
+	ASSERT_TRUE(three);
+	EXPECT_EQ(std::vector<Dice>(three->begin(), three->end()), (std::vector<Dice>{{1, 2}, {1, 5}, {1, 5}}));
 }
 
-TEST(Dice, MalformedAttackListIsEmpty)
+TEST(Attacks, RejectsMalformedLists)
 {
-	EXPECT_TRUE(parse_attacks("").empty());
-	EXPECT_TRUE(parse_attacks("1d2/").empty());
-	EXPECT_TRUE(parse_attacks("1d2/x").empty());
+	for (const char *text : {"", "1d2/", "1d2/x", "/1d2", "1d1/1d1/1d1/1d1/1d1"})
+		EXPECT_FALSE(Attacks::parse(text).has_value()) << text;
+}
+
+TEST(Attacks, LiteralsConvertAtCompileTime)
+{
+	constexpr Attacks bite = "1d2/1d5/1d5";
+	static_assert(bite.size() == 3 && *bite.begin() == Dice{1, 2});
+	static_assert(Attacks("4d1") == Attacks(Dice{4, 1}));
+}
+
+TEST(Attacks, NoneIsNotZeroDice)
+{
+	constexpr Attacks none;
+	constexpr Attacks zero = "0d0";
+	static_assert(none.empty() && zero.size() == 1);
+	EXPECT_NE(none, zero);
+}
+
+TEST(Attacks, TextRoundTrips)
+{
+	for (const char *text : {"0d0", "1d8", "1d2/1d5/1d5", "3d4/3d4/2d5/1d1", "10d10"})
+		EXPECT_EQ(Attacks::parse(text)->to_string(), text);
+	EXPECT_EQ(Attacks().to_string(), "");
 }

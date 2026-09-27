@@ -166,9 +166,9 @@ do_passages()
 	int roomcount;
 	static struct rdes
 	{
-	char	conn[MAXROOMS];		/* possible to connect to room i? */
-	char	isconn[MAXROOMS];	/* connection been made to room i? */
-	char	ingraph;		/* this room in graph already? */
+	bool	conn[MAXROOMS];		/* possible to connect to room i? */
+	bool	isconn[MAXROOMS];	/* connection been made to room i? */
+	bool	ingraph;		/* this room in graph already? */
 	} rdes[MAXROOMS] = {
 	{ { 0, 1, 0, 1, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0 },
 	{ { 1, 0, 1, 0, 1, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0 },

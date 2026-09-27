@@ -80,7 +80,7 @@ md_nanosleep(long nanoseconds)
 void
 flush_type()
 {
-	game().turn.typeahead = nullstr;
+	game().turn.typeahead.clear();
 }
 
 /*
@@ -90,13 +90,9 @@ flush_type()
 void
 credits()
 {
-
-	char tname[25];
-
 	display().draw_title();
-	input().read_line(tname,23);
-	if (*tname && *tname != ESCAPE)
-		strcpy(game().options.name, tname);
+	if (auto name = input().read_line(rogue::Options::name_length); name && !name->empty())
+		game().options.name = *name;
 	display().end_title();
 }
 
@@ -156,10 +152,12 @@ readchar()
 	int xch;
 	unsigned char ch;
 
-	if (*game().turn.typeahead) {
+	if (std::string &typeahead = game().turn.typeahead; !typeahead.empty()) {
 		SIG2();
 		display().flush();
-		return(*game().turn.typeahead++);
+		ch = typeahead.front();
+		typeahead.erase(0, 1);
+		return ch;
 	}
 	/*
 	 * while there are no characters in the type ahead buffer

@@ -3,14 +3,12 @@
 #include "core/Dice.hpp"
 #include "rogue.h"
 
-// Every monster attack string must parse, or roll_em() silently skips it.
-TEST(StaticTables, AllMonsterAttacksParse)
+// Every monster attacks: a malformed table entry doesn't compile any more,
+// but an empty one would mean the monster never swings.
+TEST(StaticTables, EveryMonsterAttacks)
 {
-	for (int i = 0; i < 26; i++) {
-		const auto &m = monsters[i];
-		EXPECT_FALSE(rogue::parse_attacks(m.m_stats.s_dmg).empty())
-			<< m.m_name << ": \"" << m.m_stats.s_dmg << '"';
-	}
+	for (int i = 0; i < 26; i++)
+		EXPECT_FALSE(monsters[i].m_stats.s_dmg.empty()) << monsters[i].m_name;
 }
 
 // The flag column keeps the original bits, including the leprechaun whose

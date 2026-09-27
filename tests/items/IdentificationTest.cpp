@@ -19,19 +19,11 @@ protected:
 		game().items = rogue::Items();
 		game().options = rogue::Options();
 		rogue::Items &items = game().items;
-		int g = 0;
-		for (Scroll s : kinds<Scroll>())
-			items.s_guess[s] = items.guesses[g++].storage;
-		for (Potion p : kinds<Potion>()) {
-			items.p_guess[p] = items.guesses[g++].storage;
+		for (Potion p : kinds<Potion>())
 			items.p_colors[p] = "red";
-		}
-		for (Ring r : kinds<Ring>()) {
-			items.r_guess[r] = items.guesses[g++].storage;
+		for (Ring r : kinds<Ring>())
 			items.r_stones[r] = "opal";
-		}
 		for (Stick w : kinds<Stick>()) {
-			items.ws_guess[w] = items.guesses[g++].storage;
 			items.ws_type[w] = "staff";
 			items.ws_made[w] = "oak";
 		}
@@ -53,16 +45,16 @@ protected:
 TEST_F(Names, Scrolls)
 {
 	constexpr Scroll scroll = Scroll::MonsterConfusion;
-	strcpy(game().items.s_names[scroll].storage, "zim zam zoo zar bax");
+	game().items.s_names[scroll] = "zim zam zoo zar bax";
 	Item obj = item(ItemKind::Scroll, scroll);
 	EXPECT_EQ(inv_name(&obj, false), "A scroll titled 'zim zam zoo zar bax'");
 	game().options.terse = true;	// brief names cut the title
 	EXPECT_EQ(inv_name(&obj, false), "A scroll titled 'zim zam zoo zar b'");
 	obj.o_count = 3;
-	strcpy(game().items.s_guess[scroll], "boom");
+	game().items.s_guess[scroll] = "boom";
 	EXPECT_EQ(inv_name(&obj, false), "3 scrolls called boom");
 	game().items.s_know[scroll] = true;
-	EXPECT_EQ(inv_name(&obj, false), std::string("3 scrolls of ") + game().items.s_magic[scroll].mi_name);
+	EXPECT_EQ(inv_name(&obj, false), std::format("3 scrolls of {}", game().items.s_magic[scroll].mi_name));
 }
 
 TEST_F(Names, Potions)
@@ -72,14 +64,14 @@ TEST_F(Names, Potions)
 	obj.o_count = 2;
 	EXPECT_EQ(inv_name(&obj, false), "2 red potions");
 	game().items.p_know[Potion::Poison] = true;
-	EXPECT_EQ(inv_name(&obj, false), std::string("2 potions of ") + game().items.p_magic[Potion::Poison].mi_name + "(red)");
+	EXPECT_EQ(inv_name(&obj, false), std::format("2 potions of {}(red)", game().items.p_magic[Potion::Poison].mi_name));
 }
 
 TEST_F(Names, FoodUsesTheFruit)
 {
 	Item obj = item(ItemKind::Food, Food::Fruit);
 	EXPECT_EQ(inv_name(&obj, false), "A Slime Mold");
-	strcpy(game().options.fruit, "apple");
+	game().options.fruit = "apple";
 	EXPECT_EQ(inv_name(&obj, false), "An apple");
 	obj.o_count = 4;
 	EXPECT_EQ(inv_name(&obj, false), "4 apples");
@@ -115,7 +107,7 @@ TEST_F(Names, UnknownSticksKeepTheirArticle)
 {
 	Item obj = item(ItemKind::Stick, Stick::Light);
 	EXPECT_EQ(inv_name(&obj, false), "A oak staff");
-	strcpy(game().items.ws_guess[Stick::Light], "zapper");
+	game().items.ws_guess[Stick::Light] = "zapper";
 	EXPECT_EQ(inv_name(&obj, false), "A staff called zapper(oak)");
 }
 
@@ -128,7 +120,7 @@ TEST_F(Names, RingsAndHands)
 	game().items.r_know[Ring::Protection] = true;
 	obj.o_flags.set(ISKNOW);
 	EXPECT_EQ(inv_name(&obj, false),
-		std::string("A +2 ring of ") + game().items.r_magic[Ring::Protection].mi_name + "(opal) (on left hand)");
+		std::format("A +2 ring of {}(opal) (on left hand)", game().items.r_magic[Ring::Protection].mi_name));
 }
 
 // Dropping lowercases a capital first letter, listing capitalises it

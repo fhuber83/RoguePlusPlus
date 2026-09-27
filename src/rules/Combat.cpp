@@ -9,10 +9,13 @@
 namespace rogue::rules {
 
 static bool	roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl);
-static std::string	prname(const char *who, bool upper);
-static void	hit(const char *er, const char *ee);
-static void	miss(const char *er, const char *ee);
-static void	thunk(Item *weap, const char *mname, const char *does, const char *did);
+// Who does something in a message: a monster's name, or nullopt for the rogue
+using Who = std::optional<std::string_view>;
+
+static std::string	prname(Who who, bool upper);
+static void	hit(Who er, Who ee);
+static void	miss(Who er, Who ee);
+static void	thunk(Item *weap, std::string_view mname, std::string_view does, std::string_view did);
 static void	remove_monster(coord *mp, Creature *tp, bool waskill);
 static int	str_plus(str_t str);
 static int	add_dam(str_t str);
@@ -25,7 +28,7 @@ bool
 fight(coord *mp, char mn, Item *weap, bool thrown)
 {
 	Creature *tp;
-	const char *mname;
+	std::string_view mname;
 	rogue::Player &player = game().player;
 
 	/*
@@ -50,14 +53,14 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 	}
 	mname = monsters[mn-'A'].m_name;
 	if (player.body.t_flags.test(ISBLIND))
-		mname = it;
+		mname = "it";
 	if (roll_em(&player.body, tp, weap, thrown)||(weap && weap->o_type == ItemKind::Potion)) {
 		bool did_huh = false;
 
 		if (thrown)
 			thunk(weap, mname, "hits", "hit");
 		else
-			hit(nullptr, mname);
+			hit(std::nullopt, mname);
 		// original missed null check for weap
 		if (weap && weap->o_type == ItemKind::Potion) {
 			th_effect(weap, tp);
@@ -86,7 +89,7 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 	if (thrown)
 		thunk(weap, mname, "misses", "missed");
 	else
-		miss(nullptr, mname);
+		miss(std::nullopt, mname);
 	if (tp->t_type == 'S' && rnd(100) > 25)
 		slime_split(tp);
 	return false;
@@ -99,7 +102,7 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 void
 attack(Creature *mp)
 {
-	const char *mname;
+	std::string_view mname;
 	rogue::Player &player = game().player;
 
 	/*
@@ -112,9 +115,9 @@ attack(Creature *mp)
 		mp->t_disguise = 'X';
 	mname = monsters[mp->t_type-'A'].m_name;
 	if (player.body.t_flags.test(ISBLIND))
-		mname = it;
+		mname = "it";
 	if (roll_em(mp, &player.body, nullptr, false)) {
-		hit(mname, nullptr);
+		hit(mname, std::nullopt);
 		if (player.body.t_stats.s_hpt <= 0)
 			death(mp->t_type);	/* Bye bye life ... */
 		if (!mp->t_flags.test(ISCANC))
@@ -199,9 +202,7 @@ attack(Creature *mp)
 			 * Violet fungi stops the poor guy from moving
 			 */
 			player.body.t_flags.set(ISHELD);
-			// cut to fit
-			*std::format_to_n(player.flytrap_damage, sizeof player.flytrap_damage - 1,
-				"{}d1", ++player.fung_hit).out = '\0';
+			++player.fung_hit;
 			break;
 		case 'L':
 		{
@@ -225,7 +226,7 @@ attack(Creature *mp)
 		{
 			Item *obj, *steal;
 			int nobj;
-			constexpr const char *she_stole = "she stole {}!";
+			constexpr std::string_view she_stole = "she stole {}!";
 
 			/*
 			 * Nymph's steal a magic item, look through the pack
@@ -273,7 +274,7 @@ attack(Creature *mp)
 		if (player.body.t_stats.s_hpt <= 0)
 		death(mp->t_type);	/* Bye bye life ... */
 	}
-	miss(mname, nullptr);
+	miss(mname, std::nullopt);
 	}
 	flush_type();
 	game().turn.count = 0;
@@ -328,7 +329,7 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 {
 	rogue::Player &player = game().player;
 	struct stats *att, *def;
-	const char *cp;
+	rogue::Attacks attacks;
 	int def_arm;
 	bool did_hit = false;
 	int hplus;
@@ -338,7 +339,8 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 	def = &thdef->t_stats;
 	if (weap == nullptr)
 	{
-		cp = att->s_dmg;
+		// every flytrap has the one growing attack
+		attacks = (thatt->t_type == 'F' && thatt != &player.body) ? flytrap_attacks(player.fung_hit) : att->s_dmg;
 		dplus = 0;
 		hplus = 0;
 	}
@@ -365,11 +367,11 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 			else if (player.wears(Hand::Right, Ring::Dexterity))
 				hplus += player.rings[Hand::Right]->o_ac;
 		}
-		cp = weap->o_damage;
+		attacks = weap->o_damage;
 		if (hurl && weap->o_flags.test(ISMISL) && player.weapon != nullptr &&
 			  launched_by(player.weapon->which<WeaponType>()) == weap->o_launch)
 		{
-			cp = weap->o_hurldmg;
+			attacks = weap->o_hurldmg;
 			hplus += player.weapon->o_hplus;
 			dplus += player.weapon->o_dplus;
 		}
@@ -379,17 +381,15 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 		if (weap->o_type == ItemKind::Stick && weap->which<Stick>() == Stick::Striking
 			&& --weap->charges() < 0)
 		{
-			cp = weap->o_damage = "0d0";
+			attacks = weap->o_damage = "0d0";
 			weap->o_hplus = weap->o_dplus = 0;
 			weap->charges() = 0;
 		}
 	}
 
-	// New null check to prevent segfault on parsing
-	if (cp == nullptr)
-	{
+	// No damage at all: no swing either (was a null damage string)
+	if (attacks.empty())
 		return false;
-	}
 
 	/*
 	 * If the creature being attacked is not running (alseep or held)
@@ -407,7 +407,7 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 		if (player.wears(Hand::Right, Ring::Protection))
 			def_arm -= player.rings[Hand::Right]->o_ac;
 	}
-	for (const rogue::Dice &attack : rogue::parse_attacks(cp))
+	for (const rogue::Dice &attack : attacks)
 	{
 		if (swing(att->s_lvl, def_arm, hplus + str_plus(att->s_str)))
 		{
@@ -432,18 +432,18 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
  *	The print name of a combatant
  */
 static std::string
-prname(const char *who, bool upper)
+prname(Who who, bool upper)
 {
 	std::string name;
 
-	if (who == 0)
-		name = you;
+	if (!who)
+		name = "you";
 	else if (game().player.body.t_flags.test(ISBLIND))
-		name = it;
+		name = "it";
 	else
-		name = std::string("the ") + who;
+		name = std::format("the {}", *who);
 	if (upper && !name.empty())
-		name[0] = toupper(name[0]);
+		name[0] = to_upper(name[0]);
 	return name;
 }
 
@@ -452,17 +452,17 @@ prname(const char *who, bool upper)
  *	Print a message to indicate a succesful hit
  */
 static void
-hit(const char *er, const char *ee)
+hit(Who er, Who ee)
 {
-	const char *s = "";
+	std::string_view s = "";
 
 	addmsg("{}", prname(er, true));
 	switch (game().options.brief() ? 1 : rnd(4))
 	{
 		case 0: s = " scored an excellent hit on "; break;
 		case 1: s = " hit "; break;
-		case 2: s = (er == 0 ? " have injured " : " has injured "); break;
-		case 3: s = (er == 0 ? " swing and hit " : " swings and hits ");
+		case 2: s = (!er ? " have injured " : " has injured "); break;
+		case 3: s = (!er ? " swing and hit " : " swings and hits ");
 		break;
 	}
 	msg("{}{}",s,prname(ee, false));
@@ -473,18 +473,18 @@ hit(const char *er, const char *ee)
  *	Print a message to indicate a poor swing
  */
 static void
-miss(const char *er, const char *ee)
+miss(Who er, Who ee)
 {
-	const char *s = "";
+	std::string_view s = "";
 
 
 	addmsg("{}", prname(er, true));
 	switch (game().options.brief() ? 1 : rnd(4))
 	{
-		case 0: s = (er == 0 ? " swing and miss" : " swings and misses"); break;
-		case 1: s = (er == 0 ? " miss" : " misses"); break;
-		case 2: s = (er == 0 ? " barely miss" : " barely misses"); break;
-		case 3: s = (er == 0 ? " don't hit" : " doesn't hit");
+		case 0: s = (!er ? " swing and miss" : " swings and misses"); break;
+		case 1: s = (!er ? " miss" : " misses"); break;
+		case 2: s = (!er ? " barely miss" : " barely misses"); break;
+		case 3: s = (!er ? " don't hit" : " doesn't hit");
 		break;
 	}
 	msg("{} {}",s,prname(ee, false));
@@ -593,14 +593,14 @@ raise_level(void)
  *	A missile hit or missed a monster
  */
 static void
-thunk(Item *weap, const char *mname, const char *does, const char *did)
+thunk(Item *weap, std::string_view mname, std::string_view does, std::string_view did)
 {
 	if (weap->o_type == ItemKind::Weapon)
 		addmsg("the {} {} ", w_names[weap->which<WeaponType>()], does);
 	else
 		addmsg("you {} ", did);
 	if (game().player.body.t_flags.test(ISBLIND))
-		msg("{}", it);
+		msg("it");
 	else
 		msg("the {}", mname);
 }
@@ -701,7 +701,7 @@ killed(Creature *tp, bool pr)
 	{
 	addmsg("you have defeated ");
 	if (game().player.body.t_flags.test(ISBLIND))
-		msg("{}", it);
+		msg("it");
 	else
 		msg("the {}", monsters[type-'A'].m_name);
 	}

@@ -10,7 +10,7 @@
  * All this should be low as possible in memory so that
  * we can save the min
  */
-KindTable<WeaponType, const char *, kind_count<WeaponType> + 1> w_names = {	/* Names of the various weapons */
+KindTable<WeaponType, std::string_view, kind_count<WeaponType> + 1> w_names = {	/* Names of the various weapons */
 	"mace",
 	"long sword",
 	"short bow",
@@ -21,9 +21,9 @@ KindTable<WeaponType, const char *, kind_count<WeaponType> + 1> w_names = {	/* N
 	"crossbow",
 	"crossbow bolt",
 	"spear",
-	nullptr				/* fake entry for dragon's breath, set by fire_bolt() */
+	""					/* fake entry for dragon's breath, set by fire_bolt() */
 };
-const KindTable<ArmorType, const char *> a_names = {		/* Names of armor types */
+constexpr KindTable<ArmorType, std::string_view> a_names = {		/* Names of armor types */
 	"leather armor",
 	"ring mail",
 	"studded leather armor",
@@ -139,7 +139,7 @@ const KindTable<Stick, magic_item> ws_magic_base = {
  * code, so perhaps original authors either abandoned the idea or were halfway
  * through implementing it.
  */
-struct h_list helpcoms[] = {
+const struct h_list helpcoms[] = {
 	{"F1     list of commands"},
 	{"F2     list of symbols"},
 	{"F3     repeat command"},
@@ -205,7 +205,7 @@ struct h_list helpcoms[] = {
 	{""}		/* the end */
 };
 
-struct h_list helpobjs[] = {
+const struct h_list helpobjs[] = {
 	{FLOOR,   "the floor"},
 	{PLAYER,  "the hero"},
 	{FOOD,    "some food"},
@@ -237,7 +237,7 @@ struct h_list helpobjs[] = {
  * Names of the various experience levels
  */
 
-const char *he_man[] = {
+constexpr std::array<std::string_view, 21> he_man = std::to_array<std::string_view>({
 	"",
 	"Guild Novice",
 	"Apprentice",
@@ -259,7 +259,7 @@ const char *he_man[] = {
 	"Gunfighter",
 	"Time Waster",
 	"Bug Chaser"
-};
+});
 
 /* bool askme = true; */			/* Ask about unidentified things */
 /* bool fight_flush = true;	*/	/* True if toilet input */
@@ -278,7 +278,7 @@ constexpr int NA = 1;
 // Every monster's strength
 constexpr str_t XX = 10;
 
-struct monster monsters[26] =
+const struct monster monsters[26] =
 {
 	/* Name		 CARRY	FLAG    str, exp, lvl, amr, hpt, dmg, maxhp */
 	{ "aquator",	0,	ISMEAN,	{ XX, 20,   5,   2, NA, "0d0/0d0", NA } },
@@ -286,7 +286,7 @@ struct monster monsters[26] =
 	{ "centaur",	 15,	{},	{ XX, 25,   4,   4, NA, "1d6/1d6", NA } },
 	{ "dragon",	 100,	ISMEAN,	{ XX,6800, 10,  -1, NA, "1d8/1d8/3d10", NA } },
 	{ "emu",	 0,	ISMEAN,	{ XX,  2,   1,   7, NA, "1d2", NA } },
-		/* damage is overwritten per game via flytrap_damage, see new_monster() */
+		/* until one hits; then every flytrap does fung_hit d1, see flytrap_attacks() */
 		/* string with others, since it is written on in the program */
 	{ "venus flytrap",0,	ISMEAN,	{ XX, 80,   8,   3, NA, "0d0", NA } },
 	{ "griffin",	 20,	ISMEAN|ISFLY|ISREGEN,	{XX,2000, 13, 2,NA, "4d3/3d5/4d3", NA } },
@@ -320,21 +320,12 @@ struct monster monsters[26] =
  * the game's copy, and the only user is new_thing(). mi_worth is unused (NA).
  */
 const struct magic_item things_base[NUMTHINGS] = {
-	{ 0,			27, NA },	/* potion */
-	{ 0,			30, NA },	/* scroll */
-	{ 0,			17, NA },	/* food */
-	{ 0,			 8, NA },	/* weapon */
-	{ 0,			 8, NA },	/* armor */
-	{ 0,			 5, NA },	/* ring */
-	{ 0,			 5, NA }	/* stick */
+	{ "",			27, NA },	/* potion */
+	{ "",			30, NA },	/* scroll */
+	{ "",			17, NA },	/* food */
+	{ "",			 8, NA },	/* weapon */
+	{ "",			 8, NA },	/* armor */
+	{ "",			 5, NA },	/* ring */
+	{ "",			 5, NA }	/* stick */
 };
 
-/*
- * Common strings
- */
-char nullstr[] = "";
-
-const char *intense = " of intense white light";
-const char *it = "it";
-const char *you = "you";
-const char *no_mem = "Not enough Memory";

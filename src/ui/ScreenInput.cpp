@@ -1,7 +1,6 @@
 #include "ui/ScreenInput.hpp"
 
-#include <cctype>
-
+#include "core/Ascii.hpp"
 #include "ui/Terminal.hpp"
 
 namespace rogue::ui {
@@ -23,63 +22,48 @@ int ScreenInput::read_key(int timeout_ms)
  * needed to retrieve sensible data from the user
  *
  * Changes from the original getinfo():
- * - Aborted input is null-terminated (ESCAPE + '\0')
  * - Only printable ASCII chars are accepted
  */
-int ScreenInput::read_line(char *buf, int size)
+std::optional<std::string> ScreenInput::read_line(std::size_t max_length)
 {
-	char *str = buf;
-	int ch;
-	int readcnt = 0;
-	int ret = 1;
-	bool wason;
+	std::string line;
+	bool wason = screen_.show_cursor(true);
 
-	*str = 0;
-	wason = screen_.show_cursor(true);
-	while (ret == 1)
+	for (;;)
 	{
+		int ch;
 		while ((ch = screen_.read_key(-1)) == key::None)
 			;
 		switch (ch)
 		{
 		case Escape:
-			while (str != buf) {
+			for (; !line.empty(); line.pop_back())
 				backspace();
-				readcnt--;
-				str--;
-			}
-			ret = *str++ = Escape;
-			*str = 0;
 			screen_.show_cursor(wason);
-			break;
+			return std::nullopt;
 		case key::Backspace:
 		case '\b':
-			if (str != buf) {
+			if (!line.empty()) {
 				backspace();
-				readcnt--;
-				str--;
+				line.pop_back();
 			}
-			break;
-		default:
-			if (readcnt >= size) {
-				screen_.bell();
-				break;
-			}
-			if (ch > 0x7f || !std::isprint(ch))
-				break;
-			readcnt++;
-			screen_.put(static_cast<std::uint8_t>(ch));
-			*str++ = static_cast<char>(ch);
 			break;
 		case key::Enter:
 		case '\n':
-			*str = 0;
 			screen_.show_cursor(wason);
-			ret = ch;  // any value different than ESCAPE or 1 would do.
+			return line;
+		default:
+			if (line.size() >= max_length) {
+				screen_.bell();
+				break;
+			}
+			if (!is_print(ch))
+				break;
+			screen_.put(static_cast<std::uint8_t>(ch));
+			line += static_cast<char>(ch);
 			break;
 		}
 	}
-	return ret;
 }
 
 /*

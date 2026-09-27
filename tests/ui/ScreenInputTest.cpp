@@ -58,9 +58,7 @@ TEST(ScreenInput, ReadsAndEchoesALine)
 {
 	Fixture f{'B', 'o', 'b', '\n'};
 	ScreenInput in(f.screen);
-	char buf[24];
-	EXPECT_EQ(in.read_line(buf, 23), '\n');
-	EXPECT_STREQ(buf, "Bob");
+	EXPECT_EQ(in.read_line(23), "Bob");
 	EXPECT_EQ(f.typed(4), "Bob ");
 }
 
@@ -68,9 +66,7 @@ TEST(ScreenInput, BackspaceRemovesTheLastCharacter)
 {
 	Fixture f{'a', 'b', key::Backspace, 'c', '\b', 'd', key::Enter};
 	ScreenInput in(f.screen);
-	char buf[24];
-	EXPECT_EQ(in.read_line(buf, 23), key::Enter);
-	EXPECT_STREQ(buf, "ad");
+	EXPECT_EQ(in.read_line(23), "ad");
 	EXPECT_EQ(f.typed(3), "ad ");
 }
 
@@ -78,20 +74,22 @@ TEST(ScreenInput, EscapeAbandonsTheLine)
 {
 	Fixture f{'x', 'y', 27};
 	ScreenInput in(f.screen);
-	char buf[24];
-	EXPECT_EQ(in.read_line(buf, 23), 27);
-	EXPECT_EQ(buf[0], 27);
-	EXPECT_EQ(buf[1], '\0');
+	EXPECT_EQ(in.read_line(23), std::nullopt);
 	EXPECT_EQ(f.typed(2), "  ");
+}
+
+TEST(ScreenInput, EnterOnAnEmptyLineIsNotEscape)
+{
+	Fixture f{'\n'};
+	ScreenInput in(f.screen);
+	EXPECT_EQ(in.read_line(23), std::optional<std::string>(""));
 }
 
 TEST(ScreenInput, StopsAtTheSizeLimitWithABell)
 {
 	Fixture f{'1', '2', '3', '\n'};
 	ScreenInput in(f.screen);
-	char buf[8];
-	in.read_line(buf, 2);
-	EXPECT_STREQ(buf, "12");
+	EXPECT_EQ(in.read_line(2), "12");
 	EXPECT_EQ(f.terminal.bells, 1);
 }
 
@@ -99,7 +97,5 @@ TEST(ScreenInput, IgnoresKeysThatAreNotText)
 {
 	Fixture f{key::Up, '\t', 'q', '\n'};
 	ScreenInput in(f.screen);
-	char buf[8];
-	in.read_line(buf, 7);
-	EXPECT_STREQ(buf, "q");
+	EXPECT_EQ(in.read_line(7), "q");
 }

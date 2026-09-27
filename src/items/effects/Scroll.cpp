@@ -2,8 +2,8 @@
 
 namespace rogue::items::effects {
 
-static constexpr const char *laugh = "you hear maniacal laughter{}.";
-const char *in_dist = " in the distance";
+constexpr std::string_view laugh = "you hear maniacal laughter{}.";
+constexpr std::string_view in_dist = " in the distance";
 /*
  * read_scroll:
  *	Read a scroll from the pack and do the appropriate thing
@@ -91,7 +91,7 @@ read_scroll()
 		 */
 		items.s_know[Scroll::Identify] = true;
 		msg("this scroll is an identify scroll");
-		if (! strcmp(game().options.menu,"on") || !strcmp(game().options.menu,"sel"))
+		if (game().options.menu == "on" || game().options.menu == "sel")
 			more(" More ");
 		whatis();
 		break;
@@ -281,7 +281,7 @@ read_scroll()
 	player.body.t_pack.remove(obj);
 	discardit = true;
 	}
-	call_it(items.s_know[obj->which<Scroll>()], &items.s_guess[obj->which<Scroll>()]);
+	call_it(items.s_know[obj->which<Scroll>()], items.s_guess[obj->which<Scroll>()]);
 
 	if (discardit)
 	discard(obj);

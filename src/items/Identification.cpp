@@ -29,12 +29,12 @@ inv_name(const Item *obj, bool drop)
 			name = std::format("{} scrolls ", obj->o_count);
 		if (items.s_know[which])
 			name += std::format("of {}", items.s_magic[which].mi_name);
-		else if (*items.s_guess[which])
+		else if (!items.s_guess[which].empty())
 			name += std::format("called {}", items.s_guess[which]);
 		else if (brief)
-			name += std::format("titled '{:.17}'", static_cast<const char *>(items.s_names[which].storage));
+			name += std::format("titled '{:.17}'", items.s_names[which]);
 		else
-			name += std::format("titled '{}'", static_cast<const char *>(items.s_names[which].storage));
+			name += std::format("titled '{}'", items.s_names[which]);
 		break;
 	}
 	case ItemKind::Potion: {
@@ -47,7 +47,7 @@ inv_name(const Item *obj, bool drop)
 		if (items.p_know[which])
 			name += brief ? std::format("of {}", items.p_magic[which].mi_name)
 				: std::format("of {}({})", items.p_magic[which].mi_name, items.p_colors[which]);
-		else if (*items.p_guess[which])
+		else if (!items.p_guess[which].empty())
 			name += brief ? std::format("called {}", items.p_guess[which])
 				: std::format("called {}({})", items.p_guess[which], items.p_colors[which]);
 		else if (obj->o_count == 1)
@@ -63,10 +63,10 @@ inv_name(const Item *obj, bool drop)
 		if (which == Food::Fruit)
 			if (obj->o_count == 1)
 				name = std::format("A{} {}", vowelstr(game().options.fruit),
-					static_cast<const char *>(game().options.fruit));
+					game().options.fruit);
 			else
 				name = std::format("{} {}s", obj->o_count,
-					static_cast<const char *>(game().options.fruit));
+					game().options.fruit);
 		else
 			if (obj->o_count == 1)
 				name = "Some food";
@@ -116,7 +116,7 @@ inv_name(const Item *obj, bool drop)
 			name += brief ? std::format("of {}{}", items.ws_magic[which].mi_name, charge_str(obj))
 				: std::format("of {}{}({})", items.ws_magic[which].mi_name,
 					charge_str(obj), items.ws_made[which]);
-		else if (*items.ws_guess[which])
+		else if (!items.ws_guess[which].empty())
 			name += brief ? std::format("called {}", items.ws_guess[which])
 				: std::format("called {}({})", items.ws_guess[which], items.ws_made[which]);
 		else {
@@ -136,7 +136,7 @@ inv_name(const Item *obj, bool drop)
 			name = brief ? std::format("A{} ring of {}", ring_num(obj), items.r_magic[which].mi_name)
 				: std::format("A{} ring of {}({})", ring_num(obj),
 					items.r_magic[which].mi_name, items.r_stones[which]);
-		else if (*items.r_guess[which])
+		else if (!items.r_guess[which].empty())
 			name = brief ? std::format("A ring called {}", items.r_guess[which])
 				: std::format("A ring called {}({})", items.r_guess[which], items.r_stones[which]);
 		else
@@ -166,9 +166,9 @@ inv_name(const Item *obj, bool drop)
 		name += " (on right hand)";
 	if (!name.empty()) {
 		if (drop && is_monster(name[0]))
-			name[0] = tolower(name[0]);
+			name[0] = to_lower(name[0]);
 		else if (!drop && is_lower(name[0]))
-			name[0] = toupper(name[0]);
+			name[0] = to_upper(name[0]);
 	}
 	return name;
 }
@@ -183,13 +183,13 @@ void
 discovered(void)
 {
 	print_disc(ItemKind::Potion);
-	add_line(nullstr, " ");
+	add_line("", " ");
 	print_disc(ItemKind::Scroll);
-	add_line(nullstr, " ");
+	add_line("", " ");
 	print_disc(ItemKind::Ring);
-	add_line(nullstr, " ");
+	add_line("", " ");
 	print_disc(ItemKind::Stick);
-	end_line(nullstr);
+	end_line("");
 }
 
 /*
@@ -202,7 +202,7 @@ void
 print_disc(ItemKind type)
 {
 	bool *know = nullptr;
-	char **guess = nullptr;
+	std::string *guess = nullptr;
 	int i, maxnum = 0, num_found;
 	static Item obj;
 	static short order[std::max({kind_count<Scroll>, kind_count<Potion>, kind_count<Ring>, kind_count<Stick>})];
@@ -238,15 +238,15 @@ print_disc(ItemKind type)
 	obj.o_flags.reset();
 	num_found = 0;
 	for (i = 0; i < maxnum; i++)
-		if (know[order[i]] || *guess[order[i]])
+		if (know[order[i]] || !guess[order[i]].empty())
 		{
 			obj.o_type = type;
 			obj.o_which = order[i];
-			add_line(nullstr, inv_name(&obj, false).c_str());
+			add_line("", inv_name(&obj, false));
 			num_found++;
 		}
 	if (num_found == 0)
-		add_line(nullstr, nothing(type).c_str());
+		add_line("", nothing(type));
 }
 
 /*
@@ -277,7 +277,7 @@ set_order(short *order, int numthings)
  *	(end_line())
  */
 unsigned char
-add_line(const char *use, const char *line)
+add_line(std::string_view use, std::optional<std::string_view> line)
 {
 	unsigned char retchar = ' ';
 	if (line_cnt == 0)
@@ -285,9 +285,9 @@ add_line(const char *use, const char *line)
 		display().open_page();
 		display().clear_page();
 	}
-	if (line_cnt >= LINES - 1 || line == nullptr)
+	if (line_cnt >= LINES - 1 || !line)
 	{
-		if (*use)
+		if (!use.empty())
 			display().write_at(LINES-1, 0,
 				std::format("-Select item to {}. Esc to cancel-", use));
 		else
@@ -298,11 +298,11 @@ add_line(const char *use, const char *line)
 		display().clear_page();
 		line_cnt = 0;
 	}
-	if (line != nullptr && !(line_cnt == 0 && *line == '\0'))
+	if (line && !(line_cnt == 0 && line->empty()))
 	{
 		coord end;
 
-		end = display().write_at(line_cnt, 0, line);
+		end = display().write_at(line_cnt, 0, *line);
 		/*
 		 * if the line wrapped but nothing was printed on this
 		 * line you might as well use it for the next item
@@ -318,11 +318,11 @@ add_line(const char *use, const char *line)
  *	End the list of lines
  */
 unsigned char
-end_line(const char *use)
+end_line(std::string_view use)
 {
 	int retchar;
 
-	retchar = add_line(use, nullptr);
+	retchar = add_line(use, std::nullopt);
 	display().close_page();
 	line_cnt = 0;
 	return(retchar);
@@ -336,7 +336,7 @@ static
 std::string
 nothing(ItemKind type)
 {
-	const char *tystr;
+	std::string_view tystr;
 
 	switch (type)
 	{

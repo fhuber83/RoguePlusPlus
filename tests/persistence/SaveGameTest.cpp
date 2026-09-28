@@ -125,17 +125,17 @@ protected:
 		// Monsters after everything a monster can be after
 		Item *floor = g.level.objects.first();
 		int n = 0;
-		for (Creature *tp : g.level.monsters) {
+		for (Creature &tp : g.level.monsters) {
 			switch (n++ % 4) {
-			case 0: tp->t_dest = Hero{}; break;
-			case 1: tp->t_dest = Gold{RoomRef::room(0)}; break;
+			case 0: tp.t_dest = Hero{}; break;
+			case 1: tp.t_dest = Gold{RoomRef::room(0)}; break;
 			case 2:
 				if (floor)
-					tp->t_dest = *g.pool.id_of(floor);
+					tp.t_dest = *g.pool.id_of(floor);
 				else
-					tp->t_dest = std::nullopt;
+					tp.t_dest = std::nullopt;
 				break;
-			case 3: tp->t_type = 'F'; break;	// a venus flytrap, whose attack grows
+			case 3: tp.t_type = 'F'; break;	// a venus flytrap, whose attack grows
 			}
 		}
 		p.fung_hit = 3;
@@ -195,8 +195,8 @@ TEST_F(SaveGame, PointersPointIntoTheGame)
 	EXPECT_EQ(g.turn.last_item, g.player.weapon);
 	EXPECT_EQ(g.scheduler.time_left(rogue::rules::Event::Unconfuse), 9);
 	int flytraps = 0;
-	for (Creature *tp : g.level.monsters)
-		if (tp->t_type == 'F')
+	for (const Creature &tp : g.level.monsters)
+		if (tp.t_type == 'F')
 			flytraps++;
 	EXPECT_GT(flytraps, 0);
 	EXPECT_EQ(g.player.fung_hit, 3);

@@ -1,18 +1,41 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <optional>
 #include <vector>
 
 #include "entities/List.hpp"
 
 using rogue::List;
 
+// A pool for Lists of ints: each int gets the next Id the first time it is named
+template <>
+struct rogue::ListPool<int> {
+	static std::vector<int *> &slots()
+	{
+		static std::vector<int *> known;
+		return known;
+	}
+	static int *at(rogue::Id<int> id) { return slots()[id.slot]; }
+	static std::optional<rogue::Id<int>> id_of(const int *p)
+	{
+		if (p == nullptr)
+			return std::nullopt;
+		auto &known = slots();
+		auto it = std::find(known.begin(), known.end(), p);
+		if (it == known.end())
+			it = known.insert(known.end(), const_cast<int *>(p));
+		return rogue::Id<int>{static_cast<int>(it - known.begin())};
+	}
+};
+
 namespace {
 
 std::vector<int> values(const List<int> &list)
 {
 	std::vector<int> out;
-	for (int *p : list)
-		out.push_back(*p);
+	for (int &p : list)
+		out.push_back(p);
 	return out;
 }
 

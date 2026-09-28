@@ -80,9 +80,9 @@ discard(Item *item)
 	 * old position until the slot was reused.
 	 */
 	if (std::optional<ItemId> id = game().pool.id_of(item))
-		for (Creature *mp : game().level.monsters)
-			if (mp->t_dest == Destination(*id))
-				mp->t_dest = Hero{};
+		for (Creature &mp : game().level.monsters)
+			if (mp.t_dest == Destination(*id))
+				mp.t_dest = Hero{};
 	return discard_from(item, game().pool.items);
 }
 

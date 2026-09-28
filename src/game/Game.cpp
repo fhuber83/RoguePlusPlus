@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <functional>
 
 #include "rogue.h"
 
@@ -25,25 +24,20 @@ pool_problems(const Game &g)
 	int item_refs[MAXITEMS] = {};
 	int creature_refs[MAXITEMS] = {};
 
-	auto count_items = [&](const List<Item> &list, std::string_view where) {
-		for (const Item *obj : list) {
-			int slot = pool.items.slot_of(obj);
-			if (slot < 0)
-				problem(std::format("an item outside the pool in {}", where));
-			else
-				item_refs[slot]++;
-		}
+	// Lists hold Ids; one of a free slot is counted, and reported below
+	auto count_items = [&](const List<Item> &list) {
+		for (ItemId id : list.ids())
+			item_refs[id.slot]++;
 	};
-	count_items(level.objects, "the level's objects");
-	count_items(g.player.body.t_pack, "the rogue's pack");
-	for (const Creature *tp : level.monsters) {
-		int slot = pool.creatures.slot_of(tp);
-		if (slot < 0) {
-			problem("a monster outside the pool");
-			continue;
-		}
+	count_items(level.objects);
+	count_items(g.player.body.t_pack);
+	for (CreatureId id : level.monsters.ids()) {
+		int slot = id.slot;
 		creature_refs[slot]++;
-		count_items(tp->t_pack, "a monster's pack");
+		const Creature *tp = pool.creature(std::optional<CreatureId>(id));
+		if (tp == nullptr)
+			continue;
+		count_items(tp->t_pack);
 
 		const std::optional<Destination> &dest = tp->t_dest;
 		bool dest_ok = !dest || std::holds_alternative<Hero>(*dest)
@@ -91,6 +85,11 @@ Coord Game::where(const Destination &dest) const
 		return level.room(std::get<Gold>(dest).room).r_gold;
 	return pool.item(std::get<ItemId>(dest)).o_pos;
 }
+
+Item *ListPool<Item>::at(ItemId id) { return game().pool.item(std::optional<ItemId>(id)); }
+std::optional<ItemId> ListPool<Item>::id_of(const Item *obj) { return game().pool.id_of(obj); }
+Creature *ListPool<Creature>::at(CreatureId id) { return game().pool.creature(std::optional<CreatureId>(id)); }
+std::optional<CreatureId> ListPool<Creature>::id_of(const Creature *tp) { return game().pool.id_of(tp); }
 
 Item *Player::armor_item() const { return game().pool.item(armor); }
 Item *Player::weapon_item() const { return game().pool.item(weapon); }

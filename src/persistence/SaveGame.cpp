@@ -149,8 +149,8 @@ json stats_json(const struct stats &s, bool flytrap)
 json item_list(const Game &g, const List<Item> &list)
 {
 	json out = json::array();
-	for (const Item *obj : list)
-		out.push_back(item_ref(g, obj));
+	for (ItemId id : list.ids())
+		out.push_back(item_ref(g, id));
 	return out;
 }
 
@@ -320,8 +320,8 @@ json level_json(const Game &g)
 		rooms.push_back(room_json(r));
 	for (const struct room &r : l.passages)
 		passages.push_back(room_json(r));
-	for (const Creature *tp : l.monsters)
-		monsters.push_back(g.pool.creatures.slot_of(tp));
+	for (CreatureId id : l.monsters.ids())
+		monsters.push_back(g.pool.creatures.used(id.slot) ? id.slot : -1);
 	return {
 		{"depth", l.depth}, {"traps", l.ntraps}, {"no_food", l.no_food},
 		{"rooms", std::move(rooms)}, {"passages", std::move(passages)},

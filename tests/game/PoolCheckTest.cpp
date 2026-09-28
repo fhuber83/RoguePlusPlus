@@ -131,6 +131,22 @@ TEST_F(PoolCheck, TheLastItemPickedIsInUse)
 	EXPECT_EQ(problems(), "");
 }
 
+// Lists keep Ids: one whose thing was discarded without being taken out is
+// reported, not followed
+TEST_F(PoolCheck, DiscardedButListed)
+{
+	Item *obj = new_item();
+	game().level.objects.push_front(obj);
+	Creature *tp = new_creature();
+	game().level.monsters.push_front(tp);
+	EXPECT_EQ(problems(), "");
+	discard(obj);
+	discard(tp);
+	EXPECT_NE(problems(), "");
+	EXPECT_EQ(game().level.objects.first(), nullptr);
+	EXPECT_EQ(game().level.monsters.first(), nullptr);
+}
+
 TEST_F(PoolCheck, TheCountIsRight)
 {
 	game().pool.total = 1;

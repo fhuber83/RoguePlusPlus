@@ -206,10 +206,22 @@ struct Items {
 	Items();
 };
 
+// The pool's creatures and items, as Lists find them (entities/List.hpp)
+template <>
+struct ListPool<Item> {
+	static Item *at(ItemId id);
+	static std::optional<ItemId> id_of(const Item *obj);
+};
+template <>
+struct ListPool<Creature> {
+	static Creature *at(CreatureId id);
+	static std::optional<CreatureId> id_of(const Creature *tp);
+};
+
 /*
  * The creatures and items in play, made by new_creature() and new_item() and
  * given back by discard() (list.cpp). Each slot owns its thing; lists, packs
- * and the rest only point at them. The original allocated both kinds from one
+ * and the rest name them by Id (game/Id.hpp). The original allocated both kinds from one
  * array of MAXITEMS things (_things), so the count is shared: when it is
  * full, neither kind can be made, and level generation checks it.
  */

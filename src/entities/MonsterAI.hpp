@@ -37,7 +37,7 @@ bool see_monst(Creature *mp);
  * find_dest:
  *	Find the proper destination for the monster.
  */
-coord *find_dest(Creature *tp);
+Destination find_dest(Creature *tp);
 
 /*
  * slime_split:

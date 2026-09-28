@@ -191,7 +191,7 @@ do_zap()
 				if (tp->t_pos.y != y || tp->t_pos.x != x)
 					tp->t_oldch = display().tile_at(tp->t_pos);
 			}
-			tp->t_dest = &player.body.t_pos;
+			tp->t_dest = Hero{};
 			tp->t_flags.set(ISRUN);
 		}
 	}

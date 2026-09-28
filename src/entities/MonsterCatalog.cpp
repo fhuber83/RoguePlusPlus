@@ -197,7 +197,7 @@ wake_monster(int y, int x)
 	if (!tp->t_flags.test(ISRUN) && rnd(3) != 0 && tp->t_flags.test(ISMEAN) && !tp->t_flags.test(ISHELD)
 		&& !player.wears(Ring::Stealth))
 	{
-		tp->t_dest = &player.body.t_pos;
+		tp->t_dest = Hero{};
 		tp->t_flags.set(ISRUN);
 	}
 	if (ch == 'M' && !player.body.t_flags.test(ISBLIND) && !tp->t_flags.test(ISFOUND)
@@ -222,10 +222,10 @@ wake_monster(int y, int x)
 	 */
 	if (tp->t_flags.test(ISGREED) && !tp->t_flags.test(ISRUN)) {
 		tp->t_flags.set(ISRUN);
-		if (struct room &here = game().level.room(*player.body.t_room); here.r_goldval)
-			tp->t_dest = &here.r_gold;
+		if (game().level.room(*player.body.t_room).r_goldval)
+			tp->t_dest = Gold{*player.body.t_room};
 		else
-			tp->t_dest = &player.body.t_pos;
+			tp->t_dest = Hero{};
 	}
 	return tp;
 }

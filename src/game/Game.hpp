@@ -244,6 +244,8 @@ struct Game {
 	int wander_rolls = 0;			/* between: rollwand() calls since it last rolled */
 
 	Game() = default;
+	// Where a destination is now (see Destination)
+	Coord where(const Destination &dest) const;
 	// It points into itself (guesses, level lists, worn items in the pool)
 	Game(const Game &) = delete;
 	Game &operator=(const Game &) = delete;

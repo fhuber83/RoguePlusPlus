@@ -8,7 +8,27 @@
  * rogue.h.
  */
 
+#include <optional>
+#include <variant>
+
+#include "game/Id.hpp"
+
 namespace rogue {
+
+/*
+ * Where a running monster is headed (was a coord * at the position): the
+ * hero, a room's or passage's gold, or an item on the floor. Game::where()
+ * gives the position, as it is when asked, as the pointer read it.
+ */
+struct Hero {
+	friend constexpr bool operator==(Hero, Hero) = default;
+};
+struct Gold {
+	RoomRef room;			/* the room or passage whose r_gold it is */
+
+	friend constexpr bool operator==(const Gold &, const Gold &) = default;
+};
+using Destination = std::variant<Hero, Gold, ItemId>;
 
 /* flags for creatures */
 enum class CreatureFlag : unsigned short {
@@ -41,7 +61,7 @@ struct Creature {
 	char t_type;				/* What it is */
 	unsigned char t_disguise;			/* What mimic looks like */
 	unsigned char t_oldch;				/* Character that was where it was */
-	coord *t_dest;				/* Where it is running to */
+	std::optional<Destination> t_dest;	/* Where it is running to, if anywhere */
 	CreatureFlags t_flags;		/* State word */
 	struct stats t_stats;		/* Physical description */
 	std::optional<RoomRef> t_room;	/* Current room for thing, if any */

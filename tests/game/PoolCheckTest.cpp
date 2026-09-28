@@ -77,19 +77,21 @@ TEST_F(PoolCheck, WhatAMonsterIsAfter)
 	Item *obj = new_item();
 	level.objects.push_front(obj);
 
-	for (coord *dest : {static_cast<coord *>(nullptr), &game().player.body.t_pos, &level.rooms[3].r_gold,
-			&level.passages[2].r_gold, &obj->o_pos}) {
+	for (std::optional<Destination> dest : {std::optional<Destination>(), std::optional<Destination>(Hero{}),
+			std::optional<Destination>(Gold{RoomRef::room(3)}), std::optional<Destination>(Gold{RoomRef::passage(2)}),
+			std::optional<Destination>(*game().pool.id_of(obj))}) {
 		tp->t_dest = dest;
 		EXPECT_EQ(problems(), "");
 	}
-	coord elsewhere{};
-	tp->t_dest = &elsewhere;
+	tp->t_dest = Gold{RoomRef::passage(MAXPASS)};
+	EXPECT_NE(problems(), "");
+	tp->t_dest = ItemId{MAXITEMS - 1};	// a free slot
 	EXPECT_NE(problems(), "");
 
 	// A carried item is not a destination
 	level.objects.remove(obj);
 	game().player.body.t_pack.push_front(obj);
-	tp->t_dest = &obj->o_pos;
+	tp->t_dest = *game().pool.id_of(obj);
 	EXPECT_NE(problems(), "");
 }
 

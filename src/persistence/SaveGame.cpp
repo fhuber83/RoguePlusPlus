@@ -105,22 +105,20 @@ json room_ref(std::optional<RoomRef> ref)
 	return json{{ref->kind == RoomRef::Kind::Room ? "room" : "passage", ref->index}};
 }
 
-json dest_ref(const Game &g, const coord *dest)
+json dest_ref(const Game &g, std::optional<Destination> dest)
 {
-	if (dest == nullptr)
+	if (!dest)
 		return nullptr;
-	if (dest == &g.player.body.t_pos)
+	if (std::holds_alternative<Hero>(*dest))
 		return "hero";
-	for (int i = 0; i < MAXROOMS; i++)
-		if (dest == &g.level.rooms[i].r_gold)
-			return json{{"room_gold", i}};
-	for (int i = 0; i < MAXPASS; i++)
-		if (dest == &g.level.passages[i].r_gold)
-			return json{{"passage_gold", i}};
-	for (int i = 0; i < MAXITEMS; i++)
-		if (const Item *obj = g.pool.items.at(i); obj != nullptr && dest == &obj->o_pos)
-			return json{{"item", i}};
-	throw std::logic_error("a monster is after something that can't be saved");
+	if (std::holds_alternative<Gold>(*dest)) {
+		const RoomRef room = std::get<Gold>(*dest).room;
+		return json{{room.kind == RoomRef::Kind::Room ? "room_gold" : "passage_gold", room.index}};
+	}
+	const ItemId id = std::get<ItemId>(*dest);
+	if (!g.pool.items.used(id.slot))
+		throw std::logic_error("a monster is after something that can't be saved");
+	return json{{"item", id.slot}};
 }
 
 // Damage as its text, null for none
@@ -517,24 +515,22 @@ std::optional<RoomRef> room_at(const json &v, std::string_view what)
 	fail(std::format("{} is not a room or passage", what));
 }
 
-coord *dest_at(Game &g, const json &v)
+std::optional<Destination> dest_at(Game &g, const json &v)
 {
 	if (v.is_null())
-		return nullptr;
+		return std::nullopt;
 	if (v == "hero")
-		return &g.player.body.t_pos;
+		return Hero{};
 	if (v.is_object() && v.size() == 1) {
-		if (v.contains("room_gold")) {
-			int i = whole(v["room_gold"], "dest");
-			if (i >= 0 && i < MAXROOMS)
-				return &g.level.rooms[i].r_gold;
-		} else if (v.contains("passage_gold")) {
-			int i = whole(v["passage_gold"], "dest");
-			if (i >= 0 && i < MAXPASS)
-				return &g.level.passages[i].r_gold;
-		} else if (v.contains("item")) {
-			return &item_at(g, v["item"], "dest")->o_pos;
-		}
+		std::optional<RoomRef> gold;
+		if (v.contains("room_gold"))
+			gold = RoomRef::room(whole(v["room_gold"], "dest"));
+		else if (v.contains("passage_gold"))
+			gold = RoomRef::passage(whole(v["passage_gold"], "dest"));
+		else if (v.contains("item"))
+			return *g.pool.id_of(item_at(g, v["item"], "dest"));
+		if (gold && Level::valid(*gold))
+			return Gold{*gold};
 	}
 	fail("\"dest\" is not the hero, gold or an item");
 }

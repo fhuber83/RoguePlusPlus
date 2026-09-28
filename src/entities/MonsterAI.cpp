@@ -72,10 +72,10 @@ do_chase(Creature *th)
 
 	rer	= th->t_room;		/* Find room of chaser */
 	if (th->t_flags.test(ISGREED) && level.room(*rer).r_goldval == 0)
-		th->t_dest = &player.body.t_pos;	/*	If gold	has been taken,	run after hero */
+		th->t_dest = Hero{};	/*	If gold	has been taken,	run after hero */
 	ree	= player.body.t_room;
-	if (th->t_dest != &player.body.t_pos)	/*	Find room of chasee */
-		ree = roomin(*th->t_dest);
+	if (th->t_dest != Destination(Hero{}))	/*	Find room of chasee */
+		ree = roomin(game().where(*th->t_dest));
 	if (!ree)
 		return;
 	/*
@@ -93,9 +93,10 @@ over:
 	if (rer != ree && !level.room(*rer).r_flags.test(RoomFlag::Maze))
 	{
 		const struct room &from = level.room(*rer);
+		const Coord dest = game().where(*th->t_dest);
 
 		for (i	= 0; i < from.r_nexits;	i++) {	/*	loop through doors */
-			dist = DISTANCE(th->t_dest->y, th->t_dest->x,from.r_exit[i].y, from.r_exit[i].x);
+			dist = DISTANCE(dest.y, dest.x,from.r_exit[i].y, from.r_exit[i].x);
 			if	(dist <	mindist) {
 				target = from.r_exit[i];
 				mindist = dist;
@@ -107,7 +108,7 @@ over:
 			goto over;
 		}
 	} else {
-		target =	*th->t_dest;
+		target =	game().where(*th->t_dest);
 		/*
 		 * For	monsters which can fire	bolts at the poor hero,	we check to
 		 * see	if (a) the hero	in on a	straight line from it, and (b) that
@@ -136,9 +137,9 @@ over:
 	if (ch_ret == player.body.t_pos) {
 		attack(th);
 		return;
-	} else if (ch_ret == *th->t_dest) {
+	} else if (ch_ret == game().where(*th->t_dest)) {
 		for (obj = level.objects.first(); obj != nullptr; obj = level.objects.after(obj))
-			if	(th->t_dest == &obj->o_pos) {
+			if	(th->t_dest == Destination(*game().pool.id_of(obj))) {
 				unsigned char oldchar;
 
 				level.objects.remove(obj);
@@ -351,7 +352,7 @@ chase(Creature *tp, Coord ee)
  * find_dest:
  *	find	the proper destination for the monster
  */
-coord *
+Destination
 find_dest(Creature *tp)
 {
 	Item *obj;
@@ -361,7 +362,7 @@ find_dest(Creature *tp)
 
 	if ((prob =	monsters[tp->t_type - 'A'].m_carry) <= 0 || tp->t_room == player.body.t_room
 	|| see_monst(tp))
-		return &player.body.t_pos;
+		return Hero{};
 	rp = tp->t_room;
 	for (obj = game().level.objects.first(); obj != nullptr; obj = game().level.objects.after(obj))
 	{
@@ -370,13 +371,13 @@ find_dest(Creature *tp)
 	if (roomin(obj->o_pos) == rp && rnd(100) < prob)
 	{
 		for (tp = game().level.monsters.first(); tp != nullptr; tp = game().level.monsters.after(tp))
-		if (tp->t_dest == &obj->o_pos)
+		if (tp->t_dest == Destination(*game().pool.id_of(obj)))
 			break;
 		if	(tp == nullptr)
-		return &obj->o_pos;
+		return *game().pool.id_of(obj);
 	}
 	}
-	return &player.body.t_pos;
+	return Hero{};
 }
 
 /*

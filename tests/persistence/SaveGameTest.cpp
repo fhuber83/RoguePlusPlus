@@ -127,9 +127,14 @@ protected:
 		int n = 0;
 		for (Creature *tp : g.level.monsters) {
 			switch (n++ % 4) {
-			case 0: tp->t_dest = &p.body.t_pos; break;
-			case 1: tp->t_dest = &g.level.rooms[0].r_gold; break;
-			case 2: tp->t_dest = floor ? &floor->o_pos : nullptr; break;
+			case 0: tp->t_dest = Hero{}; break;
+			case 1: tp->t_dest = Gold{RoomRef::room(0)}; break;
+			case 2:
+				if (floor)
+					tp->t_dest = *g.pool.id_of(floor);
+				else
+					tp->t_dest = std::nullopt;
+				break;
 			case 3: tp->t_type = 'F'; break;	// a venus flytrap, whose attack grows
 			}
 		}

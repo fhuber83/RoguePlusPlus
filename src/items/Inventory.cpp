@@ -192,9 +192,8 @@ picked_up:
 		 * be not chasing (sleeping, another room, Ice Monster, etc), so a
 		 * destination could possibly have never been assigned.
 		 */
-		if (mp->t_dest != nullptr &&
-		   (mp->t_dest->x == obj->o_pos.x) && (mp->t_dest->y == obj->o_pos.y))
-			mp->t_dest = &player.body.t_pos;
+		if (mp->t_dest && game().where(*mp->t_dest) == obj->o_pos)
+			mp->t_dest = Hero{};
 	}
 
 	if (obj->o_type == ItemKind::Amulet)
@@ -274,9 +273,8 @@ pick_up(unsigned char ch)
 		 * floor items, so nothing is left pointing at a freed Item.
 		 */
 		for (mp = game().level.monsters.first(); mp != nullptr; mp = game().level.monsters.after(mp))
-			if (mp->t_dest != nullptr &&
-			   (mp->t_dest->x == obj->o_pos.x) && (mp->t_dest->y == obj->o_pos.y))
-				mp->t_dest = &player.body.t_pos;
+			if (mp->t_dest && game().where(*mp->t_dest) == obj->o_pos)
+				mp->t_dest = Hero{};
 		game().level.objects.remove(obj);
 		discard(obj);
 		game().level.room(*player.body.t_room).r_goldval = 0;

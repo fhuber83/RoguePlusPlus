@@ -79,9 +79,10 @@ discard(Item *item)
 	 * pack item and is discarded: the original then chased the freed slot's
 	 * old position until the slot was reused.
 	 */
-	for (Creature *mp : game().level.monsters)
-		if (mp->t_dest == &item->o_pos)
-			mp->t_dest = &game().player.body.t_pos;
+	if (std::optional<ItemId> id = game().pool.id_of(item))
+		for (Creature *mp : game().level.monsters)
+			if (mp->t_dest == Destination(*id))
+				mp->t_dest = Hero{};
 	return discard_from(item, game().pool.items);
 }
 

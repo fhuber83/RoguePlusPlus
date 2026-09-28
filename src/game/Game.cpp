@@ -45,14 +45,11 @@ pool_problems(const Game &g)
 		creature_refs[slot]++;
 		count_items(tp->t_pack, "a monster's pack");
 
-		const coord *dest = tp->t_dest;
-		bool dest_ok = dest == nullptr || dest == &g.player.body.t_pos;
-		for (const struct room &rp : level.rooms)
-			dest_ok = dest_ok || dest == &rp.r_gold;
-		for (const struct room &rp : level.passages)
-			dest_ok = dest_ok || dest == &rp.r_gold;
-		for (const Item *obj : level.objects)
-			dest_ok = dest_ok || dest == &obj->o_pos;
+		const std::optional<Destination> &dest = tp->t_dest;
+		bool dest_ok = !dest || std::holds_alternative<Hero>(*dest)
+			|| (std::holds_alternative<Gold>(*dest) && Level::valid(std::get<Gold>(*dest).room));
+		if (dest && std::holds_alternative<ItemId>(*dest))
+			dest_ok = level.objects.contains(pool.item(std::optional<ItemId>(std::get<ItemId>(*dest))));
 		if (!dest_ok)
 			problem("monster " + std::to_string(slot) + " is after something that isn't the hero, gold or a floor item");
 		if (tp->t_room && !Level::valid(*tp->t_room))
@@ -84,6 +81,15 @@ pool_problems(const Game &g)
 	if (player.old_room && !Level::valid(*player.old_room))
 		problem("the rogue was in a room that isn't one");
 	return problems;
+}
+
+Coord Game::where(const Destination &dest) const
+{
+	if (std::holds_alternative<Hero>(dest))
+		return player.body.t_pos;
+	if (std::holds_alternative<Gold>(dest))
+		return level.room(std::get<Gold>(dest).room).r_gold;
+	return pool.item(std::get<ItemId>(dest)).o_pos;
 }
 
 Item *Player::armor_item() const { return game().pool.item(armor); }

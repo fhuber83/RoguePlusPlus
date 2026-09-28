@@ -71,8 +71,8 @@ discard(Item *item)
 	 * new item that reused the slot; a freed item's address can be reused
 	 * too, so forget it.
 	 */
-	if (game().turn.last_item == item)
-		game().turn.last_item = nullptr;
+	if (game().pool.item(game().turn.last_item) == item)
+		game().turn.last_item = std::nullopt;
 	/*
 	 * A monster after this item goes for the hero instead. add_pack() does
 	 * this when the rogue picks the item up, but not when it merges into a

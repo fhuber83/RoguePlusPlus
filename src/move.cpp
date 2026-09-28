@@ -172,7 +172,7 @@ hit_bound:
 	default:
 		turn.running = false;
 		if (is_monster(ch) || moat(nh.y, nh.x))
-			fight(nh, ch, player.weapon, false);
+			fight(nh, ch, player.weapon_item(), false);
 		else {
 			turn.running = false;
 			if (ch != STAIRS)

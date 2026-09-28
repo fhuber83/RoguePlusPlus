@@ -81,16 +81,17 @@ TEST_F(Names, FoodUsesTheFruit)
 
 TEST_F(Names, WeaponsAndArmor)
 {
-	Item obj = item(ItemKind::Weapon, WeaponType::Mace);
+	Item &obj = *new_item();	// in the pool, so it can be wielded
+	obj = item(ItemKind::Weapon, WeaponType::Mace);
 	obj.o_hplus = 1;
 	obj.o_dplus = -2;
 	EXPECT_EQ(inv_name(&obj, false), "A mace");
 	obj.o_flags.set(ISKNOW);
 	EXPECT_EQ(inv_name(&obj, false), "A +1,-2 mace");
-	game().player.weapon = &obj;
+	game().player.weapon = game().pool.id_of(&obj);
 	EXPECT_EQ(inv_name(&obj, false), "A +1,-2 mace (weapon in hand)");
 
-	game().player.weapon = nullptr;
+	game().player.weapon = std::nullopt;
 	Item armor = item(ItemKind::Armor, ArmorType::RingMail);
 	armor.o_ac = a_class[ArmorType::RingMail] - 1;	// one better than usual
 	EXPECT_EQ(inv_name(&armor, false), "Ring mail");
@@ -113,9 +114,10 @@ TEST_F(Names, UnknownSticksKeepTheirArticle)
 
 TEST_F(Names, RingsAndHands)
 {
-	Item obj = item(ItemKind::Ring, Ring::Protection);
+	Item &obj = *new_item();	// in the pool, so it can be worn
+	obj = item(ItemKind::Ring, Ring::Protection);
 	obj.o_ac = 2;
-	game().player.rings[Hand::Left] = &obj;
+	game().player.rings[Hand::Left] = game().pool.id_of(&obj);
 	EXPECT_EQ(inv_name(&obj, false), "An opal ring (on left hand)");
 	game().items.r_know[Ring::Protection] = true;
 	obj.o_flags.set(ISKNOW);

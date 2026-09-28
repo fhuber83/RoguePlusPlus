@@ -266,8 +266,8 @@ eat()
 	 * one is discarded. Both were after discard(), reading a freed item.
 	 */
 	which = obj->which<Food>();
-	if (obj == player.weapon)
-		player.weapon = nullptr;
+	if (obj == player.weapon_item())
+		player.weapon = std::nullopt;
 	if (--obj->o_count < 1)
 	{
 		player.body.t_pack.remove(obj);
@@ -311,9 +311,9 @@ chg_str(int amt)
 	add_str(&player.body.t_stats.s_str, amt);
 	comp = player.body.t_stats.s_str;
 	if (player.wears(Hand::Left, Ring::AddStrength))
-		add_str(&comp, -player.rings[Hand::Left]->o_ac);
+		add_str(&comp, -player.ring_item(Hand::Left)->o_ac);
 	if (player.wears(Hand::Right, Ring::AddStrength))
-		add_str(&comp, -player.rings[Hand::Right]->o_ac);
+		add_str(&comp, -player.ring_item(Hand::Right)->o_ac);
 	if (comp > player.max_stats.s_str)
 		player.max_stats.s_str = comp;
 }
@@ -400,8 +400,8 @@ is_current(Item *obj)
 {
 	if (obj == nullptr)
 		return false;
-	if (obj == game().player.armor || obj == game().player.weapon || obj == game().player.rings[Hand::Left]
-		|| obj == game().player.rings[Hand::Right]) {
+	if (obj == game().player.armor_item() || obj == game().player.weapon_item() || obj == game().player.ring_item(Hand::Left)
+		|| obj == game().player.ring_item(Hand::Right)) {
 		msg("That's already in use");
 		return true;
 	}

@@ -34,7 +34,7 @@ init_player()
 	obj->o_count = 1;
 	obj->o_group = 0;
 	add_pack(obj, true);
-	game().player.weapon = obj;
+	game().player.weapon = game().pool.id_of(obj);
 	/*
 	 * Now a +1 bow
 	 */
@@ -69,7 +69,7 @@ init_player()
 	obj->o_flags.set(ISKNOW);
 	obj->o_count = 1;
 	obj->o_group = 0;
-	game().player.armor = obj;
+	game().player.armor = game().pool.id_of(obj);
 	add_pack(obj, true);
 	/*
 	 * Give him some food too

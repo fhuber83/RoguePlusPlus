@@ -71,7 +71,7 @@ fight(Coord mp, char mn, Item *weap, bool thrown)
 					player.body.t_pack.remove(weap);
 					discard(weap);
 				}
-				player.weapon = nullptr;
+				player.weapon = std::nullopt;
 			}
 		}
 		if (player.body.t_flags.test(CANHUH)) {
@@ -128,15 +128,15 @@ attack(Creature *mp)
 			 * If a rust monster hits, you lose armor, unless
 			 * that armor is leather or there is a magic ring
 			 */
-			if (player.armor != nullptr && player.armor->o_ac < 9
-			  && player.armor->which<ArmorType>() != ArmorType::Leather)
+			if (player.armor_item() != nullptr && player.armor_item()->o_ac < 9
+			  && player.armor_item()->which<ArmorType>() != ArmorType::Leather)
 			{
 				if (player.wears(Ring::MaintainArmor))
 					msg("the rust vanishes instantly");
 				else
 				{
 					msg("your armor weakens, oh my!");
-					player.armor->o_ac++;
+					player.armor_item()->o_ac++;
 				}
 			}
 			break;
@@ -234,8 +234,8 @@ attack(Creature *mp)
 			 */
 			steal = nullptr;
 			for (nobj = 0, obj = player.body.t_pack.first(); obj != nullptr; obj = player.body.t_pack.after(obj))
-			if (obj != player.armor && obj != player.weapon
-				&& obj != player.rings[Hand::Left] && obj != player.rings[Hand::Right]
+			if (obj != player.armor_item() && obj != player.weapon_item()
+				&& obj != player.ring_item(Hand::Left) && obj != player.ring_item(Hand::Right)
 				&& is_magic(obj) && rnd(++nobj) == 0)
 				steal = obj;
 			if (steal != nullptr)
@@ -356,24 +356,24 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 			hplus += 4;
 			dplus += 4;
 		}
-		if (weap == player.weapon)
+		if (weap == player.weapon_item())
 		{
 			if (player.wears(Hand::Left, Ring::IncreaseDamage))
-				dplus += player.rings[Hand::Left]->o_ac;
+				dplus += player.ring_item(Hand::Left)->o_ac;
 			else if (player.wears(Hand::Left, Ring::Dexterity))
-				hplus += player.rings[Hand::Left]->o_ac;
+				hplus += player.ring_item(Hand::Left)->o_ac;
 			if (player.wears(Hand::Right, Ring::IncreaseDamage))
-				dplus += player.rings[Hand::Right]->o_ac;
+				dplus += player.ring_item(Hand::Right)->o_ac;
 			else if (player.wears(Hand::Right, Ring::Dexterity))
-				hplus += player.rings[Hand::Right]->o_ac;
+				hplus += player.ring_item(Hand::Right)->o_ac;
 		}
 		attacks = weap->o_damage;
-		if (hurl && weap->o_flags.test(ISMISL) && player.weapon != nullptr &&
-			  launched_by(player.weapon->which<WeaponType>()) == weap->o_launch)
+		if (hurl && weap->o_flags.test(ISMISL) && player.weapon_item() != nullptr &&
+			  launched_by(player.weapon_item()->which<WeaponType>()) == weap->o_launch)
 		{
 			attacks = weap->o_hurldmg;
-			hplus += player.weapon->o_hplus;
-			dplus += player.weapon->o_dplus;
+			hplus += player.weapon_item()->o_hplus;
+			dplus += player.weapon_item()->o_dplus;
 		}
 		/*
 		 * Drain a staff of striking
@@ -400,12 +400,12 @@ roll_em(Creature *thatt, Creature *thdef, Item *weap, bool hurl)
 	def_arm = def->s_arm;
 	if (def == &player.body.t_stats)
 	{
-		if (player.armor != nullptr)
-			def_arm = player.armor->o_ac;
+		if (player.armor_item() != nullptr)
+			def_arm = player.armor_item()->o_ac;
 		if (player.wears(Hand::Left, Ring::Protection))
-			def_arm -= player.rings[Hand::Left]->o_ac;
+			def_arm -= player.ring_item(Hand::Left)->o_ac;
 		if (player.wears(Hand::Right, Ring::Protection))
-			def_arm -= player.rings[Hand::Right]->o_ac;
+			def_arm -= player.ring_item(Hand::Right)->o_ac;
 	}
 	for (const rogue::Dice &attack : attacks)
 	{
@@ -520,9 +520,9 @@ save(SaveThrow which)
 
 	if (which == SaveThrow::Magic) {
 		if (game().player.wears(Hand::Left, Ring::Protection))
-			against -= game().player.rings[Hand::Left]->o_ac;
+			against -= game().player.ring_item(Hand::Left)->o_ac;
 		if (game().player.wears(Hand::Right, Ring::Protection))
-			against -= game().player.rings[Hand::Right]->o_ac;
+			against -= game().player.ring_item(Hand::Right)->o_ac;
 	}
 	return throw_against(against, &game().player.body);
 }

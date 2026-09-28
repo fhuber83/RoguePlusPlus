@@ -254,13 +254,13 @@ wield(void)
 	std::string sp;
 	rogue::Player &player = game().player;
 
-	oweapon = player.weapon;
-	if (!can_drop(player.weapon))
+	oweapon = player.weapon_item();
+	if (!can_drop(player.weapon_item()))
 	{
-		player.weapon = oweapon;
+		player.weapon = game().pool.id_of(oweapon);
 		return;
 	}
-	player.weapon = oweapon;
+	player.weapon = game().pool.id_of(oweapon);
 	if ((obj = get_item("wield", ItemKind::Weapon)) == nullptr)
 	{
 bad:
@@ -277,7 +277,7 @@ bad:
 		goto bad;
 
 	sp = inv_name(obj, true);
-	player.weapon = obj;
+	player.weapon = game().pool.id_of(obj);
 	ifterse("now wielding {} ({:c})", "you are now wielding {} ({:c})",
 		sp, pack_char(obj));
 }

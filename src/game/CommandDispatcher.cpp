@@ -43,9 +43,9 @@ command()
 		do_daemons();
 		for (Hand hand : kinds<Hand>())
 		{
-			if (player.rings[hand])
+			if (player.ring_item(hand))
 			{
-				switch (player.rings[hand]->which<Ring>())
+				switch (player.ring_item(hand)->which<Ring>())
 				{
 				case Ring::Searching:
 					search();

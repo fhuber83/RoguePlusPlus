@@ -325,7 +325,7 @@ get_item(std::string_view purpose, ItemFilter type)
 			 * changed then don't ask just give him the same thing
 			 * he got on the last command.
 			 */
-			if (gi_state && turn.last_item == pack_obj(ch, &och))
+			if (gi_state && game().pool.item(turn.last_item) == pack_obj(ch, &och))
 				goto skip;
 			if (once_only) {
 				ch = '*';
@@ -371,7 +371,7 @@ get_item(std::string_view purpose, ItemFilter type)
 				 */
 				if (purpose != "identify") {
 					turn.last_item_key = ch;
-					turn.last_item = obj;
+					turn.last_item = game().pool.id_of(obj);
 				}
 				return obj;
 		   }
@@ -483,28 +483,28 @@ can_drop(Item *op)
 	rogue::Player &player = game().player;
 	if (op == nullptr)
 		return true;
-	if (op != player.armor && op != player.weapon
-		&& op != player.rings[Hand::Left] && op != player.rings[Hand::Right])
+	if (op != player.armor_item() && op != player.weapon_item()
+		&& op != player.ring_item(Hand::Left) && op != player.ring_item(Hand::Right))
 		return true;
 	if (op->o_flags.test(ISCURSED)) {
 		msg("you can't.  It appears to be cursed");
 		return false;
 	}
-	if (op == player.weapon)
-		player.weapon = nullptr;
-	else if (op == player.armor) {
+	if (op == player.weapon_item())
+		player.weapon = std::nullopt;
+	else if (op == player.armor_item()) {
 		waste_time();
-		player.armor = nullptr;
+		player.armor = std::nullopt;
 	} else {
 		Hand hand;
 
-		if (op != player.rings[hand = Hand::Left])
-			if (op != player.rings[hand = Hand::Right]) {
+		if (op != player.ring_item(hand = Hand::Left))
+			if (op != player.ring_item(hand = Hand::Right)) {
 				if constexpr (rogue::config::debug_checks)
 					debug("Candrop called with funny thing");
 				return true;
 			}
-		player.rings[hand] = nullptr;
+		player.rings[hand] = std::nullopt;
 		switch (op->which<Ring>()) {
 		case Ring::AddStrength:
 			chg_str(-op->o_ac);

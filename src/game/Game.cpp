@@ -74,16 +74,26 @@ pool_problems(const Game &g)
 		problem("the pool counts " + std::to_string(pool.total) + " things in use, but " + std::to_string(used) + " are");
 
 	const Player &player = g.player;
-	for (const Item *worn : {player.armor, player.weapon, player.rings[Hand::Left], player.rings[Hand::Right]})
-		if (worn != nullptr && !player.body.t_pack.contains(worn))
+	for (std::optional<ItemId> worn : {player.armor, player.weapon, player.rings[Hand::Left], player.rings[Hand::Right]})
+		if (worn && (pool.item(worn) == nullptr || !player.body.t_pack.contains(pool.item(worn))))
 			problem("a worn item isn't in the pack");
-	if (g.turn.last_item != nullptr && pool.items.slot_of(g.turn.last_item) < 0)
+	if (g.turn.last_item && pool.item(g.turn.last_item) == nullptr)
 		problem("the item picked last isn't in use");
 	if (player.body.t_room && !Level::valid(*player.body.t_room))
 		problem("the rogue is in a room that isn't one");
 	if (player.old_room && !Level::valid(*player.old_room))
 		problem("the rogue was in a room that isn't one");
 	return problems;
+}
+
+Item *Player::armor_item() const { return game().pool.item(armor); }
+Item *Player::weapon_item() const { return game().pool.item(weapon); }
+Item *Player::ring_item(Hand hand) const { return game().pool.item(rings[hand]); }
+
+bool Player::wears(Hand hand, Ring ring) const
+{
+	const Item *obj = ring_item(hand);
+	return obj != nullptr && obj->which<Ring>() == ring;
 }
 
 Game &game()

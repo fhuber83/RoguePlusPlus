@@ -113,7 +113,7 @@ protected:
 		ring->set_which(Ring::Searching);
 		ring->o_damage = ring->o_hurldmg = "0d0";
 		p.body.t_pack.push_front(ring);
-		p.rings[Hand::Right] = ring;
+		p.rings[Hand::Right] = g.pool.id_of(ring);
 		g.items.p_guess[Potion::Poison] = "fizzy";
 		g.items.p_know[Potion::SeeInvisible] = true;
 		fuse(rogue::rules::Event::Unconfuse, 9);
@@ -184,7 +184,7 @@ TEST_F(SaveGame, PointersPointIntoTheGame)
 	load(text);
 	rogue::Game &g = game();
 	EXPECT_TRUE(rogue::pool_problems(g).empty());
-	EXPECT_TRUE(g.player.body.t_pack.contains(g.player.rings[Hand::Right]));
+	EXPECT_TRUE(g.player.body.t_pack.contains(g.player.ring_item(Hand::Right)));
 	EXPECT_EQ(g.items.p_guess[Potion::Poison], "fizzy");
 	EXPECT_EQ(g.turn.typeahead, "ss");
 	EXPECT_EQ(g.turn.last_item, g.player.weapon);

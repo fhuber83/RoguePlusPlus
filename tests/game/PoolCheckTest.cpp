@@ -112,7 +112,7 @@ TEST_F(PoolCheck, WornItemsAreInThePack)
 {
 	Item *obj = new_item();
 	game().level.objects.push_front(obj);
-	game().player.rings[Hand::Right] = obj;
+	game().player.rings[Hand::Right] = game().pool.id_of(obj);
 	EXPECT_NE(problems(), "");
 	game().level.objects.remove(obj);
 	game().player.body.t_pack.push_front(obj);
@@ -121,12 +121,11 @@ TEST_F(PoolCheck, WornItemsAreInThePack)
 
 TEST_F(PoolCheck, TheLastItemPickedIsInUse)
 {
-	Item outside{};
-	game().turn.last_item = &outside;
+	game().turn.last_item = ItemId{MAXITEMS - 1};	// a free slot
 	EXPECT_NE(problems(), "");
 	Item *obj = new_item();
 	game().player.body.t_pack.push_front(obj);
-	game().turn.last_item = obj;
+	game().turn.last_item = game().pool.id_of(obj);
 	EXPECT_EQ(problems(), "");
 }
 

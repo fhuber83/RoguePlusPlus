@@ -78,18 +78,18 @@ TEST(Pool, CreaturesAndItemsShareTheLimit)
 	game().pool = rogue::Pool();
 }
 
-// A discarded item can't be the one get_item() gave last: its address may be
-// reused by the next item made.
+// A discarded item can't be the one get_item() gave last: its slot may be
+// taken by the next item made.
 TEST(Pool, DiscardForgetsTheLastItemPicked)
 {
 	game().pool = rogue::Pool();
 	Item *kept = new_item();
 	Item *gone = new_item();
-	game().turn.last_item = kept;
+	game().turn.last_item = game().pool.id_of(kept);
 	discard(gone);
-	EXPECT_EQ(game().turn.last_item, kept);
+	EXPECT_EQ(game().pool.item(game().turn.last_item), kept);
 	discard(kept);
-	EXPECT_EQ(game().turn.last_item, nullptr);
+	EXPECT_EQ(game().turn.last_item, std::nullopt);
 	game().pool = rogue::Pool();
 }
 

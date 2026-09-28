@@ -206,8 +206,8 @@ do_zap()
 		bolt.o_hplus = 1000;
 		bolt.o_dplus = 1;
 		bolt.o_flags = ISMISL;
-		if (player.weapon != nullptr)
-			bolt.o_launch = launched_by(player.weapon->which<WeaponType>());
+		if (player.weapon_item() != nullptr)
+			bolt.o_launch = launched_by(player.weapon_item()->which<WeaponType>());
 		do_motion(&bolt, turn.delta.y, turn.delta.x);
 		if ((tp = moat(bolt.o_pos.y, bolt.o_pos.x)) != nullptr && !save_throw(SaveThrow::Magic, tp))
 			hit_monster(bolt.o_pos.y, bolt.o_pos.x, &bolt);

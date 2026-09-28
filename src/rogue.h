@@ -205,6 +205,8 @@ using rogue::Trap;
 using rogue::MapFlag;
 using rogue::MapFlags;
 using rogue::RoomRef;
+using rogue::ItemId;
+using rogue::CreatureId;
 using rogue::ItemFilter;
 using rogue::glyph_of;
 using rogue::kind_of_glyph;

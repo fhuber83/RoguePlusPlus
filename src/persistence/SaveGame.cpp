@@ -92,6 +92,12 @@ json item_ref(const Game &g, const Item *obj)
 	return slot;
 }
 
+// A link to an item, null for none or a slot not in use
+json item_ref(const Game &g, std::optional<ItemId> id)
+{
+	return item_ref(g, g.pool.item(id));
+}
+
 json room_ref(std::optional<RoomRef> ref)
 {
 	if (!ref)
@@ -809,11 +815,11 @@ void player_from(Game &g, const json &j)
 	p.max_stats = stats_from(field(j, "max_stats"), false);
 	p.purse = num<int>(j, "purse");
 	p.in_pack = num<int>(j, "in_pack");
-	p.armor = item_at(g, field(j, "armor"), "\"armor\"");
-	p.weapon = item_at(g, field(j, "weapon"), "\"weapon\"");
+	p.armor = g.pool.id_of(item_at(g, field(j, "armor"), "\"armor\""));
+	p.weapon = g.pool.id_of(item_at(g, field(j, "weapon"), "\"weapon\""));
 	const json &rings = array_of(j, "rings", 2);
-	p.rings[Hand::Left] = item_at(g, rings[0], "\"rings\"");
-	p.rings[Hand::Right] = item_at(g, rings[1], "\"rings\"");
+	p.rings[Hand::Left] = g.pool.id_of(item_at(g, rings[0], "\"rings\""));
+	p.rings[Hand::Right] = g.pool.id_of(item_at(g, rings[1], "\"rings\""));
 	p.food_left = num<int>(j, "food_left");
 	p.hungry_state = num<int>(j, "hungry_state");
 	p.has_amulet = flag(j, "has_amulet");
@@ -851,7 +857,7 @@ void turn_from(Game &g, const json &j)
 	t.last_take = num<unsigned char>(j, "last_take");
 	t.do_take = num<unsigned char>(j, "do_take");
 	t.last_item_key = num<unsigned char>(j, "last_item_key");
-	t.last_item = item_at(g, field(j, "last_item"), "\"last_item\"", false);
+	t.last_item = g.pool.id_of(item_at(g, field(j, "last_item"), "\"last_item\"", false));
 }
 
 void screen_from(MapView &view, const json &j)

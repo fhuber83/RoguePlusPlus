@@ -215,11 +215,11 @@ see_monst(Creature *mp)
 	 * If we are seeing	the enemy of a vorpally	enchanted weapon for the first
 	 * time, give the player a hint as to what that weapon is good for.
 	 */
-	if (player.weapon != nullptr && mp->t_type == player.weapon->o_enemy
-	  && !player.weapon->o_flags.test(DIDFLASH))
+	if (player.weapon_item() != nullptr && mp->t_type == player.weapon_item()->o_enemy
+	  && !player.weapon_item()->o_flags.test(DIDFLASH))
 	{
-		player.weapon->o_flags.set(DIDFLASH);
-		msg(flashmsg, w_names[player.weapon->which<WeaponType>()], game().options.brief() ? "" : intense);
+		player.weapon_item()->o_flags.set(DIDFLASH);
+		msg(flashmsg, w_names[player.weapon_item()->which<WeaponType>()], game().options.brief() ? "" : intense);
 	}
 	return true;
 }

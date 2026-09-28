@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include <cctype>
 #include <cerrno>
 #include <clocale>
 #include <cstdint>

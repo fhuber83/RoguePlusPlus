@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <regex>
 #include <string>
 #include <vector>
 
@@ -197,6 +198,26 @@ TEST_F(SaveGame, PointersPointIntoTheGame)
 	EXPECT_EQ(flytrap_attacks(g.player.fung_hit), rogue::Attacks("3d1"));
 }
 
+// Rooms and passages come back as the same RoomRef
+TEST_F(SaveGame, RoomLinksComeBack)
+{
+	new_game(42, 5);
+	rogue::Game &g = game();
+	Creature *tp = g.level.monsters.first();
+	ASSERT_NE(tp, nullptr);
+	tp->t_room = RoomRef::passage(MAXPASS - 1);
+	g.player.old_room = RoomRef::room(MAXROOMS - 1);
+	std::optional<RoomRef> here = g.player.body.t_room;
+	int slot = g.pool.creatures.slot_of(tp);
+	load(save());
+	EXPECT_EQ(g.pool.creatures.at(slot)->t_room, RoomRef::passage(MAXPASS - 1));
+	EXPECT_EQ(g.player.old_room, RoomRef::room(MAXROOMS - 1));
+	EXPECT_EQ(g.player.body.t_room, here);
+	g.player.old_room = std::nullopt;
+	load(save());
+	EXPECT_EQ(g.player.old_room, std::nullopt);
+}
+
 TEST_F(SaveGame, TheScreenComesBack)
 {
 	new_game(5, 3);
@@ -245,6 +266,15 @@ TEST_F(SaveGame, RejectsBrokenReferences)
 	std::string outside = text;
 	outside.replace(outside.find("\"objects\": ["), 12, "\"objects\": [9999, ");
 	EXPECT_EQ(load_error(outside), SaveError::Kind::BadFormat);
+
+	// A room or passage past the last one
+	std::smatch room;
+	ASSERT_TRUE(std::regex_search(text, room, std::regex(R"re("old_room": \{\s*"(room|passage)": \d+\s*\})re")));
+	for (std::string_view bad : {R"("old_room": {"room": 9})", R"("old_room": {"passage": 13})"}) {
+		std::string no_room = text;
+		no_room.replace(room.position(0), room.length(0), bad);
+		EXPECT_EQ(load_error(no_room), SaveError::Kind::BadFormat) << bad;
+	}
 }
 
 TEST_F(SaveGame, RejectsDamageThatIsntDamage)

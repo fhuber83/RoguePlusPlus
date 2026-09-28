@@ -114,7 +114,7 @@ struct Player {
 	int fung_hit = 0;				/* Number of times the venus flytrap has hit; its attack is fung_hit d1 */
 	Trapped was_trapped = Trapped::None;	/* Was a trap sprung (be_trapped(), look()) */
 	coord old_pos = {};				/* oldpos: position before last look() call */
-	struct room *old_room = nullptr;	/* oldrp: roomin(&old_pos) */
+	std::optional<RoomRef> old_room;	/* oldrp: roomin(old_pos) */
 
 	// Whether he wears this ring on this hand (was ISRING)
 	bool wears(Hand hand, Ring ring) const
@@ -158,6 +158,19 @@ struct Level {
 	// A square's MapFlags (was flat())
 	MapFlags &flags_at(int y, int x) { return flags[INDEX(y, x)]; }
 	MapFlags &flags_at(Coord pos) { return flags_at(pos.y, pos.x); }
+	// The room or passage a RoomRef names
+	struct room &room(RoomRef r) { return r.kind == RoomRef::Kind::Room ? rooms[r.index] : passages[r.index]; }
+	const struct room &room(RoomRef r) const
+	{
+		return r.kind == RoomRef::Kind::Room ? rooms[r.index] : passages[r.index];
+	}
+	// Whether a RoomRef names one of this level's rooms or passages
+	static constexpr bool valid(RoomRef r)
+	{
+		return r.index >= 0 && r.index < (r.kind == RoomRef::Kind::Room ? MAXROOMS : MAXPASS);
+	}
+	// The passage a passage or maze square belongs to
+	RoomRef passage_at(Coord pos) { return RoomRef::passage(flags_at(pos).passage()); }
 };
 
 /*

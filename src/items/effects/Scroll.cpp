@@ -163,7 +163,7 @@ read_scroll()
 		 * Make him dissapear and reappear
 		 */
 		{
-		struct room *cur_room;
+		std::optional<RoomRef> cur_room;
 
 		cur_room = player.body.t_room;
 		teleport();

@@ -95,14 +95,16 @@ TEST_F(PoolCheck, WhatAMonsterIsAfter)
 
 TEST_F(PoolCheck, RoomsAreRoomsOrPassages)
 {
-	struct room elsewhere{};
 	Creature *tp = new_creature();
 	game().level.monsters.push_front(tp);
-	tp->t_room = &game().level.passages[0];
-	game().player.body.t_room = &game().level.rooms[0];
-	game().player.old_room = &game().level.rooms[MAXROOMS - 1];
+	tp->t_room = RoomRef::passage(MAXPASS - 1);
+	game().player.body.t_room = RoomRef::room(0);
+	game().player.old_room = RoomRef::room(MAXROOMS - 1);
 	EXPECT_EQ(problems(), "");
-	tp->t_room = &elsewhere;
+	tp->t_room = RoomRef::room(MAXROOMS);
+	EXPECT_NE(problems(), "");
+	tp->t_room = std::nullopt;
+	game().player.old_room = RoomRef::passage(-1);
 	EXPECT_NE(problems(), "");
 }
 

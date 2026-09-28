@@ -4,7 +4,7 @@
  * A fighting being: a monster or the rogue himself.
  *
  * Was the _t half of the legacy union thing. Included by rogue.h after the
- * legacy types it uses (coord, struct stats, struct room); game files include
+ * legacy types it uses (coord, struct stats) and world/RoomRef.hpp; game files include
  * rogue.h.
  */
 
@@ -44,7 +44,7 @@ struct Creature {
 	coord *t_dest;				/* Where it is running to */
 	CreatureFlags t_flags;		/* State word */
 	struct stats t_stats;		/* Physical description */
-	struct room *t_room;		/* Current room for thing */
+	std::optional<RoomRef> t_room;	/* Current room for thing, if any */
 	List<Item> t_pack;			/* What the thing is carrying */
 };
 

@@ -16,7 +16,7 @@ namespace rogue::world {
  *	Find what room some coordinates are in. Null means they aren't in any
  *	room.
  */
-struct room *roomin(Coord cp);
+std::optional<RoomRef> roomin(Coord cp);
 
 /*
  * diag_ok:

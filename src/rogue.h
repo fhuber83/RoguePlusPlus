@@ -35,6 +35,7 @@
 #include "ui/Display.hpp"
 #include "ui/Input.hpp"
 #include "world/MapFlags.hpp"
+#include "world/RoomRef.hpp"
 #include "world/Trap.hpp"
 
 #include "glyphs.h"
@@ -203,6 +204,7 @@ using rogue::Hand;
 using rogue::Trap;
 using rogue::MapFlag;
 using rogue::MapFlags;
+using rogue::RoomRef;
 using rogue::ItemFilter;
 using rogue::glyph_of;
 using rogue::kind_of_glyph;

@@ -46,7 +46,7 @@ look(bool wakeup)
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
-	struct room *rp;
+	std::optional<RoomRef> rp;
 	int ey, ex;
 	int passcount = 0;
 	MapFlags pfl, *fp;
@@ -67,7 +67,7 @@ look(bool wakeup)
 						continue;
 					ch = display().tile_at({x, y});
 					if (ch == FLOOR) {
-						if (player.old_room->r_flags.test(RoomFlag::Dark) && !player.old_room->r_flags.test(RoomFlag::Gone))
+						if (level.room(*player.old_room).r_flags.test(RoomFlag::Dark) && !level.room(*player.old_room).r_flags.test(RoomFlag::Gone))
 							display().draw_tile({x, y}, ' ');
 					} else {
 						fp = &level.flags[INDEX(y,x)];
@@ -141,7 +141,7 @@ look(bool wakeup)
 					if (wakeup)
 						wake_monster(y, x);
 					if (tp->t_oldch != ' ' ||
-						(!rp->r_flags.test(RoomFlag::Dark) && !player.body.t_flags.test(ISBLIND)))
+						(!level.room(*rp).r_flags.test(RoomFlag::Dark) && !player.body.t_flags.test(ISBLIND)))
 							tp->t_oldch = level.map[index];
 					if (see_monst(tp))
 						ch = tp->t_disguise;

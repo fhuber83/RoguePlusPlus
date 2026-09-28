@@ -111,7 +111,7 @@ sight(void)
 	{
 		extinguish(Event::Sight);
 		player.body.t_flags.unset(ISBLIND);
-		if (!player.body.t_room->r_flags.test(RoomFlag::Gone))
+		if (!game().level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone))
 			enter_room(player.body.t_pos);
 		msg("the veil of darkness lifts");
 	}

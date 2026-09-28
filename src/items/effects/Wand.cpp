@@ -76,14 +76,14 @@ do_zap()
 		else
 		{
 			game().items.ws_know[Stick::Light] = true;
-			if (player.body.t_room->r_flags.test(RoomFlag::Gone))
+			if (game().level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone))
 				msg("the corridor glows and then fades");
 			else
 				msg("the room is lit by a shimmering blue light");
 		}
-		if (!player.body.t_room->r_flags.test(RoomFlag::Gone))
+		if (!game().level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone))
 		{
-			player.body.t_room->r_flags.unset(RoomFlag::Dark);
+			game().level.room(*player.body.t_room).r_flags.unset(RoomFlag::Dark);
 			/*
 			 * Light the room and put the player back up
 			 */
@@ -294,7 +294,7 @@ drain()
 {
 	Creature *mp;
 	int cnt;
-	struct room *corp;
+	std::optional<RoomRef> corp;
 	Creature **dp;
 	bool inpass;
 	Creature *drainee[40];
@@ -306,15 +306,15 @@ drain()
 	 */
 	cnt = 0;
 	if (level.at(player.body.t_pos) == DOOR)
-		corp = &level.passages[level.flags_at(player.body.t_pos).passage()];
+		corp = level.passage_at(player.body.t_pos);
 	else
-		corp = nullptr;
-	inpass = player.body.t_room->r_flags.test(RoomFlag::Gone);
+		corp = std::nullopt;
+	inpass = level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone);
 	dp = drainee;
 	for (mp = level.monsters.first(); mp != nullptr; mp = level.monsters.after(mp))
 		if (mp->t_room == player.body.t_room || mp->t_room == corp ||
 			(inpass && level.at(mp->t_pos) == DOOR &&
-			&level.passages[level.flags_at(mp->t_pos).passage()] == player.body.t_room))
+			level.passage_at(mp->t_pos) == player.body.t_room))
 			*dp++ = mp;
 	if ((cnt = dp - drainee) == 0)
 	{

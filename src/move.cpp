@@ -106,7 +106,7 @@ over:
 	case LLWALL:
 	case LRWALL:
 hit_bound:
-		if (turn.running && player.body.t_room->is_gone() && !player.body.t_flags.test(ISBLIND)) {
+		if (turn.running && game().level.room(*player.body.t_room).is_gone() && !player.body.t_flags.test(ISBLIND)) {
 			bool	b1, b2;
 
 			switch (turn.run_dir)

@@ -14,22 +14,6 @@ Items::Items()
 	std::copy_n(things_base, NUMTHINGS, things);
 }
 
-namespace {
-
-// Whether p points into the n elements at first (std::less orders any pointers)
-template <class T>
-bool points_into(const T *p, const T *first, std::size_t n)
-{
-	std::less<const T *> less;
-	return !less(p, first) && less(p, first + n);
-}
-
-bool is_room(const Level &level, const struct room *rp)
-{
-	return points_into(rp, level.rooms, MAXROOMS) || points_into(rp, level.passages, MAXPASS);
-}
-
-} // namespace
 
 std::vector<std::string>
 pool_problems(const Game &g)
@@ -71,7 +55,7 @@ pool_problems(const Game &g)
 			dest_ok = dest_ok || dest == &obj->o_pos;
 		if (!dest_ok)
 			problem("monster " + std::to_string(slot) + " is after something that isn't the hero, gold or a floor item");
-		if (tp->t_room != nullptr && !is_room(level, tp->t_room))
+		if (tp->t_room && !Level::valid(*tp->t_room))
 			problem("monster " + std::to_string(slot) + " is in a room that isn't one");
 	}
 
@@ -95,9 +79,9 @@ pool_problems(const Game &g)
 			problem("a worn item isn't in the pack");
 	if (g.turn.last_item != nullptr && pool.items.slot_of(g.turn.last_item) < 0)
 		problem("the item picked last isn't in use");
-	if (player.body.t_room != nullptr && !is_room(level, player.body.t_room))
+	if (player.body.t_room && !Level::valid(*player.body.t_room))
 		problem("the rogue is in a room that isn't one");
-	if (player.old_room != nullptr && !is_room(level, player.old_room))
+	if (player.old_room && !Level::valid(*player.old_room))
 		problem("the rogue was in a room that isn't one");
 	return problems;
 }

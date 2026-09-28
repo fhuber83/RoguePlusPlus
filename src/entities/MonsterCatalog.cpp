@@ -166,10 +166,11 @@ wanderer(void)
 		return;
 	do {
 		i = rnd_room();
-		if ((rp = &game().level.rooms[i]) == player.body.t_room)
+		rp = &game().level.rooms[i];
+		if (RoomRef::room(i) == player.body.t_room)
 			continue;
 		cp = rnd_pos(rp);
-	} while (!(rp != player.body.t_room && step_ok(winat(cp.y, cp.x))));
+	} while (!(RoomRef::room(i) != player.body.t_room && step_ok(winat(cp.y, cp.x))));
 	new_monster(tp, randmonster(true), cp);
 	start_run(tp->t_pos);
 }
@@ -182,7 +183,7 @@ Creature *
 wake_monster(int y, int x)
 {
 	Creature *tp;
-	struct room *rp;
+	std::optional<RoomRef> rp;
 	unsigned char ch;
 	int dst;
 	rogue::Player &player = game().player;
@@ -204,7 +205,7 @@ wake_monster(int y, int x)
 	{
 		rp = player.body.t_room;
 		dst = DISTANCE(y, x, player.body.t_pos.y, player.body.t_pos.x);
-		if ((rp != nullptr && !rp->r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
+		if ((rp && !game().level.room(*rp).r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
 			tp->t_flags.set(ISFOUND);
 			if (!save(SaveThrow::Magic)) {
 				if (player.body.t_flags.test(ISHUH))
@@ -221,8 +222,8 @@ wake_monster(int y, int x)
 	 */
 	if (tp->t_flags.test(ISGREED) && !tp->t_flags.test(ISRUN)) {
 		tp->t_flags.set(ISRUN);
-		if (player.body.t_room->r_goldval)
-			tp->t_dest = &player.body.t_room->r_gold;
+		if (struct room &here = game().level.room(*player.body.t_room); here.r_goldval)
+			tp->t_dest = &here.r_gold;
 		else
 			tp->t_dest = &player.body.t_pos;
 	}

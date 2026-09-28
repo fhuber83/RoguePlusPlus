@@ -37,15 +37,15 @@ static_assert(map_rows == maxrow - 1 && map_cols == COLS);
  * then update the size (measured on x86-64 Linux, where these hold).
  */
 #if defined(__x86_64__) && defined(__linux__)
-static_assert(sizeof(Game) == 18552, "a Game member was added or removed: save it");
-static_assert(sizeof(Player) == 320, "a Player field was added or removed: save it");
+static_assert(sizeof(Game) == 18560, "a Game member was added or removed: save it");
+static_assert(sizeof(Player) == 328, "a Player field was added or removed: save it");
 static_assert(sizeof(Level) == 6488, "a Level field was added or removed: save it");
 static_assert(sizeof(Items) == 4808, "an Items field was added or removed: save it");
 static_assert(sizeof(Pool) == 1336, "a Pool field was added or removed: save it");
 static_assert(sizeof(Turn) == 80, "a Turn field was added or removed: save it");
 static_assert(sizeof(MessageLine) == 80, "a MessageLine field was added or removed: save it");
 static_assert(sizeof(Options) == 264, "an Options field was added or removed: decide whether to save it");
-static_assert(sizeof(Creature) == 144, "a Creature field was added or removed: save it");
+static_assert(sizeof(Creature) == 152, "a Creature field was added or removed: save it");
 static_assert(sizeof(Item) == 128, "an Item field was added or removed: save it");
 static_assert(sizeof(struct room) == 132, "a room field was added or removed: save it");
 static_assert(sizeof(struct stats) == 80, "a stats field was added or removed: save it");
@@ -72,13 +72,6 @@ std::string_view intern(std::string_view text)
 	return *texts.emplace(text).first;
 }
 
-template <class T>
-bool points_into(const T *p, const T *first, std::size_t n)
-{
-	std::less<const T *> less;
-	return p != nullptr && !less(p, first) && less(p, first + n);
-}
-
 // Writing
 
 json text_json(std::string_view text)
@@ -99,13 +92,11 @@ json item_ref(const Game &g, const Item *obj)
 	return slot;
 }
 
-json room_ref(const Game &g, const struct room *rp)
+json room_ref(std::optional<RoomRef> ref)
 {
-	if (points_into(rp, g.level.rooms, MAXROOMS))
-		return json{{"room", rp - g.level.rooms}};
-	if (points_into(rp, g.level.passages, MAXPASS))
-		return json{{"passage", rp - g.level.passages}};
-	return nullptr;
+	if (!ref)
+		return nullptr;
+	return json{{ref->kind == RoomRef::Kind::Room ? "room" : "passage", ref->index}};
 }
 
 json dest_ref(const Game &g, const coord *dest)
@@ -165,7 +156,7 @@ json creature_json(const Game &g, const Creature &c)
 		{"pos", coord_json(c.t_pos)}, {"turn", c.t_turn}, {"type", c.t_type},
 		{"disguise", c.t_disguise}, {"oldch", c.t_oldch}, {"dest", dest_ref(g, c.t_dest)},
 		{"flags", c.t_flags.bits()}, {"stats", stats_json(c.t_stats, is_flytrap(g, c))},
-		{"room", room_ref(g, c.t_room)}, {"pack", item_list(g, c.t_pack)},
+		{"room", room_ref(c.t_room)}, {"pack", item_list(g, c.t_pack)},
 	};
 }
 
@@ -313,7 +304,7 @@ json player_json(const Game &g)
 		{"quiet", p.quiet}, {"fungus_hits", p.fung_hit},
 		{"flytrap_damage", flytrap_attacks(p.fung_hit).to_string()},
 		{"was_trapped", std::to_underlying(p.was_trapped)},
-		{"old_pos", coord_json(p.old_pos)}, {"old_room", room_ref(g, p.old_room)},
+		{"old_pos", coord_json(p.old_pos)}, {"old_room", room_ref(p.old_room)},
 	};
 }
 
@@ -504,20 +495,18 @@ Item *item_at(Game &g, const json &v, std::string_view what, bool used = true)
 	return obj;
 }
 
-struct room *room_at(Game &g, const json &v, std::string_view what)
+std::optional<RoomRef> room_at(const json &v, std::string_view what)
 {
 	if (v.is_null())
-		return nullptr;
+		return std::nullopt;
 	if (v.is_object() && v.size() == 1) {
-		if (v.contains("room")) {
-			int i = whole(v["room"], what);
-			if (i >= 0 && i < MAXROOMS)
-				return &g.level.rooms[i];
-		} else if (v.contains("passage")) {
-			int i = whole(v["passage"], what);
-			if (i >= 0 && i < MAXPASS)
-				return &g.level.passages[i];
-		}
+		std::optional<RoomRef> ref;
+		if (v.contains("room"))
+			ref = RoomRef::room(whole(v["room"], what));
+		else if (v.contains("passage"))
+			ref = RoomRef::passage(whole(v["passage"], what));
+		if (ref && Level::valid(*ref))
+			return ref;
 	}
 	fail(std::format("{} is not a room or passage", what));
 }
@@ -599,7 +588,7 @@ void creature_from(Game &g, Creature &c, const json &j)
 	c.t_dest = dest_at(g, field(j, "dest"));
 	c.t_flags = CreatureFlags::from_bits(num<CreatureFlags::Bits>(j, "flags"));
 	c.t_stats = stats_from(field(j, "stats"), is_flytrap(g, c));
-	c.t_room = room_at(g, field(j, "room"), "\"room\"");
+	c.t_room = room_at(field(j, "room"), "\"room\"");
 	items_into(g, c.t_pack, field(j, "pack"), "\"pack\"");
 }
 
@@ -838,7 +827,7 @@ void player_from(Game &g, const json &j)
 		fail("\"flytrap_damage\" does not follow from \"fungus_hits\"");
 	p.was_trapped = static_cast<Trapped>(num_in<unsigned char>(j, "was_trapped", 0, 2));
 	p.old_pos = coord_of(j, "old_pos");
-	p.old_room = room_at(g, field(j, "old_room"), "\"old_room\"");
+	p.old_room = room_at(field(j, "old_room"), "\"old_room\"");
 }
 
 void turn_from(Game &g, const json &j)

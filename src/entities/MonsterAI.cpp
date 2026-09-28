@@ -64,19 +64,19 @@ do_chase(Creature *th)
 	int	mindist	= 32767, i, dist;
 	bool door;
 	Item *obj;
-	struct room	*oroom;
-	struct room	*rer, *ree;	/* room of chaser, room of chasee */
+	std::optional<RoomRef> oroom;
+	std::optional<RoomRef> rer, ree;	/* room of chaser, room of chasee */
 	coord target;				/* Temporary	destination for	chaser */
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 
 	rer	= th->t_room;		/* Find room of chaser */
-	if (th->t_flags.test(ISGREED) && rer->r_goldval == 0)
+	if (th->t_flags.test(ISGREED) && level.room(*rer).r_goldval == 0)
 		th->t_dest = &player.body.t_pos;	/*	If gold	has been taken,	run after hero */
 	ree	= player.body.t_room;
 	if (th->t_dest != &player.body.t_pos)	/*	Find room of chasee */
 		ree = roomin(*th->t_dest);
-	if (ree == nullptr)
+	if (!ree)
 		return;
 	/*
 	 * We don't	count doors as inside rooms for	this routine
@@ -90,17 +90,19 @@ do_chase(Creature *th)
 	 * our goal.
 	 */
 over:
-	if (rer != ree && !rer->r_flags.test(RoomFlag::Maze))
+	if (rer != ree && !level.room(*rer).r_flags.test(RoomFlag::Maze))
 	{
-		for (i	= 0; i < rer->r_nexits;	i++) {	/*	loop through doors */
-			dist = DISTANCE(th->t_dest->y, th->t_dest->x,rer->r_exit[i].y, rer->r_exit[i].x);
+		const struct room &from = level.room(*rer);
+
+		for (i	= 0; i < from.r_nexits;	i++) {	/*	loop through doors */
+			dist = DISTANCE(th->t_dest->y, th->t_dest->x,from.r_exit[i].y, from.r_exit[i].x);
 			if	(dist <	mindist) {
-				target = rer->r_exit[i];
+				target = from.r_exit[i];
 				mindist = dist;
 			}
 		}
 		if (door) {
-			rer = &level.passages[level.flags_at(th->t_pos).passage()];
+			rer = level.passage_at(th->t_pos);
 			door = false;
 			goto over;
 		}
@@ -142,7 +144,7 @@ over:
 				level.objects.remove(obj);
 				th->t_pack.push_front(obj);
 				oldchar = level.at(obj->o_pos) =
-				th->t_room->r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
+				level.room(*th->t_room).r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
 				if (cansee(obj->o_pos.y, obj->o_pos.x))
 					display().draw_tile(obj->o_pos, oldchar);
 				th->t_dest = find_dest(th);
@@ -167,7 +169,7 @@ over:
 	oroom = th->t_room;
 	if (!(ch_ret == th->t_pos))
 	{
-		if ((th->t_room = roomin(ch_ret)) == nullptr) {
+		if (!(th->t_room = roomin(ch_ret))) {
 			th->t_room	= oroom;
 			return;
 		}
@@ -189,7 +191,7 @@ over:
 	else
 		th->t_oldch = '@';
 
-	if (th->t_oldch == FLOOR && oroom->r_flags.test(RoomFlag::Dark))
+	if (th->t_oldch == FLOOR && level.room(*oroom).r_flags.test(RoomFlag::Dark))
 		th->t_oldch = ' ';
 }
 
@@ -206,8 +208,8 @@ see_monst(Creature *mp)
 	if (mp->t_flags.test(ISINVIS) && !player.body.t_flags.test(CANSEE))
 		return	false;
 	if (DISTANCE(mp->t_pos.y, mp->t_pos.x, player.body.t_pos.y, player.body.t_pos.x) >= LAMPDIST &&
-	  ((mp->t_room != player.body.t_room || mp->t_room->r_flags.test(RoomFlag::Dark) ||
-	  mp->t_room->r_flags.test(RoomFlag::Maze))))
+	  ((mp->t_room != player.body.t_room || game().level.room(*mp->t_room).r_flags.test(RoomFlag::Dark) ||
+	  game().level.room(*mp->t_room).r_flags.test(RoomFlag::Maze))))
 		return false;
 	/*
 	 * If we are seeing	the enemy of a vorpally	enchanted weapon for the first
@@ -354,7 +356,7 @@ find_dest(Creature *tp)
 {
 	Item *obj;
 	int prob;
-	struct room *rp;
+	std::optional<RoomRef> rp;
 	rogue::Player &player = game().player;
 
 	if ((prob =	monsters[tp->t_type - 'A'].m_carry) <= 0 || tp->t_room == player.body.t_room

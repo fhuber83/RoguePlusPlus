@@ -83,13 +83,13 @@ teleport(void)
 	do
 	{
 		rm = rnd_room();
-		rnd_pos(&game().level.rooms[rm], &c);
+		c = rnd_pos(&game().level.rooms[rm]);
 	} while (!(step_ok(winat(c.y, c.x))));
 	if (&game().level.rooms[rm] != player.body.t_room)
 	{
-		leave_room(&player.body.t_pos);
+		leave_room(player.body.t_pos);
 		player.body.t_pos = c;
-		enter_room(&player.body.t_pos);
+		enter_room(player.body.t_pos);
 	}
 	else
 	{

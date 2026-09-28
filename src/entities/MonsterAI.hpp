@@ -25,7 +25,7 @@ void runners();
  *	Set a monster running after something or stop it from running (for
  *	when it dies).
  */
-void start_run(coord *runner);
+void start_run(Coord runner);
 
 /*
  * see_monst:
@@ -47,10 +47,10 @@ void slime_split(Creature *tp);
 
 /*
  * plop_monster:
- *	Pick a spot around (r, c) for a new monster to appear, into cp.
- *	Returns false if there is none.
+ *	Pick a spot around (r, c) for a new monster to appear, or nullopt if
+ *	there is none.
  */
-bool plop_monster(int r, int c, coord *cp);
+std::optional<Coord> plop_monster(int r, int c);
 
 }  // namespace entities
 }  // namespace rogue

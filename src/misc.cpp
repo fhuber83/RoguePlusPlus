@@ -367,7 +367,7 @@ aggravate()
 	Creature *mi;
 
 	for (mi = game().level.monsters.first(); mi != nullptr; mi = game().level.monsters.after(mi))
-		start_run(&mi->t_pos);
+		start_run(mi->t_pos);
 }
 
 /*
@@ -417,6 +417,7 @@ bool
 get_dir()
 {
 	int ch;
+	std::optional<Coord> dir;
 	rogue::Turn &turn = game().turn;
 
 	if (turn.again)
@@ -427,7 +428,8 @@ get_dir()
 			msg("");
 			return false;
 		}
-	while (find_dir(ch, &turn.delta) == 0);
+	while (!(dir = find_dir(ch)));
+	turn.delta = *dir;
 	msg("");
 	if (game().player.body.t_flags.test(ISHUH) && rnd(5) == 0)
 		do {
@@ -437,24 +439,24 @@ get_dir()
 	return true;
 }
 
-bool
-find_dir(unsigned char ch, coord *cp)
+/*
+ * find_dir:
+ *	The direction a key stands for, or nullopt if it is none
+ */
+std::optional<Coord>
+find_dir(unsigned char ch)
 {
-	bool gotit;
-
-	gotit = true;
 	switch (ch) {
-		case 'h': case'H': cp->y =  0; cp->x = -1; break;
-		case 'j': case'J': cp->y =  1; cp->x =  0; break;
-		case 'k': case'K': cp->y = -1; cp->x =  0; break;
-		case 'l': case'L': cp->y =  0; cp->x =  1; break;
-		case 'y': case'Y': cp->y = -1; cp->x = -1; break;
-		case 'u': case'U': cp->y = -1; cp->x =  1; break;
-		case 'b': case'B': cp->y =  1; cp->x = -1; break;
-		case 'n': case'N': cp->y =  1; cp->x =  1; break;
-		default: gotit = false;
+		case 'h': case'H': return Coord{-1,  0};
+		case 'j': case'J': return Coord{ 0,  1};
+		case 'k': case'K': return Coord{ 0, -1};
+		case 'l': case'L': return Coord{ 1,  0};
+		case 'y': case'Y': return Coord{-1, -1};
+		case 'u': case'U': return Coord{ 1, -1};
+		case 'b': case'B': return Coord{-1,  1};
+		case 'n': case'N': return Coord{ 1,  1};
+		default: return std::nullopt;
 	}
-	return gotit;
 }
 
 /*

@@ -70,7 +70,7 @@ new_level(void)
 	i = 0;
 	do {
 		rm = rnd_room();
-	rnd_pos(&level.rooms[rm], &stairs);
+	stairs = rnd_pos(&level.rooms[rm]);
 	index = INDEX(stairs.y, stairs.x);
 	} while (!is_floor(level.map[index]));
 	level.map[index] = STAIRS;
@@ -85,7 +85,7 @@ new_level(void)
 		while (i--) {
 			do {
 				rm = rnd_room();
-				rnd_pos(&level.rooms[rm], &stairs);
+				stairs = rnd_pos(&level.rooms[rm]);
 				index = INDEX(stairs.y, stairs.x);
 			} while (!is_floor(level.map[index]));
 			fp = &level.flags[index];
@@ -95,13 +95,13 @@ new_level(void)
 	}
 	do {
 		rm = rnd_room();
-		rnd_pos(&level.rooms[rm], &player.body.t_pos);
+		player.body.t_pos = rnd_pos(&level.rooms[rm]);
 		index = INDEX(player.body.t_pos.y, player.body.t_pos.x);
 	} while (!(is_floor(level.map[index]) && level.flags[index].test(MapFlag::Real)
 				&& moat(player.body.t_pos.y, player.body.t_pos.x) == nullptr));
 
 	game().message.end = 0;
-	enter_room(&player.body.t_pos);
+	enter_room(player.body.t_pos);
 	display().draw_tile(player.body.t_pos, PLAYER);
 	player.old_pos = player.body.t_pos;
 	player.old_room = player.body.t_room;
@@ -164,7 +164,7 @@ put_things(void)
 				 */
 				do {
 					rm = rnd_room();
-					rnd_pos(&level.rooms[rm], &tp);
+					tp = rnd_pos(&level.rooms[rm]);
 				} while (!is_floor(winat(tp.y, tp.x)));
 				level.at(tp) = AMULET;
 				cur->o_pos = tp;
@@ -191,7 +191,7 @@ put_things(void)
 			 */
 			do {
 				rm = rnd_room();
-				rnd_pos(&level.rooms[rm], &tp);
+				tp = rnd_pos(&level.rooms[rm]);
 			} while (!is_floor(level.at(tp)));
 			level.at(tp) = glyph_of(cur->o_type);
 			cur->o_pos = tp;
@@ -225,7 +225,7 @@ treas_room(void)
 	{
 		do
 		{
-			rnd_pos(rp, &mp);
+			mp = rnd_pos(rp);
 			index = INDEX(mp.y, mp.x);
 		} while (!is_floor(level.map[index]));
 		obj = new_thing();
@@ -248,7 +248,7 @@ treas_room(void)
 	{
 		for (spots = 0; spots < MAXTRIES; spots++)
 		{
-			rnd_pos(rp, &mp);
+			mp = rnd_pos(rp);
 			index = INDEX(mp.y, mp.x);
 			if (is_floor(level.map[index]) && moat(mp.y, mp.x) == nullptr)
 				break;
@@ -257,7 +257,7 @@ treas_room(void)
 		{
 			if ((tp = new_creature()) != nullptr)
 			{
-				new_monster(tp, randmonster(false), &mp);
+				new_monster(tp, randmonster(false), mp);
 				tp->t_flags.set(ISMEAN);	/* no sloughers in THIS room */
 				give_pack(tp);
 			}
@@ -377,7 +377,7 @@ do_rooms(void)
 				while (1) {
 					unsigned char gch;
 
-					rnd_pos(rp, &rp->r_gold);
+					rp->r_gold = rnd_pos(rp);
 					gch =  level.at(rp->r_gold);
 					if (is_floor(gch))
 						break;
@@ -398,10 +398,10 @@ do_rooms(void)
 				unsigned char mch;
 
 				do {
-					rnd_pos(rp, &mp);
+					mp = rnd_pos(rp);
 					mch = winat(mp.y, mp.x);
 				} while (!is_floor(mch));
-				new_monster(tp, randmonster(false), &mp);
+				new_monster(tp, randmonster(false), mp);
 				give_pack(tp);
 			}
 		}

@@ -87,7 +87,7 @@ do_zap()
 			/*
 			 * Light the room and put the player back up
 			 */
-			enter_room(&player.body.t_pos);
+			enter_room(player.body.t_pos);
 		}
 		break;
 	case Stick::DrainLife:
@@ -150,7 +150,7 @@ do_zap()
 				oldch = tp->t_oldch;
 				turn.delta.y = y;
 				turn.delta.x = x;
-				new_monster(tp, monster = rnd(26) + 'A', &turn.delta);
+				new_monster(tp, monster = rnd(26) + 'A', turn.delta);
 				if (see_monst(tp))
 					display().draw_tile({x, y}, monster);
 				tp->t_oldch = oldch;
@@ -173,8 +173,7 @@ do_zap()
 					do
 					{
 						rm = rnd_room();
-						new_yx = tp->t_pos;
-						rnd_pos(&game().level.rooms[rm], &new_yx);
+						new_yx = rnd_pos(&game().level.rooms[rm]);
 					}  while (!(is_floor(winat(new_yx.y, new_yx.x))));
 					tp->t_pos = new_yx;
 					if (see_monst(tp))
@@ -231,7 +230,7 @@ do_zap()
 				obj->o_damage = "2d8";
 				obj->o_dplus = 4;
 			}
-			fight(&turn.delta, tp->t_type, obj, false);
+			fight(turn.delta, tp->t_type, obj, false);
 		}
 		break;
 	case Stick::HasteMonster:
@@ -262,7 +261,7 @@ do_zap()
 			}
 			turn.delta.y = y;
 			turn.delta.x = x;
-			start_run(&turn.delta);
+			start_run(turn.delta);
 		}
 		break;
 	case Stick::Lightning:
@@ -274,7 +273,7 @@ do_zap()
 			name = "flame";
 		else
 			name = "ice";
-		fire_bolt(&player.body.t_pos, &turn.delta, name);
+		fire_bolt(player.body.t_pos, turn.delta, name);
 		game().items.ws_know[which_one] = true;
 		break;
 	default:
@@ -334,16 +333,18 @@ drain()
 		if ((mp->t_stats.s_hpt -= cnt) <= 0)
 			killed(mp, see_monst(mp));
 		else
-			start_run(&mp->t_pos);
+			start_run(mp->t_pos);
 	}
 }
 
 /*
  * fire_bolt:
- *	Fire a bolt in a given direction from a specific starting place
+ *	Fire a bolt in a given direction from a specific starting place. The
+ *	rogue fired it if it starts where he stands (no monster stands there).
+ *	dir is reversed each time the bolt bounces, as `a` reuses it.
  */
 void
-fire_bolt(coord *start, coord *dir, std::string_view name)
+fire_bolt(Coord start, Coord &dir, std::string_view name)
 {
 	unsigned char dirch = 0, ch;
 	Creature *tp;
@@ -365,19 +366,20 @@ fire_bolt(coord *start, coord *dir, std::string_view name)
 	bolt.o_hplus = 30;
 	bolt.o_dplus = 0;
 	w_names[WeaponType::Flame] = name;
-	switch (dir->y + dir->x) {
+	switch (dir.y + dir.x) {
 		case 0: dirch = '/'; break;
-		case 1: case -1: dirch = (dir->y == 0 ? '-' : '|'); break;
+		case 1: case -1: dirch = (dir.y == 0 ? '-' : '|'); break;
 		case 2: case -2: dirch = '\\';
 		break;
 	}
-	pos = *start;
-	hit_hero = (start != &player.body.t_pos);
+	const bool by_hero = (start == player.body.t_pos);
+	pos = start;
+	hit_hero = !by_hero;
 	used = false;
 	changed = false;
 	for (i = 0; i < BOLT_LENGTH && !used; i++) {
-		pos.y += dir->y;
-		pos.x += dir->x;
+		pos.y += dir.y;
+		pos.x += dir.x;
 		ch = winat(pos.y, pos.x);
 		spotpos[i].s_pos = pos;
 		if ((spotpos[i].s_under = display().tile_at(pos)) == dirch)
@@ -394,8 +396,8 @@ fire_bolt(coord *start, coord *dir, std::string_view name)
 			if (!changed)
 				hit_hero = !hit_hero;
 			changed = false;
-			dir->y = -dir->y;
-			dir->x = -dir->x;
+			dir.y = -dir.y;
+			dir.x = -dir.x;
 			i--;
 			msg("the {} bounces", name);
 			break;
@@ -416,8 +418,8 @@ fire_bolt(coord *start, coord *dir, std::string_view name)
 							spotpos[i].s_under = display().tile_at(pos);
 					}
 				} else if (ch != 'X' || tp->t_disguise == 'X') {
-					if (start == &player.body.t_pos)
-						start_run(&pos);
+					if (by_hero)
+						start_run(pos);
 					msg("the {} whizzes past the {}",
 						name, monsters[ch-'A'].m_name);
 				}
@@ -431,10 +433,10 @@ fire_bolt(coord *start, coord *dir, std::string_view name)
 						if (player.no_command < 20)
 							player.no_command += spread(7);
 					} else if ((player.body.t_stats.s_hpt -= roll(6, 6)) <= 0) {
-						if (start == &player.body.t_pos)
+						if (by_hero)
 							death('b');
 						else
-							death(moat(start->y, start->x)->t_type);
+							death(moat(start.y, start.x)->t_type);
 					}
 					used = true;
 					if (!is_frost)

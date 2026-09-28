@@ -1,5 +1,6 @@
 #include <chrono>
 #include <thread>
+#include <variant>
 
 #include "rogue.h"
 
@@ -27,7 +28,11 @@ static constexpr KindTable<WeaponType, init_weps> init_dam = {
 	{"2d3",	"1d6",	NONE,     ISMISL}        	/* Spear */
 };
 
-static int	fallpos(Item *obj, coord *newpos);
+// Where fallpos() puts an item: nowhere, a free spot, or a pile it joined
+struct JoinedPile {};
+using Landing = std::variant<std::monostate, Coord, JoinedPile>;
+
+static Landing	fallpos(Item *obj);
 static std::string	short_name(Item *obj);
 
 /*
@@ -156,13 +161,14 @@ short_name(Item *obj)
 void
 fall(Item *obj, bool pr)
 {
-	static coord fpos;
 	int index;
 	rogue::Level &level = game().level;
+	Landing landing = fallpos(obj);
 
-	switch (fallpos(obj, &fpos))
+	if (std::holds_alternative<Coord>(landing))
 	{
-	case 1:
+		const Coord fpos = std::get<Coord>(landing);
+
 		index = INDEX(fpos.y, fpos.x);
 		level.map[index] = glyph_of(obj->o_type);
 		obj->o_pos = fpos;
@@ -177,10 +183,9 @@ fall(Item *obj, bool pr)
 		}
 		level.objects.push_front(obj);
 		return;
-	case 2:
-		pr = 0;
-		break;
 	}
+	if (std::holds_alternative<JoinedPile>(landing))
+		pr = false;
 	if (pr)
 		msg("the {} vanishes{}.", short_name(obj),
 								  noterse(" as it hits the ground"));
@@ -217,14 +222,10 @@ init_weapon(Item *weap, WeaponType type)
 bool
 hit_monster(int y, int x, Item *obj)
 {
-	static coord mp;
 	Creature *mo = moat(y, x);
 
-	if (mo) {
-		mp.y = y;
-		mp.x = x;
-		return fight(&mp, mo->t_type, obj, true);
-	}
+	if (mo)
+		return fight({x, y}, mo->t_type, obj, true);
 	return false;
 }
 
@@ -286,10 +287,11 @@ bad:
  *	Pick a random position around the given (y, x) coordinates
  */
 static
-int
-fallpos(Item *obj, coord *newpos)
+Landing
+fallpos(Item *obj)
 {
 	int y, x, cnt = 0, ch;
+	Coord newpos;
 	Item *onfloor;
 	rogue::Player &player = game().player;
 
@@ -303,10 +305,8 @@ fallpos(Item *obj, coord *newpos)
 			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || offmap(y,x))
 				continue;
 			if ((ch = game().level.at(y, x)) == FLOOR || ch == PASSAGE) {
-				if (rnd(++cnt) == 0) {
-					newpos->y = y;
-					newpos->x = x;
-				}
+				if (rnd(++cnt) == 0)
+					newpos = {x, y};
 				continue;
 			}
 			if (step_ok(ch)
@@ -316,11 +316,13 @@ fallpos(Item *obj, coord *newpos)
 				&& onfloor->o_group == obj->o_group)
 			{
 				onfloor->o_count += obj->o_count;
-				return 2;
+				return JoinedPile{};
 			}
 		}
 	}
-	return(cnt != 0);
+	if (cnt == 0)
+		return std::monostate{};
+	return newpos;
 }
 
 

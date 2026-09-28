@@ -30,7 +30,7 @@ char pick_mons();
  * new_monster:
  *	Pick a new monster and add it to the list.
  */
-void new_monster(Creature *tp, unsigned char type, coord *cp);
+void new_monster(Creature *tp, unsigned char type, Coord cp);
 
 /*
  * f_restor:

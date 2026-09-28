@@ -37,7 +37,7 @@ void drain();
  * fire_bolt:
  *	Fire a bolt in a given direction from a specific starting place.
  */
-void fire_bolt(coord *start, coord *dir, std::string_view name);
+void fire_bolt(Coord start, Coord &dir, std::string_view name);
 
 /*
  * charge_str:

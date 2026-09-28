@@ -4,7 +4,7 @@
  * Rooms at play time: entering and leaving one, which room a square is
  * in, and what the rogue can see from where it stands.
  *
- * Included by rogue.h after the legacy types (coord, struct room).
+ * Included by rogue.h after the legacy types (Coord, struct room).
  */
 
 struct room;
@@ -16,13 +16,13 @@ namespace rogue::world {
  *	Find what room some coordinates are in. Null means they aren't in any
  *	room.
  */
-struct room *roomin(coord *cp);
+struct room *roomin(Coord cp);
 
 /*
  * diag_ok:
  *	Check to see if the move is legal if it is diagonal.
  */
-bool diag_ok(coord *sp, coord *ep);
+bool diag_ok(Coord sp, Coord ep);
 
 /*
  * cansee:
@@ -34,18 +34,18 @@ bool cansee(int y, int x);
  * rnd_pos:
  *	Pick a random spot in a room.
  */
-void rnd_pos(struct room *rp, coord *cp);
+Coord rnd_pos(const struct room *rp);
 
 /*
  * enter_room:
  *	Code that is executed whenever you appear in a room.
  */
-void enter_room(coord *cp);
+void enter_room(Coord cp);
 
 /*
  * leave_room:
  *	Code for when we exit a room.
  */
-void leave_room(coord *cp);
+void leave_room(Coord cp);
 
 }  // namespace rogue::world

@@ -110,7 +110,8 @@ struct h_list {
 /*
  * Coordinate data type
  */
-using coord = rogue::Coord;  // see core/Coord.hpp
+using rogue::Coord;  // see core/Coord.hpp
+using coord = rogue::Coord;
 
 // Game output goes through the display, see ui/Display.hpp
 using rogue::ui::display;
@@ -495,7 +496,7 @@ Item	*find_obj(int y, int x);
 bool	add_haste(bool potion);
 bool	is_current(Item *obj);
 bool	get_dir(void);
-bool	find_dir(unsigned char ch, coord *cp);
+std::optional<Coord>	find_dir(unsigned char ch);
 bool	step_ok(unsigned char ch);
 bool	offmap(int y, int x);
 std::string_view	tr_name(Trap type);
@@ -522,7 +523,7 @@ void	do_run(unsigned char ch);
 void	do_move(int dy, int dx);
 void	door_open(struct room *rp);
 void	descend(std::string_view mesg);
-void	rndmove(Creature *who, coord *newmv);
+Coord	rndmove(Creature *who);
 
 // rip.cpp
 void	score(int amount, int flags, char monst);

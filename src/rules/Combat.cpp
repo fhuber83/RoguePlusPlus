@@ -16,7 +16,7 @@ static std::string	prname(Who who, bool upper);
 static void	hit(Who er, Who ee);
 static void	miss(Who er, Who ee);
 static void	thunk(Item *weap, std::string_view mname, std::string_view does, std::string_view did);
-static void	remove_monster(coord *mp, Creature *tp, bool waskill);
+static void	remove_monster(Coord mp, Creature *tp, bool waskill);
 static int	str_plus(str_t str);
 static int	add_dam(str_t str);
 
@@ -25,7 +25,7 @@ static int	add_dam(str_t str);
  *	The player attacks the monster.
  */
 bool
-fight(coord *mp, char mn, Item *weap, bool thrown)
+fight(Coord mp, char mn, Item *weap, bool thrown)
 {
 	Creature *tp;
 	std::string_view mname;
@@ -34,7 +34,7 @@ fight(coord *mp, char mn, Item *weap, bool thrown)
 	/*
 	 * Find the monster we want to fight
 	 */
-	if ((tp = moat(mp->y, mp->x)) == 0)
+	if ((tp = moat(mp.y, mp.x)) == nullptr)
 		return false;
 	/*
 	 * Since we are fighting, things are not quiet so no healing takes
@@ -217,7 +217,7 @@ attack(Creature *mp)
 			player.purse -= gold_calc() + gold_calc() + gold_calc() + gold_calc();
 			if (player.purse < 0)
 			player.purse = 0;
-			remove_monster(&mp->t_pos, mp, false);
+			remove_monster(mp->t_pos, mp, false);
 			if (player.purse != lastpurse)
 			msg("your purse feels lighter");
 		}
@@ -240,7 +240,7 @@ attack(Creature *mp)
 				steal = obj;
 			if (steal != nullptr)
 			{
-				remove_monster(&mp->t_pos, mp, false);
+				remove_monster(mp->t_pos, mp, false);
 				player.in_pack--;
 				if (steal->o_count > 1 && steal->o_group == 0)
 				{
@@ -610,7 +610,7 @@ thunk(Item *weap, std::string_view mname, std::string_view does, std::string_vie
  *	Remove a monster from the screen
  */
 static void
-remove_monster(coord *mp, Creature *tp, bool waskill)
+remove_monster(Coord mp, Creature *tp, bool waskill)
 {
 	Item *obj, *nexti;
 	TileStyle style;
@@ -628,11 +628,11 @@ remove_monster(coord *mp, Creature *tp, bool waskill)
 		else
 			discard(obj);
 	}
-	style = (game().level.map[INDEX(mp->y,mp->x)] == PASSAGE) ? TileStyle::Inverse : TileStyle::Normal;
-	if (tp->t_oldch == FLOOR && !cansee(mp->y, mp->x))
-		display().draw_tile(*mp, ' ', style);
+	style = (game().level.map[INDEX(mp.y,mp.x)] == PASSAGE) ? TileStyle::Inverse : TileStyle::Normal;
+	if (tp->t_oldch == FLOOR && !cansee(mp.y, mp.x))
+		display().draw_tile(mp, ' ', style);
 	else if (tp->t_oldch != '@')
-		display().draw_tile(*mp, tp->t_oldch, style);
+		display().draw_tile(mp, tp->t_oldch, style);
 	game().level.monsters.remove(tp);
 	discard(tp);
 }
@@ -696,7 +696,7 @@ killed(Creature *tp, bool pr)
 	/*
 	 * Get rid of the monster.
 	 */
-	remove_monster(&tp->t_pos, tp, true);
+	remove_monster(tp->t_pos, tp, true);
 	if (pr)
 	{
 	addmsg("you have defeated ");

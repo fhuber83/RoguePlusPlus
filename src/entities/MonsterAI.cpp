@@ -9,7 +9,7 @@
 namespace rogue::entities {
 
 static void	do_chase(Creature *th);
-static void	chase(Creature *tp, coord *ee);
+static void	chase(Creature *tp, Coord ee);
 
 constexpr int DRAGONSHOT = 5;	/* one chance in DRAGONSHOT that a dragon will flame */
 
@@ -75,7 +75,7 @@ do_chase(Creature *th)
 		th->t_dest = &player.body.t_pos;	/*	If gold	has been taken,	run after hero */
 	ree	= player.body.t_room;
 	if (th->t_dest != &player.body.t_pos)	/*	Find room of chasee */
-		ree = roomin(th->t_dest);
+		ree = roomin(*th->t_dest);
 	if (ree == nullptr)
 		return;
 	/*
@@ -121,7 +121,7 @@ over:
 			game().turn.running = false;
 			game().turn.delta.y = sign(player.body.t_pos.y - th->t_pos.y);
 			game().turn.delta.x = sign(player.body.t_pos.x - th->t_pos.x);
-			fire_bolt(&th->t_pos,&game().turn.delta,th->t_type == 'D' ? "flame" : "frost");
+			fire_bolt(th->t_pos, game().turn.delta, th->t_type == 'D' ? "flame" : "frost");
 			return;
 		}
 	}
@@ -130,7 +130,7 @@ over:
 	 * so we run to it.	 If we hit it we either	want to	fight it
 	 * or stop running
 	 */
-	chase(th, &target);
+	chase(th, target);
 	if (ch_ret == player.body.t_pos) {
 		attack(th);
 		return;
@@ -167,7 +167,7 @@ over:
 	oroom = th->t_room;
 	if (!(ch_ret == th->t_pos))
 	{
-		if ((th->t_room = roomin(&ch_ret)) == nullptr) {
+		if ((th->t_room = roomin(ch_ret)) == nullptr) {
 			th->t_room	= oroom;
 			return;
 		}
@@ -228,14 +228,14 @@ see_monst(Creature *mp)
  *	(for	when it	dies)
  */
 void
-start_run(coord *runner)
+start_run(Coord runner)
 {
 	Creature *tp;
 
 	/*
 	 * If we couldn't find him,	something is funny
 	 */
-	tp = moat(runner->y, runner->x);
+	tp = moat(runner.y, runner.x);
 	if (tp != nullptr) {
 		/*
 		 *	Start the beastie running
@@ -254,16 +254,15 @@ start_run(coord *runner)
  *	chasee(ee).
  */
 static void
-chase(Creature *tp, coord *ee)
+chase(Creature *tp, Coord ee)
 {
 	int	x, y;
 	int	dist, thisdist;
 	Item *obj;
-	coord *er;
+	const Coord er = tp->t_pos;
 	unsigned char ch;
 	int	plcnt =	1;
 
-	er = &tp->t_pos;
 	/*
 	 * If the thing is confused, let it	move randomly. Phantoms
 	 * are slightly confused all of the	time, and bats are
@@ -275,8 +274,8 @@ chase(Creature *tp, coord *ee)
 		/*
 		 * get	a valid	random move
 		 */
-		rndmove(tp,&ch_ret);
-		dist =	DISTANCE(ch_ret.y, ch_ret.x, ee->y, ee->x);
+		ch_ret = rndmove(tp);
+		dist =	DISTANCE(ch_ret.y, ch_ret.x, ee.y, ee.x);
 		/*
 		 * Small chance that it will become un-confused
 		 */
@@ -294,20 +293,18 @@ chase(Creature *tp, coord *ee)
 		 * This will eventually hold where we move to get closer
 		 * If we can't	find an	empty spot, we stay where we are.
 		 */
-		dist =	DISTANCE(er->y,	er->x, ee->y, ee->x);
-		ch_ret	= *er;
+		dist =	DISTANCE(er.y,	er.x, ee.y, ee.x);
+		ch_ret	= er;
 
-		ey = er->y + 1;
-		ex = er->x + 1;
-		for (x	= er->x	- 1; x <= ex; x++)
+		ey = er.y + 1;
+		ex = er.x + 1;
+		for (x	= er.x	- 1; x <= ex; x++)
 		{
-			for (y = er->y - 1; y <= ey; y++)
+			for (y = er.y - 1; y <= ey; y++)
 			{
-				coord	tryp;
+				const Coord tryp = {x, y};
 
-				tryp.x = x;
-				tryp.y = y;
-				if (offmap(y,	x) || !diag_ok(er, &tryp))
+				if (offmap(y,	x) || !diag_ok(er, tryp))
 					continue;
 				ch = winat(y,	x);
 				if (step_ok(ch))
@@ -330,7 +327,7 @@ chase(Creature *tp, coord *ee)
 					 * If we didn't find any scrolls at this place or	it
 					 * wasn't	a scare	scroll,	then this place	counts
 					 */
-					thisdist = DISTANCE(y, x,	ee->y, ee->x);
+					thisdist = DISTANCE(y, x,	ee.y, ee.x);
 					if (thisdist < dist)
 					{
 						plcnt = 1;
@@ -368,7 +365,7 @@ find_dest(Creature *tp)
 	{
 	if (obj->o_type == ItemKind::Scroll && obj->which<Scroll>() == Scroll::ScareMonster)
 		continue;
-	if (roomin(&obj->o_pos) == rp && rnd(100) < prob)
+	if (roomin(obj->o_pos) == rp && rnd(100) < prob)
 	{
 		for (tp = game().level.monsters.first(); tp != nullptr; tp = game().level.monsters.after(tp))
 		if (tp->t_dest == &obj->o_pos)
@@ -403,12 +400,12 @@ slime_split(Creature *tp)
 	if (!new_slime(tp) || (nslime = new_creature()) == nullptr)
 		return;
 	msg("The slime divides.  Ick!");
-	new_monster(nslime, 'S', &slimy);
+	new_monster(nslime, 'S', slimy);
 	if (cansee(slimy.y, slimy.x)) {
 		nslime->t_oldch = game().level.at(slimy);
 		display().draw_tile(slimy, 'S');
 	}
-	start_run(&slimy);
+	start_run(slimy);
 }
 
 static
@@ -418,11 +415,11 @@ new_slime(Creature *tp)
 	int y, x, ty, tx;
 	bool ret;
 	Creature *ntp;
-	coord sp;
 
 	ret = false;
 	tp->t_flags.set(ISFLY);
-	if (!plop_monster((ty = tp->t_pos.y), (tx = tp->t_pos.x), &sp)) {
+	std::optional<Coord> sp = plop_monster((ty = tp->t_pos.y), (tx = tp->t_pos.x));
+	if (!sp) {
 		/*
 		 * There were no open spaces next to this slime, look for other
 		 * slimes that might have open spaces next to them.
@@ -439,7 +436,7 @@ new_slime(Creature *tp)
 				}
 	} else {
 		ret = true;
-		slimy = sp;
+		slimy = *sp;
 	}
 	tp->t_flags.unset(ISFLY);
 	return ret;
@@ -448,19 +445,18 @@ new_slime(Creature *tp)
 /*
  * Pick an appropriate spot around a central spot for a new monster to spawn
  * (r, c): row, col of central spot
- * cp: pointer to coordinate for the new monster, if any
- * Return false if no suitable spot around (r, c) is found
+ * Returns the spot for the new monster, or nullopt if no suitable spot
+ * around (r, c) is found
  *
  * Original return value was somewhat an abuse of the bool convention,
  * used both as true/false and as an integer for calculating odds.
- * To avoid that, 'inv_odds' was created for the rnd() call,
- * and 'appear' is now "strictly" boolean
+ * To avoid that, 'inv_odds' was created for the rnd() call
  */
-bool
-plop_monster(int r, int c, coord *cp)
+std::optional<Coord>
+plop_monster(int r, int c)
 {
 	int y, x, inv_odds = 0;
-	bool appear = false;
+	std::optional<Coord> spot;
 	unsigned char ch;
 	rogue::Player &player = game().player;
 
@@ -482,14 +478,11 @@ plop_monster(int r, int c, coord *cp)
 				 * then randomly change to next available spot, if any,
 				 * with decreasing 1-to-n odds (50%, 33%, 25%, 20%,...)
 				 */
-				appear = true;
-				if (rnd(++inv_odds) == 0) {
-					cp->y = y;
-					cp->x = x;
-				}
+				if (rnd(++inv_odds) == 0)
+					spot = Coord{x, y};
 			}
 		}
-	return appear;
+	return spot;
 }
 
 }  // namespace rogue::entities

@@ -59,7 +59,7 @@ randmonster(bool wander)
  *	Pick a new monster and add it to the list
  */
 void
-new_monster(Creature *tp, unsigned char type, coord *cp)
+new_monster(Creature *tp, unsigned char type, Coord cp)
 {
 	const struct monster *mp;
 	int lev_add;
@@ -69,7 +69,7 @@ new_monster(Creature *tp, unsigned char type, coord *cp)
 	game().level.monsters.push_front(tp);
 	tp->t_type = type;
 	tp->t_disguise = type;
-	tp->t_pos = *cp;
+	tp->t_pos = cp;
 	tp->t_oldch = '@';
 	tp->t_room = roomin(cp);
 	mp = &monsters[tp->t_type-'A'];
@@ -168,10 +168,10 @@ wanderer(void)
 		i = rnd_room();
 		if ((rp = &game().level.rooms[i]) == player.body.t_room)
 			continue;
-		rnd_pos(rp, &cp);
+		cp = rnd_pos(rp);
 	} while (!(rp != player.body.t_room && step_ok(winat(cp.y, cp.x))));
-	new_monster(tp, randmonster(true), &cp);
-	start_run(&tp->t_pos);
+	new_monster(tp, randmonster(true), cp);
+	start_run(tp->t_pos);
 }
 
 /*

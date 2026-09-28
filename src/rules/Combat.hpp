@@ -33,7 +33,7 @@ enum class SaveThrow {
  *	The player attacks the monster (mn is its glyph on the map). Returns
  *	whether he hit it.
  */
-bool fight(coord *mp, char mn, Item *weap, bool thrown);
+bool fight(Coord mp, char mn, Item *weap, bool thrown);
 
 /*
  * attack:

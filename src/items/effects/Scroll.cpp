@@ -76,10 +76,10 @@ read_scroll()
 		break;
 	case Scroll::CreateMonster:
 		{
-		coord mp;
+		std::optional<Coord> mp = plop_monster(player.body.t_pos.y, player.body.t_pos.x);
 
-		if (plop_monster(player.body.t_pos.y, player.body.t_pos.x, &mp) && (mo=new_creature()) != nullptr)
-			new_monster(mo, randmonster(false), &mp);
+		if (mp && (mo=new_creature()) != nullptr)
+			new_monster(mo, randmonster(false), *mp);
 		else
 			ifterse("you hear a faint cry of anguish",
 				"you hear a faint cry of anguish in the distance");

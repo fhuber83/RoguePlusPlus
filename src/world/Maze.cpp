@@ -65,20 +65,22 @@ draw_maze(struct room *rp)
 	rp->r_max.x = maxx - rp->r_pos.x + 1;
 	rp->r_max.y = maxy - rp->r_pos.y + 1;
 	do {
-		static coord ld[4] = {
+		static constexpr Coord ld[4] = {
 			{-1,  0},
 			{ 0,  1},
 			{ 1,  0},
 			{ 0, -1}
 		};
-		coord *cp;
 		int sh;
 
-		rnd_pos(rp, &spos);
-		for (psgcnt = 0,cp = ld,sh = 1; cp < &ld[4]; sh <<= 1,cp++) {
-			y = cp->y + spos.y; x = cp->x + spos.x;
+		spos = rnd_pos(rp);
+		psgcnt = 0;
+		sh = 1;
+		for (Coord d : ld) {
+			y = d.y + spos.y; x = d.x + spos.x;
 			if (!offmap(y, x) && level.at(y, x) == PASSAGE)
 				psgcnt += sh;
+			sh <<= 1;
 		}
 	} while (level.at(spos) == PASSAGE || psgcnt % 5);
 	splat(spos.y, spos.x);

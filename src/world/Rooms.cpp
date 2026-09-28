@@ -19,20 +19,20 @@ namespace rogue::world {
  *	in any room.
  */
 struct room *
-roomin(coord *cp)
+roomin(Coord cp)
 {
 	struct room *rp;
 	MapFlags *fp;
 
 	for	(rp = game().level.rooms; rp	<= &game().level.rooms[MAXROOMS-1]; rp++)
-		if (cp->x < rp->r_pos.x + rp->r_max.x && rp->r_pos.x <= cp->x
-		 && cp->y < rp->r_pos.y + rp->r_max.y && rp->r_pos.y <= cp->y)
+		if (cp.x < rp->r_pos.x + rp->r_max.x && rp->r_pos.x <= cp.x
+		 && cp.y < rp->r_pos.y + rp->r_max.y && rp->r_pos.y <= cp.y)
 			return rp;
-	fp = &game().level.flags_at(*cp);
+	fp = &game().level.flags_at(cp);
 	if (fp->test(MapFlag::Passage))
 		return	&game().level.passages[fp->passage()];
 	if constexpr (rogue::config::debug_checks)
-		debug("in some bizarre place ({}, {})", cp->y, cp->x);
+		debug("in some bizarre place ({}, {})", cp.y, cp.x);
 	game().turn.bailout = true;
 	return nullptr;
 }
@@ -42,13 +42,13 @@ roomin(coord *cp)
  *	Check to see	if the move is legal if	it is diagonal
  */
 bool
-diag_ok(coord *sp, coord *ep)
+diag_ok(Coord sp, Coord ep)
 {
 	rogue::Level &level = game().level;
 
-	if (ep->x == sp->x || ep->y	== sp->y)
+	if (ep.x == sp.x || ep.y	== sp.y)
 		return	true;
-	return (step_ok(level.at(ep->y, sp->x))	&& step_ok(level.at(sp->y, ep->x)));
+	return (step_ok(level.at(ep.y, sp.x))	&& step_ok(level.at(sp.y, ep.x)));
 }
 
 /*
@@ -59,7 +59,6 @@ bool
 cansee(int y, int x)
 {
 	struct room *rer;
-	coord tp;
 	rogue::Player &player = game().player;
 
 	if (player.body.t_flags.test(ISBLIND))
@@ -70,9 +69,7 @@ cansee(int y, int x)
 	 * We can only see if the hero in the same room as
 	 * the coordinate and the room is lit or if	it is close.
 	 */
-	tp.y = y;
-	tp.x = x;
-	rer	= roomin(&tp);
+	rer	= roomin({x, y});
 	return (rer	== player.body.t_room && !rer->r_flags.test(RoomFlag::Dark));
 }
 
@@ -80,11 +77,14 @@ cansee(int y, int x)
  * rnd_pos:
  *	Pick a random spot in a room
  */
-void
-rnd_pos(struct room *rp, coord *cp)
+Coord
+rnd_pos(const struct room *rp)
 {
-	cp->x = rp->r_pos.x + rnd(rp->r_max.x - 2) + 1;
-	cp->y = rp->r_pos.y + rnd(rp->r_max.y - 2) + 1;
+	Coord cp;
+
+	cp.x = rp->r_pos.x + rnd(rp->r_max.x - 2) + 1;
+	cp.y = rp->r_pos.y + rnd(rp->r_max.y - 2) + 1;
+	return cp;
 }
 
 /*
@@ -92,7 +92,7 @@ rnd_pos(struct room *rp, coord *cp)
  *	Code that is executed whenver you appear in a room
  */
 void
-enter_room(coord *cp)
+enter_room(Coord cp)
 {
 	struct room *rp;
 	int y, x;
@@ -129,7 +129,7 @@ enter_room(coord *cp)
  *	Code for when we exit a room
  */
 void
-leave_room(coord *cp)
+leave_room(Coord cp)
 {
 	int y, x;
 	struct room *rp;
@@ -138,7 +138,7 @@ leave_room(coord *cp)
 	rogue::Player &player = game().player;
 
 	rp = player.body.t_room;
-	player.body.t_room = &game().level.passages[game().level.flags_at(*cp).passage()];
+	player.body.t_room = &game().level.passages[game().level.flags_at(cp).passage()];
 	floor = (rp->r_flags.test(RoomFlag::Dark) && !player.body.t_flags.test(ISBLIND)) ? ' ' : FLOOR;
 	if (rp->r_flags.test(RoomFlag::Maze))
 		floor = PASSAGE;

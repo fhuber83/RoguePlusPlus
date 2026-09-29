@@ -61,7 +61,6 @@ randmonster(bool wander)
 void
 new_monster(Creature &tp, unsigned char type, Coord cp)
 {
-	const struct monster *mp;
 	int lev_add;
 
 	if ((lev_add = game().level.depth - AMULETLEVEL) < 0)
@@ -72,14 +71,14 @@ new_monster(Creature &tp, unsigned char type, Coord cp)
 	tp.t_pos = cp;
 	tp.t_oldch = '@';
 	tp.t_room = roomin(cp);
-	mp = &monsters[tp.t_type-'A'];
-	tp.t_stats.s_lvl = mp->m_stats.s_lvl + lev_add;
+	const struct monster &mp = monsters[tp.t_type-'A'];
+	tp.t_stats.s_lvl = mp.m_stats.s_lvl + lev_add;
 	tp.t_stats.s_maxhp = tp.t_stats.s_hpt = roll(tp.t_stats.s_lvl, 8);
-	tp.t_stats.s_arm = mp->m_stats.s_arm - lev_add;
-	tp.t_stats.s_dmg = mp->m_stats.s_dmg;
-	tp.t_stats.s_str = mp->m_stats.s_str;
-	tp.t_stats.s_exp = mp->m_stats.s_exp + lev_add * 10 + exp_add(tp);
-	tp.t_flags = mp->m_flags;
+	tp.t_stats.s_arm = mp.m_stats.s_arm - lev_add;
+	tp.t_stats.s_dmg = mp.m_stats.s_dmg;
+	tp.t_stats.s_str = mp.m_stats.s_str;
+	tp.t_stats.s_exp = mp.m_stats.s_exp + lev_add * 10 + exp_add(tp);
+	tp.t_flags = mp.m_flags;
 	tp.t_turn = true;
 	tp.t_pack.clear();
 	if (game().player.wears(Ring::AggravateMonster))
@@ -154,7 +153,6 @@ void
 wanderer(void)
 {
 	int i;
-	struct room *rp;
 	Maybe<Creature> tp;
 	coord cp;
 	rogue::Player &player = game().player;
@@ -166,10 +164,9 @@ wanderer(void)
 		return;
 	do {
 		i = rnd_room();
-		rp = &game().level.rooms[i];
 		if (RoomRef::room(i) == player.body.t_room)
 			continue;
-		cp = rnd_pos(*rp);
+		cp = rnd_pos(game().level.rooms[i]);
 	} while (!(RoomRef::room(i) != player.body.t_room && step_ok(winat(cp.y, cp.x))));
 	new_monster(*tp, randmonster(true), cp);
 	start_run(tp->t_pos);

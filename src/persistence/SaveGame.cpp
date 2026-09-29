@@ -196,8 +196,8 @@ unsigned char byte_of(MapFlags cell) { return cell.bits(); }
 void set_byte(unsigned char &cell, unsigned char b) { cell = b; }
 void set_byte(MapFlags &cell, unsigned char b) { cell = MapFlags::from_bits(b); }
 
-template <class Cell>
-json grid_json(const Cell *grid)
+// grid: Level::map or Level::flags
+json grid_json(const auto &grid)
 {
 	json rows = json::array();
 	for (int y = 1; y < maxrow; y++) {
@@ -650,8 +650,7 @@ std::vector<unsigned char> hex_row(const json &v, std::string_view what)
 	return out;
 }
 
-template <class Cell>
-void grid_from(Cell *grid, const json &j, std::string_view key)
+void grid_from(auto &grid, const json &j, std::string_view key)
 {
 	const json &rows = array_of(j, key, map_rows);
 	for (int y = 1; y < maxrow; y++) {

@@ -28,27 +28,29 @@ runners()
 
 	for (tp = game().level.monsters.first(); tp; tp = game().level.monsters.after(*tp)) {
 		if (!tp->t_flags.test(ISHELD) && tp->t_flags.test(ISRUN)) {
+			const CreatureId id = *game().pool.id_of(*tp);
 			dist = DISTANCE(player.body.t_pos.y, player.body.t_pos.x, tp->t_pos.y, tp->t_pos.x);
 			if	(!(tp->t_flags.test(ISSLOW) || (tp->t_type == 'S' && dist > 3)) || tp->t_turn)
 				do_chase(*tp);
 			/*
 			 * do_chase() can end in attack(), which removes tp from the
 			 * level (a Leprechaun or Nymph vanishes once it steals). Once
-			 * that happens tp is a freed pool slot and must not be read
-			 * again this turn; the loop still stops walking the list at
-			 * this point, as in the original (see MODERNIZATION.md 6.4).
+			 * that happens tp is a freed pool slot and must not be read or
+			 * even dereferenced again, so it is looked for by its Id; the
+			 * walk stops at this point, as in the original, where the
+			 * detached entry had no next (see MODERNIZATION.md 6.4).
 			 */
-			if (!game().level.monsters.contains(*tp))
-				continue;
+			if (!game().level.monsters.contains(id))
+				break;
 			if (tp->t_flags.test(ISHASTE))
 				do_chase(*tp);
-			if (!game().level.monsters.contains(*tp))
-				continue;
+			if (!game().level.monsters.contains(id))
+				break;
 			dist = DISTANCE(player.body.t_pos.y, player.body.t_pos.x, tp->t_pos.y, tp->t_pos.x);
 			if (tp->t_flags.test(ISFLY) && dist > 3)
 				do_chase(*tp);
-			if (!game().level.monsters.contains(*tp))
-				continue;
+			if (!game().level.monsters.contains(id))
+				break;
 			tp->t_turn ^= true;
 		}
 	}

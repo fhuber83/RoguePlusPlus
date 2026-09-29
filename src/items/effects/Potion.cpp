@@ -165,15 +165,15 @@ quaff(void)
 		break;
 	case Potion::RestoreStrength:
 		if (player.wears(Hand::Left, Ring::AddStrength))
-			add_str(&player.body.t_stats.s_str, -player.ring_item(Hand::Left)->o_ac);
+			add_str(player.body.t_stats.s_str, -player.ring_item(Hand::Left)->o_ac);
 		if (player.wears(Hand::Right, Ring::AddStrength))
-			add_str(&player.body.t_stats.s_str, -player.ring_item(Hand::Right)->o_ac);
+			add_str(player.body.t_stats.s_str, -player.ring_item(Hand::Right)->o_ac);
 		if (player.body.t_stats.s_str < player.max_stats.s_str)
 			player.body.t_stats.s_str = player.max_stats.s_str;
 		if (player.wears(Hand::Left, Ring::AddStrength))
-			add_str(&player.body.t_stats.s_str, player.ring_item(Hand::Left)->o_ac);
+			add_str(player.body.t_stats.s_str, player.ring_item(Hand::Left)->o_ac);
 		if (player.wears(Hand::Right, Ring::AddStrength))
-			add_str(&player.body.t_stats.s_str, player.ring_item(Hand::Right)->o_ac);
+			add_str(player.body.t_stats.s_str, player.ring_item(Hand::Right)->o_ac);
 		msg("{}you feel warm all over",
 			noterse("hey, this tastes great.  It makes "));
 		break;

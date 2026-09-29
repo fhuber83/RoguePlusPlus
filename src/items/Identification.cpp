@@ -3,7 +3,7 @@
 namespace rogue::items {
 
 static void	print_disc(ItemKind type);
-static void	set_order(short *order, int numthings);
+static void	set_order(std::span<short> order);
 static std::string	nothing(ItemKind type);
 
 /*
@@ -201,8 +201,8 @@ static
 void
 print_disc(ItemKind type)
 {
-	bool *know = nullptr;
-	std::string *guess = nullptr;
+	std::span<const bool> know;
+	std::span<const std::string> guess;
 	int i, maxnum = 0, num_found;
 	static Item obj;
 	static short order[std::max({kind_count<Scroll>, kind_count<Potion>, kind_count<Ring>, kind_count<Stick>})];
@@ -212,28 +212,28 @@ print_disc(ItemKind type)
 	{
 	case ItemKind::Scroll:
 		maxnum = kind_count<Scroll>;
-		know = items.s_know.data();
-		guess = items.s_guess.data();
+		know = items.s_know;
+		guess = items.s_guess;
 		break;
 	case ItemKind::Potion:
 		maxnum = kind_count<Potion>;
-		know = items.p_know.data();
-		guess = items.p_guess.data();
+		know = items.p_know;
+		guess = items.p_guess;
 		break;
 	case ItemKind::Ring:
 		maxnum = kind_count<Ring>;
-		know = items.r_know.data();
-		guess = items.r_guess.data();
+		know = items.r_know;
+		guess = items.r_guess;
 		break;
 	case ItemKind::Stick:
 		maxnum = kind_count<Stick>;
-		know = items.ws_know.data();
-		guess = items.ws_guess.data();
+		know = items.ws_know;
+		guess = items.ws_guess;
 		break;
 	default:	// the other kinds of item: nothing
 		break;
 	}
-	set_order(order, maxnum);
+	set_order(std::span(order).first(maxnum));
 	obj.o_count = 1;
 	obj.o_flags.reset();
 	num_found = 0;
@@ -255,9 +255,10 @@ print_disc(ItemKind type)
  */
 static
 void
-set_order(short *order, int numthings)
+set_order(std::span<short> order)
 {
 	int i, r, t;
+	int numthings = static_cast<int>(order.size());
 
 	for (i = 0; i< numthings; i++)
 		order[i] = i;

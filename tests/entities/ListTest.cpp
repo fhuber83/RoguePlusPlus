@@ -87,6 +87,9 @@ TEST(List, WalkStopsWhenCurrentIsDetached)
 	EXPECT_EQ(seen, (std::vector<int>{1, 2}));
 	EXPECT_EQ(values(list), (std::vector<int>{1, 3}));
 	EXPECT_FALSE(list.contains(b));
+	// by Id, as runners() asks once its monster may be gone
+	EXPECT_TRUE(list.contains(*rogue::ListPool<int>::id_of(a)));
+	EXPECT_FALSE(list.contains(*rogue::ListPool<int>::id_of(b)));
 }
 
 // Detaching another entry during a walk keeps the walk going.

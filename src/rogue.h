@@ -495,7 +495,7 @@ inline int	gold_calc() { return rnd(50 + 10 * game().level.depth) + 2; }
 void	look(bool wakeup);
 void	eat(void);
 void	chg_str(int amt);
-void	add_str(str_t *sp, int amt);
+void	add_str(str_t &sp, int amt);
 void	aggravate(void);
 void	call_it(bool know, std::string &guess);
 void	help(const struct h_list *helpscr);

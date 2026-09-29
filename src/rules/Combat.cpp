@@ -328,19 +328,18 @@ static bool
 roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 {
 	rogue::Player &player = game().player;
-	struct stats *att, *def;
 	rogue::Attacks attacks;
 	int def_arm;
 	bool did_hit = false;
 	int hplus;
 	int dplus;
 	int damage;
-	att = &thatt.t_stats;
-	def = &thdef.t_stats;
+	const struct stats &att = thatt.t_stats;
+	struct stats &def = thdef.t_stats;
 	if (!weap)
 	{
 		// every flytrap has the one growing attack
-		attacks = (thatt.t_type == 'F' && &thatt != &player.body) ? flytrap_attacks(player.fung_hit) : att->s_dmg;
+		attacks = (thatt.t_type == 'F' && &thatt != &player.body) ? flytrap_attacks(player.fung_hit) : att.s_dmg;
 		dplus = 0;
 		hplus = 0;
 	}
@@ -397,8 +396,8 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 	 */
 	if (!thdef.t_flags.test(ISRUN))
 		hplus += 4;
-	def_arm = def->s_arm;
-	if (def == &player.body.t_stats)
+	def_arm = def.s_arm;
+	if (&def == &player.body.t_stats)
 	{
 		if (player.armor_item())
 			def_arm = player.armor_item()->o_ac;
@@ -409,9 +408,9 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 	}
 	for (const rogue::Dice &attack : attacks)
 	{
-		if (swing(att->s_lvl, def_arm, hplus + str_plus(att->s_str)))
+		if (swing(att.s_lvl, def_arm, hplus + str_plus(att.s_str)))
 		{
-			damage = dplus + attack.roll(rogue::rng()) + add_dam(att->s_str);
+			damage = dplus + attack.roll(rogue::rng()) + add_dam(att.s_str);
 			/*
 			 * special goodies for the commercial version of rogue
 			 */
@@ -420,7 +419,7 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 				  * make it easier on level one
 				  */
 						damage = (damage+1) / 2;
-			def->s_hpt -= std::max(0, damage);
+			def.s_hpt -= std::max(0, damage);
 			did_hit = true;
 		}
 	}

@@ -49,7 +49,7 @@ look(bool wakeup)
 	std::optional<RoomRef> rp;
 	int ey, ex;
 	int passcount = 0;
-	MapFlags pfl, *fp;
+	MapFlags pfl;
 	int sy, sx, sumhero = 0, diffhero = 0;
 
 	rp = player.body.t_room;
@@ -70,15 +70,15 @@ look(bool wakeup)
 						if (level.room(*player.old_room).r_flags.test(RoomFlag::Dark) && !level.room(*player.old_room).r_flags.test(RoomFlag::Gone))
 							display().draw_tile({x, y}, ' ');
 					} else {
-						fp = &level.flags[INDEX(y,x)];
+						MapFlags &fp = level.flags[INDEX(y,x)];
 						/*
 						 * if the maze or passage (that the hero is in!!)
 						 * needs to be redrawn (passages once draw always
 						 * stay on) do it now.
 						 */
-						if ((fp->test(MapFlag::Maze) || fp->test(MapFlag::Passage)) && (ch!=PASSAGE)
+						if ((fp.test(MapFlag::Maze) || fp.test(MapFlag::Passage)) && (ch!=PASSAGE)
 							&& (ch != STAIRS) &&
-							(fp->passage() == pfl.passage()) )
+							(fp.passage() == pfl.passage()) )
 								display().draw_tile({x, y}, PASSAGE);
 					}
 				}
@@ -109,7 +109,7 @@ look(bool wakeup)
 			 * THIS REPLICATES THE moat() MACRO.  IF MOAT IS CHANGED,
 			 * THIS MUST BE CHANGED ALSO ?? What does this really mean ??
 			 */
-			fp = &level.flags[index];
+			MapFlags &fp = level.flags[index];
 			ch = level.map[index];
 			/*
 			 * No Doors
@@ -118,17 +118,17 @@ look(bool wakeup)
 				/*
 				 * Either hero or other in a passage
 				 */
-				if (pfl.test(MapFlag::Passage) != fp->test(MapFlag::Passage)) {
+				if (pfl.test(MapFlag::Passage) != fp.test(MapFlag::Passage)) {
 					/*
 					 * Neither is in a maze
 					 */
-					if ( ! pfl.test(MapFlag::Maze) && ! fp->test(MapFlag::Maze))
+					if ( ! pfl.test(MapFlag::Maze) && ! fp.test(MapFlag::Maze))
 						continue;
 				}
 				/*
 				 * Not in same passage
 				 */
-				else if (fp->test(MapFlag::Passage) && fp->passage() != pfl.passage())
+				else if (fp.test(MapFlag::Passage) && fp.passage() != pfl.passage())
 					continue;
 			}
 
@@ -153,7 +153,7 @@ look(bool wakeup)
 			 * look right in Inverse
 			 */
 			display().draw_tile({x, y}, ch,
-					((ch!=PASSAGE) && fp->test(MapFlag::Passage | MapFlag::Maze) && ch != ARMOR)
+					((ch!=PASSAGE) && fp.test(MapFlag::Passage | MapFlag::Maze) && ch != ARMOR)
 						? TileStyle::Inverse : TileStyle::Normal);
 
 			if (turn.door_stop && !turn.first_move && turn.running) {
@@ -308,12 +308,12 @@ chg_str(int amt)
 
 	if (amt == 0)
 	return;
-	add_str(&player.body.t_stats.s_str, amt);
+	add_str(player.body.t_stats.s_str, amt);
 	comp = player.body.t_stats.s_str;
 	if (player.wears(Hand::Left, Ring::AddStrength))
-		add_str(&comp, -player.ring_item(Hand::Left)->o_ac);
+		add_str(comp, -player.ring_item(Hand::Left)->o_ac);
 	if (player.wears(Hand::Right, Ring::AddStrength))
-		add_str(&comp, -player.ring_item(Hand::Right)->o_ac);
+		add_str(comp, -player.ring_item(Hand::Right)->o_ac);
 	if (comp > player.max_stats.s_str)
 		player.max_stats.s_str = comp;
 }
@@ -323,12 +323,12 @@ chg_str(int amt)
  *	Perform the actual add, checking upper and lower bound
  */
 void
-add_str(str_t *sp, int amt)
+add_str(str_t &sp, int amt)
 {
-	if ((*sp += amt) < 3)
-		*sp = 3;
-	else if (*sp > 31)
-		*sp = 31;
+	if ((sp += amt) < 3)
+		sp = 3;
+	else if (sp > 31)
+		sp = 31;
 }
 
 /*
@@ -692,7 +692,6 @@ void
 search()
 {
 	int y, x;
-	MapFlags *fp;
 	int ey, ex;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
@@ -706,8 +705,8 @@ search()
 		{
 			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || offmap(y, x))
 				continue;
-			fp = &level.flags_at(y, x);
-			if (!fp->test(MapFlag::Real))
+			MapFlags &fp = level.flags_at(y, x);
+			if (!fp.test(MapFlag::Real))
 				switch (level.at(y, x))
 				{
 					case VWALL:
@@ -719,16 +718,16 @@ search()
 						if (rnd(5) != 0)
 							break;
 						level.at(y, x) = DOOR;
-						fp->set(MapFlag::Real);
+						fp.set(MapFlag::Real);
 						game().turn.count = game().turn.running = false;
 						break;
 					case FLOOR:
 						if (rnd(2) != 0)
 							break;
 						level.at(y, x) = TRAP;
-						fp->set(MapFlag::Real);
+						fp.set(MapFlag::Real);
 						game().turn.count = game().turn.running = false;
-						msg("you found {}", tr_name(fp->trap()));
+						msg("you found {}", tr_name(fp.trap()));
 						break;
 				}
 		}
@@ -783,9 +782,9 @@ void
 call()
 {
 	Maybe<Item> obj;
-	std::string *guess;
+	std::span<std::string> guess;
 	std::string_view elsewise;
-	bool *know;
+	std::span<const bool> know;
 	rogue::Items &items = game().items;
 
 	obj = get_item("call", ItemFilter::callable());
@@ -797,26 +796,26 @@ call()
 	switch (obj->o_type)
 	{
 	case ItemKind::Ring:
-		guess = items.r_guess.data();
-		know = items.r_know.data();
+		guess = items.r_guess;
+		know = items.r_know;
 		elsewise = (!guess[obj->o_which].empty() ?
 			guess[obj->o_which] : items.r_stones[obj->which<Ring>()]);
 		break;
 	case ItemKind::Potion:
-		guess = items.p_guess.data();
-		know = items.p_know.data();
+		guess = items.p_guess;
+		know = items.p_know;
 		elsewise = (!guess[obj->o_which].empty() ?
 			guess[obj->o_which] : items.p_colors[obj->which<Potion>()]);
 		break;
 	case ItemKind::Scroll:
-		guess = items.s_guess.data();
-		know = items.s_know.data();
+		guess = items.s_guess;
+		know = items.s_know;
 		elsewise = (!guess[obj->o_which].empty() ?
 			guess[obj->o_which] : items.s_names[obj->which<Scroll>()]);
 		break;
 	case ItemKind::Stick:
-		guess = items.ws_guess.data();
-		know = items.ws_know.data();
+		guess = items.ws_guess;
+		know = items.ws_know;
 		elsewise = (!guess[obj->o_which].empty() ?
 			guess[obj->o_which] : items.ws_made[obj->which<Stick>()]);
 		break;

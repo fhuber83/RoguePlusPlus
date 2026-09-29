@@ -94,7 +94,6 @@ rnd_pos(const struct room &rp)
 void
 enter_room(Coord cp)
 {
-	struct room *rp;
 	int y, x;
 	Maybe<Creature> tp;
 	rogue::Level &level = game().level;
@@ -106,11 +105,11 @@ enter_room(Coord cp)
 			debug("in a gone room");
 		return;
 	}
-	rp = &level.room(*in);
-	door_open(*rp);
-	if (!rp->r_flags.test(RoomFlag::Dark) && !game().player.body.t_flags.test(ISBLIND) && !rp->r_flags.test(RoomFlag::Maze))
-		for (y = rp->r_pos.y; y < rp->r_max.y + rp->r_pos.y; y++) {
-			for (x = rp->r_pos.x; x < rp->r_max.x + rp->r_pos.x; x++) {
+	const struct room &rp = level.room(*in);
+	door_open(rp);
+	if (!rp.r_flags.test(RoomFlag::Dark) && !game().player.body.t_flags.test(ISBLIND) && !rp.r_flags.test(RoomFlag::Maze))
+		for (y = rp.r_pos.y; y < rp.r_max.y + rp.r_pos.y; y++) {
+			for (x = rp.r_pos.x; x < rp.r_max.x + rp.r_pos.x; x++) {
 				/*
 				 * Displaying monsters is all handled in the
 				 * chase code now
@@ -134,18 +133,17 @@ void
 leave_room(Coord cp)
 {
 	int y, x;
-	struct room *rp;
 	unsigned char floor;
 	unsigned char ch;
 	rogue::Player &player = game().player;
 
-	rp = &game().level.room(*player.body.t_room);
+	const struct room &rp = game().level.room(*player.body.t_room);
 	player.body.t_room = game().level.passage_at(cp);
-	floor = (rp->r_flags.test(RoomFlag::Dark) && !player.body.t_flags.test(ISBLIND)) ? ' ' : FLOOR;
-	if (rp->r_flags.test(RoomFlag::Maze))
+	floor = (rp.r_flags.test(RoomFlag::Dark) && !player.body.t_flags.test(ISBLIND)) ? ' ' : FLOOR;
+	if (rp.r_flags.test(RoomFlag::Maze))
 		floor = PASSAGE;
-	for (y = rp->r_pos.y + 1; y < rp->r_max.y + rp->r_pos.y - 1; y++)
-		for (x = rp->r_pos.x + 1; x < rp->r_max.x + rp->r_pos.x - 1; x++)
+	for (y = rp.r_pos.y + 1; y < rp.r_max.y + rp.r_pos.y - 1; y++)
+		for (x = rp.r_pos.x + 1; x < rp.r_max.x + rp.r_pos.x - 1; x++)
 			switch (ch = display().tile_at({x, y})) {
 			case ' ':
 			case PASSAGE:
@@ -172,7 +170,7 @@ leave_room(Coord cp)
 				display().draw_tile({x, y}, floor);
 				break;
 			}
-	door_open(*rp);
+	door_open(rp);
 }
 
 }  // namespace rogue::world

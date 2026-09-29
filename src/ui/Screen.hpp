@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string_view>
 
+#include "core/Maybe.hpp"
 #include "ui/Cell.hpp"
 
 namespace rogue::ui {
@@ -24,9 +25,9 @@ public:
 
 	using Snapshot = std::array<std::array<Cell, Cols>, Rows>;
 
-	/// Connects a terminal and repaints it, or disconnects with nullptr.
-	void connect(Terminal *terminal);
-	Terminal *terminal() const { return terminal_; }
+	/// Connects a terminal and repaints it, or disconnects with std::nullopt.
+	void connect(Maybe<Terminal> terminal);
+	Maybe<Terminal> terminal() const { return terminal_; }
 
 	// Cursor
 
@@ -88,7 +89,7 @@ private:
 	int col_ = 0;
 	Style style_;
 	bool cursor_visible_ = true;
-	Terminal *terminal_ = nullptr;
+	Maybe<Terminal> terminal_;
 };
 
 /// The screen the game draws on.

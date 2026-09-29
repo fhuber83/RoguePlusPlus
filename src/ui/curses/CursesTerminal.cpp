@@ -540,13 +540,13 @@ std::expected<void, std::string> start_terminal(bool monochrome)
 	if (auto opened = the_terminal.open(Screen::Rows, Screen::Cols); !opened)
 		return opened;
 	screen_display().set_monochrome(monochrome || !the_terminal.has_color());
-	screen().connect(&the_terminal);
+	screen().connect(the_terminal);
 	return {};
 }
 
 void stop_terminal()
 {
-	screen().connect(nullptr);
+	screen().connect(std::nullopt);
 	the_terminal.close();
 }
 

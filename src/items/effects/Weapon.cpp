@@ -199,13 +199,12 @@ fall(Item &obj, bool pr)
 void
 init_weapon(Item &weap, WeaponType type)
 {
-	const struct init_weps *iwp;
+	const struct init_weps &iwp = init_dam[type];
 
-	iwp = &init_dam[type];
-	weap.o_damage = iwp->iw_dam;
-	weap.o_hurldmg = iwp->iw_hrl;
-	weap.o_launch = iwp->iw_launch;
-	weap.o_flags = iwp->iw_flags;
+	weap.o_damage = iwp.iw_dam;
+	weap.o_hurldmg = iwp.iw_hrl;
+	weap.o_launch = iwp.iw_launch;
+	weap.o_flags = iwp.iw_flags;
 	if (weap.o_flags.test(ISMANY))
 	{
 		weap.o_count = rnd(8) + 8;

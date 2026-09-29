@@ -96,6 +96,8 @@ public:
 	}
 
 	bool contains(const T &entry) const { return find(entry) != entries_.end(); }
+	// Whether the thing an Id names is listed, asked after that thing may be gone
+	bool contains(Id<T> id) const { return std::find(entries_.begin(), entries_.end(), id) != entries_.end(); }
 
 	// Add to the front (was list_attach)
 	void push_front(T &entry) { entries_.push_front(id(entry)); }

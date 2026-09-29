@@ -69,12 +69,12 @@ TEST(Pool, CreaturesAndItemsShareTheLimit)
 	EXPECT_EQ(new_item(), nullptr);
 	EXPECT_EQ(new_creature(), nullptr);
 
-	EXPECT_EQ(discard(c), 1);
+	EXPECT_EQ(discard(*c), 1);
 	EXPECT_NE(new_item(), nullptr);
 	EXPECT_EQ(game().pool.total, MAXITEMS);
 
 	Creature outside{};
-	EXPECT_EQ(discard(&outside), 0);
+	EXPECT_EQ(discard(outside), 0);
 	game().pool = rogue::Pool();
 }
 
@@ -86,9 +86,9 @@ TEST(Pool, DiscardForgetsTheLastItemPicked)
 	Item *kept = new_item();
 	Item *gone = new_item();
 	game().turn.last_item = game().pool.id_of(kept);
-	discard(gone);
+	discard(*gone);
 	EXPECT_EQ(game().pool.item(game().turn.last_item), kept);
-	discard(kept);
+	discard(*kept);
 	EXPECT_EQ(game().turn.last_item, std::nullopt);
 	game().pool = rogue::Pool();
 }
@@ -102,7 +102,7 @@ TEST(Pool, DiscardSendsMonstersAfterTheHero)
 	Creature *mp = new_creature();
 	game().level.monsters.push_front(mp);
 	mp->t_dest = *game().pool.id_of(obj);
-	discard(obj);
+	discard(*obj);
 	EXPECT_EQ(mp->t_dest, Destination(Hero{}));
 	game().level = rogue::Level();
 	game().pool = rogue::Pool();

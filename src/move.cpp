@@ -56,7 +56,7 @@ do_move(int dy, int dx)
 	 * Do a confused move (maybe)
 	 */
 	if (player.body.t_flags.test(ISHUH) && rnd(5) != 0)
-		nh = rndmove(&player.body);
+		nh = rndmove(player.body);
 	else {
 over:
 		nh.y = player.body.t_pos.y + dy;
@@ -172,7 +172,7 @@ hit_bound:
 	default:
 		turn.running = false;
 		if (is_monster(ch) || moat(nh.y, nh.x))
-			fight(nh, ch, player.weapon_item(), false);
+			fight(nh, ch, maybe(player.weapon_item()), false);
 		else {
 			turn.running = false;
 			if (ch != STAIRS)
@@ -266,10 +266,10 @@ be_trapped(Coord tc)
 			if ((arrow = new_item()) != nullptr) {
 				arrow->o_type = ItemKind::Weapon;
 				arrow->set_which(WeaponType::Arrow);
-				init_weapon(arrow, WeaponType::Arrow);
+				init_weapon(*arrow, WeaponType::Arrow);
 				arrow->o_count = 1;
 				arrow->o_pos = player.body.t_pos;
-				fall(arrow, false);
+				fall(*arrow, false);
 			}
 			msg("an arrow shoots past you");
 		}
@@ -319,23 +319,23 @@ descend(std::string_view mesg)
  *	Move in a random direction if the monster/person is confused
  */
 Coord
-rndmove(Creature *who)
+rndmove(const Creature &who)
 {
 	int x, y;
 	unsigned char ch;
 	Item *obj;
 
-	y = who->t_pos.y + rnd(3) - 1;
-	x = who->t_pos.x + rnd(3) - 1;
+	y = who.t_pos.y + rnd(3) - 1;
+	x = who.t_pos.x + rnd(3) - 1;
 	/*
 	 * Now check to see if that's a legal move.  If not, don't move.
 	 * (I.e., bump into the wall or whatever)
 	 */
-	if (y == who->t_pos.y && x == who->t_pos.x)
+	if (y == who.t_pos.y && x == who.t_pos.x)
 		return {x, y};
 	if ((y < 1 || y >= maxrow) || (x < 0 || x >= COLS))
 		goto bad;
-	else if (!diag_ok(who->t_pos, {x, y}))
+	else if (!diag_ok(who.t_pos, {x, y}))
 		goto bad;
 	else {
 		ch = winat(y, x);
@@ -352,5 +352,5 @@ rndmove(Creature *who)
 	return {x, y};
 
 bad:
-	return who->t_pos;
+	return who.t_pos;
 }

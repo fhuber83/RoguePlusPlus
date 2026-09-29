@@ -26,7 +26,7 @@ wear()
 	}
 	waste_time();
 	obj->o_flags.set(ISKNOW);
-	sp = inv_name(obj, true);
+	sp = inv_name(*obj, true);
 	game().player.armor = game().pool.id_of(obj);
 	msg("you are now wearing {}", sp);
 }
@@ -45,10 +45,10 @@ take_off()
 		msg("you aren't wearing any armor");
 		return;
 	}
-	if (!can_drop(game().player.armor_item()))
+	if (!can_drop(*obj))
 		return;
 	game().player.armor = std::nullopt;
-	msg("you used to be wearing {:c}) {}", pack_char(obj), inv_name(obj, true));
+	msg("you used to be wearing {:c}) {}", pack_char(*obj), inv_name(*obj, true));
 }
 
 /*

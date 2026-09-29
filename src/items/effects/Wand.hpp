@@ -18,7 +18,7 @@ namespace items::effects {
  * fix_stick:
  *	Set up a new stick.
  */
-void fix_stick(Item *cur);
+void fix_stick(Item &cur);
 
 /*
  * do_zap:
@@ -43,7 +43,7 @@ void fire_bolt(Coord start, Coord &dir, std::string_view name);
  * charge_str:
  *	Return an appropriate string for a wand's charge count.
  */
-std::string charge_str(const Item *obj);
+std::string charge_str(const Item &obj);
 
 }  // namespace items::effects
 }  // namespace rogue

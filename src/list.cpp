@@ -63,7 +63,7 @@ discard_from(T *item, rogue::Slots<T, MAXITEMS> &slots)
  *	Free up an item
  */
 int
-discard(Item *item)
+discard(Item &item)
 {
 	/*
 	 * get_item() compares the item it gave last with the one at that pack
@@ -71,7 +71,7 @@ discard(Item *item)
 	 * new item that reused the slot; a freed item's address can be reused
 	 * too, so forget it.
 	 */
-	if (game().pool.item(game().turn.last_item) == item)
+	if (game().pool.item(game().turn.last_item) == &item)
 		game().turn.last_item = std::nullopt;
 	/*
 	 * A monster after this item goes for the hero instead. add_pack() does
@@ -79,15 +79,15 @@ discard(Item *item)
 	 * pack item and is discarded: the original then chased the freed slot's
 	 * old position until the slot was reused.
 	 */
-	if (std::optional<ItemId> id = game().pool.id_of(item))
+	if (std::optional<ItemId> id = game().pool.id_of(&item))
 		for (Creature &mp : game().level.monsters)
 			if (mp.t_dest == Destination(*id))
 				mp.t_dest = Hero{};
-	return discard_from(item, game().pool.items);
+	return discard_from(&item, game().pool.items);
 }
 
 int
-discard(Creature *item)
+discard(Creature &item)
 {
-	return discard_from(item, game().pool.creatures);
+	return discard_from(&item, game().pool.creatures);
 }

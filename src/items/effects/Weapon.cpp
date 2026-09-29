@@ -32,8 +32,8 @@ static constexpr KindTable<WeaponType, init_weps> init_dam = {
 struct JoinedPile {};
 using Landing = std::variant<std::monostate, Coord, JoinedPile>;
 
-static Landing	fallpos(Item *obj);
-static std::string	short_name(Item *obj);
+static Landing	fallpos(const Item &obj);
+static std::string	short_name(const Item &obj);
 
 /*
  * missile:
@@ -49,7 +49,7 @@ missile(int ydelta, int xdelta)
 	 */
 	if ((obj = get_item("throw", ItemKind::Weapon)) == nullptr)
 		return;
-	if (!can_drop(obj) || is_current(obj))
+	if (!can_drop(*obj) || is_current(*obj))
 		return;
 	/*
 	 * Get rid of the thing.  If it is a non-multiple item object, or
@@ -76,14 +76,14 @@ missile(int ydelta, int xdelta)
 		nitem->o_count = 1;
 		obj = nitem;
 	}
-	do_motion(obj, ydelta, xdelta);
+	do_motion(*obj, ydelta, xdelta);
 	/*
 	 * AHA! Here it has hit something.  If it is a wall or a door,
 	 * or if it misses (combat) the monster, put it on the floor
 	 */
 	if (moat(obj->o_pos.y, obj->o_pos.x) == nullptr
-		|| !hit_monster(obj->o_pos.y, obj->o_pos.x, obj))
-			fall(obj, true);
+		|| !hit_monster(obj->o_pos.y, obj->o_pos.x, *obj))
+			fall(*obj, true);
 }
 
 /*
@@ -92,7 +92,7 @@ missile(int ydelta, int xdelta)
  *	across the room
  */
 void
-do_motion(Item *obj, int ydelta, int xdelta)
+do_motion(Item &obj, int ydelta, int xdelta)
 {
 	unsigned char under = '@';
 	rogue::Player &player = game().player;
@@ -100,29 +100,29 @@ do_motion(Item *obj, int ydelta, int xdelta)
 	/*
 	 * Come fly with us ...
 	 */
-	obj->o_pos = player.body.t_pos;
+	obj.o_pos = player.body.t_pos;
 	for (;;) {
 		int ch;
 
 		/*
 		 * Erase the old one
 		 */
-		if (under != '@' && !(obj->o_pos == player.body.t_pos) && cansee(obj->o_pos.y, obj->o_pos.x))
-			display().draw_tile(obj->o_pos, under);
+		if (under != '@' && !(obj.o_pos == player.body.t_pos) && cansee(obj.o_pos.y, obj.o_pos.x))
+			display().draw_tile(obj.o_pos, under);
 		/*
 		 * Get the new position
 		 */
-		obj->o_pos.y += ydelta;
-		obj->o_pos.x += xdelta;
+		obj.o_pos.y += ydelta;
+		obj.o_pos.x += xdelta;
 
-		if (step_ok(ch = winat(obj->o_pos.y, obj->o_pos.x)) && ch != DOOR) {
+		if (step_ok(ch = winat(obj.o_pos.y, obj.o_pos.x)) && ch != DOOR) {
 			/*
 			 * It hasn't hit anything yet, so display it
 			 * If it alright.
 			 */
-			if (cansee(obj->o_pos.y, obj->o_pos.x)) {
-				under = game().level.at(obj->o_pos);
-				display().draw_tile(obj->o_pos, glyph_of(obj->o_type));
+			if (cansee(obj.o_pos.y, obj.o_pos.x)) {
+				under = game().level.at(obj.o_pos);
+				display().draw_tile(obj.o_pos, glyph_of(obj.o_type));
 				tick_pause();
 			} else
 				under = '@';
@@ -134,11 +134,11 @@ do_motion(Item *obj, int ydelta, int xdelta)
 
 static
 std::string
-short_name(Item *obj)
+short_name(const Item &obj)
 {
-	switch (obj->o_type) {
-		case ItemKind::Weapon: return std::string(w_names[obj->which<WeaponType>()]);
-		case ItemKind::Armor: return std::string(a_names[obj->which<ArmorType>()]);
+	switch (obj.o_type) {
+		case ItemKind::Weapon: return std::string(w_names[obj.which<WeaponType>()]);
+		case ItemKind::Armor: return std::string(a_names[obj.which<ArmorType>()]);
 		case ItemKind::Food: return "food";
 		case ItemKind::Potion:
 		case ItemKind::Scroll:
@@ -159,7 +159,7 @@ short_name(Item *obj)
  *	Drop an item someplace around here.
  */
 void
-fall(Item *obj, bool pr)
+fall(Item &obj, bool pr)
 {
 	int index;
 	rogue::Level &level = game().level;
@@ -170,18 +170,18 @@ fall(Item *obj, bool pr)
 		const Coord fpos = std::get<Coord>(landing);
 
 		index = INDEX(fpos.y, fpos.x);
-		level.map[index] = glyph_of(obj->o_type);
-		obj->o_pos = fpos;
+		level.map[index] = glyph_of(obj.o_type);
+		obj.o_pos = fpos;
 		if (cansee(fpos.y, fpos.x))
 		{
-			display().draw_tile(fpos, glyph_of(obj->o_type),
-					(level.flags_at(obj->o_pos).test(MapFlag::Passage) ||
-					 level.flags_at(obj->o_pos).test(MapFlag::Maze))
+			display().draw_tile(fpos, glyph_of(obj.o_type),
+					(level.flags_at(obj.o_pos).test(MapFlag::Passage) ||
+					 level.flags_at(obj.o_pos).test(MapFlag::Maze))
 						? TileStyle::Inverse : TileStyle::Normal);
 			if (moat(fpos.y,fpos.x) != nullptr)
-				moat(fpos.y,fpos.x)->t_oldch = glyph_of(obj->o_type);
+				moat(fpos.y,fpos.x)->t_oldch = glyph_of(obj.o_type);
 		}
-		level.objects.push_front(obj);
+		level.objects.push_front(&obj);
 		return;
 	}
 	if (std::holds_alternative<JoinedPile>(landing))
@@ -197,22 +197,22 @@ fall(Item *obj, bool pr)
  *	Set up the initial goodies for a weapon
  */
 void
-init_weapon(Item *weap, WeaponType type)
+init_weapon(Item &weap, WeaponType type)
 {
 	const struct init_weps *iwp;
 
 	iwp = &init_dam[type];
-	weap->o_damage = iwp->iw_dam;
-	weap->o_hurldmg = iwp->iw_hrl;
-	weap->o_launch = iwp->iw_launch;
-	weap->o_flags = iwp->iw_flags;
-	if (weap->o_flags.test(ISMANY))
+	weap.o_damage = iwp->iw_dam;
+	weap.o_hurldmg = iwp->iw_hrl;
+	weap.o_launch = iwp->iw_launch;
+	weap.o_flags = iwp->iw_flags;
+	if (weap.o_flags.test(ISMANY))
 	{
-		weap->o_count = rnd(8) + 8;
-		weap->o_group = game().items.group++;
+		weap.o_count = rnd(8) + 8;
+		weap.o_group = game().items.group++;
 	}
 	else
-		weap->o_count = 1;
+		weap.o_count = 1;
 }
 
 /*
@@ -220,7 +220,7 @@ init_weapon(Item *weap, WeaponType type)
  *	Does the missile hit the monster?
  */
 bool
-hit_monster(int y, int x, Item *obj)
+hit_monster(int y, int x, Item &obj)
 {
 	Creature *mo = moat(y, x);
 
@@ -255,7 +255,7 @@ wield(void)
 	rogue::Player &player = game().player;
 
 	oweapon = player.weapon_item();
-	if (!can_drop(player.weapon_item()))
+	if (oweapon != nullptr && !can_drop(*oweapon))
 	{
 		player.weapon = game().pool.id_of(oweapon);
 		return;
@@ -273,13 +273,13 @@ bad:
 		msg("you can't wield armor");
 		goto bad;
 	}
-	if (is_current(obj))
+	if (is_current(*obj))
 		goto bad;
 
-	sp = inv_name(obj, true);
+	sp = inv_name(*obj, true);
 	player.weapon = game().pool.id_of(obj);
 	ifterse("now wielding {} ({:c})", "you are now wielding {} ({:c})",
-		sp, pack_char(obj));
+		sp, pack_char(*obj));
 }
 
 /*
@@ -288,15 +288,15 @@ bad:
  */
 static
 Landing
-fallpos(Item *obj)
+fallpos(const Item &obj)
 {
 	int y, x, cnt = 0, ch;
 	Coord newpos;
 	Item *onfloor;
 	rogue::Player &player = game().player;
 
-	for (y = obj->o_pos.y - 1; y <= obj->o_pos.y + 1; y++) {
-		for (x = obj->o_pos.x - 1; x <= obj->o_pos.x + 1; x++) {
+	for (y = obj.o_pos.y - 1; y <= obj.o_pos.y + 1; y++) {
+		for (x = obj.o_pos.x - 1; x <= obj.o_pos.x + 1; x++) {
 			/*
 			 * check to make certain the spot is empty, if it is,
 			 * put the object there, set it in the level list
@@ -311,11 +311,11 @@ fallpos(Item *obj)
 			}
 			if (step_ok(ch)
 				&& (onfloor = find_obj(y, x))
-				&& onfloor->o_type == obj->o_type
+				&& onfloor->o_type == obj.o_type
 				&& onfloor->o_group
-				&& onfloor->o_group == obj->o_group)
+				&& onfloor->o_group == obj.o_group)
 			{
-				onfloor->o_count += obj->o_count;
+				onfloor->o_count += obj.o_count;
 				return JoinedPile{};
 			}
 		}

@@ -56,7 +56,7 @@ TEST_F(PoolCheck, EachThingIsListedOnce)
 	game().level.objects.remove(obj);
 	EXPECT_EQ(problems(), "");
 
-	discard(obj);
+	discard(*obj);
 	EXPECT_NE(problems(), "");		// free but still in the pack
 }
 
@@ -140,8 +140,8 @@ TEST_F(PoolCheck, DiscardedButListed)
 	Creature *tp = new_creature();
 	game().level.monsters.push_front(tp);
 	EXPECT_EQ(problems(), "");
-	discard(obj);
-	discard(tp);
+	discard(*obj);
+	discard(*tp);
 	EXPECT_NE(problems(), "");
 	EXPECT_EQ(game().level.objects.first(), nullptr);
 	EXPECT_EQ(game().level.monsters.first(), nullptr);

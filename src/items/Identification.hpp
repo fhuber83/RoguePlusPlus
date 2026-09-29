@@ -17,7 +17,7 @@ namespace items {
  * inv_name:
  *	Return the name of something as it would appear in an inventory.
  */
-std::string inv_name(const Item *obj, bool drop);
+std::string inv_name(const Item &obj, bool drop);
 
 /*
  * discovered:

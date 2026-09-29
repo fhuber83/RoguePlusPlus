@@ -38,7 +38,7 @@ bool turn_see(bool turn_off);
  * th_effect:
  *	Compute the effect of a thrown potion hitting a monster.
  */
-void th_effect(Item *obj, Creature *tp);
+void th_effect(const Item &obj, Creature &tp);
 
 }  // namespace items::effects
 }  // namespace rogue

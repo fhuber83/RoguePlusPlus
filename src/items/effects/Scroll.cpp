@@ -79,7 +79,7 @@ read_scroll()
 		std::optional<Coord> mp = plop_monster(player.body.t_pos.y, player.body.t_pos.x);
 
 		if (mp && (mo=new_creature()) != nullptr)
-			new_monster(mo, randmonster(false), *mp);
+			new_monster(*mo, randmonster(false), *mp);
 		else
 			ifterse("you hear a faint cry of anguish",
 				"you hear a faint cry of anguish in the distance");
@@ -239,7 +239,7 @@ read_scroll()
 				msg("your {} vanishes in a puff of smoke",
 				w_names[player.weapon_item()->which<WeaponType>()]);
 				player.body.t_pack.remove(player.weapon_item());
-				discard(player.weapon_item());
+				discard(*player.weapon_item());
 				player.weapon = std::nullopt;
 			} else {
 				player.weapon_item()->o_enemy = pick_mons();
@@ -284,7 +284,7 @@ read_scroll()
 	call_it(items.s_know[obj->which<Scroll>()], items.s_guess[obj->which<Scroll>()]);
 
 	if (discardit)
-	discard(obj);
+	discard(*obj);
 }
 
 }  // namespace rogue::items::effects

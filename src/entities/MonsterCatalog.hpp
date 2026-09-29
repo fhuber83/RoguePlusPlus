@@ -30,7 +30,7 @@ char pick_mons();
  * new_monster:
  *	Pick a new monster and add it to the list.
  */
-void new_monster(Creature *tp, unsigned char type, Coord cp);
+void new_monster(Creature &tp, unsigned char type, Coord cp);
 
 /*
  * f_restor:
@@ -54,7 +54,7 @@ void wanderer();
  * give_pack:
  *	Give a pack to a monster if it deserves one.
  */
-void give_pack(Creature *tp);
+void give_pack(Creature &tp);
 
 /*
  * wake_monster:

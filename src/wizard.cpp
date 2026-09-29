@@ -64,7 +64,7 @@ whatis(void)
 	 */
 	if (obj->o_enemy)
 		obj->o_flags.set(ISREVEAL);
-	msg("{}", inv_name(obj, false));
+	msg("{}", inv_name(*obj, false));
 }
 
 

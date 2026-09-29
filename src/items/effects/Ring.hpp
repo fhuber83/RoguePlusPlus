@@ -34,7 +34,7 @@ int ring_eat(Hand hand);
  * ring_num:
  *	Print ring bonuses.
  */
-std::string ring_num(const Item *obj);
+std::string ring_num(const Item &obj);
 
 }  // namespace items::effects
 }  // namespace rogue

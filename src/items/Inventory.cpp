@@ -19,28 +19,30 @@ pack_obj(unsigned char ch, unsigned char *chp)
 
 /*
  * add_pack:
- *	Pick up an object and add it to the pack.  If the argument is
- *	non-null use it as the linked_list pointer instead of gettting
- *	it off the ground.
+ *	Pick up an object and add it to the pack.  If an item is given, add
+ *	it instead of getting it off the ground.
  */
 void
-add_pack(Item *obj, bool silent)
+add_pack(Maybe<Item> given, bool silent)
 {
-	Item *op, *lp = nullptr;
+	Item *obj, *op, *lp = nullptr;
 	Creature *mp;
 	bool exact, from_floor;
 	unsigned char floor;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 
-	if (obj == nullptr)
+	if (!given)
 	{
 		from_floor = true;
 		if ((obj = find_obj(player.body.t_pos.y, player.body.t_pos.x)) == nullptr)
 			return;
 	}
 	else
+	{
 		from_floor = false;
+		obj = &*given;
+	}
 	/*
 	 * Link it into the pack.  Search the pack for a object of similar type
 	 * if there isn't one, stuff it at the beginning, if there is, look for one
@@ -74,7 +76,7 @@ add_pack(Item *obj, bool silent)
 					display().draw_tile(player.body.t_pos, floor);
 					level.at(player.body.t_pos) = floor;
 				}
-				discard(obj);
+				discard(*obj);
 				obj = op;
 				goto picked_up;
 			}
@@ -164,7 +166,7 @@ add_pack(Item *obj, bool silent)
 		if (exact && is_multiple(obj->o_type))
 		{
 			op->o_count++;
-			discard(obj);
+			discard(*obj);
 			obj = op;
 			goto picked_up;
 		}
@@ -206,7 +208,7 @@ picked_up:
 	 */
 	if (!silent)
 		msg("{}{} ({:c})",noterse("you now have "),
-			inv_name(obj, true), pack_char(obj));
+			inv_name(*obj, true), pack_char(*obj));
 }
 
 /*
@@ -236,7 +238,7 @@ inventory(const List<Item> &list, ItemFilter type, std::string_view lstr)
 		  !(type.is(ItemKind::Stick) && obj->o_enemy && obj->charges()))
 			continue;
 		n_objs++;
-		add_line(lstr, std::format("{}) {}", static_cast<char>(ch), inv_name(obj, false)));
+		add_line(lstr, std::format("{}) {}", static_cast<char>(ch), inv_name(*obj, false)));
 	}
 	if (n_objs == 0)
 	{
@@ -276,7 +278,7 @@ pick_up(unsigned char ch)
 			if (mp->t_dest && game().where(*mp->t_dest) == obj->o_pos)
 				mp->t_dest = Hero{};
 		game().level.objects.remove(obj);
-		discard(obj);
+		discard(*obj);
 		game().level.room(*player.body.t_room).r_goldval = 0;
 		break;
 	}
@@ -289,7 +291,7 @@ pick_up(unsigned char ch)
 	case AMULET:
 	case RING:
 	case STICK:
-		add_pack(nullptr, false);
+		add_pack(std::nullopt, false);
 		break;
 	}
 }
@@ -383,7 +385,7 @@ get_item(std::string_view purpose, ItemFilter type)
  *	Return which character would address a pack object
  */
 unsigned char
-pack_char(Item *obj)
+pack_char(const Item &obj)
 {
 	Item *item;
 	unsigned char c;
@@ -391,7 +393,7 @@ pack_char(Item *obj)
 
 	c = 'a';
 	for (item = player.body.t_pack.first(); item != nullptr; item = player.body.t_pack.after(item))
-		if (item == obj)
+		if (item == &obj)
 			return c;
 		else
 			c++;
@@ -437,7 +439,7 @@ drop(void)
 	}
 	if ((op = get_item("drop", ItemFilter::all())) == nullptr)
 		return;
-	if (!can_drop(op))
+	if (!can_drop(*op))
 		return;
 	/*
 	 * Take it out of the pack
@@ -468,7 +470,7 @@ drop(void)
 	op->o_pos = player.body.t_pos;
 	if (op->o_type == ItemKind::Amulet)
 		player.has_amulet = false;
-	msg("dropped {}", inv_name(op, true));
+	msg("dropped {}", inv_name(*op, true));
 }
 
 /*
@@ -476,36 +478,34 @@ drop(void)
  *	Do special checks for dropping or unweilding|unwearing|unringing
  */
 bool
-can_drop(Item *op)
+can_drop(const Item &op)
 {
 	rogue::Player &player = game().player;
-	if (op == nullptr)
+	if (&op != player.armor_item() && &op != player.weapon_item()
+		&& &op != player.ring_item(Hand::Left) && &op != player.ring_item(Hand::Right))
 		return true;
-	if (op != player.armor_item() && op != player.weapon_item()
-		&& op != player.ring_item(Hand::Left) && op != player.ring_item(Hand::Right))
-		return true;
-	if (op->o_flags.test(ISCURSED)) {
+	if (op.o_flags.test(ISCURSED)) {
 		msg("you can't.  It appears to be cursed");
 		return false;
 	}
-	if (op == player.weapon_item())
+	if (&op == player.weapon_item())
 		player.weapon = std::nullopt;
-	else if (op == player.armor_item()) {
+	else if (&op == player.armor_item()) {
 		waste_time();
 		player.armor = std::nullopt;
 	} else {
 		Hand hand;
 
-		if (op != player.ring_item(hand = Hand::Left))
-			if (op != player.ring_item(hand = Hand::Right)) {
+		if (&op != player.ring_item(hand = Hand::Left))
+			if (&op != player.ring_item(hand = Hand::Right)) {
 				if constexpr (rogue::config::debug_checks)
 					debug("Candrop called with funny thing");
 				return true;
 			}
 		player.rings[hand] = std::nullopt;
-		switch (op->which<Ring>()) {
+		switch (op.which<Ring>()) {
 		case Ring::AddStrength:
-			chg_str(-op->o_ac);
+			chg_str(-op.o_ac);
 			break;
 		case Ring::SeeInvisible:
 			unsee();

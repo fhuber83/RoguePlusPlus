@@ -358,7 +358,7 @@ total_winner(void)
 	if (worth < 0)
 		worth = 0;
 	display().write_at(c - 'a' + 1, 0,
-		std::format("{}) {:5}  {}", static_cast<char>(c), worth, inv_name(obj, false)));
+		std::format("{}) {:5}  {}", static_cast<char>(c), worth, inv_name(*obj, false)));
 	player.purse += worth;
 	}
 	display().write_at(c - 'a' + 1, 0,

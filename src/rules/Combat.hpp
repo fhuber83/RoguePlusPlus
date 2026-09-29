@@ -4,8 +4,8 @@
  * Combat: the rogue attacking a monster and a monster attacking him, saving
  * throws, killing a monster and gaining experience levels.
  *
- * Included by rogue.h after the legacy types (str_t) and entities/Item.hpp
- * (Item)/Creature.hpp (Creature).
+ * Included by rogue.h after the legacy types (str_t), core/Maybe.hpp (Maybe)
+ * and entities/Item.hpp (Item)/Creature.hpp (Creature).
  */
 
 namespace rogue {
@@ -33,13 +33,13 @@ enum class SaveThrow {
  *	The player attacks the monster (mn is its glyph on the map). Returns
  *	whether he hit it.
  */
-bool fight(Coord mp, char mn, Item *weap, bool thrown);
+bool fight(Coord mp, char mn, Maybe<Item> weap, bool thrown);
 
 /*
  * attack:
  *	The monster attacks the player.
  */
-void attack(Creature *mp);
+void attack(Creature &mp);
 
 /*
  * swing:
@@ -57,7 +57,7 @@ void check_level();
  * save_throw:
  *	See if a creature save against something.
  */
-bool save_throw(SaveThrow which, Creature *tp);
+bool save_throw(SaveThrow which, const Creature &tp);
 
 /*
  * save:
@@ -69,7 +69,7 @@ bool save(SaveThrow which);
  * is_magic:
  *	Returns true if an object radiates magic.
  */
-bool is_magic(Item *obj);
+bool is_magic(const Item &obj);
 
 /*
  * raise_level:
@@ -81,7 +81,7 @@ void raise_level();
  * killed:
  *	Called to put a monster to death.
  */
-void killed(Creature *tp, bool pr);
+void killed(Creature &tp, bool pr);
 
 }  // namespace rules
 }  // namespace rogue

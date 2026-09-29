@@ -28,6 +28,7 @@
 #include "core/Dice.hpp"
 #include "core/Flags.hpp"
 #include "core/KindTable.hpp"
+#include "core/Maybe.hpp"
 #include "core/Random.hpp"
 #include "entities/List.hpp"
 #include "game/Slots.hpp"
@@ -112,6 +113,8 @@ struct h_list {
  * Coordinate data type
  */
 using rogue::Coord;  // see core/Coord.hpp
+using rogue::Maybe;  // see core/Maybe.hpp
+using rogue::maybe;
 using coord = rogue::Coord;
 
 // Game output goes through the display, see ui/Display.hpp
@@ -456,8 +459,8 @@ std::string_view	noterse(std::string_view str);
 // list.cpp
 Item	*new_item(void);
 Creature	*new_creature(void);
-int	discard(Item *item);
-int	discard(Creature *item);
+int	discard(Item &item);
+int	discard(Creature &item);
 
 /*
  * Empties a list of creatures or items and gives them back to the pool
@@ -471,7 +474,7 @@ list_free(rogue::List<T> &list)
 	while ((item = list.first()) != nullptr)
 	{
 	list.remove(item);
-	discard(item);
+	discard(*item);
 	}
 }
 
@@ -501,14 +504,14 @@ void	call(void);
 void	do_macro(std::string &macro);
 Item	*find_obj(int y, int x);
 bool	add_haste(bool potion);
-bool	is_current(Item *obj);
+bool	is_current(const Item &obj);
 bool	get_dir(void);
 std::optional<Coord>	find_dir(unsigned char ch);
 bool	step_ok(unsigned char ch);
 bool	offmap(int y, int x);
 std::string_view	tr_name(Trap type);
 std::string_view	vowelstr(std::string_view str);
-char	goodch(Item *obj);
+char	goodch(const Item &obj);
 int	sign(int nm);
 unsigned char	winat(int y, int x);
 int	spread(int nm);
@@ -530,7 +533,7 @@ void	do_run(unsigned char ch);
 void	do_move(int dy, int dx);
 void	door_open(struct room *rp);
 void	descend(std::string_view mesg);
-Coord	rndmove(Creature *who);
+Coord	rndmove(const Creature &who);
 
 // rip.cpp
 void	score(int amount, int flags, char monst);

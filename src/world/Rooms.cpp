@@ -116,7 +116,7 @@ enter_room(Coord cp)
 				 * chase code now
 				 */
 				tp = moat(y, x);
-				if (tp == nullptr || !see_monst(tp))
+				if (tp == nullptr || !see_monst(*tp))
 					display().draw_tile({x, y}, level.at(y, x));
 				else {
 					tp->t_oldch = level.at(y, x);

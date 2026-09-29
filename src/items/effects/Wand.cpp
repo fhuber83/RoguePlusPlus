@@ -7,24 +7,24 @@ namespace rogue::items::effects {
  *	Set up a new stick
  */
 void
-fix_stick(Item *cur)
+fix_stick(Item &cur)
 {
-	if (game().items.ws_type[cur->which<Stick>()] == "staff")
-		cur->o_damage = "2d3";
+	if (game().items.ws_type[cur.which<Stick>()] == "staff")
+		cur.o_damage = "2d3";
 	else
-		cur->o_damage = "1d1";
-	cur->o_hurldmg = "1d1";
+		cur.o_damage = "1d1";
+	cur.o_hurldmg = "1d1";
 
-	cur->charges() = 3 + rnd(5);
-	switch (cur->which<Stick>())
+	cur.charges() = 3 + rnd(5);
+	switch (cur.which<Stick>())
 	{
 	case Stick::Striking:
-		cur->o_hplus = 100;
-		cur->o_dplus = 3;
-		cur->o_damage = "1d8";
+		cur.o_hplus = 100;
+		cur.o_dplus = 3;
+		cur.o_damage = "1d8";
 		break;
 	case Stick::Light:
-		cur->charges() = 10 + rnd(10);
+		cur.charges() = 10 + rnd(10);
 		break;
 	default:
 		break;
@@ -134,7 +134,7 @@ do_zap()
 				{
 					msg("the {} vanishes in a puff of smoke",
 						monsters[monster-'A'].m_name);
-					killed(tp, false);
+					killed(*tp, false);
 				}
 				else
 					msg("you hear a maniacal chuckle in the distance.");
@@ -145,13 +145,13 @@ do_zap()
 
 				pp = std::move(tp->t_pack);
 				game().level.monsters.remove(tp);
-				if (see_monst(tp))
+				if (see_monst(*tp))
 					display().draw_tile({x, y}, game().level.at(y, x));
 				oldch = tp->t_oldch;
 				turn.delta.y = y;
 				turn.delta.x = x;
-				new_monster(tp, monster = rnd(26) + 'A', turn.delta);
-				if (see_monst(tp))
+				new_monster(*tp, monster = rnd(26) + 'A', turn.delta);
+				if (see_monst(*tp))
 					display().draw_tile({x, y}, monster);
 				tp->t_oldch = oldch;
 				tp->t_pack = std::move(pp);
@@ -165,7 +165,7 @@ do_zap()
 			}
 			else
 			{
-				if (see_monst(tp))
+				if (see_monst(*tp))
 					display().draw_tile({x, y}, tp->t_oldch);
 				if (which_one == Stick::TeleportAway)
 				{
@@ -176,7 +176,7 @@ do_zap()
 						new_yx = rnd_pos(&game().level.rooms[rm]);
 					}  while (!(is_floor(winat(new_yx.y, new_yx.x))));
 					tp->t_pos = new_yx;
-					if (see_monst(tp))
+					if (see_monst(*tp))
 						display().draw_tile(tp->t_pos, tp->t_disguise);
 					else if (player.body.t_flags.test(SEEMONST))
 						display().draw_tile(tp->t_pos, tp->t_disguise, TileStyle::Inverse);
@@ -208,9 +208,9 @@ do_zap()
 		bolt.o_flags = ISMISL;
 		if (player.weapon_item() != nullptr)
 			bolt.o_launch = launched_by(player.weapon_item()->which<WeaponType>());
-		do_motion(&bolt, turn.delta.y, turn.delta.x);
-		if ((tp = moat(bolt.o_pos.y, bolt.o_pos.x)) != nullptr && !save_throw(SaveThrow::Magic, tp))
-			hit_monster(bolt.o_pos.y, bolt.o_pos.x, &bolt);
+		do_motion(bolt, turn.delta.y, turn.delta.x);
+		if ((tp = moat(bolt.o_pos.y, bolt.o_pos.x)) != nullptr && !save_throw(SaveThrow::Magic, *tp))
+			hit_monster(bolt.o_pos.y, bolt.o_pos.x, bolt);
 		else
 		msg("the missle vanishes with a puff of smoke");
 	}
@@ -230,7 +230,7 @@ do_zap()
 				obj->o_damage = "2d8";
 				obj->o_dplus = 4;
 			}
-			fight(turn.delta, tp->t_type, obj, false);
+			fight(turn.delta, tp->t_type, *obj, false);
 		}
 		break;
 	case Stick::HasteMonster:
@@ -331,7 +331,7 @@ drain()
 	{
 		mp = *dp;
 		if ((mp->t_stats.s_hpt -= cnt) <= 0)
-			killed(mp, see_monst(mp));
+			killed(*mp, see_monst(*mp));
 		else
 			start_run(mp->t_pos);
 	}
@@ -407,13 +407,13 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 				changed = !changed;
 				if (tp->t_oldch != '@')
 					tp->t_oldch = game().level.at(pos);
-				if (!save_throw(SaveThrow::Magic, tp) || is_frost) {
+				if (!save_throw(SaveThrow::Magic, *tp) || is_frost) {
 					bolt.o_pos = pos;
 					used = true;
 					if (tp->t_type == 'D' && name == "flame")
 						msg("the flame bounces off the dragon");
 					else {
-						hit_monster(pos.y, pos.x, &bolt);
+						hit_monster(pos.y, pos.x, bolt);
 						if (display().tile_at(pos) != dirch)
 							spotpos[i].s_under = display().tile_at(pos);
 					}
@@ -461,11 +461,11 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
  *	Return an appropriate string for a wand charge
  */
 std::string
-charge_str(const Item *obj)
+charge_str(const Item &obj)
 {
-	if (!obj->o_flags.test(ISKNOW))
+	if (!obj.o_flags.test(ISKNOW))
 		return "";
-	return std::format(" [{} charges]", obj->charges());
+	return std::format(" [{} charges]", obj.charges());
 }
 
 }  // namespace rogue::items::effects

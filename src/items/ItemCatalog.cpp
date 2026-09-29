@@ -83,7 +83,7 @@ new_thing()
 	case 3:
 		cur->o_type = ItemKind::Weapon;
 		cur->set_which(static_cast<WeaponType>(rnd(kind_count<WeaponType>)));
-		init_weapon(cur, cur->which<WeaponType>());
+		init_weapon(*cur, cur->which<WeaponType>());
 		if ((k = rnd(100)) < 10)
 		{
 			cur->o_flags.set(ISCURSED);
@@ -145,7 +145,7 @@ new_thing()
 	case 6:
 		cur->o_type = ItemKind::Stick;
 		cur->set_which(pick_one(items.ws_magic));
-		fix_stick(cur);
+		fix_stick(*cur);
 		break;
 	default:
 		if constexpr (rogue::config::debug_checks) {

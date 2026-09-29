@@ -27,13 +27,13 @@ init_player()
 	obj = new_item();
 	obj->o_type = ItemKind::Weapon;
 	obj->set_which(WeaponType::Mace);
-	init_weapon(obj, WeaponType::Mace);
+	init_weapon(*obj, WeaponType::Mace);
 	obj->o_hplus = 1;
 	obj->o_dplus = 1;
 	obj->o_flags.set(ISKNOW);
 	obj->o_count = 1;
 	obj->o_group = 0;
-	add_pack(obj, true);
+	add_pack(*obj, true);
 	game().player.weapon = game().pool.id_of(obj);
 	/*
 	 * Now a +1 bow
@@ -41,24 +41,24 @@ init_player()
 	obj = new_item();
 	obj->o_type = ItemKind::Weapon;
 	obj->set_which(WeaponType::ShortBow);
-	init_weapon(obj, WeaponType::ShortBow);
+	init_weapon(*obj, WeaponType::ShortBow);
 	obj->o_hplus = 1;
 	obj->o_dplus = 0;
 	obj->o_count = 1;
 	obj->o_group = 0;
 	obj->o_flags.set(ISKNOW);
-	add_pack(obj, true);
+	add_pack(*obj, true);
 	/*
 	 * Now some arrows
 	 */
 	obj = new_item();
 	obj->o_type = ItemKind::Weapon;
 	obj->set_which(WeaponType::Arrow);
-	init_weapon(obj, WeaponType::Arrow);
+	init_weapon(*obj, WeaponType::Arrow);
 	obj->o_count = rnd(15) + 25;
 	obj->o_hplus = obj->o_dplus = 0;
 	obj->o_flags.set(ISKNOW);
-	add_pack(obj, true);
+	add_pack(*obj, true);
 	/*
 	 * And his suit of armor
 	 */
@@ -70,7 +70,7 @@ init_player()
 	obj->o_count = 1;
 	obj->o_group = 0;
 	game().player.armor = game().pool.id_of(obj);
-	add_pack(obj, true);
+	add_pack(*obj, true);
 	/*
 	 * Give him some food too
 	 */
@@ -79,7 +79,7 @@ init_player()
 	obj->o_count = 1;
 	obj->set_which(Food::Ration);
 	obj->o_group = 0;
-	add_pack(obj, true);
+	add_pack(*obj, true);
 }
 
 /*

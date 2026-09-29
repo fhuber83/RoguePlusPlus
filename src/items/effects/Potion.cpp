@@ -99,10 +99,10 @@ quaff(void)
 			show = false;
 			for (tp = game().level.objects.first(); tp != nullptr; tp = game().level.objects.after(tp))
 			{
-				if (is_magic(tp))
+				if (is_magic(*tp))
 				{
 					show = true;
-					display().draw_tile(tp->o_pos, goodch(tp));
+					display().draw_tile(tp->o_pos, goodch(*tp));
 					items.p_know[Potion::MagicDetection] = true;
 				}
 			}
@@ -110,7 +110,7 @@ quaff(void)
 			{
 				for (tp = th->t_pack.first(); tp != nullptr; tp = th->t_pack.after(tp))
 				{
-					if (is_magic(tp))
+					if (is_magic(*tp))
 					{
 						show = true;
 						display().draw_tile(th->t_pos, MAGIC);
@@ -210,7 +210,7 @@ quaff(void)
 	call_it(items.p_know[obj->which<Potion>()], items.p_guess[obj->which<Potion>()]);
 
 	if (discardit)
-		discard(obj);
+		discard(*obj);
 }
 
 /*
@@ -224,7 +224,7 @@ invis_on(void)
 
 	game().player.body.t_flags.set(CANSEE);
 	for (th = game().level.monsters.first(); th != nullptr; th = game().level.monsters.after(th))
-	if (th->t_flags.test(ISINVIS) && see_monst(th))
+	if (th->t_flags.test(ISINVIS) && see_monst(*th))
 	{
 		display().draw_tile(th->t_pos, th->t_disguise);
 	}
@@ -243,9 +243,9 @@ turn_see(bool turn_off)
 
 	add_new = false;
 	for (mp = game().level.monsters.first(); mp != nullptr; mp = game().level.monsters.after(mp)) {
-		can_see = (see_monst(mp) || (was_there = display().tile_at(mp->t_pos)) == mp->t_type);
+		can_see = (see_monst(*mp) || (was_there = display().tile_at(mp->t_pos)) == mp->t_type);
 		if (turn_off) {
-			if (!see_monst(mp) && mp->t_oldch != '@')
+			if (!see_monst(*mp) && mp->t_oldch != '@')
 				display().draw_tile(mp->t_pos, mp->t_oldch);
 		} else {
 			if (!can_see) {
@@ -267,31 +267,31 @@ turn_see(bool turn_off)
  *	Compute the effect of this potion hitting a monster.
  */
 void
-th_effect(Item *obj, Creature *tp)
+th_effect(const Item &obj, Creature &tp)
 {
-	switch (obj->which<Potion>())
+	switch (obj.which<Potion>())
 	{
 	case Potion::Confusion:
 	case Potion::Blindness:
-		tp->t_flags.set(ISHUH);
-		msg("the {} appears confused", monsters[tp->t_type-'A'].m_name);
+		tp.t_flags.set(ISHUH);
+		msg("the {} appears confused", monsters[tp.t_type-'A'].m_name);
 		break;
 	case Potion::Paralysis:
-		tp->t_flags.unset(ISRUN);
-		tp->t_flags.set(ISHELD);
+		tp.t_flags.unset(ISRUN);
+		tp.t_flags.set(ISHELD);
 		break;
 	case Potion::Healing:
 	case Potion::ExtraHealing:
-		if ((tp->t_stats.s_hpt += rnd(8)) > tp->t_stats.s_maxhp)
-		tp->t_stats.s_hpt = ++tp->t_stats.s_maxhp;
+		if ((tp.t_stats.s_hpt += rnd(8)) > tp.t_stats.s_maxhp)
+		tp.t_stats.s_hpt = ++tp.t_stats.s_maxhp;
 		break;
 	case Potion::RaiseLevel:
-		tp->t_stats.s_hpt += 8;
-		tp->t_stats.s_maxhp += 8;
-		tp->t_stats.s_lvl++;
+		tp.t_stats.s_hpt += 8;
+		tp.t_stats.s_maxhp += 8;
+		tp.t_stats.s_lvl++;
 		break;
 	case Potion::Haste:
-		tp->t_flags.set(ISHASTE);
+		tp.t_flags.set(ISHASTE);
 		break;
 	default:
 		break;

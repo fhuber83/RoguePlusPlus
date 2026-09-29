@@ -143,7 +143,7 @@ look(bool wakeup)
 					if (tp->t_oldch != ' ' ||
 						(!level.room(*rp).r_flags.test(RoomFlag::Dark) && !player.body.t_flags.test(ISBLIND)))
 							tp->t_oldch = level.map[index];
-					if (see_monst(tp))
+					if (see_monst(*tp))
 						ch = tp->t_disguise;
 				}
 			}
@@ -271,7 +271,7 @@ eat()
 	if (--obj->o_count < 1)
 	{
 		player.body.t_pack.remove(obj);
-		discard(obj);
+		discard(*obj);
 	}
 	if (player.food_left < 0)
 		player.food_left = 0;
@@ -396,12 +396,10 @@ vowelstr(std::string_view str)
  *	See if the object is one of the currently used items
  */
 bool
-is_current(Item *obj)
+is_current(const Item &obj)
 {
-	if (obj == nullptr)
-		return false;
-	if (obj == game().player.armor_item() || obj == game().player.weapon_item() || obj == game().player.ring_item(Hand::Left)
-		|| obj == game().player.ring_item(Hand::Right)) {
+	if (&obj == game().player.armor_item() || &obj == game().player.weapon_item() || &obj == game().player.ring_item(Hand::Left)
+		|| &obj == game().player.ring_item(Hand::Right)) {
 		msg("That's already in use");
 		return true;
 	}
@@ -527,23 +525,23 @@ step_ok(unsigned char ch)
  * printing.
  */
 char
-goodch(Item *obj)
+goodch(const Item &obj)
 {
 	char ch = MAGIC;
 
-	if (obj->o_flags.test(ISCURSED))
+	if (obj.o_flags.test(ISCURSED))
 		ch = BMAGIC;
-	switch (obj->o_type) {
+	switch (obj.o_type) {
 	case ItemKind::Armor:
-		if (obj->o_ac > a_class[obj->which<ArmorType>()])
+		if (obj.o_ac > a_class[obj.which<ArmorType>()])
 			ch = BMAGIC;
 		break;
 	case ItemKind::Weapon:
-		if (obj->o_hplus < 0 || obj->o_dplus < 0)
+		if (obj.o_hplus < 0 || obj.o_dplus < 0)
 			ch = BMAGIC;
 		break;
 	case ItemKind::Scroll:
-		switch (obj->which<Scroll>()) {
+		switch (obj.which<Scroll>()) {
 		case Scroll::Sleep:
 		case Scroll::CreateMonster:
 		case Scroll::AggravateMonsters:
@@ -554,7 +552,7 @@ goodch(Item *obj)
 		}
 		break;
 	case ItemKind::Potion:
-		switch (obj->which<Potion>()) {
+		switch (obj.which<Potion>()) {
 		case Potion::Confusion:
 		case Potion::Paralysis:
 		case Potion::Poison:
@@ -566,7 +564,7 @@ goodch(Item *obj)
 		}
 		break;
 	case ItemKind::Stick:
-		switch (obj->which<Stick>()) {
+		switch (obj.which<Stick>()) {
 		case Stick::HasteMonster:
 		case Stick::TeleportTo:
 			ch = BMAGIC;
@@ -576,12 +574,12 @@ goodch(Item *obj)
 		}
 		break;
 	case ItemKind::Ring:
-		switch (obj->which<Ring>()) {
+		switch (obj.which<Ring>()) {
 		case Ring::Protection:
 		case Ring::AddStrength:
 		case Ring::IncreaseDamage:
 		case Ring::Dexterity:
-			if (obj->o_ac < 0)
+			if (obj.o_ac < 0)
 				ch = BMAGIC;
 			break;
 		case Ring::AggravateMonster:

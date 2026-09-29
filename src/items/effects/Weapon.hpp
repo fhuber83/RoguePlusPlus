@@ -37,25 +37,25 @@ void missile(int ydelta, int xdelta);
  *	Do the actual motion on the screen done by an object traveling
  *	across the room.
  */
-void do_motion(Item *obj, int ydelta, int xdelta);
+void do_motion(Item &obj, int ydelta, int xdelta);
 
 /*
  * fall:
  *	Drop an item someplace around here.
  */
-void fall(Item *obj, bool pr);
+void fall(Item &obj, bool pr);
 
 /*
  * init_weapon:
  *	Set up the initial goodies for a weapon.
  */
-void init_weapon(Item *weap, WeaponType type);
+void init_weapon(Item &weap, WeaponType type);
 
 /*
  * hit_monster:
  *	Does the missile hit the monster?
  */
-bool hit_monster(int y, int x, Item *obj);
+bool hit_monster(int y, int x, Item &obj);
 
 /*
  * num:

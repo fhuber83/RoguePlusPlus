@@ -257,9 +257,9 @@ treas_room(void)
 		{
 			if ((tp = new_creature()) != nullptr)
 			{
-				new_monster(tp, randmonster(false), mp);
+				new_monster(*tp, randmonster(false), mp);
 				tp->t_flags.set(ISMEAN);	/* no sloughers in THIS room */
-				give_pack(tp);
+				give_pack(*tp);
 			}
 		}
 	}
@@ -401,8 +401,8 @@ do_rooms(void)
 					mp = rnd_pos(rp);
 					mch = winat(mp.y, mp.x);
 				} while (!is_floor(mch));
-				new_monster(tp, randmonster(false), mp);
-				give_pack(tp);
+				new_monster(*tp, randmonster(false), mp);
+				give_pack(*tp);
 			}
 		}
 	}

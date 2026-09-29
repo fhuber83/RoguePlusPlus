@@ -28,7 +28,7 @@ ring_on()
 	/*
 	 * find out which hand to put it on
 	 */
-	if (is_current(obj))
+	if (is_current(*obj))
 		goto no_ring;
 
 	if (player.ring_item(Hand::Left) == nullptr)
@@ -62,7 +62,7 @@ ring_on()
 	}
 
 	msg("{}wearing {} ({:c})", noterse("you are now "),
-		inv_name(obj, true), pack_char(obj));
+		inv_name(*obj, true), pack_char(*obj));
 	return ;
 
 no_ring:
@@ -101,9 +101,9 @@ ring_off(void)
 		game().turn.after = false;
 		return;
 	}
-	packchar = pack_char(obj);
-	if (can_drop(obj))
-		msg("was wearing {}({:c})", inv_name(obj, true), packchar);
+	packchar = pack_char(*obj);
+	if (can_drop(*obj))
+		msg("was wearing {}({:c})", inv_name(*obj, true), packchar);
 }
 
 /*
@@ -168,16 +168,16 @@ ring_eat(Hand hand)
  *	Print ring bonuses
  */
 std::string
-ring_num(const Item *obj)
+ring_num(const Item &obj)
 {
-	if (!obj->o_flags.test(ISKNOW))
+	if (!obj.o_flags.test(ISKNOW))
 		return "";
-	switch (obj->which<Ring>()) {
+	switch (obj.which<Ring>()) {
 	case Ring::Protection:
 	case Ring::AddStrength:
 	case Ring::IncreaseDamage:
 	case Ring::Dexterity:
-		return " " + num(obj->o_ac, 0, RING);
+		return " " + num(obj.o_ac, 0, RING);
 	default:
 		return "";
 	}

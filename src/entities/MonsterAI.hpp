@@ -31,19 +31,19 @@ void start_run(Coord runner);
  * see_monst:
  *	Return true if the hero can see the monster.
  */
-bool see_monst(Creature *mp);
+bool see_monst(const Creature &mp);
 
 /*
  * find_dest:
  *	Find the proper destination for the monster.
  */
-Destination find_dest(Creature *tp);
+Destination find_dest(const Creature &tp);
 
 /*
  * slime_split:
  *	Called when it has been decided that a slime should divide itself.
  */
-void slime_split(Creature *tp);
+void slime_split(Creature &tp);
 
 /*
  * plop_monster:

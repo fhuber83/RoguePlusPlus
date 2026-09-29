@@ -166,3 +166,15 @@ TEST(Formatting, ExperienceLevels)
 		EXPECT_EQ(e_levels[i], 2 * e_levels[i - 1]);
 	EXPECT_EQ(e_levels[19], 0);
 }
+
+// A scroll title's syllable draws its last letter first, as the original's
+// buffer was filled, so a seed gives the same titles
+TEST(ScrollTitles, SyllableDrawsLastLetterFirst)
+{
+	rogue::rng().reseed(4242);
+	char last = rchr("bcdfghjklmnpqrstvwxyz");
+	char vowel = rchr("aeiou");
+	char first = rchr("bcdfghjklmnpqrstvwxyz");
+	rogue::rng().reseed(4242);
+	EXPECT_EQ(getsyl(), std::string({first, vowel, last}));
+}

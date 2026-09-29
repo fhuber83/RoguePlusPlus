@@ -26,7 +26,7 @@ typedef struct md_tm TM;
 void	setup(), flush_type(), credits(), start_terminal();
 unsigned char	readchar();
 long	md_time(void);
-TM  	*md_localtime(void);
+TM  	md_localtime();
 void	md_nanosleep(long nanoseconds);
 
 // fatal() takes a std::format string and prints the text after closing the terminal

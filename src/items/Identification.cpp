@@ -204,8 +204,8 @@ print_disc(ItemKind type)
 	std::span<const bool> know;
 	std::span<const std::string> guess;
 	int i, maxnum = 0, num_found;
-	static Item obj;
-	static short order[std::max({kind_count<Scroll>, kind_count<Potion>, kind_count<Ring>, kind_count<Stick>})];
+	Item obj{};
+	std::array<short, std::max({kind_count<Scroll>, kind_count<Potion>, kind_count<Ring>, kind_count<Stick>})> order;
 	rogue::Items &items = game().items;
 
 	switch (type)

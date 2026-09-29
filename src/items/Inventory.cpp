@@ -2,9 +2,13 @@
 
 namespace rogue::items {
 
+/*
+ * pack_obj:
+ *	The item in the pack with the letter ch, if any
+ */
 static
 Maybe<Item>
-pack_obj(unsigned char ch, unsigned char *chp)
+pack_obj(unsigned char ch)
 {
 	Maybe<Item> obj;
 	unsigned char och;
@@ -13,7 +17,6 @@ pack_obj(unsigned char ch, unsigned char *chp)
 	for (obj = player.body.t_pack.first(), och = 'a'; obj; obj = player.body.t_pack.after(*obj), och++)
 		if (ch == och)
 			return obj;
-	*chp = och;
 	return std::nullopt;
 }
 
@@ -305,7 +308,6 @@ get_item(std::string_view purpose, ItemFilter type)
 {
 	Maybe<Item> obj;
 	unsigned char ch;
-	unsigned char och;
 	rogue::Turn &turn = game().turn;
 	unsigned char gi_state;	/* get item sub state */
 	int once_only = false;
@@ -325,7 +327,7 @@ get_item(std::string_view purpose, ItemFilter type)
 			 * changed then don't ask just give him the same thing
 			 * he got on the last command.
 			 */
-			if (gi_state && game().pool.item(turn.last_item) == pack_obj(ch, &och))
+			if (gi_state && game().pool.item(turn.last_item) == pack_obj(ch))
 				goto skip;
 			if (once_only) {
 				ch = '*';
@@ -359,8 +361,9 @@ get_item(std::string_view purpose, ItemFilter type)
 				msg("");
 				return std::nullopt;
 			}
-			if (!(obj = pack_obj(ch, &och))) {
-				ifterse("range is 'a' to '{:c}'","please specify a letter between 'a' and '{:c}'", och-1);
+			if (!(obj = pack_obj(ch))) {
+				int last = 'a' + static_cast<int>(game().player.body.t_pack.size()) - 1;
+				ifterse("range is 'a' to '{:c}'","please specify a letter between 'a' and '{:c}'", last);
 				continue;
 			} else {
 				/*

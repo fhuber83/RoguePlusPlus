@@ -242,7 +242,7 @@ death(char monst)
 	game().player.purse -= game().player.purse / 10;
 
 	display().curtain_down();
-	year = md_localtime()->year;
+	year = md_localtime().year;
 	display().draw_tombstone(game().options.name, killname(monst, true), game().player.purse, year);
 	display().curtain_up();
 	display().write_at(LINES-1, 0, "");

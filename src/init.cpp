@@ -285,7 +285,7 @@ init_names()
 {
 	rogue::Items &items = game().items;
 	 int nsyl;
-	 const char *sp;
+	 std::string sp;
 	 int nwords;
 
 	for (Scroll s : kinds<Scroll>())
@@ -298,7 +298,7 @@ init_names()
 		while (nsyl--)
 		{
 		sp = getsyl();
-		if (name.size() + strlen(sp) > MAXNAME-1)
+		if (name.size() + sp.size() > MAXNAME-1)
 		{
 			nwords = 0;
 			break;
@@ -319,16 +319,14 @@ init_names()
  * getsyl()
  *   -- generate a random sylable
  */
-char*
+std::string
 getsyl()
 {
-	static char _tsyl[4];
-
-	_tsyl[3] = 0;
-	_tsyl[2] = rchr(c_set);
-	_tsyl[1] = rchr(v_set);
-	_tsyl[0] = rchr(c_set);
-	return (_tsyl);
+	// Drawn last letter first, as the original filled its buffer
+	char last = rchr(c_set);
+	char vowel = rchr(v_set);
+	char first = rchr(c_set);
+	return {first, vowel, last};
 }
 
 /*

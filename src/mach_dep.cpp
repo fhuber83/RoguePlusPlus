@@ -43,21 +43,22 @@ md_time(void)
 
 /*
  * md_localtime:
- *	Return current local time as a pointer to a struct
+ *	Return the current local time
  */
-TM *
+TM
 md_localtime()
 {
-	static TM md_local;
 	time_t secs = time(nullptr);
-	struct tm *local = localtime(&secs);
-	md_local.second = local->tm_sec;
-	md_local.minute = local->tm_min;
-	md_local.hour   = local->tm_hour;
-	md_local.day    = local->tm_mday;
-	md_local.month  = local->tm_mon;
-	md_local.year   = local->tm_year + 1900;
-	return &md_local;
+	struct tm local;
+	localtime_r(&secs, &local);
+	return {
+		.second = local.tm_sec,
+		.minute = local.tm_min,
+		.hour   = local.tm_hour,
+		.day    = local.tm_mday,
+		.month  = local.tm_mon,
+		.year   = local.tm_year + 1900,
+	};
 }
 
 
@@ -134,10 +135,10 @@ static const struct xlate {
 static unsigned char
 xlate_ch(int ch)
 {
-	for (const struct xlate *x = xtab; x < xtab + (sizeof xtab) / sizeof *xtab; x++)
+	for (const struct xlate &x : xtab)
 	{
-		if (ch == x->keycode)
-			return x->keyis;
+		if (ch == x.keycode)
+			return x.keyis;
 	}
 	return (unsigned char)ch;
 }

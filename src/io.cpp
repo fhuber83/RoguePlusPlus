@@ -287,10 +287,10 @@ SIG2(void)
 		return;
 	if (new_time - cur_time >= 60)
 	{
-		TM *local = md_localtime();
-		bighand = local->hour % 12;
-		littlehand = local->minute;
-		cur_time = new_time - local->second;
+		TM local = md_localtime();
+		bighand = local.hour % 12;
+		littlehand = local.minute;
+		cur_time = new_time - local.second;
 		showtime = true;
 	}
 

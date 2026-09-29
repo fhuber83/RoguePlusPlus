@@ -16,7 +16,7 @@ constexpr unsigned char NOTHING = ' ';
 
 static int frcnt, ny, nx, topy, topx;
 static int maxx, maxy;
-static int *fr_y, *fr_x;
+static std::array<int, MAXFRNT> fr_y, fr_x;	/* the frontier */
 
 static void	new_frontier(int y, int x);
 static void	add_frnt(int y, int x);
@@ -29,13 +29,10 @@ void
 draw_maze(struct room &rp)
 {
 	int y, x;
-	int fy[MAXFRNT], fx[MAXFRNT];
 	int psgcnt;
 	coord spos;
 	rogue::Level &level = game().level;
 
-	fr_y = fy;
-	fr_x = fx;
 	maxx = maxy = 0;
 	topy = rp.r_pos.y;
 	if (topy == 0)

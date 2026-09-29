@@ -410,7 +410,7 @@ void	init_colors(void);
 void	init_names(void);
 void	init_stones(void);
 void	init_materials(void);
-char	*getsyl(void);
+std::string	getsyl();
 char	rchr(std::string_view string);
 
 // io.cpp

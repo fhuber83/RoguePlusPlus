@@ -11,11 +11,11 @@ constexpr std::string_view in_dist = " in the distance";
 void
 read_scroll()
 {
-	Item *obj;
+	Maybe<Item> obj;
 	int y, x;
 	unsigned char ch;
-	Item *op;
-	Creature *mo;
+	Maybe<Item> op;
+	Maybe<Creature> mo;
 	int index;
 	bool discardit = false;
 	rogue::Player &player = game().player;
@@ -23,7 +23,7 @@ read_scroll()
 	rogue::Items &items = game().items;
 
 	obj = get_item("read", ItemKind::Scroll);
-	if (obj == nullptr)
+	if (!obj)
 		return;
 	if (obj->o_type != ItemKind::Scroll){
 		msg("there is nothing on it to read");
@@ -44,7 +44,7 @@ read_scroll()
 		msg("your hands begin to glow red");
 		break;
 	case Scroll::EnchantArmor:
-		if (player.armor_item() != nullptr) {
+		if (player.armor_item()) {
 			player.armor_item()->o_ac--;
 			player.armor_item()->o_flags.unset(ISCURSED);
 			ifterse("your armor glows faintly",
@@ -60,7 +60,7 @@ read_scroll()
 		for (x = player.body.t_pos.x - 3; x <= player.body.t_pos.x + 3; x++)
 			if (x >= 0 && x < COLS)
 				for (y = player.body.t_pos.y - 3; y <= player.body.t_pos.y + 3; y++)
-					if ((y > 0 && y < maxrow) && ((mo=moat(y, x)) != nullptr)) {
+					if ((y > 0 && y < maxrow) && (mo = moat(y, x))) {
 						mo->t_flags.unset(ISRUN);
 						mo->t_flags.set(ISHELD);
 					}
@@ -78,7 +78,7 @@ read_scroll()
 		{
 		std::optional<Coord> mp = plop_monster(player.body.t_pos.y, player.body.t_pos.x);
 
-		if (mp && (mo=new_creature()) != nullptr)
+		if (mp && (mo = new_creature()))
 			new_monster(*mo, randmonster(false), *mp);
 		else
 			ifterse("you hear a faint cry of anguish",
@@ -123,7 +123,7 @@ read_scroll()
 				case DOOR:
 				case PASSAGE:
 				case STAIRS:
-					if ((mo = moat(y, x)) != nullptr)
+					if ((mo = moat(y, x)))
 						if (mo->t_oldch == ' ')
 							mo->t_oldch = ch;
 					break;
@@ -141,7 +141,7 @@ read_scroll()
 		 * Scroll of food detection
 		 */
 		ch = false;
-		for (op = level.objects.first(); op != nullptr; op = level.objects.after(op)) {
+		for (op = level.objects.first(); op; op = level.objects.after(*op)) {
 			if (op->o_type == ItemKind::Food) {
 				ch = true;
 				display().draw_tile(op->o_pos, FOOD, TileStyle::Inverse);
@@ -172,7 +172,7 @@ read_scroll()
 		}
 		break;
 	case Scroll::EnchantWeapon:
-		if (player.weapon_item() == nullptr || player.weapon_item()->o_type != ItemKind::Weapon)
+		if (!player.weapon_item() || player.weapon_item()->o_type != ItemKind::Weapon)
 		msg("you feel a strange sense of loss");
 		else
 		{
@@ -192,13 +192,13 @@ read_scroll()
 			msg(laugh, game().options.brief() ? "" : in_dist);
 		break;
 	case Scroll::RemoveCurse:
-		if (player.armor_item() != nullptr)
+		if (player.armor_item())
 			player.armor_item()->o_flags.unset(ISCURSED);
-		if (player.weapon_item() != nullptr)
+		if (player.weapon_item())
 			player.weapon_item()->o_flags.unset(ISCURSED);
-		if (player.ring_item(Hand::Left) != nullptr)
+		if (player.ring_item(Hand::Left))
 			player.ring_item(Hand::Left)->o_flags.unset(ISCURSED);
-		if (player.ring_item(Hand::Right) != nullptr)
+		if (player.ring_item(Hand::Right))
 			player.ring_item(Hand::Right)->o_flags.unset(ISCURSED);
 		ifterse("somebody is watching over you","you feel as if somebody is watching over you");
 		break;
@@ -229,7 +229,7 @@ read_scroll()
 		 *
 		 * If he doesn't have a weapon I get to chortle again!
 		 */
-		if (player.weapon_item() == nullptr || player.weapon_item()->o_type != ItemKind::Weapon)
+		if (!player.weapon_item() || player.weapon_item()->o_type != ItemKind::Weapon)
 			msg(laugh, game().options.brief() ? "" : in_dist);
 		else {
 			/*
@@ -238,7 +238,7 @@ read_scroll()
 			if (player.weapon_item()->o_enemy != 0) {
 				msg("your {} vanishes in a puff of smoke",
 				w_names[player.weapon_item()->which<WeaponType>()]);
-				player.body.t_pack.remove(player.weapon_item());
+				player.body.t_pack.remove(*player.weapon_item());
 				discard(*player.weapon_item());
 				player.weapon = std::nullopt;
 			} else {
@@ -278,7 +278,7 @@ read_scroll()
 	obj->o_count--;
 	else
 	{
-	player.body.t_pack.remove(obj);
+	player.body.t_pack.remove(*obj);
 	discardit = true;
 	}
 	call_it(items.s_know[obj->which<Scroll>()], items.s_guess[obj->which<Scroll>()]);

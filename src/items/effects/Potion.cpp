@@ -9,13 +9,13 @@ namespace rogue::items::effects {
 void
 quaff(void)
 {
-	Item *obj;
-	Creature *th;
+	Maybe<Item> obj;
+	Maybe<Creature> th;
 	bool discardit = false;
 	rogue::Player &player = game().player;
 	rogue::Items &items = game().items;
 
-	if ((obj = get_item("quaff", ItemKind::Potion)) == nullptr)
+	if (!(obj = get_item("quaff", ItemKind::Potion)))
 		return;
 	/*
 	 * Make certain that it is somethings that we want to drink
@@ -93,11 +93,11 @@ quaff(void)
 		 */
 		if (!game().level.objects.empty())
 		{
-			Item *tp;
+			Maybe<Item> tp;
 			bool show;
 
 			show = false;
-			for (tp = game().level.objects.first(); tp != nullptr; tp = game().level.objects.after(tp))
+			for (tp = game().level.objects.first(); tp; tp = game().level.objects.after(*tp))
 			{
 				if (is_magic(*tp))
 				{
@@ -106,9 +106,9 @@ quaff(void)
 					items.p_know[Potion::MagicDetection] = true;
 				}
 			}
-			for (th = game().level.monsters.first(); th != nullptr; th = game().level.monsters.after(th))
+			for (th = game().level.monsters.first(); th; th = game().level.monsters.after(*th))
 			{
-				for (tp = th->t_pack.first(); tp != nullptr; tp = th->t_pack.after(tp))
+				for (tp = th->t_pack.first(); tp; tp = th->t_pack.after(*tp))
 				{
 					if (is_magic(*tp))
 					{
@@ -203,7 +203,7 @@ quaff(void)
 		obj->o_count--;
 	else
 	{
-		player.body.t_pack.remove(obj);
+		player.body.t_pack.remove(*obj);
 		discardit = true;
 	}
 
@@ -220,10 +220,10 @@ quaff(void)
 void
 invis_on(void)
 {
-	Creature *th;
+	Maybe<Creature> th;
 
 	game().player.body.t_flags.set(CANSEE);
-	for (th = game().level.monsters.first(); th != nullptr; th = game().level.monsters.after(th))
+	for (th = game().level.monsters.first(); th; th = game().level.monsters.after(*th))
 	if (th->t_flags.test(ISINVIS) && see_monst(*th))
 	{
 		display().draw_tile(th->t_pos, th->t_disguise);
@@ -237,12 +237,12 @@ invis_on(void)
 bool
 turn_see(bool turn_off)
 {
-	Creature *mp;
+	Maybe<Creature> mp;
 	bool can_see, add_new;
 	unsigned char was_there = ' ';
 
 	add_new = false;
-	for (mp = game().level.monsters.first(); mp != nullptr; mp = game().level.monsters.after(mp)) {
+	for (mp = game().level.monsters.first(); mp; mp = game().level.monsters.after(*mp)) {
 		can_see = (see_monst(*mp) || (was_there = display().tile_at(mp->t_pos)) == mp->t_type);
 		if (turn_off) {
 			if (!see_monst(*mp) && mp->t_oldch != '@')

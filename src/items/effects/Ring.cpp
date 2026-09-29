@@ -11,11 +11,11 @@ static std::optional<Hand>	gethand(void);
 void
 ring_on()
 {
-	Item *obj;
+	Maybe<Item> obj;
 	std::optional<Hand> ring;
 	rogue::Player &player = game().player;
 
-	if ((obj = get_item("put on", ItemKind::Ring)) == nullptr)
+	if (!(obj = get_item("put on", ItemKind::Ring)))
 		goto no_ring;
 	/*
 	 * Make certain that it is somethings that we want to wear
@@ -31,11 +31,11 @@ ring_on()
 	if (is_current(*obj))
 		goto no_ring;
 
-	if (player.ring_item(Hand::Left) == nullptr)
+	if (!player.ring_item(Hand::Left))
 		ring = Hand::Left;
-	if (player.ring_item(Hand::Right) == nullptr)
+	if (!player.ring_item(Hand::Right))
 		ring = Hand::Right;
-	if (player.ring_item(Hand::Left) == nullptr && player.ring_item(Hand::Right) == nullptr)
+	if (!player.ring_item(Hand::Left) && !player.ring_item(Hand::Right))
 		if (!(ring = gethand()))
 			goto no_ring;
 	if (!ring) {
@@ -78,17 +78,17 @@ void
 ring_off(void)
 {
 	Hand ring;
-	Item *obj;
+	Maybe<Item> obj;
 	char packchar;
 	rogue::Player &player = game().player;
 
-	if (player.ring_item(Hand::Left) == nullptr && player.ring_item(Hand::Right) == nullptr) {
+	if (!player.ring_item(Hand::Left) && !player.ring_item(Hand::Right)) {
 		msg("you aren't wearing any rings");
 		game().turn.after = false;
 		return;
-	} else if (player.ring_item(Hand::Left) == nullptr)
+	} else if (!player.ring_item(Hand::Left))
 		ring = Hand::Right;
-	else if (player.ring_item(Hand::Right) == nullptr)
+	else if (!player.ring_item(Hand::Right))
 		ring = Hand::Left;
 	else if (std::optional<Hand> hand = gethand())
 		ring = *hand;
@@ -96,7 +96,7 @@ ring_off(void)
 		return;
 	game().message.end = 0;
 	obj = player.ring_item(ring);
-	if (obj == nullptr) {
+	if (!obj) {
 		msg("not wearing such a ring");
 		game().turn.after = false;
 		return;
@@ -138,7 +138,7 @@ gethand(void)
 int
 ring_eat(Hand hand)
 {
-	if (game().player.ring_item(hand) == nullptr)
+	if (!game().player.ring_item(hand))
 		return 0;
 	switch (game().player.ring_item(hand)->which<Ring>()) {
 	case Ring::Regeneration:

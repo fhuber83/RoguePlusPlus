@@ -21,7 +21,7 @@ void
 new_level(void)
 {
 	int rm, i;
-	Creature *tp;
+	Maybe<Creature> tp;
 	MapFlags *fp;
 	int index;
 	coord stairs;
@@ -44,7 +44,7 @@ new_level(void)
 	/*
 	 * Free up the monsters on the last level
 	 */
-	for (tp = level.monsters.first(); tp != nullptr; tp = level.monsters.after(tp))
+	for (tp = level.monsters.first(); tp; tp = level.monsters.after(*tp))
 		list_free(tp->t_pack);
 	list_free(level.monsters);
 	/*
@@ -98,7 +98,7 @@ new_level(void)
 		player.body.t_pos = rnd_pos(level.rooms[rm]);
 		index = INDEX(player.body.t_pos.y, player.body.t_pos.x);
 	} while (!(is_floor(level.map[index]) && level.flags[index].test(MapFlag::Real)
-				&& moat(player.body.t_pos.y, player.body.t_pos.x) == nullptr));
+				&& !moat(player.body.t_pos.y, player.body.t_pos.x)));
 
 	game().message.end = 0;
 	enter_room(player.body.t_pos);
@@ -132,7 +132,7 @@ void
 put_things(void)
 {
 	int i = 0;
-	Item *cur;
+	Maybe<Item> cur;
 	int rm;
 	coord tp;
 	rogue::Level &level = game().level;
@@ -153,8 +153,8 @@ put_things(void)
 		 * hope of getting the amulet
 		 */
 		if (level.depth >= AMULETLEVEL && !game().player.saw_amulet) {
-			if ((cur = new_item()) != nullptr) {
-				level.objects.push_front(cur);
+			if ((cur = new_item())) {
+				level.objects.push_front(*cur);
 				cur->o_hplus = cur->o_dplus = 0;
 				cur->o_damage = cur->o_hurldmg = "0d0";
 				cur->o_ac = 11;
@@ -185,7 +185,7 @@ put_things(void)
 			 * Pick a new object and link it in the list
 			 */
 			cur = new_thing();
-			level.objects.push_front(cur);
+			level.objects.push_front(*cur);
 			/*
 			 * Put it somewhere
 			 */
@@ -209,8 +209,8 @@ void
 treas_room(void)
 {
 	int nm, index;
-	Creature *tp;
-	Item *obj;
+	Maybe<Creature> tp;
+	Maybe<Item> obj;
 	rogue::Level &level = game().level;
 	struct room *rp;
 	int spots, num_monst;
@@ -230,7 +230,7 @@ treas_room(void)
 		} while (!is_floor(level.map[index]));
 		obj = new_thing();
 		obj->o_pos = mp;
-		level.objects.push_front(obj);
+		level.objects.push_front(*obj);
 		level.map[index] = glyph_of(obj->o_type);
 	}
 
@@ -250,12 +250,12 @@ treas_room(void)
 		{
 			mp = rnd_pos(*rp);
 			index = INDEX(mp.y, mp.x);
-			if (is_floor(level.map[index]) && moat(mp.y, mp.x) == nullptr)
+			if (is_floor(level.map[index]) && !moat(mp.y, mp.x))
 				break;
 		}
 		if (spots != MAXTRIES)
 		{
-			if ((tp = new_creature()) != nullptr)
+			if ((tp = new_creature()))
 			{
 				new_monster(*tp, randmonster(false), mp);
 				tp->t_flags.set(ISMEAN);	/* no sloughers in THIS room */
@@ -288,7 +288,7 @@ do_rooms(void)
 	int i, rm;
 	rogue::Level &level = game().level;
 	struct room *rp;
-	Creature *tp;
+	Maybe<Creature> tp;
 	int left_out;
 	coord top;
 	coord bsze;
@@ -370,9 +370,9 @@ do_rooms(void)
 		 * Put the gold in
 		 */
 		if ((rnd(2) == 0) && (!game().player.saw_amulet || (level.depth >= game().player.max_level))) {
-			Item *gold;
+			Maybe<Item> gold;
 
-			if ((gold = new_item()) != nullptr) {
+			if ((gold = new_item())) {
 				gold->gold_value() = rp->r_goldval = gold_calc();
 				while (1) {
 					unsigned char gch;
@@ -386,7 +386,7 @@ do_rooms(void)
 				gold->o_flags = ISMANY;
 				gold->o_group = GOLDGRP;
 				gold->o_type = ItemKind::Gold;
-				level.objects.push_front(gold);
+				level.objects.push_front(*gold);
 				level.at(rp->r_gold) = GOLD;
 			}
 		}
@@ -394,7 +394,7 @@ do_rooms(void)
 		 * Put the monster in
 		 */
 		if (rnd(100) < (rp->r_goldval > 0 ? 80 : 25)) {
-			if ((tp = new_creature()) != nullptr) {
+			if ((tp = new_creature())) {
 				unsigned char mch;
 
 				do {

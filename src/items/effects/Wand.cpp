@@ -1,3 +1,6 @@
+#include <functional>
+#include <vector>
+
 #include "rogue.h"
 
 namespace rogue::items::effects {
@@ -38,15 +41,15 @@ fix_stick(Item &cur)
 void
 do_zap()
 {
-	Item *obj;
-	Creature *tp;
+	Maybe<Item> obj;
+	Maybe<Creature> tp;
 	int y, x;
 	std::string_view name;
 	Stick which_one;
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
 
-	if ((obj = get_item("zap with", ItemKind::Stick)) == nullptr)
+	if (!(obj = get_item("zap with", ItemKind::Stick)))
 		return;
 	which_one = obj->which<Stick>();
 	if (obj->o_type != ItemKind::Stick)
@@ -121,7 +124,7 @@ do_zap()
 			y += turn.delta.y;
 			x += turn.delta.x;
 		}
-		if ((tp = moat(y, x)) != nullptr)
+		if ((tp = moat(y, x)))
 		{
 			unsigned char omonst;
 
@@ -144,7 +147,7 @@ do_zap()
 				List<Item> pp;
 
 				pp = std::move(tp->t_pack);
-				game().level.monsters.remove(tp);
+				game().level.monsters.remove(*tp);
 				if (see_monst(*tp))
 					display().draw_tile({x, y}, game().level.at(y, x));
 				oldch = tp->t_oldch;
@@ -206,10 +209,10 @@ do_zap()
 		bolt.o_hplus = 1000;
 		bolt.o_dplus = 1;
 		bolt.o_flags = ISMISL;
-		if (player.weapon_item() != nullptr)
+		if (player.weapon_item())
 			bolt.o_launch = launched_by(player.weapon_item()->which<WeaponType>());
 		do_motion(bolt, turn.delta.y, turn.delta.x);
-		if ((tp = moat(bolt.o_pos.y, bolt.o_pos.x)) != nullptr && !save_throw(SaveThrow::Magic, *tp))
+		if ((tp = moat(bolt.o_pos.y, bolt.o_pos.x)) && !save_throw(SaveThrow::Magic, *tp))
 			hit_monster(bolt.o_pos.y, bolt.o_pos.x, bolt);
 		else
 		msg("the missle vanishes with a puff of smoke");
@@ -218,7 +221,7 @@ do_zap()
 	case Stick::Striking:
 		turn.delta.y += player.body.t_pos.y;
 		turn.delta.x += player.body.t_pos.x;
-		if ((tp = moat(turn.delta.y, turn.delta.x)) != nullptr)
+		if ((tp = moat(turn.delta.y, turn.delta.x)))
 		{
 			if (rnd(20) == 0)
 			{
@@ -242,7 +245,7 @@ do_zap()
 			y += turn.delta.y;
 			x += turn.delta.x;
 		}
-		if ((tp = moat(y, x)) != nullptr)
+		if ((tp = moat(y, x)))
 		{
 			if (which_one == Stick::HasteMonster)
 			{
@@ -292,12 +295,11 @@ do_zap()
 void
 drain()
 {
-	Creature *mp;
+	Maybe<Creature> mp;
 	int cnt;
 	std::optional<RoomRef> corp;
-	Creature **dp;
 	bool inpass;
-	Creature *drainee[40];
+	std::vector<std::reference_wrapper<Creature>> drainee;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 
@@ -310,30 +312,27 @@ drain()
 	else
 		corp = std::nullopt;
 	inpass = level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone);
-	dp = drainee;
-	for (mp = level.monsters.first(); mp != nullptr; mp = level.monsters.after(mp))
+	for (mp = level.monsters.first(); mp; mp = level.monsters.after(*mp))
 		if (mp->t_room == player.body.t_room || mp->t_room == corp ||
 			(inpass && level.at(mp->t_pos) == DOOR &&
 			level.passage_at(mp->t_pos) == player.body.t_room))
-			*dp++ = mp;
-	if ((cnt = dp - drainee) == 0)
+			drainee.push_back(*mp);
+	if ((cnt = static_cast<int>(drainee.size())) == 0)
 	{
 		msg("you have a tingling feeling");
 		return;
 	}
-	*dp = nullptr;
 	player.body.t_stats.s_hpt /= 2;
 	cnt = player.body.t_stats.s_hpt / cnt + 1;
 	/*
 	 * Now zot all of the monsters
 	 */
-	for (dp = drainee; *dp; dp++)
+	for (Creature &tp : drainee)
 	{
-		mp = *dp;
-		if ((mp->t_stats.s_hpt -= cnt) <= 0)
-			killed(*mp, see_monst(*mp));
+		if ((tp.t_stats.s_hpt -= cnt) <= 0)
+			killed(tp, see_monst(tp));
 		else
-			start_run(mp->t_pos);
+			start_run(tp.t_pos);
 	}
 }
 
@@ -347,7 +346,7 @@ void
 fire_bolt(Coord start, Coord &dir, std::string_view name)
 {
 	unsigned char dirch = 0, ch;
-	Creature *tp;
+	Maybe<Creature> tp;
 	bool hit_hero, used, changed;
 	int i, j;
 	coord pos;
@@ -402,7 +401,7 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 			msg("the {} bounces", name);
 			break;
 		default:
-			if (!hit_hero && (tp = moat(pos.y, pos.x)) != nullptr) {
+			if (!hit_hero && (tp = moat(pos.y, pos.x))) {
 				hit_hero = true;
 				changed = !changed;
 				if (tp->t_oldch != '@')

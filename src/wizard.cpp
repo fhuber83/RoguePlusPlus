@@ -15,7 +15,7 @@
 void
 whatis(void)
 {
-	Item *obj;
+	Maybe<Item> obj;
 	rogue::Items &items = game().items;
 
 	if (game().player.body.t_pack.empty()) {
@@ -24,7 +24,7 @@ whatis(void)
 	}
 
 	for (;;) {
-		if ((obj = get_item("identify", ItemFilter::all())) == nullptr) {
+		if (!(obj = get_item("identify", ItemFilter::all()))) {
 			msg("You must identify something");
 			msg(" ");
 			game().message.end = 0;

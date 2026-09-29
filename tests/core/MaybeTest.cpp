@@ -53,3 +53,12 @@ TEST(Maybe, ToConst)
 	EXPECT_EQ(c->x, 7);
 	EXPECT_FALSE(Maybe<const Thing>(Maybe<Thing>()));
 }
+
+TEST(Maybe, RefersTo)
+{
+	int a = 1, b = 1;
+	EXPECT_TRUE(rogue::refers_to(Maybe<int>(a), a));
+	EXPECT_FALSE(rogue::refers_to(Maybe<int>(a), b));
+	EXPECT_FALSE(rogue::refers_to(Maybe<int>(), a));
+	EXPECT_TRUE(Maybe<const int>(a) == Maybe<int>(a));
+}

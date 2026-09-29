@@ -6,6 +6,7 @@
 #include <list>
 #include <optional>
 
+#include "core/Maybe.hpp"
 #include "game/Id.hpp"
 
 namespace rogue {
@@ -16,7 +17,7 @@ namespace rogue {
  * items):
  *
  *	static T *at(Id<T> id);			// the thing, nullptr for none
- *	static std::optional<Id<T>> id_of(const T *thing);	// nullopt for none
+ *	static std::optional<Id<T>> id_of(const T &thing);	// nullopt for none
  */
 template <typename T>
 struct ListPool;
@@ -27,10 +28,10 @@ struct ListPool;
  * links. A range-for walks it as references.
  *
  * after() and before() work like the old links did: they give the neighbour
- * of an entry, or nullptr when there is none or when the entry is not in the
+ * of an entry, or nothing when there is none or when the entry is not in the
  * list (any more). The legacy loops rely on that. A walk such as
  *
- *	for (tp = list.first(); tp != nullptr; tp = list.after(tp))
+ *	for (Maybe<Creature> tp = list.first(); tp; tp = list.after(*tp))
  *
  * stops when its body detaches tp, just as a detached node's cleared l_next
  * used to stop it. A thing must be taken out of its list before it is
@@ -76,47 +77,47 @@ public:
 	iterator begin() const { return iterator(entries_.begin()); }
 	iterator end() const { return iterator(entries_.end()); }
 
-	T *first() const { return entries_.empty() ? nullptr : ListPool<T>::at(entries_.front()); }
+	Maybe<T> first() const { return entries_.empty() ? Maybe<T>() : thing(entries_.front()); }
 
-	T *after(const T *entry) const
+	Maybe<T> after(const T &entry) const
 	{
 		auto it = find(entry);
 		if (it == entries_.end() || ++it == entries_.end())
-			return nullptr;
-		return ListPool<T>::at(*it);
+			return std::nullopt;
+		return thing(*it);
 	}
 
-	T *before(const T *entry) const
+	Maybe<T> before(const T &entry) const
 	{
 		auto it = find(entry);
 		if (it == entries_.end() || it == entries_.begin())
-			return nullptr;
-		return ListPool<T>::at(*--it);
+			return std::nullopt;
+		return thing(*--it);
 	}
 
-	bool contains(const T *entry) const { return find(entry) != entries_.end(); }
+	bool contains(const T &entry) const { return find(entry) != entries_.end(); }
 
 	// Add to the front (was list_attach)
-	void push_front(T *entry) { entries_.push_front(id(entry)); }
+	void push_front(T &entry) { entries_.push_front(id(entry)); }
 
 	// Take out, if it is in the list (was list_detach)
-	void remove(const T *entry)
+	void remove(const T &entry)
 	{
 		if (auto it = find(entry); it != entries_.end())
 			entries_.erase(it);
 	}
 
-	// Put entry right after pos (in the list), or at the front when pos is nullptr
-	void insert_after(const T *pos, T *entry)
+	// Put entry right after pos (in the list), or at the front when there is no pos
+	void insert_after(Maybe<const T> pos, T &entry)
 	{
-		if (pos == nullptr)
+		if (!pos)
 			entries_.push_front(id(entry));
 		else
-			entries_.insert(std::next(find(pos)), id(entry));
+			entries_.insert(std::next(find(*pos)), id(entry));
 	}
 
 	// Put entry right before pos, which must be in the list
-	void insert_before(const T *pos, T *entry) { entries_.insert(find(pos), id(entry)); }
+	void insert_before(const T &pos, T &entry) { entries_.insert(find(pos), id(entry)); }
 
 	void clear() { entries_.clear(); }
 
@@ -125,9 +126,12 @@ public:
 
 private:
 	// The Id of a thing to list, which must have one
-	static Id<T> id(const T *entry) { return *ListPool<T>::id_of(entry); }
+	static Id<T> id(const T &entry) { return *ListPool<T>::id_of(entry); }
 
-	typename Entries::const_iterator find(const T *entry) const
+	// The thing an entry names, or nothing if its slot is free
+	static Maybe<T> thing(Id<T> id) { return maybe(ListPool<T>::at(id)); }
+
+	typename Entries::const_iterator find(const T &entry) const
 	{
 		std::optional<Id<T>> id = ListPool<T>::id_of(entry);
 		if (!id)

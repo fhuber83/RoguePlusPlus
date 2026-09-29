@@ -14,7 +14,7 @@
 void
 init_player()
 {
-	Item *obj;
+	Maybe<Item> obj;
 	game().player.body.t_stats = game().player.max_stats;
 	game().player.food_left = hunger_time();
 	/*

@@ -42,7 +42,7 @@ look(bool wakeup)
 	int x, y;
 	unsigned char ch, pch;
 	int index;
-	Creature *tp;
+	Maybe<Creature> tp;
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
@@ -132,7 +132,7 @@ look(bool wakeup)
 					continue;
 			}
 
-			if ((tp = moat(y,x)) != nullptr) {
+			if ((tp = moat(y,x))) {
 				if (player.body.t_flags.test(SEEMONST) && tp->t_flags.test(ISINVIS)) {
 					if (turn.door_stop && !turn.first_move)
 						turn.running = false;
@@ -231,15 +231,15 @@ look(bool wakeup)
  * find_obj:
  *	Find the unclaimed object at y, x
  */
-Item *
+Maybe<Item>
 find_obj(int y, int x)
 {
-	Item *op;
+	Maybe<Item> op;
 
-	for (op = game().level.objects.first(); op != nullptr; op = game().level.objects.after(op))
+	for (op = game().level.objects.first(); op; op = game().level.objects.after(*op))
 		if (op->o_pos.y == y && op->o_pos.x == x)
 			return op;
-	return nullptr;
+	return std::nullopt;
 }
 
 /*
@@ -249,11 +249,11 @@ find_obj(int y, int x)
 void
 eat()
 {
-	Item *obj;
+	Maybe<Item> obj;
 	Food which;
 	rogue::Player &player = game().player;
 
-	if ((obj = get_item("eat", ItemKind::Food)) == nullptr)
+	if (!(obj = get_item("eat", ItemKind::Food)))
 		return;
 	if (obj->o_type != ItemKind::Food)
 	{
@@ -270,7 +270,7 @@ eat()
 		player.weapon = std::nullopt;
 	if (--obj->o_count < 1)
 	{
-		player.body.t_pack.remove(obj);
+		player.body.t_pack.remove(*obj);
 		discard(*obj);
 	}
 	if (player.food_left < 0)
@@ -364,9 +364,9 @@ add_haste(bool potion)
 void
 aggravate()
 {
-	Creature *mi;
+	Maybe<Creature> mi;
 
-	for (mi = game().level.monsters.first(); mi != nullptr; mi = game().level.monsters.after(mi))
+	for (mi = game().level.monsters.first(); mi; mi = game().level.monsters.after(*mi))
 		start_run(mi->t_pos);
 }
 
@@ -398,8 +398,8 @@ vowelstr(std::string_view str)
 bool
 is_current(const Item &obj)
 {
-	if (&obj == game().player.armor_item() || &obj == game().player.weapon_item() || &obj == game().player.ring_item(Hand::Left)
-		|| &obj == game().player.ring_item(Hand::Right)) {
+	if (refers_to(game().player.armor_item(), obj) || refers_to(game().player.weapon_item(), obj) || refers_to(game().player.ring_item(Hand::Left), obj)
+		|| refers_to(game().player.ring_item(Hand::Right), obj)) {
 		msg("That's already in use");
 		return true;
 	}
@@ -681,7 +681,7 @@ offmap(int y, int x)
 unsigned char
 winat(int y, int x)
 {
-	return(moat(y,x) != nullptr ? moat(y,x)->t_disguise : game().level.at(y, x));
+	return(moat(y,x) ? moat(y,x)->t_disguise : game().level.at(y, x));
 }
 
 /*
@@ -782,7 +782,7 @@ u_level()
 void
 call()
 {
-	Item *obj;
+	Maybe<Item> obj;
 	std::string *guess;
 	std::string_view elsewise;
 	bool *know;
@@ -792,7 +792,7 @@ call()
 	/*
 	 * Make certain that it is somethings that we want to wear
 	 */
-	if (obj == nullptr)
+	if (!obj)
 		return;
 	switch (obj->o_type)
 	{

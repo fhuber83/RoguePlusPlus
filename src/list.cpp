@@ -16,30 +16,30 @@
  * like the single pool of the original (see rogue::Pool).
  */
 template <class T>
-static T *
+static Maybe<T>
 talloc(rogue::Slots<T, MAXITEMS> &slots)
 {
 	rogue::Pool &pool = game().pool;
 	T *thing;
 
 	if (pool.total >= MAXITEMS || (thing = slots.take()) == nullptr)
-		return nullptr;
+		return std::nullopt;
 	++pool.total;
-	return thing;
+	return *thing;
 }
 
 /*
  * new_item
  *	Get a new item from the pool
  */
-Item *
+Maybe<Item>
 new_item()
 {
 	return talloc(game().pool.items);
 }
 
 // new_item() for monsters
-Creature *
+Maybe<Creature>
 new_creature()
 {
 	return talloc(game().pool.creatures);
@@ -71,7 +71,7 @@ discard(Item &item)
 	 * new item that reused the slot; a freed item's address can be reused
 	 * too, so forget it.
 	 */
-	if (game().pool.item(game().turn.last_item) == &item)
+	if (refers_to(game().pool.item(game().turn.last_item), item))
 		game().turn.last_item = std::nullopt;
 	/*
 	 * A monster after this item goes for the hero instead. add_pack() does
@@ -79,7 +79,7 @@ discard(Item &item)
 	 * pack item and is discarded: the original then chased the freed slot's
 	 * old position until the slot was reused.
 	 */
-	if (std::optional<ItemId> id = game().pool.id_of(&item))
+	if (std::optional<ItemId> id = game().pool.id_of(item))
 		for (Creature &mp : game().level.monsters)
 			if (mp.t_dest == Destination(*id))
 				mp.t_dest = Hero{};

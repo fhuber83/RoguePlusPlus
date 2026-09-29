@@ -27,14 +27,14 @@ static int	add_dam(str_t str);
 bool
 fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 {
-	Creature *tp;
+	Maybe<Creature> tp;
 	std::string_view mname;
 	rogue::Player &player = game().player;
 
 	/*
 	 * Find the monster we want to fight
 	 */
-	if ((tp = moat(mp.y, mp.x)) == nullptr)
+	if (!(tp = moat(mp.y, mp.x)))
 		return false;
 	/*
 	 * Since we are fighting, things are not quiet so no healing takes
@@ -68,7 +68,7 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 				if (weap->o_count > 1)
 					weap->o_count--;
 				else {
-					player.body.t_pack.remove(&*weap);
+					player.body.t_pack.remove(*weap);
 					discard(*weap);
 				}
 				player.weapon = std::nullopt;
@@ -128,7 +128,7 @@ attack(Creature &mp)
 			 * If a rust monster hits, you lose armor, unless
 			 * that armor is leather or there is a magic ring
 			 */
-			if (player.armor_item() != nullptr && player.armor_item()->o_ac < 9
+			if (player.armor_item() && player.armor_item()->o_ac < 9
 			  && player.armor_item()->which<ArmorType>() != ArmorType::Leather)
 			{
 				if (player.wears(Ring::MaintainArmor))
@@ -224,7 +224,7 @@ attack(Creature &mp)
 			break;
 		case 'N':
 		{
-			Item *obj, *steal;
+			Maybe<Item> obj, steal;
 			int nobj;
 			constexpr std::string_view she_stole = "she stole {}!";
 
@@ -232,13 +232,13 @@ attack(Creature &mp)
 			 * Nymph's steal a magic item, look through the pack
 			 * and pick out one we like.
 			 */
-			steal = nullptr;
-			for (nobj = 0, obj = player.body.t_pack.first(); obj != nullptr; obj = player.body.t_pack.after(obj))
+			steal.reset();
+			for (nobj = 0, obj = player.body.t_pack.first(); obj; obj = player.body.t_pack.after(*obj))
 			if (obj != player.armor_item() && obj != player.weapon_item()
 				&& obj != player.ring_item(Hand::Left) && obj != player.ring_item(Hand::Right)
 				&& is_magic(*obj) && rnd(++nobj) == 0)
 				steal = obj;
-			if (steal != nullptr)
+			if (steal)
 			{
 				remove_monster(mp.t_pos, mp, false);
 				player.in_pack--;
@@ -255,7 +255,7 @@ attack(Creature &mp)
 				{
 					// inv_name() must run before discard() frees steal
 					std::string name = inv_name(*steal, true);
-					player.body.t_pack.remove(steal);
+					player.body.t_pack.remove(*steal);
 					discard(*steal);
 					msg(she_stole, name);
 				}
@@ -356,7 +356,7 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 			hplus += 4;
 			dplus += 4;
 		}
-		if (weap == maybe(player.weapon_item()))
+		if (weap == player.weapon_item())
 		{
 			if (player.wears(Hand::Left, Ring::IncreaseDamage))
 				dplus += player.ring_item(Hand::Left)->o_ac;
@@ -368,7 +368,7 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 				hplus += player.ring_item(Hand::Right)->o_ac;
 		}
 		attacks = weap->o_damage;
-		if (hurl && weap->o_flags.test(ISMISL) && player.weapon_item() != nullptr &&
+		if (hurl && weap->o_flags.test(ISMISL) && player.weapon_item() &&
 			  launched_by(player.weapon_item()->which<WeaponType>()) == weap->o_launch)
 		{
 			attacks = weap->o_hurldmg;
@@ -400,7 +400,7 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 	def_arm = def->s_arm;
 	if (def == &player.body.t_stats)
 	{
-		if (player.armor_item() != nullptr)
+		if (player.armor_item())
 			def_arm = player.armor_item()->o_ac;
 		if (player.wears(Hand::Left, Ring::Protection))
 			def_arm -= player.ring_item(Hand::Left)->o_ac;
@@ -612,14 +612,14 @@ thunk(const Item &weap, std::string_view mname, std::string_view does, std::stri
 static void
 remove_monster(Coord mp, Creature &tp, bool waskill)
 {
-	Item *obj, *nexti;
+	Maybe<Item> obj, nexti;
 	TileStyle style;
 
-	for (obj = tp.t_pack.first(); obj != nullptr; obj = nexti)
+	for (obj = tp.t_pack.first(); obj; obj = nexti)
 	{
-		nexti = tp.t_pack.after(obj);
+		nexti = tp.t_pack.after(*obj);
 		obj->o_pos = tp.t_pos;
-		tp.t_pack.remove(obj);
+		tp.t_pack.remove(*obj);
 		if (waskill)
 			fall(*obj, false);
 		else
@@ -630,7 +630,7 @@ remove_monster(Coord mp, Creature &tp, bool waskill)
 		display().draw_tile(mp, ' ', style);
 	else if (tp.t_oldch != '@')
 		display().draw_tile(mp, tp.t_oldch, style);
-	game().level.monsters.remove(&tp);
+	game().level.monsters.remove(tp);
 	discard(tp);
 }
 
@@ -679,15 +679,15 @@ killed(Creature &tp, bool pr)
 		f_restor();
 		break;
 	case 'L':;
-		Item *gold;
+		Maybe<Item> gold;
 
-		if ((gold = new_item()) == nullptr)
+		if (!(gold = new_item()))
 			return;
 		gold->o_type = ItemKind::Gold;
 		gold->gold_value() = gold_calc();
 		if (save(SaveThrow::Magic))
 			gold->gold_value() += gold_calc() + gold_calc() + gold_calc() + gold_calc();
-		tp.t_pack.push_front(gold);
+		tp.t_pack.push_front(*gold);
 		break;
 	}
 	/*

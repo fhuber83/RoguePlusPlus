@@ -96,7 +96,7 @@ enter_room(Coord cp)
 {
 	struct room *rp;
 	int y, x;
-	Creature *tp;
+	Maybe<Creature> tp;
 	rogue::Level &level = game().level;
 
 	const std::optional<RoomRef> in = game().player.body.t_room = roomin(cp);
@@ -116,7 +116,7 @@ enter_room(Coord cp)
 				 * chase code now
 				 */
 				tp = moat(y, x);
-				if (tp == nullptr || !see_monst(*tp))
+				if (!tp || !see_monst(*tp))
 					display().draw_tile({x, y}, level.at(y, x));
 				else {
 					tp->t_oldch = level.at(y, x);

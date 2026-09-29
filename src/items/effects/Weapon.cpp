@@ -42,12 +42,12 @@ static std::string	short_name(const Item &obj);
 void
 missile(int ydelta, int xdelta)
 {
-	Item *obj, *nitem;
+	Maybe<Item> obj, nitem;
 
 	/*
 	 * Get which thing we are hurling
 	 */
-	if ((obj = get_item("throw", ItemKind::Weapon)) == nullptr)
+	if (!(obj = get_item("throw", ItemKind::Weapon)))
 		return;
 	if (!can_drop(*obj) || is_current(*obj))
 		return;
@@ -58,13 +58,13 @@ missile(int ydelta, int xdelta)
 	 */
 	hack:
 	if (obj->o_count < 2) {
-		game().player.body.t_pack.remove(obj);
+		game().player.body.t_pack.remove(*obj);
 		game().player.in_pack--;
 	} else {
 		/*
 		 * here is a quick hack to check if we can get a new item
 		 */
-		if ((nitem = new_item()) == nullptr) {
+		if (!(nitem = new_item())) {
 			obj->o_count = 1;
 			msg("something in your pack explodes!!!");
 			goto hack;
@@ -81,7 +81,7 @@ missile(int ydelta, int xdelta)
 	 * AHA! Here it has hit something.  If it is a wall or a door,
 	 * or if it misses (combat) the monster, put it on the floor
 	 */
-	if (moat(obj->o_pos.y, obj->o_pos.x) == nullptr
+	if (!moat(obj->o_pos.y, obj->o_pos.x)
 		|| !hit_monster(obj->o_pos.y, obj->o_pos.x, *obj))
 			fall(*obj, true);
 }
@@ -178,10 +178,10 @@ fall(Item &obj, bool pr)
 					(level.flags_at(obj.o_pos).test(MapFlag::Passage) ||
 					 level.flags_at(obj.o_pos).test(MapFlag::Maze))
 						? TileStyle::Inverse : TileStyle::Normal);
-			if (moat(fpos.y,fpos.x) != nullptr)
+			if (moat(fpos.y,fpos.x))
 				moat(fpos.y,fpos.x)->t_oldch = glyph_of(obj.o_type);
 		}
-		level.objects.push_front(&obj);
+		level.objects.push_front(obj);
 		return;
 	}
 	if (std::holds_alternative<JoinedPile>(landing))
@@ -222,7 +222,7 @@ init_weapon(Item &weap, WeaponType type)
 bool
 hit_monster(int y, int x, Item &obj)
 {
-	Creature *mo = moat(y, x);
+	Maybe<Creature> mo = moat(y, x);
 
 	if (mo)
 		return fight({x, y}, mo->t_type, obj, true);
@@ -250,18 +250,18 @@ num(int n1, int n2, char type)
 void
 wield(void)
 {
-	Item *obj, *oweapon;
+	Maybe<Item> obj, oweapon;
 	std::string sp;
 	rogue::Player &player = game().player;
 
 	oweapon = player.weapon_item();
-	if (oweapon != nullptr && !can_drop(*oweapon))
+	if (oweapon && !can_drop(*oweapon))
 	{
 		player.weapon = game().pool.id_of(oweapon);
 		return;
 	}
 	player.weapon = game().pool.id_of(oweapon);
-	if ((obj = get_item("wield", ItemKind::Weapon)) == nullptr)
+	if (!(obj = get_item("wield", ItemKind::Weapon)))
 	{
 bad:
 		game().turn.after = false;
@@ -292,7 +292,7 @@ fallpos(const Item &obj)
 {
 	int y, x, cnt = 0, ch;
 	Coord newpos;
-	Item *onfloor;
+	Maybe<Item> onfloor;
 	rogue::Player &player = game().player;
 
 	for (y = obj.o_pos.y - 1; y <= obj.o_pos.y + 1; y++) {

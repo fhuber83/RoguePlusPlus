@@ -116,6 +116,7 @@ struct h_list {
 using rogue::Coord;  // see core/Coord.hpp
 using rogue::Maybe;  // see core/Maybe.hpp
 using rogue::maybe;
+using rogue::refers_to;
 using coord = rogue::Coord;
 
 // Game output goes through the display, see ui/Display.hpp
@@ -458,8 +459,8 @@ std::string	io_unctrl(unsigned char ch);
 std::string_view	noterse(std::string_view str);
 
 // list.cpp
-Item	*new_item(void);
-Creature	*new_creature(void);
+Maybe<Item>	new_item();
+Maybe<Creature>	new_creature();
 int	discard(Item &item);
 int	discard(Creature &item);
 
@@ -470,11 +471,11 @@ template <class T>
 void
 list_free(rogue::List<T> &list)
 {
-	T *item;
+	Maybe<T> item;
 
-	while ((item = list.first()) != nullptr)
+	while ((item = list.first()))
 	{
-	list.remove(item);
+	list.remove(*item);
 	discard(*item);
 	}
 }
@@ -503,7 +504,7 @@ void	d_level(void);
 void	u_level(void);
 void	call(void);
 void	do_macro(std::string &macro);
-Item	*find_obj(int y, int x);
+Maybe<Item>	find_obj(int y, int x);
 bool	add_haste(bool potion);
 bool	is_current(const Item &obj);
 bool	get_dir(void);

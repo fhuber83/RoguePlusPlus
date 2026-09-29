@@ -257,7 +257,7 @@ death(char monst)
 void
 total_winner(void)
 {
-	Item *obj;
+	Maybe<Item> obj;
 	int worth = 0;
 	unsigned char c;
 	int oldpurse;
@@ -269,7 +269,7 @@ total_winner(void)
 	display().clear_page();
 	display().write_at(0, 0, "   Worth  Item");
 	oldpurse = player.purse;
-	for (c = 'a', obj = player.body.t_pack.first(); obj != nullptr; c++, obj = player.body.t_pack.after(obj))
+	for (c = 'a', obj = player.body.t_pack.first(); obj; c++, obj = player.body.t_pack.after(*obj))
 	{
 	switch (obj->o_type)
 	{

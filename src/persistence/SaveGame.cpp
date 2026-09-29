@@ -85,12 +85,12 @@ json coord_json(const coord &c)
 	return json::array({c.x, c.y});
 }
 
-json item_ref(const Game &g, const Item *obj)
+json item_ref(const Game &g, Maybe<const Item> obj)
 {
-	int slot = g.pool.items.slot_of(obj);
-	if (slot < 0)
+	std::optional<ItemId> id = g.pool.id_of(obj);
+	if (!id)
 		return nullptr;
-	return slot;
+	return id->slot;
 }
 
 // A link to an item, null for none or a slot not in use
@@ -485,17 +485,17 @@ std::string_view kept_text(const json &v, std::string_view what)
 }
 
 /*
- * A slot number, or nullptr for null. With used, the slot must be in use;
- * without, a free slot gives nullptr (a save made before discard() forgot
+ * A slot number, or nothing for null. With used, the slot must be in use;
+ * without, a free slot gives nothing (a save made before discard() forgot
  * the last item picked can name the freed slot).
  */
-Item *item_at(Game &g, const json &v, std::string_view what, bool used = true)
+Maybe<Item> item_at(Game &g, const json &v, std::string_view what, bool used = true)
 {
 	if (v.is_null())
-		return nullptr;
+		return std::nullopt;
 	int slot = whole(v, what);
-	Item *obj = g.pool.items.at(slot);
-	if (slot < 0 || slot >= MAXITEMS || (used && obj == nullptr))
+	Maybe<Item> obj = maybe(g.pool.items.at(slot));
+	if (slot < 0 || slot >= MAXITEMS || (used && !obj))
 		fail(std::format("{} is not an item in use", what));
 	return obj;
 }
@@ -571,12 +571,12 @@ void items_into(Game &g, List<Item> &list, const json &slots, std::string_view w
 	if (!slots.is_array())
 		fail(std::format("{} is not a list", what));
 	// Kept in their order: push each to the back
-	const Item *last = nullptr;
+	Maybe<const Item> last;
 	for (const json &v : slots) {
-		Item *obj = item_at(g, v, what);
-		if (obj == nullptr)
+		Maybe<Item> obj = item_at(g, v, what);
+		if (!obj)
 			fail(std::format("{} holds a null", what));
-		list.insert_after(last, obj);
+		list.insert_after(last, *obj);
 		last = obj;
 	}
 }
@@ -794,13 +794,13 @@ void level_from(Game &g, const json &j)
 	const json &monsters = field(j, "monsters");
 	if (!monsters.is_array())
 		fail("\"monsters\" is not a list");
-	const Creature *last = nullptr;
+	Maybe<const Creature> last;
 	for (const json &v : monsters) {
 		int slot = whole(v, "\"monsters\"");
-		Creature *tp = g.pool.creatures.at(slot);
-		if (tp == nullptr)
+		Maybe<Creature> tp = maybe(g.pool.creatures.at(slot));
+		if (!tp)
 			fail("\"monsters\" holds a creature not in use");
-		l.monsters.insert_after(last, tp);
+		l.monsters.insert_after(last, *tp);
 		last = tp;
 	}
 }

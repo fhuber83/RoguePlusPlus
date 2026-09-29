@@ -66,7 +66,7 @@ new_monster(Creature &tp, unsigned char type, Coord cp)
 
 	if ((lev_add = game().level.depth - AMULETLEVEL) < 0)
 		lev_add = 0;
-	game().level.monsters.push_front(&tp);
+	game().level.monsters.push_front(tp);
 	tp.t_type = type;
 	tp.t_disguise = type;
 	tp.t_pos = cp;
@@ -155,14 +155,14 @@ wanderer(void)
 {
 	int i;
 	struct room *rp;
-	Creature *tp;
+	Maybe<Creature> tp;
 	coord cp;
 	rogue::Player &player = game().player;
 
 	/*
 	 * can we allocate a new monster
 	 */
-	if ((tp = new_creature()) == nullptr)
+	if (!(tp = new_creature()))
 		return;
 	do {
 		i = rnd_room();
@@ -179,16 +179,16 @@ wanderer(void)
  * wake_monster:
  *	What to do when the hero steps next to a monster
  */
-Creature *
+Maybe<Creature>
 wake_monster(int y, int x)
 {
-	Creature *tp;
+	Maybe<Creature> tp;
 	std::optional<RoomRef> rp;
 	unsigned char ch;
 	int dst;
 	rogue::Player &player = game().player;
 
-	if ((tp = moat(y, x)) == nullptr)
+	if (!(tp = moat(y, x)))
 		return tp;
 	ch = tp->t_type;
 	/*
@@ -241,7 +241,7 @@ give_pack(Creature &tp)
 	 * check if we can allocate a new item
 	 */
 	if (game().pool.total < MAXITEMS && rnd(100) < monsters[tp.t_type-'A'].m_carry)
-		tp.t_pack.push_front(new_thing());
+		tp.t_pack.push_front(*new_thing());
 }
 
 /*
@@ -269,15 +269,15 @@ pick_mons(void)
  *	  if no monster there return null
  */
 
-Creature *
+Maybe<Creature>
 moat(int my, int mx)
 {
-	Creature *tp;
+	Maybe<Creature> tp;
 
-	for (tp = game().level.monsters.first(); tp != nullptr; tp = game().level.monsters.after(tp))
+	for (tp = game().level.monsters.first(); tp; tp = game().level.monsters.after(*tp))
 		if (tp->t_pos.x == mx  && tp->t_pos.y == my)
 			return(tp);
-	return(nullptr);
+	return std::nullopt;
 }
 
 }  // namespace rogue::entities

@@ -2,6 +2,7 @@
 
 #include <concepts>
 #include <optional>
+#include <type_traits>
 
 namespace rogue {
 
@@ -12,6 +13,11 @@ namespace rogue {
  * std::optional<T &>, which it becomes once the compiler has it: empty by
  * default or from std::nullopt, set from a T &, tested as a bool or with
  * has_value(), and read with *, -> or value().
+ *
+ * Unlike std::optional<T &>, whose == compares the things, two Maybes are
+ * equal when they name the same thing (or none): the game compares items and
+ * creatures by identity, as it compared pointers. refers_to(m, thing) asks
+ * whether m names that very thing.
  *
  * maybe(pointer) makes one from a pointer that may be null, for code that
  * still holds pointers.
@@ -44,13 +50,27 @@ public:
 
 	constexpr void reset() noexcept { thing_ = nullptr; }
 
-	// Whether both name the same thing (or are both empty)
-	friend constexpr bool operator==(Maybe a, Maybe b) noexcept { return a.thing_ == b.thing_; }
 	friend constexpr bool operator==(Maybe a, std::nullopt_t) noexcept { return !a; }
 
 private:
 	T *thing_ = nullptr;
 };
+
+// Whether both name the same thing (or are both empty)
+template <typename T, typename U>
+	requires std::same_as<std::remove_const_t<T>, std::remove_const_t<U>>
+constexpr bool operator==(Maybe<T> a, Maybe<U> b) noexcept
+{
+	return (a ? &*a : nullptr) == (b ? &*b : nullptr);
+}
+
+// Whether m names this very thing
+template <typename T, typename U>
+	requires std::same_as<std::remove_const_t<T>, std::remove_const_t<U>>
+constexpr bool refers_to(Maybe<T> m, const U &thing) noexcept
+{
+	return m && &*m == &thing;
+}
 
 template <typename T>
 constexpr Maybe<T> maybe(T *thing) noexcept

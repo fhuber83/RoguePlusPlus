@@ -108,10 +108,10 @@ protected:
 		rogue::Game &g = game();
 		rogue::Player &p = g.player;
 		// A ring worn, a guess named, a fuse burning, a macro half typed
-		Item *ring = new_item();
-		ring->o_type = rogue::ItemKind::Ring;
-		ring->set_which(Ring::Searching);
-		ring->o_damage = ring->o_hurldmg = "0d0";
+		Item &ring = *new_item();
+		ring.o_type = rogue::ItemKind::Ring;
+		ring.set_which(Ring::Searching);
+		ring.o_damage = ring.o_hurldmg = "0d0";
 		p.body.t_pack.push_front(ring);
 		p.rings[Hand::Right] = g.pool.id_of(ring);
 		g.items.p_guess[Potion::Poison] = "fizzy";
@@ -123,7 +123,7 @@ protected:
 		g.turn.last_item_key = 'a';
 		g.message.last = "you feel a bite in your leg";
 		// Monsters after everything a monster can be after
-		Item *floor = g.level.objects.first();
+		rogue::Maybe<Item> floor = g.level.objects.first();
 		int n = 0;
 		for (Creature &tp : g.level.monsters) {
 			switch (n++ % 4) {
@@ -131,7 +131,7 @@ protected:
 			case 1: tp.t_dest = Gold{RoomRef::room(0)}; break;
 			case 2:
 				if (floor)
-					tp.t_dest = *g.pool.id_of(floor);
+					tp.t_dest = *g.pool.id_of(*floor);
 				else
 					tp.t_dest = std::nullopt;
 				break;
@@ -189,7 +189,8 @@ TEST_F(SaveGame, PointersPointIntoTheGame)
 	load(text);
 	rogue::Game &g = game();
 	EXPECT_TRUE(rogue::pool_problems(g).empty());
-	EXPECT_TRUE(g.player.body.t_pack.contains(g.player.ring_item(Hand::Right)));
+	ASSERT_TRUE(g.player.ring_item(Hand::Right));
+	EXPECT_TRUE(g.player.body.t_pack.contains(*g.player.ring_item(Hand::Right)));
 	EXPECT_EQ(g.items.p_guess[Potion::Poison], "fizzy");
 	EXPECT_EQ(g.turn.typeahead, "ss");
 	EXPECT_EQ(g.turn.last_item, g.player.weapon);
@@ -208,12 +209,12 @@ TEST_F(SaveGame, RoomLinksComeBack)
 {
 	new_game(42, 5);
 	rogue::Game &g = game();
-	Creature *tp = g.level.monsters.first();
-	ASSERT_NE(tp, nullptr);
+	rogue::Maybe<Creature> tp = g.level.monsters.first();
+	ASSERT_TRUE(tp);
 	tp->t_room = RoomRef::passage(MAXPASS - 1);
 	g.player.old_room = RoomRef::room(MAXROOMS - 1);
 	std::optional<RoomRef> here = g.player.body.t_room;
-	int slot = g.pool.creatures.slot_of(tp);
+	int slot = g.pool.id_of(*tp)->slot;
 	load(save());
 	EXPECT_EQ(g.pool.creatures.at(slot)->t_room, RoomRef::passage(MAXPASS - 1));
 	EXPECT_EQ(g.player.old_room, RoomRef::room(MAXROOMS - 1));

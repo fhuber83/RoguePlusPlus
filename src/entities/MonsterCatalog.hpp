@@ -60,13 +60,13 @@ void give_pack(Creature &tp);
  * wake_monster:
  *	What to do when the hero steps next to a monster.
  */
-Creature *wake_monster(int y, int x);
+Maybe<Creature> wake_monster(int y, int x);
 
 /*
  * moat:
  *	The monster at a coordinate, or null if there is none.
  */
-Creature *moat(int my, int mx);
+Maybe<Creature> moat(int my, int mx);
 
 }  // namespace entities
 }  // namespace rogue

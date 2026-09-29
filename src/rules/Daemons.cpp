@@ -90,9 +90,9 @@ unconfuse(void)
 void
 unsee(void)
 {
-	Creature *th;
+	Maybe<Creature> th;
 
-	for (th = game().level.monsters.first(); th != nullptr; th = game().level.monsters.after(th))
+	for (th = game().level.monsters.first(); th; th = game().level.monsters.after(*th))
 		if (th->t_flags.test(ISINVIS) && see_monst(*th) && th->t_oldch != '@')
 			display().draw_tile(th->t_pos, th->t_oldch);
 	game().player.body.t_flags.unset(CANSEE);

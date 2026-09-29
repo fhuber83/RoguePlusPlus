@@ -22,11 +22,11 @@ static coord ch_ret;			/* Where chasing takes	you */
 void
 runners()
 {
-	Creature *tp;
+	Maybe<Creature> tp;
 	int dist;
 	rogue::Player &player = game().player;
 
-	for (tp = game().level.monsters.first(); tp != nullptr; tp = game().level.monsters.after(tp)) {
+	for (tp = game().level.monsters.first(); tp; tp = game().level.monsters.after(*tp)) {
 		if (!tp->t_flags.test(ISHELD) && tp->t_flags.test(ISRUN)) {
 			dist = DISTANCE(player.body.t_pos.y, player.body.t_pos.x, tp->t_pos.y, tp->t_pos.x);
 			if	(!(tp->t_flags.test(ISSLOW) || (tp->t_type == 'S' && dist > 3)) || tp->t_turn)
@@ -38,16 +38,16 @@ runners()
 			 * again this turn; the loop still stops walking the list at
 			 * this point, as in the original (see MODERNIZATION.md 6.4).
 			 */
-			if (!game().level.monsters.contains(tp))
+			if (!game().level.monsters.contains(*tp))
 				continue;
 			if (tp->t_flags.test(ISHASTE))
 				do_chase(*tp);
-			if (!game().level.monsters.contains(tp))
+			if (!game().level.monsters.contains(*tp))
 				continue;
 			dist = DISTANCE(player.body.t_pos.y, player.body.t_pos.x, tp->t_pos.y, tp->t_pos.x);
 			if (tp->t_flags.test(ISFLY) && dist > 3)
 				do_chase(*tp);
-			if (!game().level.monsters.contains(tp))
+			if (!game().level.monsters.contains(*tp))
 				continue;
 			tp->t_turn ^= true;
 		}
@@ -63,7 +63,7 @@ do_chase(Creature &th)
 {
 	int	mindist	= 32767, i, dist;
 	bool door;
-	Item *obj;
+	Maybe<Item> obj;
 	std::optional<RoomRef> oroom;
 	std::optional<RoomRef> rer, ree;	/* room of chaser, room of chasee */
 	coord target;				/* Temporary	destination for	chaser */
@@ -138,12 +138,12 @@ over:
 		attack(th);
 		return;
 	} else if (ch_ret == game().where(*th.t_dest)) {
-		for (obj = level.objects.first(); obj != nullptr; obj = level.objects.after(obj))
+		for (obj = level.objects.first(); obj; obj = level.objects.after(*obj))
 			if	(th.t_dest == Destination(*game().pool.id_of(obj))) {
 				unsigned char oldchar;
 
-				level.objects.remove(obj);
-				th.t_pack.push_front(obj);
+				level.objects.remove(*obj);
+				th.t_pack.push_front(*obj);
 				oldchar = level.at(obj->o_pos) =
 				level.room(*th.t_room).r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
 				if (cansee(obj->o_pos.y, obj->o_pos.x))
@@ -216,7 +216,7 @@ see_monst(const Creature &mp)
 	 * If we are seeing	the enemy of a vorpally	enchanted weapon for the first
 	 * time, give the player a hint as to what that weapon is good for.
 	 */
-	if (player.weapon_item() != nullptr && mp.t_type == player.weapon_item()->o_enemy
+	if (player.weapon_item() && mp.t_type == player.weapon_item()->o_enemy
 	  && !player.weapon_item()->o_flags.test(DIDFLASH))
 	{
 		player.weapon_item()->o_flags.set(DIDFLASH);
@@ -233,13 +233,13 @@ see_monst(const Creature &mp)
 void
 start_run(Coord runner)
 {
-	Creature *tp;
+	Maybe<Creature> tp;
 
 	/*
 	 * If we couldn't find him,	something is funny
 	 */
 	tp = moat(runner.y, runner.x);
-	if (tp != nullptr) {
+	if (tp) {
 		/*
 		 *	Start the beastie running
 		 */
@@ -261,7 +261,7 @@ chase(Creature &tp, Coord ee)
 {
 	int	x, y;
 	int	dist, thisdist;
-	Item *obj;
+	Maybe<Item> obj;
 	const Coord er = tp.t_pos;
 	unsigned char ch;
 	int	plcnt =	1;
@@ -318,12 +318,12 @@ chase(Creature &tp, Coord ee)
 					 */
 					if (ch ==	SCROLL)
 					{
-						for (obj = game().level.objects.first(); obj != nullptr; obj = game().level.objects.after(obj))
+						for (obj = game().level.objects.first(); obj; obj = game().level.objects.after(*obj))
 						{
 							if (y ==	obj->o_pos.y &&	x == obj->o_pos.x)
 								break;
 						}
-						if (obj != nullptr && obj->which<Scroll>() == Scroll::ScareMonster)
+						if (obj && obj->which<Scroll>() == Scroll::ScareMonster)
 							continue;
 					}
 					/*
@@ -355,7 +355,7 @@ chase(Creature &tp, Coord ee)
 Destination
 find_dest(const Creature &tp)
 {
-	Item *obj;
+	Maybe<Item> obj;
 	int prob;
 	std::optional<RoomRef> rp;
 	rogue::Player &player = game().player;
@@ -364,7 +364,7 @@ find_dest(const Creature &tp)
 	|| see_monst(tp))
 		return Hero{};
 	rp = tp.t_room;
-	for (obj = game().level.objects.first(); obj != nullptr; obj = game().level.objects.after(obj))
+	for (obj = game().level.objects.first(); obj; obj = game().level.objects.after(*obj))
 	{
 	if (obj->o_type == ItemKind::Scroll && obj->which<Scroll>() == Scroll::ScareMonster)
 		continue;
@@ -398,9 +398,9 @@ static bool	new_slime(Creature &tp);
 void
 slime_split(Creature &tp)
 {
-	Creature *nslime;
+	Maybe<Creature> nslime;
 
-	if (!new_slime(tp) || (nslime = new_creature()) == nullptr)
+	if (!new_slime(tp) || !(nslime = new_creature()))
 		return;
 	msg("The slime divides.  Ick!");
 	new_monster(*nslime, 'S', slimy);
@@ -417,7 +417,7 @@ new_slime(Creature &tp)
 {
 	int y, x, ty, tx;
 	bool ret;
-	Creature *ntp;
+	Maybe<Creature> ntp;
 
 	ret = false;
 	tp.t_flags.set(ISFLY);

@@ -35,15 +35,15 @@ pick_one(const KindTable<E, magic_item> &table)
  * new_thing:
  *	Return a new thing
  */
-Item *
+Maybe<Item>
 new_thing()
 {
-	Item *cur;
+	Maybe<Item> cur;
 	int k;
 	rogue::Items &items = game().items;
 
-	if ((cur = new_item()) == nullptr)
-		return nullptr;
+	if (!(cur = new_item()))
+		return std::nullopt;
 	cur->o_hplus = cur->o_dplus = 0;
 	cur->o_damage = cur->o_hurldmg = "0d0";
 	cur->o_ac = 11;

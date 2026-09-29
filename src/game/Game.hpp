@@ -116,10 +116,10 @@ struct Player {
 	coord old_pos = {};				/* oldpos: position before last look() call */
 	std::optional<RoomRef> old_room;	/* oldrp: roomin(old_pos) */
 
-	// What he wears and wields, or nullptr (these look it up in game().pool)
-	Item *armor_item() const;
-	Item *weapon_item() const;
-	Item *ring_item(Hand hand) const;
+	// What he wears and wields, if anything (these look it up in game().pool)
+	Maybe<Item> armor_item() const;
+	Maybe<Item> weapon_item() const;
+	Maybe<Item> ring_item(Hand hand) const;
 	// Whether he wears this ring on this hand (was ISRING)
 	bool wears(Hand hand, Ring ring) const;
 	// Whether he wears this ring on either hand (was ISWEARING)
@@ -210,12 +210,12 @@ struct Items {
 template <>
 struct ListPool<Item> {
 	static Item *at(ItemId id);
-	static std::optional<ItemId> id_of(const Item *obj);
+	static std::optional<ItemId> id_of(const Item &obj);
 };
 template <>
 struct ListPool<Creature> {
 	static Creature *at(CreatureId id);
-	static std::optional<CreatureId> id_of(const Creature *tp);
+	static std::optional<CreatureId> id_of(const Creature &tp);
 };
 
 /*
@@ -233,12 +233,14 @@ struct Pool {
 	// The thing a link names (see Id)
 	Item &item(ItemId id) const { return items.get(id); }
 	Creature &creature(CreatureId id) const { return creatures.get(id); }
-	// The thing an optional link names, or nullptr
-	Item *item(std::optional<ItemId> id) const { return items.find(id); }
-	Creature *creature(std::optional<CreatureId> id) const { return creatures.find(id); }
-	// The link to a thing, nullopt for nullptr
-	std::optional<ItemId> id_of(const Item *obj) const { return items.id_of(obj); }
-	std::optional<CreatureId> id_of(const Creature *tp) const { return creatures.id_of(tp); }
+	// The thing an optional link names, if it is in use
+	Maybe<Item> item(std::optional<ItemId> id) const { return maybe(items.find(id)); }
+	Maybe<Creature> creature(std::optional<CreatureId> id) const { return maybe(creatures.find(id)); }
+	// The link to a thing, nullopt for none or a thing outside the pool
+	std::optional<ItemId> id_of(const Item &obj) const { return items.id_of(&obj); }
+	std::optional<CreatureId> id_of(const Creature &tp) const { return creatures.id_of(&tp); }
+	std::optional<ItemId> id_of(Maybe<const Item> obj) const { return obj ? id_of(*obj) : std::nullopt; }
+	std::optional<CreatureId> id_of(Maybe<const Creature> tp) const { return tp ? id_of(*tp) : std::nullopt; }
 };
 
 struct Game {

@@ -156,13 +156,13 @@ inv_name(const Item &obj, bool drop)
 		}
 		break;
 	}
-	if (&obj == game().player.armor_item())
+	if (refers_to(game().player.armor_item(), obj))
 		name += " (being worn)";
-	if (&obj == game().player.weapon_item())
+	if (refers_to(game().player.weapon_item(), obj))
 		name += " (weapon in hand)";
-	if (&obj == game().player.ring_item(Hand::Left))
+	if (refers_to(game().player.ring_item(Hand::Left), obj))
 		name += " (on left hand)";
-	else if (&obj == game().player.ring_item(Hand::Right))
+	else if (refers_to(game().player.ring_item(Hand::Right), obj))
 		name += " (on right hand)";
 	if (!name.empty()) {
 		if (drop && is_monster(name[0]))

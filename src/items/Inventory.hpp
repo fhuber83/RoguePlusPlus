@@ -33,7 +33,7 @@ void pick_up(unsigned char ch);
  * get_item:
  *	Pick something out of a pack for a purpose (prompts the player).
  */
-Item *get_item(std::string_view purpose, ItemFilter type);
+Maybe<Item> get_item(std::string_view purpose, ItemFilter type);
 
 /*
  * inventory:

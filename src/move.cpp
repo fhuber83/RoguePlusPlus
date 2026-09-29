@@ -172,7 +172,7 @@ hit_bound:
 	default:
 		turn.running = false;
 		if (is_monster(ch) || moat(nh.y, nh.x))
-			fight(nh, ch, maybe(player.weapon_item()), false);
+			fight(nh, ch, player.weapon_item(), false);
 		else {
 			turn.running = false;
 			if (ch != STAIRS)
@@ -200,7 +200,7 @@ door_open(const struct room &rp)
 {
 	int j, k;
 	unsigned char ch;
-	Creature *tp;
+	Maybe<Creature> tp;
 
 	if (!rp.r_flags.test(RoomFlag::Gone) && !game().player.body.t_flags.test(ISBLIND))
 		for (j = rp.r_pos.y; j < rp.r_pos.y + rp.r_max.y; j++)
@@ -209,7 +209,7 @@ door_open(const struct room &rp)
 				/* move(j, k); Why do this,?????? */
 				if (is_monster(ch)) {
 					tp = wake_monster(j, k);
-					if (tp == nullptr)
+					if (!tp)
 					{
 						continue;
 					}
@@ -261,9 +261,9 @@ be_trapped(Coord tc)
 				msg("oh no! An arrow shot you");
 		}
 		else {
-			Item *arrow;
+			Maybe<Item> arrow;
 
-			if ((arrow = new_item()) != nullptr) {
+			if ((arrow = new_item())) {
 				arrow->o_type = ItemKind::Weapon;
 				arrow->set_which(WeaponType::Arrow);
 				init_weapon(*arrow, WeaponType::Arrow);
@@ -323,7 +323,7 @@ rndmove(const Creature &who)
 {
 	int x, y;
 	unsigned char ch;
-	Item *obj;
+	Maybe<Item> obj;
 
 	y = who.t_pos.y + rnd(3) - 1;
 	x = who.t_pos.x + rnd(3) - 1;
@@ -342,10 +342,10 @@ rndmove(const Creature &who)
 		if (!step_ok(ch))
 			goto bad;
 		if (ch == SCROLL) {
-			for (obj = game().level.objects.first(); obj != nullptr; obj = game().level.objects.after(obj))
+			for (obj = game().level.objects.first(); obj; obj = game().level.objects.after(*obj))
 				if (y == obj->o_pos.y && x == obj->o_pos.x)
 					break;
-			if (obj != nullptr && obj->which<Scroll>() == Scroll::ScareMonster)
+			if (obj && obj->which<Scroll>() == Scroll::ScareMonster)
 				goto bad;
 		}
 	}

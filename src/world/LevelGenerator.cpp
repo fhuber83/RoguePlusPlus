@@ -70,7 +70,7 @@ new_level(void)
 	i = 0;
 	do {
 		rm = rnd_room();
-	stairs = rnd_pos(&level.rooms[rm]);
+	stairs = rnd_pos(level.rooms[rm]);
 	index = INDEX(stairs.y, stairs.x);
 	} while (!is_floor(level.map[index]));
 	level.map[index] = STAIRS;
@@ -85,7 +85,7 @@ new_level(void)
 		while (i--) {
 			do {
 				rm = rnd_room();
-				stairs = rnd_pos(&level.rooms[rm]);
+				stairs = rnd_pos(level.rooms[rm]);
 				index = INDEX(stairs.y, stairs.x);
 			} while (!is_floor(level.map[index]));
 			fp = &level.flags[index];
@@ -95,7 +95,7 @@ new_level(void)
 	}
 	do {
 		rm = rnd_room();
-		player.body.t_pos = rnd_pos(&level.rooms[rm]);
+		player.body.t_pos = rnd_pos(level.rooms[rm]);
 		index = INDEX(player.body.t_pos.y, player.body.t_pos.x);
 	} while (!(is_floor(level.map[index]) && level.flags[index].test(MapFlag::Real)
 				&& moat(player.body.t_pos.y, player.body.t_pos.x) == nullptr));
@@ -164,7 +164,7 @@ put_things(void)
 				 */
 				do {
 					rm = rnd_room();
-					tp = rnd_pos(&level.rooms[rm]);
+					tp = rnd_pos(level.rooms[rm]);
 				} while (!is_floor(winat(tp.y, tp.x)));
 				level.at(tp) = AMULET;
 				cur->o_pos = tp;
@@ -191,7 +191,7 @@ put_things(void)
 			 */
 			do {
 				rm = rnd_room();
-				tp = rnd_pos(&level.rooms[rm]);
+				tp = rnd_pos(level.rooms[rm]);
 			} while (!is_floor(level.at(tp)));
 			level.at(tp) = glyph_of(cur->o_type);
 			cur->o_pos = tp;
@@ -225,7 +225,7 @@ treas_room(void)
 	{
 		do
 		{
-			mp = rnd_pos(rp);
+			mp = rnd_pos(*rp);
 			index = INDEX(mp.y, mp.x);
 		} while (!is_floor(level.map[index]));
 		obj = new_thing();
@@ -248,7 +248,7 @@ treas_room(void)
 	{
 		for (spots = 0; spots < MAXTRIES; spots++)
 		{
-			mp = rnd_pos(rp);
+			mp = rnd_pos(*rp);
 			index = INDEX(mp.y, mp.x);
 			if (is_floor(level.map[index]) && moat(mp.y, mp.x) == nullptr)
 				break;
@@ -274,9 +274,9 @@ treas_room(void)
 
 constexpr int GOLDGRP = 1;
 
-static void	draw_room(struct room *rp);
-static void	vert( struct room *rp, int startx);
-static void	horiz(struct room *rp, int starty);
+static void	draw_room(const struct room &rp);
+static void	vert(const struct room &rp, int startx);
+static void	horiz(const struct room &rp, int starty);
 
 /*
  * do_rooms:
@@ -339,7 +339,7 @@ do_rooms(void)
 			if (rp->r_flags.test(RoomFlag::Maze)) {
 				rp->r_pos.x = top.x;
 				rp->r_pos.y = top.y;
-				draw_maze(rp);
+				draw_maze(*rp);
 			} else {
 				/*
 				 * Place a gone room.  Make certain that there is a blank line
@@ -365,7 +365,7 @@ do_rooms(void)
 			rp->r_pos.x = top.x + rnd(bsze.x - rp->r_max.x);
 			rp->r_pos.y = top.y + rnd(bsze.y - rp->r_max.y);
 		} while (rp->r_pos.y == 0);
-		draw_room(rp);
+		draw_room(*rp);
 		/*
 		 * Put the gold in
 		 */
@@ -377,7 +377,7 @@ do_rooms(void)
 				while (1) {
 					unsigned char gch;
 
-					rp->r_gold = rnd_pos(rp);
+					rp->r_gold = rnd_pos(*rp);
 					gch =  level.at(rp->r_gold);
 					if (is_floor(gch))
 						break;
@@ -398,7 +398,7 @@ do_rooms(void)
 				unsigned char mch;
 
 				do {
-					mp = rnd_pos(rp);
+					mp = rnd_pos(*rp);
 					mch = winat(mp.y, mp.x);
 				} while (!is_floor(mch));
 				new_monster(*tp, randmonster(false), mp);
@@ -413,7 +413,7 @@ do_rooms(void)
  *	Draw a box around a room and lay down the floor
  */
 void
-draw_room(struct room *rp)
+draw_room(const struct room &rp)
 {
 	int y, x;
 	rogue::Level &level = game().level;
@@ -421,19 +421,19 @@ draw_room(struct room *rp)
 	/*
 	 * Here we draw normal rooms, one side at a time
 	 */
-	vert(rp, rp->r_pos.x);			/* Draw left side */
-	vert(rp, rp->r_pos.x + rp->r_max.x - 1);	/* Draw right side */
-	horiz(rp, rp->r_pos.y);			/* Draw top */
-	horiz(rp, rp->r_pos.y + rp->r_max.y - 1);	/* Draw bottom */
-	level.at(rp->r_pos) = ULWALL;
-	level.at(rp->r_pos.y, rp->r_pos.x+rp->r_max.x - 1) = URWALL;
-	level.at(rp->r_pos.y+rp->r_max.y-1, rp->r_pos.x) = LLWALL;
-	level.at(rp->r_pos.y+rp->r_max.y-1, rp->r_pos.x+rp->r_max.x - 1) = LRWALL;
+	vert(rp, rp.r_pos.x);			/* Draw left side */
+	vert(rp, rp.r_pos.x + rp.r_max.x - 1);	/* Draw right side */
+	horiz(rp, rp.r_pos.y);			/* Draw top */
+	horiz(rp, rp.r_pos.y + rp.r_max.y - 1);	/* Draw bottom */
+	level.at(rp.r_pos) = ULWALL;
+	level.at(rp.r_pos.y, rp.r_pos.x+rp.r_max.x - 1) = URWALL;
+	level.at(rp.r_pos.y+rp.r_max.y-1, rp.r_pos.x) = LLWALL;
+	level.at(rp.r_pos.y+rp.r_max.y-1, rp.r_pos.x+rp.r_max.x - 1) = LRWALL;
 	/*
 	 * Put the floor down
 	 */
-	for (y = rp->r_pos.y + 1; y < rp->r_pos.y + rp->r_max.y - 1; y++)
-		for (x = rp->r_pos.x + 1; x < rp->r_pos.x + rp->r_max.x - 1; x++)
+	for (y = rp.r_pos.y + 1; y < rp.r_pos.y + rp.r_max.y - 1; y++)
+		for (x = rp.r_pos.x + 1; x < rp.r_pos.x + rp.r_max.x - 1; x++)
 			level.at(y, x) = FLOOR;
 }
 
@@ -443,11 +443,11 @@ draw_room(struct room *rp)
  */
 static
 void
-vert(struct room *rp, int startx)
+vert(const struct room &rp, int startx)
 {
 	int y;
 
-	for (y = rp->r_pos.y + 1; y <= rp->r_max.y + rp->r_pos.y - 1; y++)
+	for (y = rp.r_pos.y + 1; y <= rp.r_max.y + rp.r_pos.y - 1; y++)
 		game().level.at(y, startx) = VWALL;
 }
 
@@ -457,11 +457,11 @@ vert(struct room *rp, int startx)
  */
 static
 void
-horiz(struct room *rp, int starty)
+horiz(const struct room &rp, int starty)
 {
 	int x;
 
-	for (x = rp->r_pos.x; x <= rp->r_pos.x + rp->r_max.x - 1; x++)
+	for (x = rp.r_pos.x; x <= rp.r_pos.x + rp.r_max.x - 1; x++)
 		game().level.at(starty, x) = HWALL;
 }
 

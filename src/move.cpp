@@ -196,15 +196,15 @@ move_stuff:
  *	that might move.
  */
 void
-door_open(struct room *rp)
+door_open(const struct room &rp)
 {
 	int j, k;
 	unsigned char ch;
 	Creature *tp;
 
-	if (!rp->r_flags.test(RoomFlag::Gone) && !game().player.body.t_flags.test(ISBLIND))
-		for (j = rp->r_pos.y; j < rp->r_pos.y + rp->r_max.y; j++)
-			for (k = rp->r_pos.x; k < rp->r_pos.x + rp->r_max.x; k++) {
+	if (!rp.r_flags.test(RoomFlag::Gone) && !game().player.body.t_flags.test(ISBLIND))
+		for (j = rp.r_pos.y; j < rp.r_pos.y + rp.r_max.y; j++)
+			for (k = rp.r_pos.x; k < rp.r_pos.x + rp.r_max.x; k++) {
 				ch = winat(j, k);
 				/* move(j, k); Why do this,?????? */
 				if (is_monster(ch)) {
@@ -213,7 +213,7 @@ door_open(struct room *rp)
 					{
 						continue;
 					}
-					if (tp->t_oldch == ' ' && !rp->r_flags.test(RoomFlag::Dark)
+					if (tp->t_oldch == ' ' && !rp.r_flags.test(RoomFlag::Dark)
 						&& !game().player.body.t_flags.test(ISBLIND))
 							tp->t_oldch = game().level.at(j, k);
 				}

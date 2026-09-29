@@ -26,7 +26,7 @@ static bool	maze_at(int y, int x);
 static bool	inrange(int y, int x);
 
 void
-draw_maze(struct room *rp)
+draw_maze(struct room &rp)
 {
 	int y, x;
 	int fy[MAXFRNT], fx[MAXFRNT];
@@ -37,10 +37,10 @@ draw_maze(struct room *rp)
 	fr_y = fy;
 	fr_x = fx;
 	maxx = maxy = 0;
-	topy = rp->r_pos.y;
+	topy = rp.r_pos.y;
 	if (topy == 0)
-		topy = ++rp->r_pos.y;
-	topx = rp->r_pos.x;
+		topy = ++rp.r_pos.y;
+	topx = rp.r_pos.x;
 	/*
 	 * Choose a random spot in the maze and initialize the frontier
 	 * to be the immediate neighbors of this random spot.
@@ -62,8 +62,8 @@ draw_maze(struct room *rp)
 	 * According to the Grand Beeking, every maze should have a loop
 	 * Don't worry if you don't understand this.
 	 */
-	rp->r_max.x = maxx - rp->r_pos.x + 1;
-	rp->r_max.y = maxy - rp->r_pos.y + 1;
+	rp.r_max.x = maxx - rp.r_pos.x + 1;
+	rp.r_max.y = maxy - rp.r_pos.y + 1;
 	do {
 		static constexpr Coord ld[4] = {
 			{-1,  0},

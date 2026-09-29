@@ -169,7 +169,7 @@ wanderer(void)
 		rp = &game().level.rooms[i];
 		if (RoomRef::room(i) == player.body.t_room)
 			continue;
-		cp = rnd_pos(rp);
+		cp = rnd_pos(*rp);
 	} while (!(RoomRef::room(i) != player.body.t_room && step_ok(winat(cp.y, cp.x))));
 	new_monster(*tp, randmonster(true), cp);
 	start_run(tp->t_pos);

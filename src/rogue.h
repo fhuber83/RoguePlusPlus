@@ -15,6 +15,7 @@
 #include <ctime>
 #include <format>
 #include <optional>
+#include <span>
 #include <array>
 #include <string>
 #include <string_view>
@@ -531,7 +532,7 @@ int	INDEX(int y, int x);
 // move.cpp
 void	do_run(unsigned char ch);
 void	do_move(int dy, int dx);
-void	door_open(struct room *rp);
+void	door_open(const struct room &rp);
 void	descend(std::string_view mesg);
 Coord	rndmove(const Creature &who);
 

@@ -78,12 +78,12 @@ cansee(int y, int x)
  *	Pick a random spot in a room
  */
 Coord
-rnd_pos(const struct room *rp)
+rnd_pos(const struct room &rp)
 {
 	Coord cp;
 
-	cp.x = rp->r_pos.x + rnd(rp->r_max.x - 2) + 1;
-	cp.y = rp->r_pos.y + rnd(rp->r_max.y - 2) + 1;
+	cp.x = rp.r_pos.x + rnd(rp.r_max.x - 2) + 1;
+	cp.y = rp.r_pos.y + rnd(rp.r_max.y - 2) + 1;
 	return cp;
 }
 
@@ -107,7 +107,7 @@ enter_room(Coord cp)
 		return;
 	}
 	rp = &level.room(*in);
-	door_open(rp);
+	door_open(*rp);
 	if (!rp->r_flags.test(RoomFlag::Dark) && !game().player.body.t_flags.test(ISBLIND) && !rp->r_flags.test(RoomFlag::Maze))
 		for (y = rp->r_pos.y; y < rp->r_max.y + rp->r_pos.y; y++) {
 			for (x = rp->r_pos.x; x < rp->r_max.x + rp->r_pos.x; x++) {
@@ -172,7 +172,7 @@ leave_room(Coord cp)
 				display().draw_tile({x, y}, floor);
 				break;
 			}
-	door_open(rp);
+	door_open(*rp);
 }
 
 }  // namespace rogue::world

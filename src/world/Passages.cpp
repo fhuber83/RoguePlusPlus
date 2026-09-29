@@ -9,7 +9,7 @@
 namespace rogue::world {
 
 static void	conn(int r1, int r2);
-static void	door(struct room *rm, Coord cp);
+static void	door(struct room &rm, Coord cp);
 static void	passnum(void);
 static void	numpass(int y, int x);
 static void	psplat(int y, int x);
@@ -109,11 +109,11 @@ conn(int r1, int r2)
 	 * if the rooms are gone.
 	 */
 	if (!rpf->r_flags.test(RoomFlag::Gone))
-		door(rpf, spos);
+		door(*rpf, spos);
 	else
 		psplat(spos.y, spos.x);
 	if (rpt && !rpt->r_flags.test(RoomFlag::Gone))
-		door(rpt, epos);
+		door(*rpt, epos);
 	else
 		psplat(epos.y, epos.x);
 	/*
@@ -271,20 +271,20 @@ do_passages()
  *	the exits array of the room.
  */
 void
-door(struct room *rm, Coord cp)
+door(struct room &rm, Coord cp)
 {
 	int index, xit;
 
 	index = INDEX(cp.y, cp.x);
 	if (rnd(10) + 1 < game().level.depth && rnd(5) == 0)
 	{
-		game().level.map[index] = (cp.y == rm->r_pos.y || cp.y == rm->r_pos.y + rm->r_max.y - 1) ? HWALL : VWALL;
+		game().level.map[index] = (cp.y == rm.r_pos.y || cp.y == rm.r_pos.y + rm.r_max.y - 1) ? HWALL : VWALL;
 		game().level.flags[index].unset(MapFlag::Real);
 	}
 	else
 		game().level.map[index] = DOOR;
-	xit = rm->r_nexits++;
-	rm->r_exit[xit] = cp;
+	xit = rm.r_nexits++;
+	rm.r_exit[xit] = cp;
 }
 
 

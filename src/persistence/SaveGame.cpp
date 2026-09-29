@@ -8,6 +8,7 @@
 #include <functional>
 #include <iterator>
 #include <set>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -211,11 +212,11 @@ json grid_json(const Cell *grid)
 	return rows;
 }
 
-json odds_json(const struct magic_item *items, std::size_t n)
+json odds_json(std::span<const magic_item> items)
 {
 	json out = json::array();
-	for (std::size_t i = 0; i < n; i++)
-		out.push_back(json::array({items[i].mi_prob, items[i].mi_worth}));
+	for (const magic_item &mi : items)
+		out.push_back(json::array({mi.mi_prob, mi.mi_worth}));
 	return out;
 }
 
@@ -269,11 +270,11 @@ json items_json(const Items &items)
 	};
 	return {
 		{"odds", {
-			{"scrolls", odds_json(items.s_magic.data(), items.s_magic.size())},
-			{"potions", odds_json(items.p_magic.data(), items.p_magic.size())},
-			{"rings", odds_json(items.r_magic.data(), items.r_magic.size())},
-			{"sticks", odds_json(items.ws_magic.data(), items.ws_magic.size())},
-			{"things", odds_json(items.things, NUMTHINGS)},
+			{"scrolls", odds_json(items.s_magic)},
+			{"potions", odds_json(items.p_magic)},
+			{"rings", odds_json(items.r_magic)},
+			{"sticks", odds_json(items.ws_magic)},
+			{"things", odds_json(items.things)},
 		}},
 		{"scroll_names", std::move(names)},
 		{"potion_colors", texts_json(items.p_colors)},
@@ -660,10 +661,10 @@ void grid_from(Cell *grid, const json &j, std::string_view key)
 	}
 }
 
-void odds_from(struct magic_item *items, std::size_t n, const json &j, std::string_view key)
+void odds_from(std::span<magic_item> items, const json &j, std::string_view key)
 {
-	const json &list = array_of(j, key, n);
-	for (std::size_t i = 0; i < n; i++) {
+	const json &list = array_of(j, key, items.size());
+	for (std::size_t i = 0; i < items.size(); i++) {
 		if (!list[i].is_array() || list[i].size() != 2)
 			fail(std::format("\"{}\" entries should be [odds, worth]", key));
 		items[i].mi_prob = whole(list[i][0], key);
@@ -714,11 +715,11 @@ void guess_refs_from(KindTable<E, std::string> &guesses, const std::vector<std::
 void items_from(Items &items, const json &j)
 {
 	const json &odds = field(j, "odds");
-	odds_from(items.s_magic.data(), items.s_magic.size(), odds, "scrolls");
-	odds_from(items.p_magic.data(), items.p_magic.size(), odds, "potions");
-	odds_from(items.r_magic.data(), items.r_magic.size(), odds, "rings");
-	odds_from(items.ws_magic.data(), items.ws_magic.size(), odds, "sticks");
-	odds_from(items.things, NUMTHINGS, odds, "things");
+	odds_from(items.s_magic, odds, "scrolls");
+	odds_from(items.p_magic, odds, "potions");
+	odds_from(items.r_magic, odds, "rings");
+	odds_from(items.ws_magic, odds, "sticks");
+	odds_from(items.things, odds, "things");
 
 	const json &names = array_of(j, "scroll_names", items.s_names.size());
 	for (std::size_t i = 0; i < items.s_names.size(); i++)

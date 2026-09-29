@@ -244,10 +244,10 @@ accumulate_odds(KindTable<E, magic_item> &table)
 void
 init_things()
 {
-	struct magic_item *mp;
+	std::span<magic_item> things = game().items.things;
 
-	for (mp = &game().items.things[1]; mp <= &game().items.things[NUMTHINGS-1]; mp++)
-		mp->mi_prob += (mp-1)->mi_prob;
+	for (std::size_t i = 1; i < things.size(); i++)
+		things[i].mi_prob += things[i-1].mi_prob;
 }
 
 /*

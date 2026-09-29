@@ -173,7 +173,7 @@ do_zap()
 					do
 					{
 						rm = rnd_room();
-						new_yx = rnd_pos(&game().level.rooms[rm]);
+						new_yx = rnd_pos(game().level.rooms[rm]);
 					}  while (!(is_floor(winat(new_yx.y, new_yx.x))));
 					tp->t_pos = new_yx;
 					if (see_monst(*tp))

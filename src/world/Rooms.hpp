@@ -34,7 +34,7 @@ bool cansee(int y, int x);
  * rnd_pos:
  *	Pick a random spot in a room.
  */
-Coord rnd_pos(const struct room *rp);
+Coord rnd_pos(const struct room &rp);
 
 /*
  * enter_room:

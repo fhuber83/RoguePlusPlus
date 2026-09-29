@@ -4,38 +4,31 @@ namespace rogue::items {
 
 /*
  * pick_one:
- *	Pick an item out of a list of nitems possible magic items
+ *	Pick an item out of a list of possible magic items, by their added-up
+ *	odds; the index of the one picked
  */
-static
-int  // actually an offset, the element index in the array
-pick_one(struct magic_item *magic, int nitems)
+static int
+pick_one(std::span<const magic_item> magic)
 {
-	struct magic_item *end;
-	int i;
-	struct magic_item *start;
+	int i = rnd(100);
 
-	start = magic;
-	for (end = &magic[nitems], i = rnd(100); magic < end; magic++)
-		if (i < magic->mi_prob)
-			break;
-	if (magic == end)
-	{
-		if constexpr (rogue::config::debug_checks) {
-			debug("bad pick_one: {} from {} items", i, nitems);
-			for (magic = start; magic < end; magic++)
-				debug("{}: {}%", magic->mi_name, magic->mi_prob);
-		}
-		magic = start;
+	for (std::size_t n = 0; n < magic.size(); n++)
+		if (i < magic[n].mi_prob)
+			return static_cast<int>(n);
+	if constexpr (rogue::config::debug_checks) {
+		debug("bad pick_one: {} from {} items", i, magic.size());
+		for (const magic_item &mi : magic)
+			debug("{}: {}%", mi.mi_name, mi.mi_prob);
 	}
-	return magic - start;
+	return 0;
 }
 
 // Pick a kind of E by the odds in the table
 template <typename E>
 static E
-pick_one(KindTable<E, magic_item> &table)
+pick_one(const KindTable<E, magic_item> &table)
 {
-	return static_cast<E>(pick_one(table.data(), table.size()));
+	return static_cast<E>(pick_one(std::span<const magic_item>(table.data(), table.size())));
 }
 
 /*
@@ -62,7 +55,7 @@ new_thing()
 	 * Decide what kind of object it will be
 	 * If we haven't had food for a while, let it be food.
 	 */
-	switch (game().level.no_food > 3 ? 2 : pick_one(items.things, NUMTHINGS))
+	switch (game().level.no_food > 3 ? 2 : pick_one(items.things))
 	{
 	case 0:
 		cur->o_type = ItemKind::Potion;

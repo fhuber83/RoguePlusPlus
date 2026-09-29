@@ -83,7 +83,7 @@ teleport(void)
 	do
 	{
 		rm = rnd_room();
-		c = rnd_pos(&game().level.rooms[rm]);
+		c = rnd_pos(game().level.rooms[rm]);
 	} while (!(step_ok(winat(c.y, c.x))));
 	if (RoomRef::room(rm) != player.body.t_room)
 	{

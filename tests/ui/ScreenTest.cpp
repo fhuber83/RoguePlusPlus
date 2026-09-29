@@ -193,7 +193,7 @@ TEST(Screen, ConnectRepaintsTheTerminal)
 	s.put("pre");
 	s.show_cursor(false);
 	FakeTerminal t;
-	s.connect(&t);
+	s.connect(t);
 	EXPECT_EQ(t.draws, Screen::Rows * Screen::Cols);
 	EXPECT_EQ(t.cells, s.snapshot());
 	EXPECT_FALSE(t.cursor_visible);
@@ -203,7 +203,7 @@ TEST(Screen, TerminalMirrorsEveryWrite)
 {
 	Screen s;
 	FakeTerminal t;
-	s.connect(&t);
+	s.connect(t);
 	s.set_cursor(3, 3);
 	s.put("abc");
 	s.line(5, 0, 0xcd, 20, false);
@@ -220,7 +220,7 @@ TEST(Screen, RefreshAndReadKeySyncTheCursor)
 {
 	Screen s;
 	FakeTerminal t;
-	s.connect(&t);
+	s.connect(t);
 	s.set_cursor(4, 9);
 	s.refresh();
 	EXPECT_EQ(t.flushes, 1);
@@ -240,9 +240,9 @@ TEST(Screen, DisconnectStopsDrawing)
 {
 	Screen s;
 	FakeTerminal t;
-	s.connect(&t);
+	s.connect(t);
 	int draws = t.draws;
-	s.connect(nullptr);
+	s.connect(std::nullopt);
 	s.put('x');
 	s.bell();
 	EXPECT_EQ(t.draws, draws);

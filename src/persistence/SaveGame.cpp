@@ -8,6 +8,7 @@
 #include <functional>
 #include <iterator>
 #include <set>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -37,15 +38,15 @@ static_assert(map_rows == maxrow - 1 && map_cols == COLS);
  * then update the size (measured on x86-64 Linux, where these hold).
  */
 #if defined(__x86_64__) && defined(__linux__)
-static_assert(sizeof(Game) == 18552, "a Game member was added or removed: save it");
-static_assert(sizeof(Player) == 320, "a Player field was added or removed: save it");
+static_assert(sizeof(Game) == 18560, "a Game member was added or removed: save it");
+static_assert(sizeof(Player) == 328, "a Player field was added or removed: save it");
 static_assert(sizeof(Level) == 6488, "a Level field was added or removed: save it");
 static_assert(sizeof(Items) == 4808, "an Items field was added or removed: save it");
 static_assert(sizeof(Pool) == 1336, "a Pool field was added or removed: save it");
 static_assert(sizeof(Turn) == 80, "a Turn field was added or removed: save it");
 static_assert(sizeof(MessageLine) == 80, "a MessageLine field was added or removed: save it");
 static_assert(sizeof(Options) == 264, "an Options field was added or removed: decide whether to save it");
-static_assert(sizeof(Creature) == 144, "a Creature field was added or removed: save it");
+static_assert(sizeof(Creature) == 152, "a Creature field was added or removed: save it");
 static_assert(sizeof(Item) == 128, "an Item field was added or removed: save it");
 static_assert(sizeof(struct room) == 132, "a room field was added or removed: save it");
 static_assert(sizeof(struct stats) == 80, "a stats field was added or removed: save it");
@@ -72,13 +73,6 @@ std::string_view intern(std::string_view text)
 	return *texts.emplace(text).first;
 }
 
-template <class T>
-bool points_into(const T *p, const T *first, std::size_t n)
-{
-	std::less<const T *> less;
-	return p != nullptr && !less(p, first) && less(p, first + n);
-}
-
 // Writing
 
 json text_json(std::string_view text)
@@ -91,39 +85,41 @@ json coord_json(const coord &c)
 	return json::array({c.x, c.y});
 }
 
-json item_ref(const Game &g, const Item *obj)
+json item_ref(const Game &g, Maybe<const Item> obj)
 {
-	int slot = g.pool.items.slot_of(obj);
-	if (slot < 0)
+	std::optional<ItemId> id = g.pool.id_of(obj);
+	if (!id)
 		return nullptr;
-	return slot;
+	return id->slot;
 }
 
-json room_ref(const Game &g, const struct room *rp)
+// A link to an item, null for none or a slot not in use
+json item_ref(const Game &g, std::optional<ItemId> id)
 {
-	if (points_into(rp, g.level.rooms, MAXROOMS))
-		return json{{"room", rp - g.level.rooms}};
-	if (points_into(rp, g.level.passages, MAXPASS))
-		return json{{"passage", rp - g.level.passages}};
-	return nullptr;
+	return item_ref(g, g.pool.item(id));
 }
 
-json dest_ref(const Game &g, const coord *dest)
+json room_ref(std::optional<RoomRef> ref)
 {
-	if (dest == nullptr)
+	if (!ref)
 		return nullptr;
-	if (dest == &g.player.body.t_pos)
+	return json{{ref->kind == RoomRef::Kind::Room ? "room" : "passage", ref->index}};
+}
+
+json dest_ref(const Game &g, std::optional<Destination> dest)
+{
+	if (!dest)
+		return nullptr;
+	if (std::holds_alternative<Hero>(*dest))
 		return "hero";
-	for (int i = 0; i < MAXROOMS; i++)
-		if (dest == &g.level.rooms[i].r_gold)
-			return json{{"room_gold", i}};
-	for (int i = 0; i < MAXPASS; i++)
-		if (dest == &g.level.passages[i].r_gold)
-			return json{{"passage_gold", i}};
-	for (int i = 0; i < MAXITEMS; i++)
-		if (const Item *obj = g.pool.items.at(i); obj != nullptr && dest == &obj->o_pos)
-			return json{{"item", i}};
-	throw std::logic_error("a monster is after something that can't be saved");
+	if (std::holds_alternative<Gold>(*dest)) {
+		const RoomRef room = std::get<Gold>(*dest).room;
+		return json{{room.kind == RoomRef::Kind::Room ? "room_gold" : "passage_gold", room.index}};
+	}
+	const ItemId id = std::get<ItemId>(*dest);
+	if (!g.pool.items.used(id.slot))
+		throw std::logic_error("a monster is after something that can't be saved");
+	return json{{"item", id.slot}};
 }
 
 // Damage as its text, null for none
@@ -154,8 +150,8 @@ json stats_json(const struct stats &s, bool flytrap)
 json item_list(const Game &g, const List<Item> &list)
 {
 	json out = json::array();
-	for (const Item *obj : list)
-		out.push_back(item_ref(g, obj));
+	for (ItemId id : list.ids())
+		out.push_back(item_ref(g, id));
 	return out;
 }
 
@@ -165,7 +161,7 @@ json creature_json(const Game &g, const Creature &c)
 		{"pos", coord_json(c.t_pos)}, {"turn", c.t_turn}, {"type", c.t_type},
 		{"disguise", c.t_disguise}, {"oldch", c.t_oldch}, {"dest", dest_ref(g, c.t_dest)},
 		{"flags", c.t_flags.bits()}, {"stats", stats_json(c.t_stats, is_flytrap(g, c))},
-		{"room", room_ref(g, c.t_room)}, {"pack", item_list(g, c.t_pack)},
+		{"room", room_ref(c.t_room)}, {"pack", item_list(g, c.t_pack)},
 	};
 }
 
@@ -200,8 +196,8 @@ unsigned char byte_of(MapFlags cell) { return cell.bits(); }
 void set_byte(unsigned char &cell, unsigned char b) { cell = b; }
 void set_byte(MapFlags &cell, unsigned char b) { cell = MapFlags::from_bits(b); }
 
-template <class Cell>
-json grid_json(const Cell *grid)
+// grid: Level::map or Level::flags
+json grid_json(const auto &grid)
 {
 	json rows = json::array();
 	for (int y = 1; y < maxrow; y++) {
@@ -216,11 +212,11 @@ json grid_json(const Cell *grid)
 	return rows;
 }
 
-json odds_json(const struct magic_item *items, std::size_t n)
+json odds_json(std::span<const magic_item> items)
 {
 	json out = json::array();
-	for (std::size_t i = 0; i < n; i++)
-		out.push_back(json::array({items[i].mi_prob, items[i].mi_worth}));
+	for (const magic_item &mi : items)
+		out.push_back(json::array({mi.mi_prob, mi.mi_worth}));
 	return out;
 }
 
@@ -274,11 +270,11 @@ json items_json(const Items &items)
 	};
 	return {
 		{"odds", {
-			{"scrolls", odds_json(items.s_magic.data(), items.s_magic.size())},
-			{"potions", odds_json(items.p_magic.data(), items.p_magic.size())},
-			{"rings", odds_json(items.r_magic.data(), items.r_magic.size())},
-			{"sticks", odds_json(items.ws_magic.data(), items.ws_magic.size())},
-			{"things", odds_json(items.things, NUMTHINGS)},
+			{"scrolls", odds_json(items.s_magic)},
+			{"potions", odds_json(items.p_magic)},
+			{"rings", odds_json(items.r_magic)},
+			{"sticks", odds_json(items.ws_magic)},
+			{"things", odds_json(items.things)},
 		}},
 		{"scroll_names", std::move(names)},
 		{"potion_colors", texts_json(items.p_colors)},
@@ -313,7 +309,7 @@ json player_json(const Game &g)
 		{"quiet", p.quiet}, {"fungus_hits", p.fung_hit},
 		{"flytrap_damage", flytrap_attacks(p.fung_hit).to_string()},
 		{"was_trapped", std::to_underlying(p.was_trapped)},
-		{"old_pos", coord_json(p.old_pos)}, {"old_room", room_ref(g, p.old_room)},
+		{"old_pos", coord_json(p.old_pos)}, {"old_room", room_ref(p.old_room)},
 	};
 }
 
@@ -325,8 +321,8 @@ json level_json(const Game &g)
 		rooms.push_back(room_json(r));
 	for (const struct room &r : l.passages)
 		passages.push_back(room_json(r));
-	for (const Creature *tp : l.monsters)
-		monsters.push_back(g.pool.creatures.slot_of(tp));
+	for (CreatureId id : l.monsters.ids())
+		monsters.push_back(g.pool.creatures.used(id.slot) ? id.slot : -1);
 	return {
 		{"depth", l.depth}, {"traps", l.ntraps}, {"no_food", l.no_food},
 		{"rooms", std::move(rooms)}, {"passages", std::move(passages)},
@@ -489,57 +485,53 @@ std::string_view kept_text(const json &v, std::string_view what)
 }
 
 /*
- * A slot number, or nullptr for null. With used, the slot must be in use;
- * without, a free slot gives nullptr (a save made before discard() forgot
+ * A slot number, or nothing for null. With used, the slot must be in use;
+ * without, a free slot gives nothing (a save made before discard() forgot
  * the last item picked can name the freed slot).
  */
-Item *item_at(Game &g, const json &v, std::string_view what, bool used = true)
+Maybe<Item> item_at(Game &g, const json &v, std::string_view what, bool used = true)
 {
 	if (v.is_null())
-		return nullptr;
+		return std::nullopt;
 	int slot = whole(v, what);
-	Item *obj = g.pool.items.at(slot);
-	if (slot < 0 || slot >= MAXITEMS || (used && obj == nullptr))
+	Maybe<Item> obj = maybe(g.pool.items.at(slot));
+	if (slot < 0 || slot >= MAXITEMS || (used && !obj))
 		fail(std::format("{} is not an item in use", what));
 	return obj;
 }
 
-struct room *room_at(Game &g, const json &v, std::string_view what)
+std::optional<RoomRef> room_at(const json &v, std::string_view what)
 {
 	if (v.is_null())
-		return nullptr;
+		return std::nullopt;
 	if (v.is_object() && v.size() == 1) {
-		if (v.contains("room")) {
-			int i = whole(v["room"], what);
-			if (i >= 0 && i < MAXROOMS)
-				return &g.level.rooms[i];
-		} else if (v.contains("passage")) {
-			int i = whole(v["passage"], what);
-			if (i >= 0 && i < MAXPASS)
-				return &g.level.passages[i];
-		}
+		std::optional<RoomRef> ref;
+		if (v.contains("room"))
+			ref = RoomRef::room(whole(v["room"], what));
+		else if (v.contains("passage"))
+			ref = RoomRef::passage(whole(v["passage"], what));
+		if (ref && Level::valid(*ref))
+			return ref;
 	}
 	fail(std::format("{} is not a room or passage", what));
 }
 
-coord *dest_at(Game &g, const json &v)
+std::optional<Destination> dest_at(Game &g, const json &v)
 {
 	if (v.is_null())
-		return nullptr;
+		return std::nullopt;
 	if (v == "hero")
-		return &g.player.body.t_pos;
+		return Hero{};
 	if (v.is_object() && v.size() == 1) {
-		if (v.contains("room_gold")) {
-			int i = whole(v["room_gold"], "dest");
-			if (i >= 0 && i < MAXROOMS)
-				return &g.level.rooms[i].r_gold;
-		} else if (v.contains("passage_gold")) {
-			int i = whole(v["passage_gold"], "dest");
-			if (i >= 0 && i < MAXPASS)
-				return &g.level.passages[i].r_gold;
-		} else if (v.contains("item")) {
-			return &item_at(g, v["item"], "dest")->o_pos;
-		}
+		std::optional<RoomRef> gold;
+		if (v.contains("room_gold"))
+			gold = RoomRef::room(whole(v["room_gold"], "dest"));
+		else if (v.contains("passage_gold"))
+			gold = RoomRef::passage(whole(v["passage_gold"], "dest"));
+		else if (v.contains("item"))
+			return *g.pool.id_of(item_at(g, v["item"], "dest"));
+		if (gold && Level::valid(*gold))
+			return Gold{*gold};
 	}
 	fail("\"dest\" is not the hero, gold or an item");
 }
@@ -579,12 +571,12 @@ void items_into(Game &g, List<Item> &list, const json &slots, std::string_view w
 	if (!slots.is_array())
 		fail(std::format("{} is not a list", what));
 	// Kept in their order: push each to the back
-	const Item *last = nullptr;
+	Maybe<const Item> last;
 	for (const json &v : slots) {
-		Item *obj = item_at(g, v, what);
-		if (obj == nullptr)
+		Maybe<Item> obj = item_at(g, v, what);
+		if (!obj)
 			fail(std::format("{} holds a null", what));
-		list.insert_after(last, obj);
+		list.insert_after(last, *obj);
 		last = obj;
 	}
 }
@@ -599,7 +591,7 @@ void creature_from(Game &g, Creature &c, const json &j)
 	c.t_dest = dest_at(g, field(j, "dest"));
 	c.t_flags = CreatureFlags::from_bits(num<CreatureFlags::Bits>(j, "flags"));
 	c.t_stats = stats_from(field(j, "stats"), is_flytrap(g, c));
-	c.t_room = room_at(g, field(j, "room"), "\"room\"");
+	c.t_room = room_at(field(j, "room"), "\"room\"");
 	items_into(g, c.t_pack, field(j, "pack"), "\"pack\"");
 }
 
@@ -658,8 +650,7 @@ std::vector<unsigned char> hex_row(const json &v, std::string_view what)
 	return out;
 }
 
-template <class Cell>
-void grid_from(Cell *grid, const json &j, std::string_view key)
+void grid_from(auto &grid, const json &j, std::string_view key)
 {
 	const json &rows = array_of(j, key, map_rows);
 	for (int y = 1; y < maxrow; y++) {
@@ -669,10 +660,10 @@ void grid_from(Cell *grid, const json &j, std::string_view key)
 	}
 }
 
-void odds_from(struct magic_item *items, std::size_t n, const json &j, std::string_view key)
+void odds_from(std::span<magic_item> items, const json &j, std::string_view key)
 {
-	const json &list = array_of(j, key, n);
-	for (std::size_t i = 0; i < n; i++) {
+	const json &list = array_of(j, key, items.size());
+	for (std::size_t i = 0; i < items.size(); i++) {
 		if (!list[i].is_array() || list[i].size() != 2)
 			fail(std::format("\"{}\" entries should be [odds, worth]", key));
 		items[i].mi_prob = whole(list[i][0], key);
@@ -723,11 +714,11 @@ void guess_refs_from(KindTable<E, std::string> &guesses, const std::vector<std::
 void items_from(Items &items, const json &j)
 {
 	const json &odds = field(j, "odds");
-	odds_from(items.s_magic.data(), items.s_magic.size(), odds, "scrolls");
-	odds_from(items.p_magic.data(), items.p_magic.size(), odds, "potions");
-	odds_from(items.r_magic.data(), items.r_magic.size(), odds, "rings");
-	odds_from(items.ws_magic.data(), items.ws_magic.size(), odds, "sticks");
-	odds_from(items.things, NUMTHINGS, odds, "things");
+	odds_from(items.s_magic, odds, "scrolls");
+	odds_from(items.p_magic, odds, "potions");
+	odds_from(items.r_magic, odds, "rings");
+	odds_from(items.ws_magic, odds, "sticks");
+	odds_from(items.things, odds, "things");
 
 	const json &names = array_of(j, "scroll_names", items.s_names.size());
 	for (std::size_t i = 0; i < items.s_names.size(); i++)
@@ -802,13 +793,13 @@ void level_from(Game &g, const json &j)
 	const json &monsters = field(j, "monsters");
 	if (!monsters.is_array())
 		fail("\"monsters\" is not a list");
-	const Creature *last = nullptr;
+	Maybe<const Creature> last;
 	for (const json &v : monsters) {
 		int slot = whole(v, "\"monsters\"");
-		Creature *tp = g.pool.creatures.at(slot);
-		if (tp == nullptr)
+		Maybe<Creature> tp = maybe(g.pool.creatures.at(slot));
+		if (!tp)
 			fail("\"monsters\" holds a creature not in use");
-		l.monsters.insert_after(last, tp);
+		l.monsters.insert_after(last, *tp);
 		last = tp;
 	}
 }
@@ -820,11 +811,11 @@ void player_from(Game &g, const json &j)
 	p.max_stats = stats_from(field(j, "max_stats"), false);
 	p.purse = num<int>(j, "purse");
 	p.in_pack = num<int>(j, "in_pack");
-	p.armor = item_at(g, field(j, "armor"), "\"armor\"");
-	p.weapon = item_at(g, field(j, "weapon"), "\"weapon\"");
+	p.armor = g.pool.id_of(item_at(g, field(j, "armor"), "\"armor\""));
+	p.weapon = g.pool.id_of(item_at(g, field(j, "weapon"), "\"weapon\""));
 	const json &rings = array_of(j, "rings", 2);
-	p.rings[Hand::Left] = item_at(g, rings[0], "\"rings\"");
-	p.rings[Hand::Right] = item_at(g, rings[1], "\"rings\"");
+	p.rings[Hand::Left] = g.pool.id_of(item_at(g, rings[0], "\"rings\""));
+	p.rings[Hand::Right] = g.pool.id_of(item_at(g, rings[1], "\"rings\""));
 	p.food_left = num<int>(j, "food_left");
 	p.hungry_state = num<int>(j, "hungry_state");
 	p.has_amulet = flag(j, "has_amulet");
@@ -838,7 +829,7 @@ void player_from(Game &g, const json &j)
 		fail("\"flytrap_damage\" does not follow from \"fungus_hits\"");
 	p.was_trapped = static_cast<Trapped>(num_in<unsigned char>(j, "was_trapped", 0, 2));
 	p.old_pos = coord_of(j, "old_pos");
-	p.old_room = room_at(g, field(j, "old_room"), "\"old_room\"");
+	p.old_room = room_at(field(j, "old_room"), "\"old_room\"");
 }
 
 void turn_from(Game &g, const json &j)
@@ -862,7 +853,7 @@ void turn_from(Game &g, const json &j)
 	t.last_take = num<unsigned char>(j, "last_take");
 	t.do_take = num<unsigned char>(j, "do_take");
 	t.last_item_key = num<unsigned char>(j, "last_item_key");
-	t.last_item = item_at(g, field(j, "last_item"), "\"last_item\"", false);
+	t.last_item = g.pool.id_of(item_at(g, field(j, "last_item"), "\"last_item\"", false));
 }
 
 void screen_from(MapView &view, const json &j)

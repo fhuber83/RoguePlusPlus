@@ -3,7 +3,7 @@
 namespace rogue::items {
 
 static void	print_disc(ItemKind type);
-static void	set_order(short *order, int numthings);
+static void	set_order(std::span<short> order);
 static std::string	nothing(ItemKind type);
 
 /*
@@ -12,21 +12,21 @@ static std::string	nothing(ItemKind type);
  *	inventory.
  */
 std::string
-inv_name(const Item *obj, bool drop)
+inv_name(const Item &obj, bool drop)
 {
 	std::string name;
 	rogue::Items &items = game().items;
 	bool brief = game().options.brief();
 
-	switch (obj->o_type)
+	switch (obj.o_type)
 	{
 	case ItemKind::Scroll: {
-		Scroll which = obj->which<Scroll>();
+		Scroll which = obj.which<Scroll>();
 
-		if (obj->o_count == 1)
+		if (obj.o_count == 1)
 			name = "A scroll ";
 		else
-			name = std::format("{} scrolls ", obj->o_count);
+			name = std::format("{} scrolls ", obj.o_count);
 		if (items.s_know[which])
 			name += std::format("of {}", items.s_magic[which].mi_name);
 		else if (!items.s_guess[which].empty())
@@ -38,78 +38,78 @@ inv_name(const Item *obj, bool drop)
 		break;
 	}
 	case ItemKind::Potion: {
-		Potion which = obj->which<Potion>();
+		Potion which = obj.which<Potion>();
 
-		if (obj->o_count == 1)
+		if (obj.o_count == 1)
 			name = "A potion ";
 		else
-			name = std::format("{} potions ", obj->o_count);
+			name = std::format("{} potions ", obj.o_count);
 		if (items.p_know[which])
 			name += brief ? std::format("of {}", items.p_magic[which].mi_name)
 				: std::format("of {}({})", items.p_magic[which].mi_name, items.p_colors[which]);
 		else if (!items.p_guess[which].empty())
 			name += brief ? std::format("called {}", items.p_guess[which])
 				: std::format("called {}({})", items.p_guess[which], items.p_colors[which]);
-		else if (obj->o_count == 1)
+		else if (obj.o_count == 1)
 			name = std::format("A{} {} potion", vowelstr(items.p_colors[which]),
 				items.p_colors[which]);
 		else
-			name = std::format("{} {} potions", obj->o_count, items.p_colors[which]);
+			name = std::format("{} {} potions", obj.o_count, items.p_colors[which]);
 		break;
 	}
 	case ItemKind::Food: {
-		Food which = obj->which<Food>();
+		Food which = obj.which<Food>();
 
 		if (which == Food::Fruit)
-			if (obj->o_count == 1)
+			if (obj.o_count == 1)
 				name = std::format("A{} {}", vowelstr(game().options.fruit),
 					game().options.fruit);
 			else
-				name = std::format("{} {}s", obj->o_count,
+				name = std::format("{} {}s", obj.o_count,
 					game().options.fruit);
 		else
-			if (obj->o_count == 1)
+			if (obj.o_count == 1)
 				name = "Some food";
 			else
-				name = std::format("{} rations of food", obj->o_count);
+				name = std::format("{} rations of food", obj.o_count);
 		break;
 	}
 	case ItemKind::Weapon: {
-		WeaponType which = obj->which<WeaponType>();
+		WeaponType which = obj.which<WeaponType>();
 
-		if (obj->o_count > 1)
-			name = std::format("{} ", obj->o_count);
+		if (obj.o_count > 1)
+			name = std::format("{} ", obj.o_count);
 		else
 			name = std::format("A{} ", vowelstr(w_names[which]));
-		if (obj->o_flags.test(ISKNOW))
-			name += std::format("{} {}", num(obj->o_hplus, obj->o_dplus, WEAPON),
+		if (obj.o_flags.test(ISKNOW))
+			name += std::format("{} {}", num(obj.o_hplus, obj.o_dplus, WEAPON),
 				w_names[which]);
 		else
 			name += w_names[which];
-		if (obj->o_count > 1)
+		if (obj.o_count > 1)
 			name += "s";
-		if (obj->o_enemy && obj->o_flags.test(ISREVEAL))
-			name += std::format(" of {} slaying", monsters[obj->o_enemy-'A'].m_name);
+		if (obj.o_enemy && obj.o_flags.test(ISREVEAL))
+			name += std::format(" of {} slaying", monsters[obj.o_enemy-'A'].m_name);
 		break;
 	}
 	case ItemKind::Armor: {
-		ArmorType which = obj->which<ArmorType>();
+		ArmorType which = obj.which<ArmorType>();
 
-		if (!obj->o_flags.test(ISKNOW))
+		if (!obj.o_flags.test(ISKNOW))
 			name = a_names[which];
 		else if (brief)
-			name = std::format("{} {}", num(a_class[which] - obj->o_ac, 0, ARMOR),
+			name = std::format("{} {}", num(a_class[which] - obj.o_ac, 0, ARMOR),
 				a_names[which]);
 		else
-			name = std::format("{} {} [armor class {}]", num(a_class[which] - obj->o_ac, 0, ARMOR),
-				a_names[which], -(obj->o_ac-11));
+			name = std::format("{} {} [armor class {}]", num(a_class[which] - obj.o_ac, 0, ARMOR),
+				a_names[which], -(obj.o_ac-11));
 		break;
 	}
 	case ItemKind::Amulet:
 		name = "The Amulet of Yendor";
 		break;
 	case ItemKind::Stick: {
-		Stick which = obj->which<Stick>();
+		Stick which = obj.which<Stick>();
 
 		name = std::format("A{} {} ", vowelstr(items.ws_type[which]), items.ws_type[which]);
 		if (items.ws_know[which])
@@ -130,7 +130,7 @@ inv_name(const Item *obj, bool drop)
 		break;
 	}
 	case ItemKind::Ring: {
-		Ring which = obj->which<Ring>();
+		Ring which = obj.which<Ring>();
 
 		if (items.r_know[which])
 			name = brief ? std::format("A{} ring of {}", ring_num(obj), items.r_magic[which].mi_name)
@@ -146,23 +146,23 @@ inv_name(const Item *obj, bool drop)
 	}
 	default:	// the other kinds of item: nothing, except to the checks
 		if constexpr (rogue::config::debug_checks) {
-			if (obj->o_type == ItemKind::Gold)
-				name = std::format("Gold at {},{}", obj->o_pos.y, obj->o_pos.x);
+			if (obj.o_type == ItemKind::Gold)
+				name = std::format("Gold at {},{}", obj.o_pos.y, obj.o_pos.x);
 			else {
-				debug("Picked up someting bizzare {}", io_unctrl(glyph_of(obj->o_type)));
-				name = std::format("Something bizarre {}({})", static_cast<char>(glyph_of(obj->o_type)),
-					static_cast<int>(obj->o_type));
+				debug("Picked up someting bizzare {}", io_unctrl(glyph_of(obj.o_type)));
+				name = std::format("Something bizarre {}({})", static_cast<char>(glyph_of(obj.o_type)),
+					static_cast<int>(obj.o_type));
 			}
 		}
 		break;
 	}
-	if (obj == game().player.armor)
+	if (refers_to(game().player.armor_item(), obj))
 		name += " (being worn)";
-	if (obj == game().player.weapon)
+	if (refers_to(game().player.weapon_item(), obj))
 		name += " (weapon in hand)";
-	if (obj == game().player.rings[Hand::Left])
+	if (refers_to(game().player.ring_item(Hand::Left), obj))
 		name += " (on left hand)";
-	else if (obj == game().player.rings[Hand::Right])
+	else if (refers_to(game().player.ring_item(Hand::Right), obj))
 		name += " (on right hand)";
 	if (!name.empty()) {
 		if (drop && is_monster(name[0]))
@@ -201,39 +201,39 @@ static
 void
 print_disc(ItemKind type)
 {
-	bool *know = nullptr;
-	std::string *guess = nullptr;
+	std::span<const bool> know;
+	std::span<const std::string> guess;
 	int i, maxnum = 0, num_found;
-	static Item obj;
-	static short order[std::max({kind_count<Scroll>, kind_count<Potion>, kind_count<Ring>, kind_count<Stick>})];
+	Item obj{};
+	std::array<short, std::max({kind_count<Scroll>, kind_count<Potion>, kind_count<Ring>, kind_count<Stick>})> order;
 	rogue::Items &items = game().items;
 
 	switch (type)
 	{
 	case ItemKind::Scroll:
 		maxnum = kind_count<Scroll>;
-		know = items.s_know.data();
-		guess = items.s_guess.data();
+		know = items.s_know;
+		guess = items.s_guess;
 		break;
 	case ItemKind::Potion:
 		maxnum = kind_count<Potion>;
-		know = items.p_know.data();
-		guess = items.p_guess.data();
+		know = items.p_know;
+		guess = items.p_guess;
 		break;
 	case ItemKind::Ring:
 		maxnum = kind_count<Ring>;
-		know = items.r_know.data();
-		guess = items.r_guess.data();
+		know = items.r_know;
+		guess = items.r_guess;
 		break;
 	case ItemKind::Stick:
 		maxnum = kind_count<Stick>;
-		know = items.ws_know.data();
-		guess = items.ws_guess.data();
+		know = items.ws_know;
+		guess = items.ws_guess;
 		break;
 	default:	// the other kinds of item: nothing
 		break;
 	}
-	set_order(order, maxnum);
+	set_order(std::span(order).first(maxnum));
 	obj.o_count = 1;
 	obj.o_flags.reset();
 	num_found = 0;
@@ -242,7 +242,7 @@ print_disc(ItemKind type)
 		{
 			obj.o_type = type;
 			obj.o_which = order[i];
-			add_line("", inv_name(&obj, false));
+			add_line("", inv_name(obj, false));
 			num_found++;
 		}
 	if (num_found == 0)
@@ -255,9 +255,10 @@ print_disc(ItemKind type)
  */
 static
 void
-set_order(short *order, int numthings)
+set_order(std::span<short> order)
 {
 	int i, r, t;
+	int numthings = static_cast<int>(order.size());
 
 	for (i = 0; i< numthings; i++)
 		order[i] = i;

@@ -15,6 +15,7 @@
 #include <ctime>
 #include <format>
 #include <optional>
+#include <span>
 #include <array>
 #include <string>
 #include <string_view>
@@ -28,6 +29,7 @@
 #include "core/Dice.hpp"
 #include "core/Flags.hpp"
 #include "core/KindTable.hpp"
+#include "core/Maybe.hpp"
 #include "core/Random.hpp"
 #include "entities/List.hpp"
 #include "game/Slots.hpp"
@@ -35,6 +37,7 @@
 #include "ui/Display.hpp"
 #include "ui/Input.hpp"
 #include "world/MapFlags.hpp"
+#include "world/RoomRef.hpp"
 #include "world/Trap.hpp"
 
 #include "glyphs.h"
@@ -110,7 +113,11 @@ struct h_list {
 /*
  * Coordinate data type
  */
-using coord = rogue::Coord;  // see core/Coord.hpp
+using rogue::Coord;  // see core/Coord.hpp
+using rogue::Maybe;  // see core/Maybe.hpp
+using rogue::maybe;
+using rogue::refers_to;
+using coord = rogue::Coord;
 
 // Game output goes through the display, see ui/Display.hpp
 using rogue::ui::display;
@@ -202,6 +209,12 @@ using rogue::Hand;
 using rogue::Trap;
 using rogue::MapFlag;
 using rogue::MapFlags;
+using rogue::RoomRef;
+using rogue::ItemId;
+using rogue::CreatureId;
+using rogue::Destination;
+using rogue::Hero;
+using rogue::Gold;
 using rogue::ItemFilter;
 using rogue::glyph_of;
 using rogue::kind_of_glyph;
@@ -397,7 +410,7 @@ void	init_colors(void);
 void	init_names(void);
 void	init_stones(void);
 void	init_materials(void);
-char	*getsyl(void);
+std::string	getsyl();
 char	rchr(std::string_view string);
 
 // io.cpp
@@ -446,10 +459,10 @@ std::string	io_unctrl(unsigned char ch);
 std::string_view	noterse(std::string_view str);
 
 // list.cpp
-Item	*new_item(void);
-Creature	*new_creature(void);
-int	discard(Item *item);
-int	discard(Creature *item);
+Maybe<Item>	new_item();
+Maybe<Creature>	new_creature();
+int	discard(Item &item);
+int	discard(Creature &item);
 
 /*
  * Empties a list of creatures or items and gives them back to the pool
@@ -458,12 +471,12 @@ template <class T>
 void
 list_free(rogue::List<T> &list)
 {
-	T *item;
+	Maybe<T> item;
 
-	while ((item = list.first()) != nullptr)
+	while ((item = list.first()))
 	{
-	list.remove(item);
-	discard(item);
+	list.remove(*item);
+	discard(*item);
 	}
 }
 
@@ -482,7 +495,7 @@ inline int	gold_calc() { return rnd(50 + 10 * game().level.depth) + 2; }
 void	look(bool wakeup);
 void	eat(void);
 void	chg_str(int amt);
-void	add_str(str_t *sp, int amt);
+void	add_str(str_t &sp, int amt);
 void	aggravate(void);
 void	call_it(bool know, std::string &guess);
 void	help(const struct h_list *helpscr);
@@ -491,16 +504,16 @@ void	d_level(void);
 void	u_level(void);
 void	call(void);
 void	do_macro(std::string &macro);
-Item	*find_obj(int y, int x);
+Maybe<Item>	find_obj(int y, int x);
 bool	add_haste(bool potion);
-bool	is_current(Item *obj);
+bool	is_current(const Item &obj);
 bool	get_dir(void);
-bool	find_dir(unsigned char ch, coord *cp);
+std::optional<Coord>	find_dir(unsigned char ch);
 bool	step_ok(unsigned char ch);
 bool	offmap(int y, int x);
 std::string_view	tr_name(Trap type);
 std::string_view	vowelstr(std::string_view str);
-char	goodch(Item *obj);
+char	goodch(const Item &obj);
 int	sign(int nm);
 unsigned char	winat(int y, int x);
 int	spread(int nm);
@@ -520,9 +533,9 @@ int	INDEX(int y, int x);
 // move.cpp
 void	do_run(unsigned char ch);
 void	do_move(int dy, int dx);
-void	door_open(struct room *rp);
+void	door_open(const struct room &rp);
 void	descend(std::string_view mesg);
-void	rndmove(Creature *who, coord *newmv);
+Coord	rndmove(const Creature &who);
 
 // rip.cpp
 void	score(int amount, int flags, char monst);

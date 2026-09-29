@@ -43,9 +43,9 @@ command()
 		do_daemons();
 		for (Hand hand : kinds<Hand>())
 		{
-			if (player.rings[hand])
+			if (player.ring_item(hand))
 			{
-				switch (player.rings[hand]->which<Ring>())
+				switch (player.ring_item(hand)->which<Ring>())
 				{
 				case Ring::Searching:
 					search();
@@ -191,7 +191,6 @@ show_count()
 void
 execcom()
 {
-	coord mv;
 	int ch;
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
@@ -204,8 +203,8 @@ execcom()
 			turn.after = false;
 		switch (cmd) {
 		case Command::Move:
-			find_dir(ch, &mv);
-			do_move(mv.y, mv.x);
+			if (std::optional<Coord> mv = find_dir(ch))	// a move key is a direction
+				do_move(mv->y, mv->x);
 			break;
 		case Command::Run:
 			do_run(to_lower(ch));

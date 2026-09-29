@@ -9,7 +9,7 @@
 namespace rogue::world {
 
 static void	conn(int r1, int r2);
-static void	door(struct room *rm, coord *cp);
+static void	door(struct room &rm, Coord cp);
 static void	passnum(void);
 static void	numpass(int y, int x);
 static void	psplat(int y, int x);
@@ -21,7 +21,7 @@ static void	psplat(int y, int x);
 void
 conn(int r1, int r2)
 {
-	struct room *rpf, *rpt = nullptr;
+	Maybe<struct room> rpt;
 	int rmt, rm;
 	int distance = 0, turn_spot, turn_distance;
 	int direc;
@@ -41,28 +41,28 @@ conn(int r1, int r2)
 		else
 			direc = 'd';
 	}
-	rpf = &level.rooms[rm];
+	struct room &rpf = level.rooms[rm];
 	/*
 	 * Set up the movement variables, in two cases:
 	 * first drawing one down.
 	 */
 	if (direc == 'd') {
 		rmt = rm + 3;				/* room # of dest */
-		rpt = &level.rooms[rmt];			/* room pointer of dest */
+		rpt = level.rooms[rmt];			/* the destination room */
 		del.x = 0;				/* direction of move */
 		del.y = 1;
 		/*
 		 * If we are drawing from/to regular or maze rooms, we have
 		 * to pick the spot we draw from/to
 		 */
-		if (!rpf->r_flags.test(RoomFlag::Gone) || rpf->r_flags.test(RoomFlag::Maze)) {
-			spos.y = rpf->r_pos.y + rpf->r_max.y - 1;
+		if (!rpf.r_flags.test(RoomFlag::Gone) || rpf.r_flags.test(RoomFlag::Maze)) {
+			spos.y = rpf.r_pos.y + rpf.r_max.y - 1;
 			do {
-				spos.x = rpf->r_pos.x + rnd(rpf->r_max.x - 2) + 1;
+				spos.x = rpf.r_pos.x + rnd(rpf.r_max.x - 2) + 1;
 			} while (level.at(spos) == ' ');
 		} else {
-			spos.x = rpf->r_pos.x;
-			spos.y = rpf->r_pos.y;
+			spos.x = rpf.r_pos.x;
+			spos.y = rpf.r_pos.y;
 		}
 		epos.y = rpt->r_pos.y;
 		if (!rpt->r_flags.test(RoomFlag::Gone) || rpt->r_flags.test(RoomFlag::Maze)) {
@@ -77,17 +77,17 @@ conn(int r1, int r2)
 		turn_distance = abs(spos.x - epos.x);	/* how far to turn */
 	} else if (direc == 'r') {			/* setup for moving right */
 		rmt = rm + 1;
-		rpt = &level.rooms[rmt];
+		rpt = level.rooms[rmt];
 		del.x = 1;
 		del.y = 0;
-		if (!rpf->r_flags.test(RoomFlag::Gone) || rpf->r_flags.test(RoomFlag::Maze)) {
-			spos.x = rpf->r_pos.x + rpf->r_max.x-1;
+		if (!rpf.r_flags.test(RoomFlag::Gone) || rpf.r_flags.test(RoomFlag::Maze)) {
+			spos.x = rpf.r_pos.x + rpf.r_max.x-1;
 			do {
-				spos.y = rpf->r_pos.y + rnd(rpf->r_max.y-2)+1;
+				spos.y = rpf.r_pos.y + rnd(rpf.r_max.y-2)+1;
 			} while (level.at(spos) == ' ');
 		} else {
-			spos.x = rpf->r_pos.x;
-			spos.y = rpf->r_pos.y;
+			spos.x = rpf.r_pos.x;
+			spos.y = rpf.r_pos.y;
 		}
 		epos.x = rpt->r_pos.x;
 		if (!rpt->r_flags.test(RoomFlag::Gone) || rpt->r_flags.test(RoomFlag::Maze)) {
@@ -108,12 +108,12 @@ conn(int r1, int r2)
 	 * Draw in the doors on either side of the passage or just put #'s
 	 * if the rooms are gone.
 	 */
-	if (!rpf->r_flags.test(RoomFlag::Gone))
-		door(rpf, &spos);
+	if (!rpf.r_flags.test(RoomFlag::Gone))
+		door(rpf, spos);
 	else
 		psplat(spos.y, spos.x);
 	if (rpt && !rpt->r_flags.test(RoomFlag::Gone))
-		door(rpt, &epos);
+		door(*rpt, epos);
 	else
 		psplat(epos.y, epos.x);
 	/*
@@ -271,21 +271,20 @@ do_passages()
  *	the exits array of the room.
  */
 void
-door(struct room *rm, coord *cp)
+door(struct room &rm, Coord cp)
 {
 	int index, xit;
 
-	index = INDEX(cp->y, cp->x);
+	index = INDEX(cp.y, cp.x);
 	if (rnd(10) + 1 < game().level.depth && rnd(5) == 0)
 	{
-		game().level.map[index] = (cp->y == rm->r_pos.y || cp->y == rm->r_pos.y + rm->r_max.y - 1) ? HWALL : VWALL;
+		game().level.map[index] = (cp.y == rm.r_pos.y || cp.y == rm.r_pos.y + rm.r_max.y - 1) ? HWALL : VWALL;
 		game().level.flags[index].unset(MapFlag::Real);
 	}
 	else
 		game().level.map[index] = DOOR;
-	xit = rm->r_nexits++;
-	rm->r_exit[xit].y = cp->y;
-	rm->r_exit[xit].x = cp->x;
+	xit = rm.r_nexits++;
+	rm.r_exit[xit] = cp;
 }
 
 
@@ -299,18 +298,17 @@ static unsigned char newpnum;
 void
 passnum()
 {
-	struct room *rp;
 	int i;
 
 	pnum = 0;
 	newpnum = false;
-	for (rp = game().level.passages; rp < &game().level.passages[MAXPASS]; rp++)
-		rp->r_nexits = 0;
-	for (rp = game().level.rooms; rp < &game().level.rooms[MAXROOMS]; rp++)
-		for (i = 0; i < rp->r_nexits; i++)
+	for (struct room &rp : game().level.passages)
+		rp.r_nexits = 0;
+	for (const struct room &rp : game().level.rooms)
+		for (i = 0; i < rp.r_nexits; i++)
 		{
 			newpnum++;
-			numpass(rp->r_exit[i].y, rp->r_exit[i].x);
+			numpass(rp.r_exit[i].y, rp.r_exit[i].x);
 		}
 }
 /*
@@ -320,15 +318,13 @@ passnum()
 void
 numpass(int y, int x)
 {
-	MapFlags *fp;
-	struct room *rp;
 	unsigned char ch;
 	rogue::Level &level = game().level;
 
 	if (offmap(y,x))
 		return;
-	fp = &level.flags_at(y, x);
-	if (fp->passage())
+	MapFlags &fp = level.flags_at(y, x);
+	if (fp.passage())
 		return;
 	if (newpnum) {
 		pnum++;
@@ -338,13 +334,13 @@ numpass(int y, int x)
 	 * check to see if it is a door or secret door, i.e., a new exit,
 	 * or a numerable type of place
 	 */
-	if ((ch = level.at(y, x)) == DOOR || (!fp->test(MapFlag::Real) && ch != FLOOR)) {
-		rp = &level.passages[pnum];
-		rp->r_exit[rp->r_nexits].y = y;
-		rp->r_exit[rp->r_nexits++].x = x;
-	} else if (!fp->test(MapFlag::Passage))
+	if ((ch = level.at(y, x)) == DOOR || (!fp.test(MapFlag::Real) && ch != FLOOR)) {
+		struct room &rp = level.passages[pnum];
+		rp.r_exit[rp.r_nexits].y = y;
+		rp.r_exit[rp.r_nexits++].x = x;
+	} else if (!fp.test(MapFlag::Passage))
 		return;
-	fp->set_passage(pnum);
+	fp.set_passage(pnum);
 	/*
 	 * recurse on the surrounding places
 	 */

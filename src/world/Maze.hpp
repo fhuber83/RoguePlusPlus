@@ -14,6 +14,6 @@ namespace rogue::world {
  * draw_maze:
  *	Dig a maze into the room's area.
  */
-void draw_maze(struct room *rp);
+void draw_maze(struct room &rp);
 
 }  // namespace rogue::world

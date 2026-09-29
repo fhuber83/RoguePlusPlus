@@ -16,30 +16,30 @@
  * like the single pool of the original (see rogue::Pool).
  */
 template <class T>
-static T *
+static Maybe<T>
 talloc(rogue::Slots<T, MAXITEMS> &slots)
 {
 	rogue::Pool &pool = game().pool;
 	T *thing;
 
 	if (pool.total >= MAXITEMS || (thing = slots.take()) == nullptr)
-		return nullptr;
+		return std::nullopt;
 	++pool.total;
-	return thing;
+	return *thing;
 }
 
 /*
  * new_item
  *	Get a new item from the pool
  */
-Item *
+Maybe<Item>
 new_item()
 {
 	return talloc(game().pool.items);
 }
 
 // new_item() for monsters
-Creature *
+Maybe<Creature>
 new_creature()
 {
 	return talloc(game().pool.creatures);
@@ -63,7 +63,7 @@ discard_from(T *item, rogue::Slots<T, MAXITEMS> &slots)
  *	Free up an item
  */
 int
-discard(Item *item)
+discard(Item &item)
 {
 	/*
 	 * get_item() compares the item it gave last with the one at that pack
@@ -71,22 +71,23 @@ discard(Item *item)
 	 * new item that reused the slot; a freed item's address can be reused
 	 * too, so forget it.
 	 */
-	if (game().turn.last_item == item)
-		game().turn.last_item = nullptr;
+	if (refers_to(game().pool.item(game().turn.last_item), item))
+		game().turn.last_item = std::nullopt;
 	/*
 	 * A monster after this item goes for the hero instead. add_pack() does
 	 * this when the rogue picks the item up, but not when it merges into a
 	 * pack item and is discarded: the original then chased the freed slot's
 	 * old position until the slot was reused.
 	 */
-	for (Creature *mp : game().level.monsters)
-		if (mp->t_dest == &item->o_pos)
-			mp->t_dest = &game().player.body.t_pos;
-	return discard_from(item, game().pool.items);
+	if (std::optional<ItemId> id = game().pool.id_of(item))
+		for (Creature &mp : game().level.monsters)
+			if (mp.t_dest == Destination(*id))
+				mp.t_dest = Hero{};
+	return discard_from(&item, game().pool.items);
 }
 
 int
-discard(Creature *item)
+discard(Creature &item)
 {
-	return discard_from(item, game().pool.creatures);
+	return discard_from(&item, game().pool.creatures);
 }

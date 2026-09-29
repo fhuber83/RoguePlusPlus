@@ -90,10 +90,10 @@ unconfuse(void)
 void
 unsee(void)
 {
-	Creature *th;
+	Maybe<Creature> th;
 
-	for (th = game().level.monsters.first(); th != nullptr; th = game().level.monsters.after(th))
-		if (th->t_flags.test(ISINVIS) && see_monst(th) && th->t_oldch != '@')
+	for (th = game().level.monsters.first(); th; th = game().level.monsters.after(*th))
+		if (th->t_flags.test(ISINVIS) && see_monst(*th) && th->t_oldch != '@')
 			display().draw_tile(th->t_pos, th->t_oldch);
 	game().player.body.t_flags.unset(CANSEE);
 }
@@ -111,8 +111,8 @@ sight(void)
 	{
 		extinguish(Event::Sight);
 		player.body.t_flags.unset(ISBLIND);
-		if (!player.body.t_room->r_flags.test(RoomFlag::Gone))
-			enter_room(&player.body.t_pos);
+		if (!game().level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone))
+			enter_room(player.body.t_pos);
 		msg("the veil of darkness lifts");
 	}
 }

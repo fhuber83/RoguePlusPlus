@@ -1,18 +1,39 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <optional>
 #include <vector>
 
 #include "entities/List.hpp"
 
 using rogue::List;
 
+// A pool for Lists of ints: each int gets the next Id the first time it is named
+template <>
+struct rogue::ListPool<int> {
+	static std::vector<int *> &slots()
+	{
+		static std::vector<int *> known;
+		return known;
+	}
+	static int *at(rogue::Id<int> id) { return slots()[id.slot]; }
+	static std::optional<rogue::Id<int>> id_of(const int &n)
+	{
+		auto &known = slots();
+		auto it = std::find(known.begin(), known.end(), &n);
+		if (it == known.end())
+			it = known.insert(known.end(), const_cast<int *>(&n));
+		return rogue::Id<int>{static_cast<int>(it - known.begin())};
+	}
+};
+
 namespace {
 
 std::vector<int> values(const List<int> &list)
 {
 	std::vector<int> out;
-	for (int *p : list)
-		out.push_back(*p);
+	for (int &p : list)
+		out.push_back(p);
 	return out;
 }
 
@@ -24,12 +45,12 @@ TEST(List, PushFront)
 	int a = 1, b = 2, c = 3;
 	List<int> list;
 	EXPECT_TRUE(list.empty());
-	EXPECT_EQ(list.first(), nullptr);
-	list.push_front(&a);
-	list.push_front(&b);
-	list.push_front(&c);
+	EXPECT_EQ(list.first(), std::nullopt);
+	list.push_front(a);
+	list.push_front(b);
+	list.push_front(c);
 	EXPECT_EQ(values(list), (std::vector<int>{3, 2, 1}));
-	EXPECT_EQ(list.first(), &c);
+	EXPECT_TRUE(rogue::refers_to(list.first(), c));
 	EXPECT_EQ(list.size(), 3u);
 }
 
@@ -37,15 +58,15 @@ TEST(List, Neighbours)
 {
 	int a = 1, b = 2, c = 3, other = 4;
 	List<int> list;
-	list.push_front(&c);
-	list.push_front(&b);
-	list.push_front(&a);
-	EXPECT_EQ(list.after(&a), &b);
-	EXPECT_EQ(list.after(&c), nullptr);
-	EXPECT_EQ(list.before(&b), &a);
-	EXPECT_EQ(list.before(&a), nullptr);
-	EXPECT_EQ(list.after(&other), nullptr);
-	EXPECT_EQ(list.before(&other), nullptr);
+	list.push_front(c);
+	list.push_front(b);
+	list.push_front(a);
+	EXPECT_TRUE(rogue::refers_to(list.after(a), b));
+	EXPECT_EQ(list.after(c), std::nullopt);
+	EXPECT_TRUE(rogue::refers_to(list.before(b), a));
+	EXPECT_EQ(list.before(a), std::nullopt);
+	EXPECT_EQ(list.after(other), std::nullopt);
+	EXPECT_EQ(list.before(other), std::nullopt);
 }
 
 // A walk stops when its body detaches the current entry, as the cleared
@@ -54,18 +75,21 @@ TEST(List, WalkStopsWhenCurrentIsDetached)
 {
 	int a = 1, b = 2, c = 3;
 	List<int> list;
-	list.push_front(&c);
-	list.push_front(&b);
-	list.push_front(&a);
+	list.push_front(c);
+	list.push_front(b);
+	list.push_front(a);
 	std::vector<int> seen;
-	for (int *p = list.first(); p != nullptr; p = list.after(p)) {
+	for (rogue::Maybe<int> p = list.first(); p; p = list.after(*p)) {
 		seen.push_back(*p);
 		if (*p == 2)
-			list.remove(p);
+			list.remove(*p);
 	}
 	EXPECT_EQ(seen, (std::vector<int>{1, 2}));
 	EXPECT_EQ(values(list), (std::vector<int>{1, 3}));
-	EXPECT_FALSE(list.contains(&b));
+	EXPECT_FALSE(list.contains(b));
+	// by Id, as runners() asks once its monster may be gone
+	EXPECT_TRUE(list.contains(*rogue::ListPool<int>::id_of(a)));
+	EXPECT_FALSE(list.contains(*rogue::ListPool<int>::id_of(b)));
 }
 
 // Detaching another entry during a walk keeps the walk going.
@@ -73,14 +97,14 @@ TEST(List, WalkContinuesWhenAnotherIsDetached)
 {
 	int a = 1, b = 2, c = 3;
 	List<int> list;
-	list.push_front(&c);
-	list.push_front(&b);
-	list.push_front(&a);
+	list.push_front(c);
+	list.push_front(b);
+	list.push_front(a);
 	std::vector<int> seen;
-	for (int *p = list.first(); p != nullptr; p = list.after(p)) {
+	for (rogue::Maybe<int> p = list.first(); p; p = list.after(*p)) {
 		seen.push_back(*p);
 		if (*p == 1)
-			list.remove(&b);
+			list.remove(b);
 	}
 	EXPECT_EQ(seen, (std::vector<int>{1, 3}));
 }
@@ -89,13 +113,13 @@ TEST(List, InsertAfterAndBefore)
 {
 	int a = 1, b = 2, c = 3, d = 4;
 	List<int> list;
-	list.insert_after(nullptr, &b);		// empty: at the front
-	list.insert_after(&b, &d);
-	list.insert_before(&d, &c);
-	list.insert_before(&b, &a);
+	list.insert_after(std::nullopt, b);		// empty: at the front
+	list.insert_after(b, d);
+	list.insert_before(d, c);
+	list.insert_before(b, a);
 	EXPECT_EQ(values(list), (std::vector<int>{1, 2, 3, 4}));
-	list.remove(&a);
-	list.remove(&a);	// not in the list: nothing happens
+	list.remove(a);
+	list.remove(a);	// not in the list: nothing happens
 	EXPECT_EQ(values(list), (std::vector<int>{2, 3, 4}));
 	list.clear();
 	EXPECT_TRUE(list.empty());

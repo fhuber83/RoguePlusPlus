@@ -11,11 +11,11 @@ constexpr std::string_view in_dist = " in the distance";
 void
 read_scroll()
 {
-	Item *obj;
+	Maybe<Item> obj;
 	int y, x;
 	unsigned char ch;
-	Item *op;
-	Creature *mo;
+	Maybe<Item> op;
+	Maybe<Creature> mo;
 	int index;
 	bool discardit = false;
 	rogue::Player &player = game().player;
@@ -23,7 +23,7 @@ read_scroll()
 	rogue::Items &items = game().items;
 
 	obj = get_item("read", ItemKind::Scroll);
-	if (obj == nullptr)
+	if (!obj)
 		return;
 	if (obj->o_type != ItemKind::Scroll){
 		msg("there is nothing on it to read");
@@ -33,8 +33,8 @@ read_scroll()
 	/*
 	 * Calculate the effect it has on the poor guy.
 	 */
-	if (obj == player.weapon)
-		player.weapon = nullptr;
+	if (obj == player.weapon_item())
+		player.weapon = std::nullopt;
 	switch (obj->which<Scroll>()){
 	case Scroll::MonsterConfusion:
 		/*
@@ -44,9 +44,9 @@ read_scroll()
 		msg("your hands begin to glow red");
 		break;
 	case Scroll::EnchantArmor:
-		if (player.armor != nullptr) {
-			player.armor->o_ac--;
-			player.armor->o_flags.unset(ISCURSED);
+		if (player.armor_item()) {
+			player.armor_item()->o_ac--;
+			player.armor_item()->o_flags.unset(ISCURSED);
 			ifterse("your armor glows faintly",
 				"your armor glows faintly for a moment");
 		}
@@ -60,7 +60,7 @@ read_scroll()
 		for (x = player.body.t_pos.x - 3; x <= player.body.t_pos.x + 3; x++)
 			if (x >= 0 && x < COLS)
 				for (y = player.body.t_pos.y - 3; y <= player.body.t_pos.y + 3; y++)
-					if ((y > 0 && y < maxrow) && ((mo=moat(y, x)) != nullptr)) {
+					if ((y > 0 && y < maxrow) && (mo = moat(y, x))) {
 						mo->t_flags.unset(ISRUN);
 						mo->t_flags.set(ISHELD);
 					}
@@ -76,10 +76,10 @@ read_scroll()
 		break;
 	case Scroll::CreateMonster:
 		{
-		coord mp;
+		std::optional<Coord> mp = plop_monster(player.body.t_pos.y, player.body.t_pos.x);
 
-		if (plop_monster(player.body.t_pos.y, player.body.t_pos.x, &mp) && (mo=new_creature()) != nullptr)
-			new_monster(mo, randmonster(false), &mp);
+		if (mp && (mo = new_creature()))
+			new_monster(*mo, randmonster(false), *mp);
 		else
 			ifterse("you hear a faint cry of anguish",
 				"you hear a faint cry of anguish in the distance");
@@ -123,7 +123,7 @@ read_scroll()
 				case DOOR:
 				case PASSAGE:
 				case STAIRS:
-					if ((mo = moat(y, x)) != nullptr)
+					if ((mo = moat(y, x)))
 						if (mo->t_oldch == ' ')
 							mo->t_oldch = ch;
 					break;
@@ -141,7 +141,7 @@ read_scroll()
 		 * Scroll of food detection
 		 */
 		ch = false;
-		for (op = level.objects.first(); op != nullptr; op = level.objects.after(op)) {
+		for (op = level.objects.first(); op; op = level.objects.after(*op)) {
 			if (op->o_type == ItemKind::Food) {
 				ch = true;
 				display().draw_tile(op->o_pos, FOOD, TileStyle::Inverse);
@@ -163,7 +163,7 @@ read_scroll()
 		 * Make him dissapear and reappear
 		 */
 		{
-		struct room *cur_room;
+		std::optional<RoomRef> cur_room;
 
 		cur_room = player.body.t_room;
 		teleport();
@@ -172,16 +172,16 @@ read_scroll()
 		}
 		break;
 	case Scroll::EnchantWeapon:
-		if (player.weapon == nullptr || player.weapon->o_type != ItemKind::Weapon)
+		if (!player.weapon_item() || player.weapon_item()->o_type != ItemKind::Weapon)
 		msg("you feel a strange sense of loss");
 		else
 		{
-		player.weapon->o_flags.unset(ISCURSED);
+		player.weapon_item()->o_flags.unset(ISCURSED);
 		if (rnd(2) == 0)
-			player.weapon->o_hplus++;
+			player.weapon_item()->o_hplus++;
 		else
-			player.weapon->o_dplus++;
-		ifterse("your {} glows blue","your {} glows blue for a moment", w_names[player.weapon->which<WeaponType>()]);
+			player.weapon_item()->o_dplus++;
+		ifterse("your {} glows blue","your {} glows blue for a moment", w_names[player.weapon_item()->which<WeaponType>()]);
 		}
 		break;
 	case Scroll::ScareMonster:
@@ -192,14 +192,14 @@ read_scroll()
 			msg(laugh, game().options.brief() ? "" : in_dist);
 		break;
 	case Scroll::RemoveCurse:
-		if (player.armor != nullptr)
-			player.armor->o_flags.unset(ISCURSED);
-		if (player.weapon != nullptr)
-			player.weapon->o_flags.unset(ISCURSED);
-		if (player.rings[Hand::Left] != nullptr)
-			player.rings[Hand::Left]->o_flags.unset(ISCURSED);
-		if (player.rings[Hand::Right] != nullptr)
-			player.rings[Hand::Right]->o_flags.unset(ISCURSED);
+		if (player.armor_item())
+			player.armor_item()->o_flags.unset(ISCURSED);
+		if (player.weapon_item())
+			player.weapon_item()->o_flags.unset(ISCURSED);
+		if (player.ring_item(Hand::Left))
+			player.ring_item(Hand::Left)->o_flags.unset(ISCURSED);
+		if (player.ring_item(Hand::Right))
+			player.ring_item(Hand::Right)->o_flags.unset(ISCURSED);
 		ifterse("somebody is watching over you","you feel as if somebody is watching over you");
 		break;
 	case Scroll::AggravateMonsters:
@@ -229,24 +229,24 @@ read_scroll()
 		 *
 		 * If he doesn't have a weapon I get to chortle again!
 		 */
-		if (player.weapon == nullptr || player.weapon->o_type != ItemKind::Weapon)
+		if (!player.weapon_item() || player.weapon_item()->o_type != ItemKind::Weapon)
 			msg(laugh, game().options.brief() ? "" : in_dist);
 		else {
 			/*
 			 * You aren't allowed to doubly vorpalize a weapon.
 			 */
-			if (player.weapon->o_enemy != 0) {
+			if (player.weapon_item()->o_enemy != 0) {
 				msg("your {} vanishes in a puff of smoke",
-				w_names[player.weapon->which<WeaponType>()]);
-				player.body.t_pack.remove(player.weapon);
-				discard(player.weapon);
-				player.weapon = nullptr;
+				w_names[player.weapon_item()->which<WeaponType>()]);
+				player.body.t_pack.remove(*player.weapon_item());
+				discard(*player.weapon_item());
+				player.weapon = std::nullopt;
 			} else {
-				player.weapon->o_enemy = pick_mons();
-				player.weapon->o_hplus++;
-				player.weapon->o_dplus++;
-				player.weapon->charges() = 1;
-				msg(flashmsg, w_names[player.weapon->which<WeaponType>()],
+				player.weapon_item()->o_enemy = pick_mons();
+				player.weapon_item()->o_hplus++;
+				player.weapon_item()->o_dplus++;
+				player.weapon_item()->charges() = 1;
+				msg(flashmsg, w_names[player.weapon_item()->which<WeaponType>()],
 					game().options.brief() ? "" : intense);
 
 				/*
@@ -278,13 +278,13 @@ read_scroll()
 	obj->o_count--;
 	else
 	{
-	player.body.t_pack.remove(obj);
+	player.body.t_pack.remove(*obj);
 	discardit = true;
 	}
 	call_it(items.s_know[obj->which<Scroll>()], items.s_guess[obj->which<Scroll>()]);
 
 	if (discardit)
-	discard(obj);
+	discard(*obj);
 }
 
 }  // namespace rogue::items::effects

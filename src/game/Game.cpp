@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <functional>
 
 #include "rogue.h"
 
@@ -14,22 +13,6 @@ Items::Items()
 	std::copy_n(things_base, NUMTHINGS, things);
 }
 
-namespace {
-
-// Whether p points into the n elements at first (std::less orders any pointers)
-template <class T>
-bool points_into(const T *p, const T *first, std::size_t n)
-{
-	std::less<const T *> less;
-	return !less(p, first) && less(p, first + n);
-}
-
-bool is_room(const Level &level, const struct room *rp)
-{
-	return points_into(rp, level.rooms, MAXROOMS) || points_into(rp, level.passages, MAXPASS);
-}
-
-} // namespace
 
 std::vector<std::string>
 pool_problems(const Game &g)
@@ -41,37 +24,31 @@ pool_problems(const Game &g)
 	int item_refs[MAXITEMS] = {};
 	int creature_refs[MAXITEMS] = {};
 
-	auto count_items = [&](const List<Item> &list, std::string_view where) {
-		for (const Item *obj : list) {
-			int slot = pool.items.slot_of(obj);
-			if (slot < 0)
-				problem(std::format("an item outside the pool in {}", where));
-			else
-				item_refs[slot]++;
-		}
+	// Lists hold Ids; one of a free slot is counted, and reported below
+	auto count_items = [&](const List<Item> &list) {
+		for (ItemId id : list.ids())
+			item_refs[id.slot]++;
 	};
-	count_items(level.objects, "the level's objects");
-	count_items(g.player.body.t_pack, "the rogue's pack");
-	for (const Creature *tp : level.monsters) {
-		int slot = pool.creatures.slot_of(tp);
-		if (slot < 0) {
-			problem("a monster outside the pool");
-			continue;
-		}
+	count_items(level.objects);
+	count_items(g.player.body.t_pack);
+	for (CreatureId id : level.monsters.ids()) {
+		int slot = id.slot;
 		creature_refs[slot]++;
-		count_items(tp->t_pack, "a monster's pack");
+		Maybe<const Creature> tp = pool.creature(std::optional<CreatureId>(id));
+		if (!tp)
+			continue;
+		count_items(tp->t_pack);
 
-		const coord *dest = tp->t_dest;
-		bool dest_ok = dest == nullptr || dest == &g.player.body.t_pos;
-		for (const struct room &rp : level.rooms)
-			dest_ok = dest_ok || dest == &rp.r_gold;
-		for (const struct room &rp : level.passages)
-			dest_ok = dest_ok || dest == &rp.r_gold;
-		for (const Item *obj : level.objects)
-			dest_ok = dest_ok || dest == &obj->o_pos;
+		const std::optional<Destination> &dest = tp->t_dest;
+		bool dest_ok = !dest || std::holds_alternative<Hero>(*dest)
+			|| (std::holds_alternative<Gold>(*dest) && Level::valid(std::get<Gold>(*dest).room));
+		if (dest && std::holds_alternative<ItemId>(*dest)) {
+			Maybe<Item> obj = pool.item(std::optional<ItemId>(std::get<ItemId>(*dest)));
+			dest_ok = obj && level.objects.contains(*obj);
+		}
 		if (!dest_ok)
 			problem("monster " + std::to_string(slot) + " is after something that isn't the hero, gold or a floor item");
-		if (tp->t_room != nullptr && !is_room(level, tp->t_room))
+		if (tp->t_room && !Level::valid(*tp->t_room))
 			problem("monster " + std::to_string(slot) + " is in a room that isn't one");
 	}
 
@@ -90,16 +67,40 @@ pool_problems(const Game &g)
 		problem("the pool counts " + std::to_string(pool.total) + " things in use, but " + std::to_string(used) + " are");
 
 	const Player &player = g.player;
-	for (const Item *worn : {player.armor, player.weapon, player.rings[Hand::Left], player.rings[Hand::Right]})
-		if (worn != nullptr && !player.body.t_pack.contains(worn))
+	for (std::optional<ItemId> worn : {player.armor, player.weapon, player.rings[Hand::Left], player.rings[Hand::Right]})
+		if (worn && (!pool.item(worn) || !player.body.t_pack.contains(*pool.item(worn))))
 			problem("a worn item isn't in the pack");
-	if (g.turn.last_item != nullptr && pool.items.slot_of(g.turn.last_item) < 0)
+	if (g.turn.last_item && !pool.item(g.turn.last_item))
 		problem("the item picked last isn't in use");
-	if (player.body.t_room != nullptr && !is_room(level, player.body.t_room))
+	if (player.body.t_room && !Level::valid(*player.body.t_room))
 		problem("the rogue is in a room that isn't one");
-	if (player.old_room != nullptr && !is_room(level, player.old_room))
+	if (player.old_room && !Level::valid(*player.old_room))
 		problem("the rogue was in a room that isn't one");
 	return problems;
+}
+
+Coord Game::where(const Destination &dest) const
+{
+	if (std::holds_alternative<Hero>(dest))
+		return player.body.t_pos;
+	if (std::holds_alternative<Gold>(dest))
+		return level.room(std::get<Gold>(dest).room).r_gold;
+	return pool.item(std::get<ItemId>(dest)).o_pos;
+}
+
+Item *ListPool<Item>::at(ItemId id) { return game().pool.items.find(id); }
+std::optional<ItemId> ListPool<Item>::id_of(const Item &obj) { return game().pool.id_of(obj); }
+Creature *ListPool<Creature>::at(CreatureId id) { return game().pool.creatures.find(id); }
+std::optional<CreatureId> ListPool<Creature>::id_of(const Creature &tp) { return game().pool.id_of(tp); }
+
+Maybe<Item> Player::armor_item() const { return game().pool.item(armor); }
+Maybe<Item> Player::weapon_item() const { return game().pool.item(weapon); }
+Maybe<Item> Player::ring_item(Hand hand) const { return game().pool.item(rings[hand]); }
+
+bool Player::wears(Hand hand, Ring ring) const
+{
+	Maybe<Item> obj = ring_item(hand);
+	return obj && obj->which<Ring>() == ring;
 }
 
 Game &game()

@@ -191,7 +191,7 @@ status(void)
 	/*
 	 * The armor class shown ignores rings of protection, as it always did
 	 */
-	ac = player.armor != nullptr ? player.armor->o_ac : player.body.t_stats.s_arm;
+	ac = player.armor_item() ? player.armor_item()->o_ac : player.body.t_stats.s_arm;
 
 	st.level = game().level.depth;
 	st.hp = player.body.t_stats.s_hpt;
@@ -287,10 +287,10 @@ SIG2(void)
 		return;
 	if (new_time - cur_time >= 60)
 	{
-		TM *local = md_localtime();
-		bighand = local->hour % 12;
-		littlehand = local->minute;
-		cur_time = new_time - local->second;
+		TM local = md_localtime();
+		bighand = local.hour % 12;
+		littlehand = local.minute;
+		cur_time = new_time - local.second;
 		showtime = true;
 	}
 

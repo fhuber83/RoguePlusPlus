@@ -3,6 +3,9 @@
 #include <array>
 #include <cstddef>
 #include <memory>
+#include <optional>
+
+#include "game/Id.hpp"
 
 namespace rogue {
 
@@ -55,6 +58,21 @@ public:
 	T *at(int slot) const { return in_range(slot) ? slots_[slot].get() : nullptr; }
 
 	bool used(int slot) const { return at(slot) != nullptr; }
+
+	// The T an Id names, which must be in use
+	T &get(Id<T> id) const { return *slots_[id.slot]; }
+
+	// The T an Id names, or nullptr for none or an empty slot
+	T *find(std::optional<Id<T>> id) const { return id ? at(id->slot) : nullptr; }
+
+	// The Id of a T in a slot, or nullopt for nullptr or a T in none
+	std::optional<Id<T>> id_of(const T *thing) const
+	{
+		int slot = slot_of(thing);
+		if (slot < 0)
+			return std::nullopt;
+		return Id<T>{slot};
+	}
 
 	// The slot holding thing, or -1 when none does
 	int slot_of(const T *thing) const

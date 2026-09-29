@@ -9,16 +9,16 @@ namespace rogue::items::effects {
 void
 wear()
 {
-	Item *obj;
+	Maybe<Item> obj;
 	std::string sp;
 
-	if (game().player.armor != nullptr) {
+	if (game().player.armor_item()) {
 		msg("you are already wearing some{}.",
 			noterse(".  You'll have to take it off first"));
 		game().turn.after = false;
 		return;
 	}
-	if ((obj = get_item("wear", ItemKind::Armor)) == nullptr)
+	if (!(obj = get_item("wear", ItemKind::Armor)))
 		return;
 	if (obj->o_type != ItemKind::Armor) {
 		msg("you can't wear that");
@@ -26,8 +26,8 @@ wear()
 	}
 	waste_time();
 	obj->o_flags.set(ISKNOW);
-	sp = inv_name(obj, true);
-	game().player.armor = obj;
+	sp = inv_name(*obj, true);
+	game().player.armor = game().pool.id_of(obj);
 	msg("you are now wearing {}", sp);
 }
 
@@ -38,17 +38,17 @@ wear()
 void
 take_off()
 {
-	Item *obj;
+	Maybe<Item> obj;
 
-	if ((obj = game().player.armor) == nullptr) {
+	if (!(obj = game().player.armor_item())) {
 		game().turn.after = false;
 		msg("you aren't wearing any armor");
 		return;
 	}
-	if (!can_drop(game().player.armor))
+	if (!can_drop(*obj))
 		return;
-	game().player.armor = nullptr;
-	msg("you used to be wearing {:c}) {}", pack_char(obj), inv_name(obj, true));
+	game().player.armor = std::nullopt;
+	msg("you used to be wearing {:c}) {}", pack_char(*obj), inv_name(*obj, true));
 }
 
 /*

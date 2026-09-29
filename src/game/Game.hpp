@@ -79,7 +79,7 @@ struct Turn {
 	unsigned char do_take = 0;
 	/* What get_item() last gave, so a repeat takes it again */
 	unsigned char last_item_key = 0;			/* lch: its pack letter */
-	Item *last_item = nullptr;		/* wasthing: the item itself */
+	std::optional<ItemId> last_item;	/* wasthing: the item itself */
 };
 
 /*
@@ -100,9 +100,9 @@ struct Player {
 	struct stats max_stats = { 16, 0, 1, 10, 12, "1d4", 12 };	/* The maximum for the player */
 	int purse = 0;					/* How much gold the rogue has */
 	int in_pack = 0;				/* inpack: number of things in pack */
-	Item *armor = nullptr;			/* cur_armor: what a well dresssed rogue wears */
-	Item *weapon = nullptr;		/* cur_weapon: which weapon he is weilding */
-	KindTable<Hand, Item *> rings = {};	/* cur_ring: which rings are being worn */
+	std::optional<ItemId> armor;		/* cur_armor: what a well dresssed rogue wears */
+	std::optional<ItemId> weapon;		/* cur_weapon: which weapon he is weilding */
+	KindTable<Hand, std::optional<ItemId>> rings = {};	/* cur_ring: which rings are being worn */
 	int food_left = 0;				/* Amount of food in hero's stomach */
 	int hungry_state = 0;			/* How hungry is he */
 	bool has_amulet = false;		/* amulet: he has the amulet */
@@ -114,13 +114,14 @@ struct Player {
 	int fung_hit = 0;				/* Number of times the venus flytrap has hit; its attack is fung_hit d1 */
 	Trapped was_trapped = Trapped::None;	/* Was a trap sprung (be_trapped(), look()) */
 	coord old_pos = {};				/* oldpos: position before last look() call */
-	struct room *old_room = nullptr;	/* oldrp: roomin(&old_pos) */
+	std::optional<RoomRef> old_room;	/* oldrp: roomin(old_pos) */
 
+	// What he wears and wields, if anything (these look it up in game().pool)
+	Maybe<Item> armor_item() const;
+	Maybe<Item> weapon_item() const;
+	Maybe<Item> ring_item(Hand hand) const;
 	// Whether he wears this ring on this hand (was ISRING)
-	bool wears(Hand hand, Ring ring) const
-	{
-		return rings[hand] != nullptr && rings[hand]->which<Ring>() == ring;
-	}
+	bool wears(Hand hand, Ring ring) const;
 	// Whether he wears this ring on either hand (was ISWEARING)
 	bool wears(Ring ring) const { return wears(Hand::Left, ring) || wears(Hand::Right, ring); }
 };
@@ -158,6 +159,19 @@ struct Level {
 	// A square's MapFlags (was flat())
 	MapFlags &flags_at(int y, int x) { return flags[INDEX(y, x)]; }
 	MapFlags &flags_at(Coord pos) { return flags_at(pos.y, pos.x); }
+	// The room or passage a RoomRef names
+	struct room &room(RoomRef r) { return r.kind == RoomRef::Kind::Room ? rooms[r.index] : passages[r.index]; }
+	const struct room &room(RoomRef r) const
+	{
+		return r.kind == RoomRef::Kind::Room ? rooms[r.index] : passages[r.index];
+	}
+	// Whether a RoomRef names one of this level's rooms or passages
+	static constexpr bool valid(RoomRef r)
+	{
+		return r.index >= 0 && r.index < (r.kind == RoomRef::Kind::Room ? MAXROOMS : MAXPASS);
+	}
+	// The passage a passage or maze square belongs to
+	RoomRef passage_at(Coord pos) { return RoomRef::passage(flags_at(pos).passage()); }
 };
 
 /*
@@ -192,10 +206,22 @@ struct Items {
 	Items();
 };
 
+// The pool's creatures and items, as Lists find them (entities/List.hpp)
+template <>
+struct ListPool<Item> {
+	static Item *at(ItemId id);
+	static std::optional<ItemId> id_of(const Item &obj);
+};
+template <>
+struct ListPool<Creature> {
+	static Creature *at(CreatureId id);
+	static std::optional<CreatureId> id_of(const Creature &tp);
+};
+
 /*
  * The creatures and items in play, made by new_creature() and new_item() and
  * given back by discard() (list.cpp). Each slot owns its thing; lists, packs
- * and the rest only point at them. The original allocated both kinds from one
+ * and the rest name them by Id (game/Id.hpp). The original allocated both kinds from one
  * array of MAXITEMS things (_things), so the count is shared: when it is
  * full, neither kind can be made, and level generation checks it.
  */
@@ -203,6 +229,18 @@ struct Pool {
 	Slots<Item, MAXITEMS> items;
 	Slots<Creature, MAXITEMS> creatures;
 	int total = 0;							/* Things of both kinds in use */
+
+	// The thing a link names (see Id)
+	Item &item(ItemId id) const { return items.get(id); }
+	Creature &creature(CreatureId id) const { return creatures.get(id); }
+	// The thing an optional link names, if it is in use
+	Maybe<Item> item(std::optional<ItemId> id) const { return maybe(items.find(id)); }
+	Maybe<Creature> creature(std::optional<CreatureId> id) const { return maybe(creatures.find(id)); }
+	// The link to a thing, nullopt for none or a thing outside the pool
+	std::optional<ItemId> id_of(const Item &obj) const { return items.id_of(&obj); }
+	std::optional<CreatureId> id_of(const Creature &tp) const { return creatures.id_of(&tp); }
+	std::optional<ItemId> id_of(Maybe<const Item> obj) const { return obj ? id_of(*obj) : std::nullopt; }
+	std::optional<CreatureId> id_of(Maybe<const Creature> tp) const { return tp ? id_of(*tp) : std::nullopt; }
 };
 
 struct Game {
@@ -220,6 +258,8 @@ struct Game {
 	int wander_rolls = 0;			/* between: rollwand() calls since it last rolled */
 
 	Game() = default;
+	// Where a destination is now (see Destination)
+	Coord where(const Destination &dest) const;
 	// It points into itself (guesses, level lists, worn items in the pool)
 	Game(const Game &) = delete;
 	Game &operator=(const Game &) = delete;

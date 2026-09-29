@@ -16,7 +16,7 @@ constexpr unsigned char NOTHING = ' ';
 
 static int frcnt, ny, nx, topy, topx;
 static int maxx, maxy;
-static int *fr_y, *fr_x;
+static std::array<int, MAXFRNT> fr_y, fr_x;	/* the frontier */
 
 static void	new_frontier(int y, int x);
 static void	add_frnt(int y, int x);
@@ -26,21 +26,18 @@ static bool	maze_at(int y, int x);
 static bool	inrange(int y, int x);
 
 void
-draw_maze(struct room *rp)
+draw_maze(struct room &rp)
 {
 	int y, x;
-	int fy[MAXFRNT], fx[MAXFRNT];
 	int psgcnt;
 	coord spos;
 	rogue::Level &level = game().level;
 
-	fr_y = fy;
-	fr_x = fx;
 	maxx = maxy = 0;
-	topy = rp->r_pos.y;
+	topy = rp.r_pos.y;
 	if (topy == 0)
-		topy = ++rp->r_pos.y;
-	topx = rp->r_pos.x;
+		topy = ++rp.r_pos.y;
+	topx = rp.r_pos.x;
 	/*
 	 * Choose a random spot in the maze and initialize the frontier
 	 * to be the immediate neighbors of this random spot.
@@ -62,23 +59,25 @@ draw_maze(struct room *rp)
 	 * According to the Grand Beeking, every maze should have a loop
 	 * Don't worry if you don't understand this.
 	 */
-	rp->r_max.x = maxx - rp->r_pos.x + 1;
-	rp->r_max.y = maxy - rp->r_pos.y + 1;
+	rp.r_max.x = maxx - rp.r_pos.x + 1;
+	rp.r_max.y = maxy - rp.r_pos.y + 1;
 	do {
-		static coord ld[4] = {
+		static constexpr Coord ld[4] = {
 			{-1,  0},
 			{ 0,  1},
 			{ 1,  0},
 			{ 0, -1}
 		};
-		coord *cp;
 		int sh;
 
-		rnd_pos(rp, &spos);
-		for (psgcnt = 0,cp = ld,sh = 1; cp < &ld[4]; sh <<= 1,cp++) {
-			y = cp->y + spos.y; x = cp->x + spos.x;
+		spos = rnd_pos(rp);
+		psgcnt = 0;
+		sh = 1;
+		for (Coord d : ld) {
+			y = d.y + spos.y; x = d.x + spos.x;
 			if (!offmap(y, x) && level.at(y, x) == PASSAGE)
 				psgcnt += sh;
+			sh <<= 1;
 		}
 	} while (level.at(spos) == PASSAGE || psgcnt % 5);
 	splat(spos.y, spos.x);

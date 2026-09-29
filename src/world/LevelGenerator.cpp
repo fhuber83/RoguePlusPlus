@@ -21,8 +21,7 @@ void
 new_level(void)
 {
 	int rm, i;
-	Creature *tp;
-	MapFlags *fp;
+	Maybe<Creature> tp;
 	int index;
 	coord stairs;
 	rogue::Player &player = game().player;
@@ -44,7 +43,7 @@ new_level(void)
 	/*
 	 * Free up the monsters on the last level
 	 */
-	for (tp = level.monsters.first(); tp != nullptr; tp = level.monsters.after(tp))
+	for (tp = level.monsters.first(); tp; tp = level.monsters.after(*tp))
 		list_free(tp->t_pack);
 	list_free(level.monsters);
 	/*
@@ -70,7 +69,7 @@ new_level(void)
 	i = 0;
 	do {
 		rm = rnd_room();
-	rnd_pos(&level.rooms[rm], &stairs);
+	stairs = rnd_pos(level.rooms[rm]);
 	index = INDEX(stairs.y, stairs.x);
 	} while (!is_floor(level.map[index]));
 	level.map[index] = STAIRS;
@@ -85,23 +84,23 @@ new_level(void)
 		while (i--) {
 			do {
 				rm = rnd_room();
-				rnd_pos(&level.rooms[rm], &stairs);
+				stairs = rnd_pos(level.rooms[rm]);
 				index = INDEX(stairs.y, stairs.x);
 			} while (!is_floor(level.map[index]));
-			fp = &level.flags[index];
-			fp->unset(MapFlag::Real);
-			fp->set_trap(static_cast<Trap>(rnd(kind_count<Trap>)));
+			MapFlags &fp = level.flags[index];
+			fp.unset(MapFlag::Real);
+			fp.set_trap(static_cast<Trap>(rnd(kind_count<Trap>)));
 		}
 	}
 	do {
 		rm = rnd_room();
-		rnd_pos(&level.rooms[rm], &player.body.t_pos);
+		player.body.t_pos = rnd_pos(level.rooms[rm]);
 		index = INDEX(player.body.t_pos.y, player.body.t_pos.x);
 	} while (!(is_floor(level.map[index]) && level.flags[index].test(MapFlag::Real)
-				&& moat(player.body.t_pos.y, player.body.t_pos.x) == nullptr));
+				&& !moat(player.body.t_pos.y, player.body.t_pos.x)));
 
 	game().message.end = 0;
-	enter_room(&player.body.t_pos);
+	enter_room(player.body.t_pos);
 	display().draw_tile(player.body.t_pos, PLAYER);
 	player.old_pos = player.body.t_pos;
 	player.old_room = player.body.t_room;
@@ -132,7 +131,7 @@ void
 put_things(void)
 {
 	int i = 0;
-	Item *cur;
+	Maybe<Item> cur;
 	int rm;
 	coord tp;
 	rogue::Level &level = game().level;
@@ -153,8 +152,8 @@ put_things(void)
 		 * hope of getting the amulet
 		 */
 		if (level.depth >= AMULETLEVEL && !game().player.saw_amulet) {
-			if ((cur = new_item()) != nullptr) {
-				level.objects.push_front(cur);
+			if ((cur = new_item())) {
+				level.objects.push_front(*cur);
 				cur->o_hplus = cur->o_dplus = 0;
 				cur->o_damage = cur->o_hurldmg = "0d0";
 				cur->o_ac = 11;
@@ -164,7 +163,7 @@ put_things(void)
 				 */
 				do {
 					rm = rnd_room();
-					rnd_pos(&level.rooms[rm], &tp);
+					tp = rnd_pos(level.rooms[rm]);
 				} while (!is_floor(winat(tp.y, tp.x)));
 				level.at(tp) = AMULET;
 				cur->o_pos = tp;
@@ -185,13 +184,13 @@ put_things(void)
 			 * Pick a new object and link it in the list
 			 */
 			cur = new_thing();
-			level.objects.push_front(cur);
+			level.objects.push_front(*cur);
 			/*
 			 * Put it somewhere
 			 */
 			do {
 				rm = rnd_room();
-				rnd_pos(&level.rooms[rm], &tp);
+				tp = rnd_pos(level.rooms[rm]);
 			} while (!is_floor(level.at(tp)));
 			level.at(tp) = glyph_of(cur->o_type);
 			cur->o_pos = tp;
@@ -209,15 +208,14 @@ void
 treas_room(void)
 {
 	int nm, index;
-	Creature *tp;
-	Item *obj;
+	Maybe<Creature> tp;
+	Maybe<Item> obj;
 	rogue::Level &level = game().level;
-	struct room *rp;
 	int spots, num_monst;
 	coord mp;
 
-	rp = &level.rooms[rnd_room()];
-	spots = (rp->r_max.y - 2) * (rp->r_max.x - 2) - MINTREAS;
+	const struct room &rp = level.rooms[rnd_room()];
+	spots = (rp.r_max.y - 2) * (rp.r_max.x - 2) - MINTREAS;
 	if (spots > (MAXTREAS - MINTREAS))
 		spots = (MAXTREAS - MINTREAS);
 	num_monst = nm = rnd(spots) + MINTREAS;
@@ -225,12 +223,12 @@ treas_room(void)
 	{
 		do
 		{
-			rnd_pos(rp, &mp);
+			mp = rnd_pos(rp);
 			index = INDEX(mp.y, mp.x);
 		} while (!is_floor(level.map[index]));
 		obj = new_thing();
 		obj->o_pos = mp;
-		level.objects.push_front(obj);
+		level.objects.push_front(*obj);
 		level.map[index] = glyph_of(obj->o_type);
 	}
 
@@ -240,7 +238,7 @@ treas_room(void)
 
 	if ((nm = rnd(spots) + MINTREAS) < num_monst + 2)
 		nm = num_monst + 2;
-	spots = (rp->r_max.y - 2) * (rp->r_max.x - 2);
+	spots = (rp.r_max.y - 2) * (rp.r_max.x - 2);
 	if (nm > spots)
 		nm = spots;
 	level.depth++;
@@ -248,18 +246,18 @@ treas_room(void)
 	{
 		for (spots = 0; spots < MAXTRIES; spots++)
 		{
-			rnd_pos(rp, &mp);
+			mp = rnd_pos(rp);
 			index = INDEX(mp.y, mp.x);
-			if (is_floor(level.map[index]) && moat(mp.y, mp.x) == nullptr)
+			if (is_floor(level.map[index]) && !moat(mp.y, mp.x))
 				break;
 		}
 		if (spots != MAXTRIES)
 		{
-			if ((tp = new_creature()) != nullptr)
+			if ((tp = new_creature()))
 			{
-				new_monster(tp, randmonster(false), &mp);
+				new_monster(*tp, randmonster(false), mp);
 				tp->t_flags.set(ISMEAN);	/* no sloughers in THIS room */
-				give_pack(tp);
+				give_pack(*tp);
 			}
 		}
 	}
@@ -274,9 +272,9 @@ treas_room(void)
 
 constexpr int GOLDGRP = 1;
 
-static void	draw_room(struct room *rp);
-static void	vert( struct room *rp, int startx);
-static void	horiz(struct room *rp, int starty);
+static void	draw_room(const struct room &rp);
+static void	vert(const struct room &rp, int startx);
+static void	horiz(const struct room &rp, int starty);
 
 /*
  * do_rooms:
@@ -287,8 +285,7 @@ do_rooms(void)
 {
 	int i, rm;
 	rogue::Level &level = game().level;
-	struct room *rp;
-	Creature *tp;
+	Maybe<Creature> tp;
 	int left_out;
 	coord top;
 	coord bsze;
@@ -305,10 +302,10 @@ do_rooms(void)
 	/*
 	 * Clear things for a new level
 	 */
-	for (rp = level.rooms; rp < &level.rooms[MAXROOMS]; rp++)
+	for (struct room &rp : level.rooms)
 	{
-		rp->r_goldval = rp->r_nexits = 0;
-		rp->r_flags.reset();
+		rp.r_goldval = rp.r_nexits = 0;
+		rp.r_flags.reset();
 	}
 	/*
 	 * Put the gone rooms, if any, on the level
@@ -316,29 +313,32 @@ do_rooms(void)
 	left_out = rnd(4);
 	for (i = 0; i < left_out; i++) {
 		do
-			rp = &level.rooms[(rm = rnd_room())];
-		while (rp->r_flags.test(RoomFlag::Maze));
-		rp->r_flags.set(RoomFlag::Gone);
+			rm = rnd_room();
+		while (level.rooms[rm].r_flags.test(RoomFlag::Maze));
+		struct room &rp = level.rooms[rm];
+		rp.r_flags.set(RoomFlag::Gone);
 		if (rm > 2 && level.depth > 10 && rnd(20) < level.depth - 9)
-			rp->r_flags.set(RoomFlag::Maze);
+			rp.r_flags.set(RoomFlag::Maze);
 	}
 	/*
 	 * dig and populate all the rooms on the level
 	 */
-	for (i = 0, rp = level.rooms; i < MAXROOMS; rp++, i++) {
+	for (i = 0; i < MAXROOMS; i++) {
+		struct room &rp = level.rooms[i];
+
 		/*
 		 * Find upper left corner of box that this room goes in
 		 */
 		top.x = (i%3)*bsze.x + 1;
 		top.y = i/3*bsze.y;
-		if (rp->r_flags.test(RoomFlag::Gone)) {
+		if (rp.r_flags.test(RoomFlag::Gone)) {
 			/*
 			 * If the gone room is a maze room, draw the maze and set the
 			 * size equal to the maximum possible.
 			 */
-			if (rp->r_flags.test(RoomFlag::Maze)) {
-				rp->r_pos.x = top.x;
-				rp->r_pos.y = top.y;
+			if (rp.r_flags.test(RoomFlag::Maze)) {
+				rp.r_pos.x = top.x;
+				rp.r_pos.y = top.y;
 				draw_maze(rp);
 			} else {
 				/*
@@ -346,63 +346,63 @@ do_rooms(void)
 				 * for passage drawing.
 				 */
 				do {
-					rp->r_pos.x = top.x + rnd(bsze.x-2) + 1;
-					rp->r_pos.y = top.y + rnd(bsze.y-2) + 1;
-					rp->r_max.x = -COLS;
-					rp->r_max.x = -endline;
-				} while (!(rp->r_pos.y > 0 && rp->r_pos.y < endline-1));
+					rp.r_pos.x = top.x + rnd(bsze.x-2) + 1;
+					rp.r_pos.y = top.y + rnd(bsze.y-2) + 1;
+					rp.r_max.x = -COLS;
+					rp.r_max.x = -endline;
+				} while (!(rp.r_pos.y > 0 && rp.r_pos.y < endline-1));
 			}
 			continue;
 		}
 		if (rnd(10) < (level.depth - 1))
-			rp->r_flags.set(RoomFlag::Dark);
+			rp.r_flags.set(RoomFlag::Dark);
 		/*
 		 * Find a place and size for a random room
 		 */
 		do {
-			rp->r_max.x = rnd(bsze.x - 4) + 4;
-			rp->r_max.y = rnd(bsze.y - 4) + 4;
-			rp->r_pos.x = top.x + rnd(bsze.x - rp->r_max.x);
-			rp->r_pos.y = top.y + rnd(bsze.y - rp->r_max.y);
-		} while (rp->r_pos.y == 0);
+			rp.r_max.x = rnd(bsze.x - 4) + 4;
+			rp.r_max.y = rnd(bsze.y - 4) + 4;
+			rp.r_pos.x = top.x + rnd(bsze.x - rp.r_max.x);
+			rp.r_pos.y = top.y + rnd(bsze.y - rp.r_max.y);
+		} while (rp.r_pos.y == 0);
 		draw_room(rp);
 		/*
 		 * Put the gold in
 		 */
 		if ((rnd(2) == 0) && (!game().player.saw_amulet || (level.depth >= game().player.max_level))) {
-			Item *gold;
+			Maybe<Item> gold;
 
-			if ((gold = new_item()) != nullptr) {
-				gold->gold_value() = rp->r_goldval = gold_calc();
+			if ((gold = new_item())) {
+				gold->gold_value() = rp.r_goldval = gold_calc();
 				while (1) {
 					unsigned char gch;
 
-					rnd_pos(rp, &rp->r_gold);
-					gch =  level.at(rp->r_gold);
+					rp.r_gold = rnd_pos(rp);
+					gch =  level.at(rp.r_gold);
 					if (is_floor(gch))
 						break;
 				}
-				gold->o_pos = rp->r_gold;
+				gold->o_pos = rp.r_gold;
 				gold->o_flags = ISMANY;
 				gold->o_group = GOLDGRP;
 				gold->o_type = ItemKind::Gold;
-				level.objects.push_front(gold);
-				level.at(rp->r_gold) = GOLD;
+				level.objects.push_front(*gold);
+				level.at(rp.r_gold) = GOLD;
 			}
 		}
 		/*
 		 * Put the monster in
 		 */
-		if (rnd(100) < (rp->r_goldval > 0 ? 80 : 25)) {
-			if ((tp = new_creature()) != nullptr) {
+		if (rnd(100) < (rp.r_goldval > 0 ? 80 : 25)) {
+			if ((tp = new_creature())) {
 				unsigned char mch;
 
 				do {
-					rnd_pos(rp, &mp);
+					mp = rnd_pos(rp);
 					mch = winat(mp.y, mp.x);
 				} while (!is_floor(mch));
-				new_monster(tp, randmonster(false), &mp);
-				give_pack(tp);
+				new_monster(*tp, randmonster(false), mp);
+				give_pack(*tp);
 			}
 		}
 	}
@@ -413,7 +413,7 @@ do_rooms(void)
  *	Draw a box around a room and lay down the floor
  */
 void
-draw_room(struct room *rp)
+draw_room(const struct room &rp)
 {
 	int y, x;
 	rogue::Level &level = game().level;
@@ -421,19 +421,19 @@ draw_room(struct room *rp)
 	/*
 	 * Here we draw normal rooms, one side at a time
 	 */
-	vert(rp, rp->r_pos.x);			/* Draw left side */
-	vert(rp, rp->r_pos.x + rp->r_max.x - 1);	/* Draw right side */
-	horiz(rp, rp->r_pos.y);			/* Draw top */
-	horiz(rp, rp->r_pos.y + rp->r_max.y - 1);	/* Draw bottom */
-	level.at(rp->r_pos) = ULWALL;
-	level.at(rp->r_pos.y, rp->r_pos.x+rp->r_max.x - 1) = URWALL;
-	level.at(rp->r_pos.y+rp->r_max.y-1, rp->r_pos.x) = LLWALL;
-	level.at(rp->r_pos.y+rp->r_max.y-1, rp->r_pos.x+rp->r_max.x - 1) = LRWALL;
+	vert(rp, rp.r_pos.x);			/* Draw left side */
+	vert(rp, rp.r_pos.x + rp.r_max.x - 1);	/* Draw right side */
+	horiz(rp, rp.r_pos.y);			/* Draw top */
+	horiz(rp, rp.r_pos.y + rp.r_max.y - 1);	/* Draw bottom */
+	level.at(rp.r_pos) = ULWALL;
+	level.at(rp.r_pos.y, rp.r_pos.x+rp.r_max.x - 1) = URWALL;
+	level.at(rp.r_pos.y+rp.r_max.y-1, rp.r_pos.x) = LLWALL;
+	level.at(rp.r_pos.y+rp.r_max.y-1, rp.r_pos.x+rp.r_max.x - 1) = LRWALL;
 	/*
 	 * Put the floor down
 	 */
-	for (y = rp->r_pos.y + 1; y < rp->r_pos.y + rp->r_max.y - 1; y++)
-		for (x = rp->r_pos.x + 1; x < rp->r_pos.x + rp->r_max.x - 1; x++)
+	for (y = rp.r_pos.y + 1; y < rp.r_pos.y + rp.r_max.y - 1; y++)
+		for (x = rp.r_pos.x + 1; x < rp.r_pos.x + rp.r_max.x - 1; x++)
 			level.at(y, x) = FLOOR;
 }
 
@@ -443,11 +443,11 @@ draw_room(struct room *rp)
  */
 static
 void
-vert(struct room *rp, int startx)
+vert(const struct room &rp, int startx)
 {
 	int y;
 
-	for (y = rp->r_pos.y + 1; y <= rp->r_max.y + rp->r_pos.y - 1; y++)
+	for (y = rp.r_pos.y + 1; y <= rp.r_max.y + rp.r_pos.y - 1; y++)
 		game().level.at(y, startx) = VWALL;
 }
 
@@ -457,11 +457,11 @@ vert(struct room *rp, int startx)
  */
 static
 void
-horiz(struct room *rp, int starty)
+horiz(const struct room &rp, int starty)
 {
 	int x;
 
-	for (x = rp->r_pos.x; x <= rp->r_pos.x + rp->r_max.x - 1; x++)
+	for (x = rp.r_pos.x; x <= rp.r_pos.x + rp.r_max.x - 1; x++)
 		game().level.at(starty, x) = HWALL;
 }
 

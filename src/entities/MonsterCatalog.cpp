@@ -8,7 +8,7 @@
 
 namespace rogue::entities {
 
-static int	exp_add(Creature *tp);
+static int	exp_add(const Creature &tp);
 
 /*
  * List of monsters in rough order of vorpalness
@@ -59,44 +59,43 @@ randmonster(bool wander)
  *	Pick a new monster and add it to the list
  */
 void
-new_monster(Creature *tp, unsigned char type, coord *cp)
+new_monster(Creature &tp, unsigned char type, Coord cp)
 {
-	const struct monster *mp;
 	int lev_add;
 
 	if ((lev_add = game().level.depth - AMULETLEVEL) < 0)
 		lev_add = 0;
 	game().level.monsters.push_front(tp);
-	tp->t_type = type;
-	tp->t_disguise = type;
-	tp->t_pos = *cp;
-	tp->t_oldch = '@';
-	tp->t_room = roomin(cp);
-	mp = &monsters[tp->t_type-'A'];
-	tp->t_stats.s_lvl = mp->m_stats.s_lvl + lev_add;
-	tp->t_stats.s_maxhp = tp->t_stats.s_hpt = roll(tp->t_stats.s_lvl, 8);
-	tp->t_stats.s_arm = mp->m_stats.s_arm - lev_add;
-	tp->t_stats.s_dmg = mp->m_stats.s_dmg;
-	tp->t_stats.s_str = mp->m_stats.s_str;
-	tp->t_stats.s_exp = mp->m_stats.s_exp + lev_add * 10 + exp_add(tp);
-	tp->t_flags = mp->m_flags;
-	tp->t_turn = true;
-	tp->t_pack.clear();
+	tp.t_type = type;
+	tp.t_disguise = type;
+	tp.t_pos = cp;
+	tp.t_oldch = '@';
+	tp.t_room = roomin(cp);
+	const struct monster &mp = monsters[tp.t_type-'A'];
+	tp.t_stats.s_lvl = mp.m_stats.s_lvl + lev_add;
+	tp.t_stats.s_maxhp = tp.t_stats.s_hpt = roll(tp.t_stats.s_lvl, 8);
+	tp.t_stats.s_arm = mp.m_stats.s_arm - lev_add;
+	tp.t_stats.s_dmg = mp.m_stats.s_dmg;
+	tp.t_stats.s_str = mp.m_stats.s_str;
+	tp.t_stats.s_exp = mp.m_stats.s_exp + lev_add * 10 + exp_add(tp);
+	tp.t_flags = mp.m_flags;
+	tp.t_turn = true;
+	tp.t_pack.clear();
 	if (game().player.wears(Ring::AggravateMonster))
 		start_run(cp);
 	if (type == 'X')
 	{
 		switch (rnd(game().level.depth > 25 ? 9 : 8))
 		{
-		case 0: tp->t_disguise = GOLD; break;
-		case 1: tp->t_disguise = POTION; break;
-		case 2: tp->t_disguise = SCROLL; break;
-		case 3: tp->t_disguise = STAIRS; break;
-		case 4: tp->t_disguise = WEAPON; break;
-		case 5: tp->t_disguise = ARMOR; break;
-		case 6: tp->t_disguise = RING; break;
-		case 7: tp->t_disguise = STICK; break;
-		case 8: tp->t_disguise = AMULET;
+		case 0: tp.t_disguise = GOLD; break;
+		case 1: tp.t_disguise = POTION; break;
+		case 2: tp.t_disguise = SCROLL; break;
+		case 3: tp.t_disguise = STAIRS; break;
+		case 4: tp.t_disguise = WEAPON; break;
+		case 5: tp.t_disguise = ARMOR; break;
+		case 6: tp.t_disguise = RING; break;
+		case 7: tp.t_disguise = STICK; break;
+		case 8: tp.t_disguise = AMULET;
 		break;
 		}
 	}
@@ -131,17 +130,17 @@ flytrap_attacks(int hits)
  */
 static
 int
-exp_add(Creature *tp)
+exp_add(const Creature &tp)
 {
 	int mod;
 
-	if (tp->t_stats.s_lvl == 1)
-		mod = tp->t_stats.s_maxhp / 8;
+	if (tp.t_stats.s_lvl == 1)
+		mod = tp.t_stats.s_maxhp / 8;
 	else
-		mod = tp->t_stats.s_maxhp / 6;
-	if (tp->t_stats.s_lvl > 9)
+		mod = tp.t_stats.s_maxhp / 6;
+	if (tp.t_stats.s_lvl > 9)
 		mod *= 20;
-	else if (tp->t_stats.s_lvl > 6)
+	else if (tp.t_stats.s_lvl > 6)
 		mod *= 4;
 	return mod;
 }
@@ -154,40 +153,39 @@ void
 wanderer(void)
 {
 	int i;
-	struct room *rp;
-	Creature *tp;
+	Maybe<Creature> tp;
 	coord cp;
 	rogue::Player &player = game().player;
 
 	/*
 	 * can we allocate a new monster
 	 */
-	if ((tp = new_creature()) == nullptr)
+	if (!(tp = new_creature()))
 		return;
 	do {
 		i = rnd_room();
-		if ((rp = &game().level.rooms[i]) == player.body.t_room)
+		if (RoomRef::room(i) == player.body.t_room)
 			continue;
-		rnd_pos(rp, &cp);
-	} while (!(rp != player.body.t_room && step_ok(winat(cp.y, cp.x))));
-	new_monster(tp, randmonster(true), &cp);
-	start_run(&tp->t_pos);
+		cp = rnd_pos(game().level.rooms[i]);
+	} while (!(RoomRef::room(i) != player.body.t_room && step_ok(winat(cp.y, cp.x))));
+	new_monster(*tp, randmonster(true), cp);
+	start_run(tp->t_pos);
 }
 
 /*
  * wake_monster:
  *	What to do when the hero steps next to a monster
  */
-Creature *
+Maybe<Creature>
 wake_monster(int y, int x)
 {
-	Creature *tp;
-	struct room *rp;
+	Maybe<Creature> tp;
+	std::optional<RoomRef> rp;
 	unsigned char ch;
 	int dst;
 	rogue::Player &player = game().player;
 
-	if ((tp = moat(y, x)) == nullptr)
+	if (!(tp = moat(y, x)))
 		return tp;
 	ch = tp->t_type;
 	/*
@@ -196,7 +194,7 @@ wake_monster(int y, int x)
 	if (!tp->t_flags.test(ISRUN) && rnd(3) != 0 && tp->t_flags.test(ISMEAN) && !tp->t_flags.test(ISHELD)
 		&& !player.wears(Ring::Stealth))
 	{
-		tp->t_dest = &player.body.t_pos;
+		tp->t_dest = Hero{};
 		tp->t_flags.set(ISRUN);
 	}
 	if (ch == 'M' && !player.body.t_flags.test(ISBLIND) && !tp->t_flags.test(ISFOUND)
@@ -204,7 +202,7 @@ wake_monster(int y, int x)
 	{
 		rp = player.body.t_room;
 		dst = DISTANCE(y, x, player.body.t_pos.y, player.body.t_pos.x);
-		if ((rp != nullptr && !rp->r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
+		if ((rp && !game().level.room(*rp).r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
 			tp->t_flags.set(ISFOUND);
 			if (!save(SaveThrow::Magic)) {
 				if (player.body.t_flags.test(ISHUH))
@@ -221,10 +219,10 @@ wake_monster(int y, int x)
 	 */
 	if (tp->t_flags.test(ISGREED) && !tp->t_flags.test(ISRUN)) {
 		tp->t_flags.set(ISRUN);
-		if (player.body.t_room->r_goldval)
-			tp->t_dest = &player.body.t_room->r_gold;
+		if (game().level.room(*player.body.t_room).r_goldval)
+			tp->t_dest = Gold{*player.body.t_room};
 		else
-			tp->t_dest = &player.body.t_pos;
+			tp->t_dest = Hero{};
 	}
 	return tp;
 }
@@ -234,13 +232,13 @@ wake_monster(int y, int x)
  *	Give a pack to a monster if it deserves one
  */
 void
-give_pack(Creature *tp)
+give_pack(Creature &tp)
 {
 	/*
 	 * check if we can allocate a new item
 	 */
-	if (game().pool.total < MAXITEMS && rnd(100) < monsters[tp->t_type-'A'].m_carry)
-		tp->t_pack.push_front(new_thing());
+	if (game().pool.total < MAXITEMS && rnd(100) < monsters[tp.t_type-'A'].m_carry)
+		tp.t_pack.push_front(*new_thing());
 }
 
 /*
@@ -268,15 +266,15 @@ pick_mons(void)
  *	  if no monster there return null
  */
 
-Creature *
+Maybe<Creature>
 moat(int my, int mx)
 {
-	Creature *tp;
+	Maybe<Creature> tp;
 
-	for (tp = game().level.monsters.first(); tp != nullptr; tp = game().level.monsters.after(tp))
+	for (tp = game().level.monsters.first(); tp; tp = game().level.monsters.after(*tp))
 		if (tp->t_pos.x == mx  && tp->t_pos.y == my)
 			return(tp);
-	return(nullptr);
+	return std::nullopt;
 }
 
 }  // namespace rogue::entities

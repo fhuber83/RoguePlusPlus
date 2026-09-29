@@ -242,7 +242,7 @@ death(char monst)
 	game().player.purse -= game().player.purse / 10;
 
 	display().curtain_down();
-	year = md_localtime()->year;
+	year = md_localtime().year;
 	display().draw_tombstone(game().options.name, killname(monst, true), game().player.purse, year);
 	display().curtain_up();
 	display().write_at(LINES-1, 0, "");
@@ -257,7 +257,7 @@ death(char monst)
 void
 total_winner(void)
 {
-	Item *obj;
+	Maybe<Item> obj;
 	int worth = 0;
 	unsigned char c;
 	int oldpurse;
@@ -269,7 +269,7 @@ total_winner(void)
 	display().clear_page();
 	display().write_at(0, 0, "   Worth  Item");
 	oldpurse = player.purse;
-	for (c = 'a', obj = player.body.t_pack.first(); obj != nullptr; c++, obj = player.body.t_pack.after(obj))
+	for (c = 'a', obj = player.body.t_pack.first(); obj; c++, obj = player.body.t_pack.after(*obj))
 	{
 	switch (obj->o_type)
 	{
@@ -358,7 +358,7 @@ total_winner(void)
 	if (worth < 0)
 		worth = 0;
 	display().write_at(c - 'a' + 1, 0,
-		std::format("{}) {:5}  {}", static_cast<char>(c), worth, inv_name(obj, false)));
+		std::format("{}) {:5}  {}", static_cast<char>(c), worth, inv_name(*obj, false)));
 	player.purse += worth;
 	}
 	display().write_at(c - 'a' + 1, 0,

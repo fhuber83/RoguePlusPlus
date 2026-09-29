@@ -13,7 +13,7 @@ namespace rogue::rules {
  * d_slot:
  *	Find an empty slot in the daemon/fuse list
  */
-Scheduler::Action *
+Maybe<Scheduler::Action>
 Scheduler::free_slot()
 {
 	return find(Event::None);
@@ -23,16 +23,16 @@ Scheduler::free_slot()
  * find_slot:
  *	Find a particular slot in the table
  */
-Scheduler::Action *
+Maybe<Scheduler::Action>
 Scheduler::find(Event event)
 {
 	for (Action &dev : actions)
 		if (dev.event == event)
-			return &dev;
-	return nullptr;
+			return dev;
+	return std::nullopt;
 }
 
-const Scheduler::Action *
+Maybe<const Scheduler::Action>
 Scheduler::find(Event event) const
 {
 	return const_cast<Scheduler *>(this)->find(event);
@@ -55,9 +55,9 @@ Scheduler::start_daemon(Event event)
 void
 Scheduler::fuse(Event event, int time)
 {
-	Action *wire = free_slot();
+	Maybe<Action> wire = free_slot();
 
-	if (wire == nullptr)
+	if (!wire)
 	{
 		if constexpr (rogue::config::debug_checks)
 			debug("Ran out of fuse slots");
@@ -74,7 +74,7 @@ Scheduler::fuse(Event event, int time)
 void
 Scheduler::lengthen(Event event, int xtime)
 {
-	if (Action *wire = find(event))
+	if (Maybe<Action> wire = find(event))
 		wire->time += xtime;
 }
 
@@ -85,15 +85,15 @@ Scheduler::lengthen(Event event, int xtime)
 void
 Scheduler::extinguish(Event event)
 {
-	if (Action *wire = find(event))
+	if (Maybe<Action> wire = find(event))
 		wire->event = Event::None;
 }
 
 int
 Scheduler::time_left(Event event) const
 {
-	const Action *wire = find(event);
-	return wire == nullptr ? 0 : wire->time;
+	Maybe<const Action> wire = find(event);
+	return wire ? wire->time : 0;
 }
 
 std::array<Scheduler::Slot, Scheduler::max_actions>

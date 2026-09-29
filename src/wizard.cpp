@@ -15,7 +15,7 @@
 void
 whatis(void)
 {
-	Item *obj;
+	Maybe<Item> obj;
 	rogue::Items &items = game().items;
 
 	if (game().player.body.t_pack.empty()) {
@@ -24,7 +24,7 @@ whatis(void)
 	}
 
 	for (;;) {
-		if ((obj = get_item("identify", ItemFilter::all())) == nullptr) {
+		if (!(obj = get_item("identify", ItemFilter::all()))) {
 			msg("You must identify something");
 			msg(" ");
 			game().message.end = 0;
@@ -64,7 +64,7 @@ whatis(void)
 	 */
 	if (obj->o_enemy)
 		obj->o_flags.set(ISREVEAL);
-	msg("{}", inv_name(obj, false));
+	msg("{}", inv_name(*obj, false));
 }
 
 
@@ -83,13 +83,13 @@ teleport(void)
 	do
 	{
 		rm = rnd_room();
-		rnd_pos(&game().level.rooms[rm], &c);
+		c = rnd_pos(game().level.rooms[rm]);
 	} while (!(step_ok(winat(c.y, c.x))));
-	if (&game().level.rooms[rm] != player.body.t_room)
+	if (RoomRef::room(rm) != player.body.t_room)
 	{
-		leave_room(&player.body.t_pos);
+		leave_room(player.body.t_pos);
 		player.body.t_pos = c;
-		enter_room(&player.body.t_pos);
+		enter_room(player.body.t_pos);
 	}
 	else
 	{

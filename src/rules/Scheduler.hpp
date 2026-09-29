@@ -14,6 +14,8 @@
 
 #include <array>
 
+#include "core/Maybe.hpp"
+
 namespace rogue::rules {
 
 // Everything that can be scheduled. The comment names the function it runs.
@@ -49,7 +51,7 @@ public:
 	void extinguish(Event event);
 
 	// Whether some slot holds event.
-	bool is_set(Event event) const { return find(event) != nullptr; }
+	bool is_set(Event event) const { return find(event).has_value(); }
 
 	// Turns until the first fuse holding event goes off; -1 for a daemon, 0
 	// when the event is not scheduled.
@@ -101,9 +103,9 @@ private:
 		int time = 0;				/* d_time: turns left, or daemon_time */
 	};
 
-	Action *free_slot();
-	Action *find(Event event);
-	const Action *find(Event event) const;
+	Maybe<Action> free_slot();
+	Maybe<Action> find(Event event);
+	Maybe<const Action> find(Event event) const;
 
 	Action actions[max_actions] = {};	/* d_list */
 };

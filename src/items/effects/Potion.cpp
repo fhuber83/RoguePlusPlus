@@ -9,13 +9,13 @@ namespace rogue::items::effects {
 void
 quaff(void)
 {
-	Item *obj;
-	Creature *th;
+	Maybe<Item> obj;
+	Maybe<Creature> th;
 	bool discardit = false;
 	rogue::Player &player = game().player;
 	rogue::Items &items = game().items;
 
-	if ((obj = get_item("quaff", ItemKind::Potion)) == nullptr)
+	if (!(obj = get_item("quaff", ItemKind::Potion)))
 		return;
 	/*
 	 * Make certain that it is somethings that we want to drink
@@ -25,8 +25,8 @@ quaff(void)
 		msg("yuk! Why would you want to drink that?");
 		return;
 	}
-	if (obj == player.weapon)
-		player.weapon = nullptr;
+	if (obj == player.weapon_item())
+		player.weapon = std::nullopt;
 
 	/*
 	 * Calculate the effect it has on the poor guy.
@@ -93,24 +93,24 @@ quaff(void)
 		 */
 		if (!game().level.objects.empty())
 		{
-			Item *tp;
+			Maybe<Item> tp;
 			bool show;
 
 			show = false;
-			for (tp = game().level.objects.first(); tp != nullptr; tp = game().level.objects.after(tp))
+			for (tp = game().level.objects.first(); tp; tp = game().level.objects.after(*tp))
 			{
-				if (is_magic(tp))
+				if (is_magic(*tp))
 				{
 					show = true;
-					display().draw_tile(tp->o_pos, goodch(tp));
+					display().draw_tile(tp->o_pos, goodch(*tp));
 					items.p_know[Potion::MagicDetection] = true;
 				}
 			}
-			for (th = game().level.monsters.first(); th != nullptr; th = game().level.monsters.after(th))
+			for (th = game().level.monsters.first(); th; th = game().level.monsters.after(*th))
 			{
-				for (tp = th->t_pack.first(); tp != nullptr; tp = th->t_pack.after(tp))
+				for (tp = th->t_pack.first(); tp; tp = th->t_pack.after(*tp))
 				{
-					if (is_magic(tp))
+					if (is_magic(*tp))
 					{
 						show = true;
 						display().draw_tile(th->t_pos, MAGIC);
@@ -165,15 +165,15 @@ quaff(void)
 		break;
 	case Potion::RestoreStrength:
 		if (player.wears(Hand::Left, Ring::AddStrength))
-			add_str(&player.body.t_stats.s_str, -player.rings[Hand::Left]->o_ac);
+			add_str(player.body.t_stats.s_str, -player.ring_item(Hand::Left)->o_ac);
 		if (player.wears(Hand::Right, Ring::AddStrength))
-			add_str(&player.body.t_stats.s_str, -player.rings[Hand::Right]->o_ac);
+			add_str(player.body.t_stats.s_str, -player.ring_item(Hand::Right)->o_ac);
 		if (player.body.t_stats.s_str < player.max_stats.s_str)
 			player.body.t_stats.s_str = player.max_stats.s_str;
 		if (player.wears(Hand::Left, Ring::AddStrength))
-			add_str(&player.body.t_stats.s_str, player.rings[Hand::Left]->o_ac);
+			add_str(player.body.t_stats.s_str, player.ring_item(Hand::Left)->o_ac);
 		if (player.wears(Hand::Right, Ring::AddStrength))
-			add_str(&player.body.t_stats.s_str, player.rings[Hand::Right]->o_ac);
+			add_str(player.body.t_stats.s_str, player.ring_item(Hand::Right)->o_ac);
 		msg("{}you feel warm all over",
 			noterse("hey, this tastes great.  It makes "));
 		break;
@@ -203,14 +203,14 @@ quaff(void)
 		obj->o_count--;
 	else
 	{
-		player.body.t_pack.remove(obj);
+		player.body.t_pack.remove(*obj);
 		discardit = true;
 	}
 
 	call_it(items.p_know[obj->which<Potion>()], items.p_guess[obj->which<Potion>()]);
 
 	if (discardit)
-		discard(obj);
+		discard(*obj);
 }
 
 /*
@@ -220,11 +220,11 @@ quaff(void)
 void
 invis_on(void)
 {
-	Creature *th;
+	Maybe<Creature> th;
 
 	game().player.body.t_flags.set(CANSEE);
-	for (th = game().level.monsters.first(); th != nullptr; th = game().level.monsters.after(th))
-	if (th->t_flags.test(ISINVIS) && see_monst(th))
+	for (th = game().level.monsters.first(); th; th = game().level.monsters.after(*th))
+	if (th->t_flags.test(ISINVIS) && see_monst(*th))
 	{
 		display().draw_tile(th->t_pos, th->t_disguise);
 	}
@@ -237,15 +237,15 @@ invis_on(void)
 bool
 turn_see(bool turn_off)
 {
-	Creature *mp;
+	Maybe<Creature> mp;
 	bool can_see, add_new;
 	unsigned char was_there = ' ';
 
 	add_new = false;
-	for (mp = game().level.monsters.first(); mp != nullptr; mp = game().level.monsters.after(mp)) {
-		can_see = (see_monst(mp) || (was_there = display().tile_at(mp->t_pos)) == mp->t_type);
+	for (mp = game().level.monsters.first(); mp; mp = game().level.monsters.after(*mp)) {
+		can_see = (see_monst(*mp) || (was_there = display().tile_at(mp->t_pos)) == mp->t_type);
 		if (turn_off) {
-			if (!see_monst(mp) && mp->t_oldch != '@')
+			if (!see_monst(*mp) && mp->t_oldch != '@')
 				display().draw_tile(mp->t_pos, mp->t_oldch);
 		} else {
 			if (!can_see) {
@@ -267,31 +267,31 @@ turn_see(bool turn_off)
  *	Compute the effect of this potion hitting a monster.
  */
 void
-th_effect(Item *obj, Creature *tp)
+th_effect(const Item &obj, Creature &tp)
 {
-	switch (obj->which<Potion>())
+	switch (obj.which<Potion>())
 	{
 	case Potion::Confusion:
 	case Potion::Blindness:
-		tp->t_flags.set(ISHUH);
-		msg("the {} appears confused", monsters[tp->t_type-'A'].m_name);
+		tp.t_flags.set(ISHUH);
+		msg("the {} appears confused", monsters[tp.t_type-'A'].m_name);
 		break;
 	case Potion::Paralysis:
-		tp->t_flags.unset(ISRUN);
-		tp->t_flags.set(ISHELD);
+		tp.t_flags.unset(ISRUN);
+		tp.t_flags.set(ISHELD);
 		break;
 	case Potion::Healing:
 	case Potion::ExtraHealing:
-		if ((tp->t_stats.s_hpt += rnd(8)) > tp->t_stats.s_maxhp)
-		tp->t_stats.s_hpt = ++tp->t_stats.s_maxhp;
+		if ((tp.t_stats.s_hpt += rnd(8)) > tp.t_stats.s_maxhp)
+		tp.t_stats.s_hpt = ++tp.t_stats.s_maxhp;
 		break;
 	case Potion::RaiseLevel:
-		tp->t_stats.s_hpt += 8;
-		tp->t_stats.s_maxhp += 8;
-		tp->t_stats.s_lvl++;
+		tp.t_stats.s_hpt += 8;
+		tp.t_stats.s_maxhp += 8;
+		tp.t_stats.s_lvl++;
 		break;
 	case Potion::Haste:
-		tp->t_flags.set(ISHASTE);
+		tp.t_flags.set(ISHASTE);
 		break;
 	default:
 		break;

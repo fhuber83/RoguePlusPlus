@@ -37,7 +37,7 @@ struct Fixture {
 	Fixture(std::initializer_list<int> keys)
 	{
 		terminal.keys = keys;
-		screen.connect(&terminal);
+		screen.connect(terminal);
 		screen.set_cursor(23, 16);
 	}
 	std::string typed(int len) const

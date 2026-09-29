@@ -4,10 +4,10 @@
 
 namespace rogue::ui {
 
-void Screen::connect(Terminal *terminal)
+void Screen::connect(Maybe<Terminal> terminal)
 {
 	terminal_ = terminal;
-	if (terminal_ == nullptr)
+	if (!terminal_)
 		return;
 	for (int r = 0; r < Rows; r++)
 		for (int c = 0; c < Cols; c++)
@@ -119,7 +119,7 @@ void Screen::bell()
 
 int Screen::read_key(int timeout_ms)
 {
-	if (terminal_ == nullptr)
+	if (!terminal_)
 		return key::None;
 	terminal_->set_cursor(row_, col_);
 	return terminal_->read_key(timeout_ms);

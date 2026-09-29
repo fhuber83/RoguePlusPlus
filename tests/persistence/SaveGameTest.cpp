@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <regex>
 #include <string>
 #include <vector>
 
@@ -107,12 +108,12 @@ protected:
 		rogue::Game &g = game();
 		rogue::Player &p = g.player;
 		// A ring worn, a guess named, a fuse burning, a macro half typed
-		Item *ring = new_item();
-		ring->o_type = rogue::ItemKind::Ring;
-		ring->set_which(Ring::Searching);
-		ring->o_damage = ring->o_hurldmg = "0d0";
+		Item &ring = *new_item();
+		ring.o_type = rogue::ItemKind::Ring;
+		ring.set_which(Ring::Searching);
+		ring.o_damage = ring.o_hurldmg = "0d0";
 		p.body.t_pack.push_front(ring);
-		p.rings[Hand::Right] = ring;
+		p.rings[Hand::Right] = g.pool.id_of(ring);
 		g.items.p_guess[Potion::Poison] = "fizzy";
 		g.items.p_know[Potion::SeeInvisible] = true;
 		fuse(rogue::rules::Event::Unconfuse, 9);
@@ -122,14 +123,19 @@ protected:
 		g.turn.last_item_key = 'a';
 		g.message.last = "you feel a bite in your leg";
 		// Monsters after everything a monster can be after
-		Item *floor = g.level.objects.first();
+		rogue::Maybe<Item> floor = g.level.objects.first();
 		int n = 0;
-		for (Creature *tp : g.level.monsters) {
+		for (Creature &tp : g.level.monsters) {
 			switch (n++ % 4) {
-			case 0: tp->t_dest = &p.body.t_pos; break;
-			case 1: tp->t_dest = &g.level.rooms[0].r_gold; break;
-			case 2: tp->t_dest = floor ? &floor->o_pos : nullptr; break;
-			case 3: tp->t_type = 'F'; break;	// a venus flytrap, whose attack grows
+			case 0: tp.t_dest = Hero{}; break;
+			case 1: tp.t_dest = Gold{RoomRef::room(0)}; break;
+			case 2:
+				if (floor)
+					tp.t_dest = *g.pool.id_of(*floor);
+				else
+					tp.t_dest = std::nullopt;
+				break;
+			case 3: tp.t_type = 'F'; break;	// a venus flytrap, whose attack grows
 			}
 		}
 		p.fung_hit = 3;
@@ -183,18 +189,39 @@ TEST_F(SaveGame, PointersPointIntoTheGame)
 	load(text);
 	rogue::Game &g = game();
 	EXPECT_TRUE(rogue::pool_problems(g).empty());
-	EXPECT_TRUE(g.player.body.t_pack.contains(g.player.rings[Hand::Right]));
+	ASSERT_TRUE(g.player.ring_item(Hand::Right));
+	EXPECT_TRUE(g.player.body.t_pack.contains(*g.player.ring_item(Hand::Right)));
 	EXPECT_EQ(g.items.p_guess[Potion::Poison], "fizzy");
 	EXPECT_EQ(g.turn.typeahead, "ss");
 	EXPECT_EQ(g.turn.last_item, g.player.weapon);
 	EXPECT_EQ(g.scheduler.time_left(rogue::rules::Event::Unconfuse), 9);
 	int flytraps = 0;
-	for (Creature *tp : g.level.monsters)
-		if (tp->t_type == 'F')
+	for (const Creature &tp : g.level.monsters)
+		if (tp.t_type == 'F')
 			flytraps++;
 	EXPECT_GT(flytraps, 0);
 	EXPECT_EQ(g.player.fung_hit, 3);
 	EXPECT_EQ(flytrap_attacks(g.player.fung_hit), rogue::Attacks("3d1"));
+}
+
+// Rooms and passages come back as the same RoomRef
+TEST_F(SaveGame, RoomLinksComeBack)
+{
+	new_game(42, 5);
+	rogue::Game &g = game();
+	rogue::Maybe<Creature> tp = g.level.monsters.first();
+	ASSERT_TRUE(tp);
+	tp->t_room = RoomRef::passage(MAXPASS - 1);
+	g.player.old_room = RoomRef::room(MAXROOMS - 1);
+	std::optional<RoomRef> here = g.player.body.t_room;
+	int slot = g.pool.id_of(*tp)->slot;
+	load(save());
+	EXPECT_EQ(g.pool.creatures.at(slot)->t_room, RoomRef::passage(MAXPASS - 1));
+	EXPECT_EQ(g.player.old_room, RoomRef::room(MAXROOMS - 1));
+	EXPECT_EQ(g.player.body.t_room, here);
+	g.player.old_room = std::nullopt;
+	load(save());
+	EXPECT_EQ(g.player.old_room, std::nullopt);
 }
 
 TEST_F(SaveGame, TheScreenComesBack)
@@ -245,6 +272,15 @@ TEST_F(SaveGame, RejectsBrokenReferences)
 	std::string outside = text;
 	outside.replace(outside.find("\"objects\": ["), 12, "\"objects\": [9999, ");
 	EXPECT_EQ(load_error(outside), SaveError::Kind::BadFormat);
+
+	// A room or passage past the last one
+	std::smatch room;
+	ASSERT_TRUE(std::regex_search(text, room, std::regex(R"re("old_room": \{\s*"(room|passage)": \d+\s*\})re")));
+	for (std::string_view bad : {R"("old_room": {"room": 9})", R"("old_room": {"passage": 13})"}) {
+		std::string no_room = text;
+		no_room.replace(room.position(0), room.length(0), bad);
+		EXPECT_EQ(load_error(no_room), SaveError::Kind::BadFormat) << bad;
+	}
 }
 
 TEST_F(SaveGame, RejectsDamageThatIsntDamage)

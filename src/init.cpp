@@ -14,7 +14,7 @@
 void
 init_player()
 {
-	Item *obj;
+	Maybe<Item> obj;
 	game().player.body.t_stats = game().player.max_stats;
 	game().player.food_left = hunger_time();
 	/*
@@ -27,38 +27,38 @@ init_player()
 	obj = new_item();
 	obj->o_type = ItemKind::Weapon;
 	obj->set_which(WeaponType::Mace);
-	init_weapon(obj, WeaponType::Mace);
+	init_weapon(*obj, WeaponType::Mace);
 	obj->o_hplus = 1;
 	obj->o_dplus = 1;
 	obj->o_flags.set(ISKNOW);
 	obj->o_count = 1;
 	obj->o_group = 0;
-	add_pack(obj, true);
-	game().player.weapon = obj;
+	add_pack(*obj, true);
+	game().player.weapon = game().pool.id_of(obj);
 	/*
 	 * Now a +1 bow
 	 */
 	obj = new_item();
 	obj->o_type = ItemKind::Weapon;
 	obj->set_which(WeaponType::ShortBow);
-	init_weapon(obj, WeaponType::ShortBow);
+	init_weapon(*obj, WeaponType::ShortBow);
 	obj->o_hplus = 1;
 	obj->o_dplus = 0;
 	obj->o_count = 1;
 	obj->o_group = 0;
 	obj->o_flags.set(ISKNOW);
-	add_pack(obj, true);
+	add_pack(*obj, true);
 	/*
 	 * Now some arrows
 	 */
 	obj = new_item();
 	obj->o_type = ItemKind::Weapon;
 	obj->set_which(WeaponType::Arrow);
-	init_weapon(obj, WeaponType::Arrow);
+	init_weapon(*obj, WeaponType::Arrow);
 	obj->o_count = rnd(15) + 25;
 	obj->o_hplus = obj->o_dplus = 0;
 	obj->o_flags.set(ISKNOW);
-	add_pack(obj, true);
+	add_pack(*obj, true);
 	/*
 	 * And his suit of armor
 	 */
@@ -69,8 +69,8 @@ init_player()
 	obj->o_flags.set(ISKNOW);
 	obj->o_count = 1;
 	obj->o_group = 0;
-	game().player.armor = obj;
-	add_pack(obj, true);
+	game().player.armor = game().pool.id_of(obj);
+	add_pack(*obj, true);
 	/*
 	 * Give him some food too
 	 */
@@ -79,7 +79,7 @@ init_player()
 	obj->o_count = 1;
 	obj->set_which(Food::Ration);
 	obj->o_group = 0;
-	add_pack(obj, true);
+	add_pack(*obj, true);
 }
 
 /*
@@ -244,10 +244,10 @@ accumulate_odds(KindTable<E, magic_item> &table)
 void
 init_things()
 {
-	struct magic_item *mp;
+	std::span<magic_item> things = game().items.things;
 
-	for (mp = &game().items.things[1]; mp <= &game().items.things[NUMTHINGS-1]; mp++)
-		mp->mi_prob += (mp-1)->mi_prob;
+	for (std::size_t i = 1; i < things.size(); i++)
+		things[i].mi_prob += things[i-1].mi_prob;
 }
 
 /*
@@ -285,7 +285,7 @@ init_names()
 {
 	rogue::Items &items = game().items;
 	 int nsyl;
-	 const char *sp;
+	 std::string sp;
 	 int nwords;
 
 	for (Scroll s : kinds<Scroll>())
@@ -298,7 +298,7 @@ init_names()
 		while (nsyl--)
 		{
 		sp = getsyl();
-		if (name.size() + strlen(sp) > MAXNAME-1)
+		if (name.size() + sp.size() > MAXNAME-1)
 		{
 			nwords = 0;
 			break;
@@ -319,16 +319,14 @@ init_names()
  * getsyl()
  *   -- generate a random sylable
  */
-char*
+std::string
 getsyl()
 {
-	static char _tsyl[4];
-
-	_tsyl[3] = 0;
-	_tsyl[2] = rchr(c_set);
-	_tsyl[1] = rchr(v_set);
-	_tsyl[0] = rchr(c_set);
-	return (_tsyl);
+	// Drawn last letter first, as the original filled its buffer
+	char last = rchr(c_set);
+	char vowel = rchr(v_set);
+	char first = rchr(c_set);
+	return {first, vowel, last};
 }
 
 /*

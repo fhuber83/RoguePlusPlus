@@ -352,4 +352,21 @@ nothing(ItemKind type)
 		game().options.terse ? "Nothing" : "Haven't discovered anything", tystr);
 }
 
+/*
+ * call_it:
+ *	Call an object something after use.
+ */
+void
+call_it(bool know, std::string &guess)
+{
+	if (know && !guess.empty())
+		guess.clear();
+	else if (!know && guess.empty()) {
+		msg("{}call it? ",noterse("what do you want to "));
+		if (auto name = input().read_line(MAXNAME))
+			guess = *name;
+		msg("");
+	}
+}
+
 }  // namespace rogue::items

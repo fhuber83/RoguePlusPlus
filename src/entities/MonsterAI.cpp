@@ -490,4 +490,17 @@ plop_monster(int r, int c)
 	return spot;
 }
 
+/*
+ * aggravate:
+ *	Aggravate all the monsters on this level
+ */
+void
+aggravate()
+{
+	Maybe<Creature> mi;
+
+	for (mi = game().level.monsters.first(); mi; mi = game().level.monsters.after(*mi))
+		start_run(mi->t_pos);
+}
+
 }  // namespace rogue::entities

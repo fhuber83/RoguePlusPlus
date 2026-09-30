@@ -65,5 +65,11 @@ void drop();
  */
 bool can_drop(const Item &op);
 
+/*
+ * is_current:
+ *	Whether an item is worn or wielded; if so, says "That's already in use".
+ */
+bool is_current(const Item &obj);
+
 }  // namespace items
 }  // namespace rogue

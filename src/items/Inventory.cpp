@@ -521,4 +521,19 @@ can_drop(const Item &op)
 	return true;
 }
 
+/*
+ * is_current:
+ *	See if the object is one of the currently used items
+ */
+bool
+is_current(const Item &obj)
+{
+	if (refers_to(game().player.armor_item(), obj) || refers_to(game().player.weapon_item(), obj) || refers_to(game().player.ring_item(Hand::Left), obj)
+		|| refers_to(game().player.ring_item(Hand::Right), obj)) {
+		msg("That's already in use");
+		return true;
+	}
+	return false;
+}
+
 }  // namespace rogue::items

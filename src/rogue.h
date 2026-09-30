@@ -280,6 +280,8 @@ extern const struct magic_item things_base[];
 #include "items/effects/Weapon.hpp"
 #include "rules/Daemons.hpp"
 #include "rules/Combat.hpp"
+#include "rules/Hunger.hpp"
+#include "rules/Strength.hpp"
 #include "entities/MonsterCatalog.hpp"
 #include "entities/MonsterAI.hpp"
 #include "world/Rooms.hpp"
@@ -302,6 +304,8 @@ using rogue::items::pack_char;
 using rogue::items::money;
 using rogue::items::drop;
 using rogue::items::can_drop;
+using rogue::items::is_current;
+using rogue::items::call_it;
 using rogue::items::effects::quaff;
 using rogue::items::effects::invis_on;
 using rogue::items::effects::turn_see;
@@ -353,6 +357,9 @@ using rogue::rules::save;
 using rogue::rules::is_magic;
 using rogue::rules::raise_level;
 using rogue::rules::killed;
+using rogue::rules::eat;
+using rogue::rules::chg_str;
+using rogue::rules::add_str;
 using rogue::entities::randmonster;
 using rogue::entities::pick_mons;
 using rogue::entities::new_monster;
@@ -368,6 +375,7 @@ using rogue::entities::see_monst;
 using rogue::entities::find_dest;
 using rogue::entities::slime_split;
 using rogue::entities::plop_monster;
+using rogue::entities::aggravate;
 using rogue::world::roomin;
 using rogue::world::diag_ok;
 using rogue::world::cansee;
@@ -504,21 +512,13 @@ inline int	spread(int nm) { return rogue::rng().spread(nm); }
 inline int	gold_calc() { return rnd(50 + 10 * game().level.depth) + 2; }
 
 // misc.cpp
-void	eat(void);
-void	chg_str(int amt);
-void	add_str(str_t &sp, int amt);
-void	aggravate(void);
-void	call_it(bool know, std::string &guess);
 void	help(const struct h_list *helpscr);
 void	d_level(void);
 void	u_level(void);
 void	call(void);
 void	do_macro(std::string &macro);
-bool	add_haste(bool potion);
-bool	is_current(const Item &obj);
 bool	get_dir(void);
 std::optional<Coord>	find_dir(unsigned char ch);
-char	goodch(const Item &obj);
 /*
  * How long things last, each spread by 10% (were BEARTIME, SLEEPTIME, ...)
  */

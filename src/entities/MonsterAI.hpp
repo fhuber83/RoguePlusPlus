@@ -52,5 +52,11 @@ void slime_split(Creature &tp);
  */
 std::optional<Coord> plop_monster(int r, int c);
 
+/*
+ * aggravate:
+ *	Aggravate all the monsters on this level: each starts running.
+ */
+void aggravate();
+
 }  // namespace entities
 }  // namespace rogue

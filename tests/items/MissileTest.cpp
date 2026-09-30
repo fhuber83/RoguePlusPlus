@@ -1,78 +1,9 @@
-#include <gtest/gtest.h>
-
-#include <deque>
-#include <string>
-
-#include "ui/Screen.hpp"
-#include "ui/ScreenDisplay.hpp"
-#include "ui/Terminal.hpp"
-#include "rogue.h"
+#include "../support/ScriptedGame.hpp"
 
 namespace {
 
-// Types the keys it is given, then Space for every --More--
-class ScriptedTerminal : public rogue::ui::Terminal {
-public:
-	void draw(int, int, const rogue::ui::Cell &) override {}
-	void set_cursor(int, int) override {}
-	void show_cursor(bool) override {}
-	void flush() override {}
-	void bell() override {}
-	int read_key(int) override
-	{
-		if (keys.empty())
-			return ' ';
-		int k = keys.front();
-		keys.pop_front();
-		return k;
-	}
-
-	std::deque<int> keys;
-};
-
-rogue::ui::ScreenDisplay &screen_display()
-{
-	return dynamic_cast<rogue::ui::ScreenDisplay &>(display());
-}
-
-// A new game on level 1, made the way main() makes one, with the keyboard scripted
-class Missile : public ::testing::Test {
+class Missile : public rogue::test::ScriptedGame {
 protected:
-	void SetUp() override
-	{
-		screen_display().set_animations(false);
-		rogue::ui::screen().connect(terminal);
-		reset();
-		rogue::rng().reseed(4242);
-		init_player();
-		init_things();
-		init_names();
-		init_colors();
-		init_stones();
-		init_materials();
-		game().level.depth = 1;
-		new_level();
-		game().options.menu = "off";	// ask for the letter, no inventory page
-	}
-	void TearDown() override
-	{
-		reset();
-		rogue::ui::screen().connect(std::nullopt);
-		screen_display().set_animations(true);
-	}
-
-	static void reset()
-	{
-		game().pool = rogue::Pool();
-		game().level = rogue::Level();
-		game().player = rogue::Player();
-		game().items = rogue::Items();
-		game().scheduler = rogue::rules::Scheduler();
-		game().turn = rogue::Turn();
-		game().message = rogue::MessageLine();
-		game().options = rogue::Options();
-	}
-
 	// A direction from the rogue with floor next to him
 	static Coord open_direction()
 	{
@@ -105,16 +36,6 @@ protected:
 	{
 		return static_cast<bool>(game().pool.item(std::optional<ItemId>(id)));
 	}
-
-	static std::string problems()
-	{
-		std::string all;
-		for (const std::string &p : rogue::pool_problems(game()))
-			all += p + "\n";
-		return all;
-	}
-
-	ScriptedTerminal terminal;
 };
 
 }  // namespace

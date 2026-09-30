@@ -72,6 +72,7 @@ struct Turn {
 	coord delta = {};				/* Change indicated to get_dir() */
 	std::string typeahead;			/* typebuf: keys a macro still types */
 	bool bailout = false;			/* The hero is nowhere: fall through */
+	int moves_left = 0;				/* ntimes: moves left in this command (2 or 3 when hasted) */
 	/* What the last command was, for repeating it (command.cpp) */
 	int last_count = 0;
 	unsigned char last_ch = 0;

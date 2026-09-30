@@ -20,16 +20,17 @@ resume_saved_game()
 void
 command()
 {
-	int ntimes;
 	rogue::Player &player = game().player;
+	rogue::Turn &turn = game().turn;
 
-	if (resuming)
-		ntimes = 1;	// the save was made after this roll
-	else if (player.body.t_flags.test(ISHASTE))
-		ntimes = rnd(2) + 2;
-	else
-		ntimes = 1;
-	while (ntimes--) {
+	/*
+	 * A hasted rogue gets two or three moves a command, rolled as it
+	 * starts. A restored game goes on with the command the save was made
+	 * in, and the moves it had left.
+	 */
+	if (!resuming || turn.moves_left == 0)
+		turn.moves_left = player.body.t_flags.test(ISHASTE) ? rnd(2) + 2 : 1;
+	for (; turn.moves_left > 0; turn.moves_left--) {
 		status();
 		if (player.no_command) {
 			if (--player.no_command <= 0) {
@@ -59,13 +60,6 @@ command()
 				}
 			}
 		}
-		/*
-		 * The original counted the hands with ntimes, leaving it at 2, so
-		 * this loop never ends: command() never returns, the haste roll
-		 * above is made once, and a hasted rogue gets no extra moves. Kept,
-		 * since this step must not change the game.
-		 */
-		ntimes = 2;
 	}
 }
 

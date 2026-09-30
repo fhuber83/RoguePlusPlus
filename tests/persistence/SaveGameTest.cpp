@@ -121,6 +121,7 @@ protected:
 		g.turn.typeahead = "ss";
 		g.turn.last_item = p.weapon;
 		g.turn.last_item_key = 'a';
+		g.turn.moves_left = 2;	// saved in the second of a hasted rogue's three moves
 		g.message.last = "you feel a bite in your leg";
 		// Monsters after everything a monster can be after
 		rogue::Maybe<Item> floor = g.level.objects.first();
@@ -281,6 +282,25 @@ TEST_F(SaveGame, RejectsBrokenReferences)
 		no_room.replace(room.position(0), room.length(0), bad);
 		EXPECT_EQ(load_error(no_room), SaveError::Kind::BadFormat) << bad;
 	}
+}
+
+// The moves a hasted rogue has left in the command the save was made in
+TEST_F(SaveGame, MovesLeftComeBack)
+{
+	new_game(42, 1);
+	stir();
+	const std::string text = save();
+	load(text);
+	EXPECT_EQ(game().turn.moves_left, 2);
+
+	// A save made before F.2 has none, and goes on with one move
+	std::string before = std::regex_replace(text, std::regex(R"re("moves_left": \d+,\s*)re"), "");
+	ASSERT_NE(before, text);
+	load(before);
+	EXPECT_EQ(game().turn.moves_left, 1);
+
+	std::string four = std::regex_replace(text, std::regex(R"re("moves_left": \d+)re"), R"("moves_left": 4)");
+	EXPECT_EQ(load_error(four), SaveError::Kind::BadFormat);
 }
 
 TEST_F(SaveGame, RejectsDamageThatIsntDamage)

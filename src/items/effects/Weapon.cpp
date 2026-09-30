@@ -79,11 +79,15 @@ missile(int ydelta, int xdelta)
 	do_motion(*obj, ydelta, xdelta);
 	/*
 	 * AHA! Here it has hit something.  If it is a wall or a door,
-	 * or if it misses (combat) the monster, put it on the floor
+	 * or if it misses (combat) the monster, put it on the floor.
+	 * One that hits is used up. (The original forgot it, which kept
+	 * its slot taken for the rest of the game.)
 	 */
 	if (!moat(obj->o_pos.y, obj->o_pos.x)
 		|| !hit_monster(obj->o_pos.y, obj->o_pos.x, *obj))
 			fall(*obj, true);
+	else
+		discard(*obj);
 }
 
 /*

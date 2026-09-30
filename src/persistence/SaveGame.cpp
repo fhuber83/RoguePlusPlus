@@ -357,7 +357,7 @@ json turn_json(const Game &g)
 		{"running", t.running}, {"run_dir", t.run_dir}, {"door_stop", t.door_stop},
 		{"first_move", t.first_move}, {"fast_mode", t.fast_mode}, {"fast_state", t.fast_state},
 		{"delta", coord_json(t.delta)}, {"typeahead", text_json(t.typeahead)},
-		{"bailout", t.bailout}, {"last_count", t.last_count}, {"last_ch", t.last_ch},
+		{"bailout", t.bailout}, {"moves_left", t.moves_left}, {"last_count", t.last_count}, {"last_ch", t.last_ch},
 		{"last_take", t.last_take}, {"do_take", t.do_take},
 		{"last_item_key", t.last_item_key}, {"last_item", item_ref(g, t.last_item)},
 	};
@@ -848,6 +848,8 @@ void turn_from(Game &g, const json &j)
 	t.delta = coord_of(j, "delta");
 	t.typeahead = text_of(j, "typeahead");
 	t.bailout = flag(j, "bailout");
+	// A save made before F.2 has none: it goes on with one move, as restoring it did then
+	t.moves_left = j.contains("moves_left") ? num_in<int>(j, "moves_left", 0, 3) : 1;
 	t.last_count = num<int>(j, "last_count");
 	t.last_ch = num<unsigned char>(j, "last_ch");
 	t.last_take = num<unsigned char>(j, "last_take");

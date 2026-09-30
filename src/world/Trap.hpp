@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string_view>
+
 #include "core/KindTable.hpp"
 
 namespace rogue {
@@ -18,5 +20,12 @@ enum class Trap {
 };
 template <>
 inline constexpr std::size_t kind_count<Trap> = 6;
+
+/*
+ * tr_name:
+ *	The name of a trap, with its article ("a beartrap"). An unknown kind
+ *	says so on the message line and has the name "".
+ */
+std::string_view tr_name(Trap type);
 
 }  // namespace rogue

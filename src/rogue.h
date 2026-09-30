@@ -283,6 +283,7 @@ extern const struct magic_item things_base[];
 #include "entities/MonsterCatalog.hpp"
 #include "entities/MonsterAI.hpp"
 #include "world/Rooms.hpp"
+#include "world/Look.hpp"
 #include "world/Maze.hpp"
 #include "world/Passages.hpp"
 #include "world/LevelGenerator.hpp"
@@ -375,6 +376,14 @@ using rogue::world::enter_room;
 using rogue::world::leave_room;
 using rogue::world::new_level;
 using rogue::world::rnd_room;
+using rogue::world::INDEX;
+using rogue::world::offmap;
+using rogue::world::winat;
+using rogue::world::step_ok;
+using rogue::world::find_obj;
+using rogue::world::look;
+using rogue::world::search;
+using rogue::tr_name;
 using rogue::command;
 using rogue::show_count;
 using rogue::execcom;
@@ -495,28 +504,21 @@ inline int	spread(int nm) { return rogue::rng().spread(nm); }
 inline int	gold_calc() { return rnd(50 + 10 * game().level.depth) + 2; }
 
 // misc.cpp
-void	look(bool wakeup);
 void	eat(void);
 void	chg_str(int amt);
 void	add_str(str_t &sp, int amt);
 void	aggravate(void);
 void	call_it(bool know, std::string &guess);
 void	help(const struct h_list *helpscr);
-void	search(void);
 void	d_level(void);
 void	u_level(void);
 void	call(void);
 void	do_macro(std::string &macro);
-Maybe<Item>	find_obj(int y, int x);
 bool	add_haste(bool potion);
 bool	is_current(const Item &obj);
 bool	get_dir(void);
 std::optional<Coord>	find_dir(unsigned char ch);
-bool	step_ok(unsigned char ch);
-bool	offmap(int y, int x);
-std::string_view	tr_name(Trap type);
 char	goodch(const Item &obj);
-unsigned char	winat(int y, int x);
 /*
  * How long things last, each spread by 10% (were BEARTIME, SLEEPTIME, ...)
  */
@@ -527,7 +529,6 @@ inline int	wander_time() { return spread(70); }	/* until the next wandering mons
 inline int	huh_duration() { return spread(20); }	/* confused */
 inline int	see_duration() { return spread(300); }	/* seeing invisible, or blind */
 inline int	hunger_time() { return spread(1300); }	/* a full stomach */
-int	INDEX(int y, int x);
 
 // move.cpp
 void	do_run(unsigned char ch);

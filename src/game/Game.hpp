@@ -2,9 +2,7 @@
 
 #include "core/Random.hpp"
 #include "rules/Scheduler.hpp"
-
-// The index of a map square in Level::map and Level::flags (misc.cpp)
-int INDEX(int y, int x);
+#include "world/Map.hpp"
 
 /*
  * The state of one game, gathered from the globals of the original sources.
@@ -155,10 +153,10 @@ struct Level {
 	}
 
 	// What is at a square (was chat())
-	unsigned char &at(int y, int x) { return map[INDEX(y, x)]; }
+	unsigned char &at(int y, int x) { return map[world::INDEX(y, x)]; }
 	unsigned char &at(Coord pos) { return at(pos.y, pos.x); }
 	// A square's MapFlags (was flat())
-	MapFlags &flags_at(int y, int x) { return flags[INDEX(y, x)]; }
+	MapFlags &flags_at(int y, int x) { return flags[world::INDEX(y, x)]; }
 	MapFlags &flags_at(Coord pos) { return flags_at(pos.y, pos.x); }
 	// The room or passage a RoomRef names
 	struct room &room(RoomRef r) { return r.kind == RoomRef::Kind::Room ? rooms[r.index] : passages[r.index]; }

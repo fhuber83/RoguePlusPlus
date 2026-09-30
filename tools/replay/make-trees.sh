@@ -23,7 +23,9 @@ for t in new asan; do
 done
 
 for t in base new asan; do
+	# d_level() is in misc.cpp up to phase 13.1, then in game/PlayerCommands.cpp
 	misc="$dir/$t/src/misc.cpp"
+	[ -f "$misc" ] || misc="$dir/$t/src/game/PlayerCommands.cpp"
 	# d_level()'s test, before and after phase 10.7 removed chat() and hero
 	sed -i -e 's/if (chat(hero.y, hero.x) != STAIRS)/if (false)/' \
 		-e 's/if (game().level.at(player.body.t_pos) != STAIRS)/if (false)/' "$misc"

@@ -290,6 +290,8 @@ extern const struct magic_item things_base[];
 #include "world/Passages.hpp"
 #include "world/LevelGenerator.hpp"
 #include "game/CommandDispatcher.hpp"
+#include "game/Help.hpp"
+#include "game/PlayerCommands.hpp"
 
 using rogue::items::new_thing;
 using rogue::items::inv_name;
@@ -306,6 +308,7 @@ using rogue::items::drop;
 using rogue::items::can_drop;
 using rogue::items::is_current;
 using rogue::items::call_it;
+using rogue::items::call;
 using rogue::items::effects::quaff;
 using rogue::items::effects::invis_on;
 using rogue::items::effects::turn_see;
@@ -395,6 +398,12 @@ using rogue::tr_name;
 using rogue::command;
 using rogue::show_count;
 using rogue::execcom;
+using rogue::help;
+using rogue::get_dir;
+using rogue::find_dir;
+using rogue::d_level;
+using rogue::u_level;
+using rogue::do_macro;
 
 /*
  * External variables
@@ -511,14 +520,6 @@ inline int	spread(int nm) { return rogue::rng().spread(nm); }
 // The gold in a pile on this level (was GOLDCALC)
 inline int	gold_calc() { return rnd(50 + 10 * game().level.depth) + 2; }
 
-// misc.cpp
-void	help(const struct h_list *helpscr);
-void	d_level(void);
-void	u_level(void);
-void	call(void);
-void	do_macro(std::string &macro);
-bool	get_dir(void);
-std::optional<Coord>	find_dir(unsigned char ch);
 /*
  * How long things last, each spread by 10% (were BEARTIME, SLEEPTIME, ...)
  */

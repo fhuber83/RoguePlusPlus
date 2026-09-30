@@ -369,4 +369,65 @@ call_it(bool know, std::string &guess)
 	}
 }
 
+/*
+ * call:
+ *	Allow a user to call a potion, scroll, or ring something
+ */
+void
+call()
+{
+	Maybe<Item> obj;
+	std::span<std::string> guess;
+	std::string_view elsewise;
+	std::span<const bool> know;
+	rogue::Items &items = game().items;
+
+	obj = get_item("call", ItemFilter::callable());
+	/*
+	 * Make certain that it is somethings that we want to wear
+	 */
+	if (!obj)
+		return;
+	switch (obj->o_type)
+	{
+	case ItemKind::Ring:
+		guess = items.r_guess;
+		know = items.r_know;
+		elsewise = (!guess[obj->o_which].empty() ?
+			guess[obj->o_which] : items.r_stones[obj->which<Ring>()]);
+		break;
+	case ItemKind::Potion:
+		guess = items.p_guess;
+		know = items.p_know;
+		elsewise = (!guess[obj->o_which].empty() ?
+			guess[obj->o_which] : items.p_colors[obj->which<Potion>()]);
+		break;
+	case ItemKind::Scroll:
+		guess = items.s_guess;
+		know = items.s_know;
+		elsewise = (!guess[obj->o_which].empty() ?
+			guess[obj->o_which] : items.s_names[obj->which<Scroll>()]);
+		break;
+	case ItemKind::Stick:
+		guess = items.ws_guess;
+		know = items.ws_know;
+		elsewise = (!guess[obj->o_which].empty() ?
+			guess[obj->o_which] : items.ws_made[obj->which<Stick>()]);
+		break;
+	default:
+		msg("you can't call that anything");
+		return;
+	}
+	if (know[obj->o_which])
+	{
+		msg("that has already been identified");
+		return;
+	}
+	msg("Was called \"{}\"", elsewise);
+	msg("what do you want to call it? ");
+	if (auto name = input().read_line(MAXNAME); name && !name->empty())
+		guess[obj->o_which] = *name;
+	msg("");
+}
+
 }  // namespace rogue::items

@@ -3,6 +3,7 @@
 #include <string_view>
 
 #include "game/Command.hpp"
+#include "game/PlayerCommands.hpp"
 
 using rogue::Command;
 using rogue::command_of;
@@ -68,4 +69,21 @@ TEST(Command, Repeatable)
 	for (char c : std::string_view("QidewWTPRc<>/?DFvS^o"))
 		EXPECT_FALSE(rogue::repeatable(command_of(c))) << c;
 	EXPECT_FALSE(rogue::repeatable(Command::Illegal));
+}
+
+// The eight direction keys, in either case, and nothing else
+TEST(Command, FindDir)
+{
+	using rogue::Coord;
+	using rogue::find_dir;
+	const std::pair<char, Coord> dirs[] = {
+		{'h', {-1, 0}}, {'j', {0, 1}}, {'k', {0, -1}}, {'l', {1, 0}},
+		{'y', {-1, -1}}, {'u', {1, -1}}, {'b', {-1, 1}}, {'n', {1, 1}},
+	};
+	for (auto [key, delta] : dirs) {
+		EXPECT_EQ(find_dir(key), delta) << key;
+		EXPECT_EQ(find_dir(key - 'a' + 'A'), delta) << key;
+	}
+	for (unsigned char key : {'a', 'q', '.', ' ', '\033', '5'})
+		EXPECT_FALSE(find_dir(key)) << key;
 }

@@ -40,5 +40,12 @@ unsigned char end_line(std::string_view use);
  */
 void call_it(bool know, std::string &guess);
 
+/*
+ * call:
+ *	The call command: name a kind of potion, scroll, ring or wand that is
+ *	not identified yet.
+ */
+void call();
+
 }  // namespace items
 }  // namespace rogue

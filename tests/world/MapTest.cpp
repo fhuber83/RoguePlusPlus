@@ -45,10 +45,10 @@ TEST(Map, StepOkOnFloorsNotWallsOrMonsters)
 
 TEST(Map, TrapNames)
 {
-	EXPECT_EQ(rogue::tr_name(rogue::Trap::Door), "a trapdoor");
-	EXPECT_EQ(rogue::tr_name(rogue::Trap::Arrow), "an arrow trap");
-	EXPECT_EQ(rogue::tr_name(rogue::Trap::Sleep), "a sleeping gas trap");
-	EXPECT_EQ(rogue::tr_name(rogue::Trap::Bear), "a beartrap");
-	EXPECT_EQ(rogue::tr_name(rogue::Trap::Teleport), "a teleport trap");
-	EXPECT_EQ(rogue::tr_name(rogue::Trap::Dart), "a poison dart trap");
+	EXPECT_EQ(rogue::world::tr_name(rogue::Trap::Door), "a trapdoor");
+	EXPECT_EQ(rogue::world::tr_name(rogue::Trap::Arrow), "an arrow trap");
+	EXPECT_EQ(rogue::world::tr_name(rogue::Trap::Sleep), "a sleeping gas trap");
+	EXPECT_EQ(rogue::world::tr_name(rogue::Trap::Bear), "a beartrap");
+	EXPECT_EQ(rogue::world::tr_name(rogue::Trap::Teleport), "a teleport trap");
+	EXPECT_EQ(rogue::world::tr_name(rogue::Trap::Dart), "a poison dart trap");
 }

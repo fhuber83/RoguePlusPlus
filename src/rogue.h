@@ -286,12 +286,14 @@ extern const struct magic_item things_base[];
 #include "entities/MonsterAI.hpp"
 #include "world/Rooms.hpp"
 #include "world/Look.hpp"
+#include "world/Traps.hpp"
 #include "world/Maze.hpp"
 #include "world/Passages.hpp"
 #include "world/LevelGenerator.hpp"
 #include "game/CommandDispatcher.hpp"
 #include "game/Help.hpp"
 #include "game/PlayerCommands.hpp"
+#include "game/Movement.hpp"
 
 using rogue::items::new_thing;
 using rogue::items::inv_name;
@@ -394,7 +396,9 @@ using rogue::world::step_ok;
 using rogue::world::find_obj;
 using rogue::world::look;
 using rogue::world::search;
-using rogue::tr_name;
+using rogue::world::tr_name;
+using rogue::world::be_trapped;
+using rogue::world::descend;
 using rogue::command;
 using rogue::show_count;
 using rogue::execcom;
@@ -404,6 +408,9 @@ using rogue::find_dir;
 using rogue::d_level;
 using rogue::u_level;
 using rogue::do_macro;
+using rogue::do_run;
+using rogue::do_move;
+using rogue::rndmove;
 
 /*
  * External variables
@@ -530,13 +537,6 @@ inline int	wander_time() { return spread(70); }	/* until the next wandering mons
 inline int	huh_duration() { return spread(20); }	/* confused */
 inline int	see_duration() { return spread(300); }	/* seeing invisible, or blind */
 inline int	hunger_time() { return spread(1300); }	/* a full stomach */
-
-// move.cpp
-void	do_run(unsigned char ch);
-void	do_move(int dy, int dx);
-void	door_open(const struct room &rp);
-void	descend(std::string_view mesg);
-Coord	rndmove(const Creature &who);
 
 // rip.cpp
 void	score(int amount, int flags, char monst);

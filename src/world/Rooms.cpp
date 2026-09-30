@@ -3,15 +3,50 @@
  * in, and what the rogue can see from where it stands.
  *
  * rnd_pos(), enter_room() and leave_room() come from rooms.c; roomin(),
- * diag_ok() and cansee() from chase.c.
+ * diag_ok() and cansee() from chase.c; door_open() from move.c.
  *
  * rooms.c	1.4 (A.I. Design)	12/16/84
  * chase.c	1.32	(A.I. Design) 12/12/84
+ * move.c	1.4 (A.I. Design)	12/22/84
  */
 
 #include "rogue.h"
 
 namespace rogue::world {
+
+namespace {
+
+/*
+ * door_open:
+ *	Called to illuminate a room.  If it is dark, remove anything
+ *	that might move.
+ */
+void
+door_open(const struct room &rp)
+{
+	int j, k;
+	unsigned char ch;
+	Maybe<Creature> tp;
+
+	if (!rp.r_flags.test(RoomFlag::Gone) && !game().player.body.t_flags.test(ISBLIND))
+		for (j = rp.r_pos.y; j < rp.r_pos.y + rp.r_max.y; j++)
+			for (k = rp.r_pos.x; k < rp.r_pos.x + rp.r_max.x; k++) {
+				ch = winat(j, k);
+				/* move(j, k); Why do this,?????? */
+				if (is_monster(ch)) {
+					tp = wake_monster(j, k);
+					if (!tp)
+					{
+						continue;
+					}
+					if (tp->t_oldch == ' ' && !rp.r_flags.test(RoomFlag::Dark)
+						&& !game().player.body.t_flags.test(ISBLIND))
+							tp->t_oldch = game().level.at(j, k);
+				}
+			}
+}
+
+}  // namespace
 
 /*
  * roomin:

@@ -73,3 +73,21 @@ TEST_F(Message, IfterseChoosesByExpert)
 	ifterse("{} glows", "your {} glows for a moment", "mace");
 	EXPECT_EQ(text(), "Mace glows");
 }
+
+// The optional words of a message go when the rogue wants them brief
+TEST_F(Message, NoterseDropsTextWhenBrief)
+{
+	EXPECT_EQ(noterse("strange white "), "strange white ");
+	game().options.terse = true;
+	EXPECT_EQ(noterse("strange white "), "");
+	game().options.terse = false;
+	game().options.expert = true;
+	EXPECT_EQ(noterse("strange white "), "");
+}
+
+// A message too long for the line is cut to the buffer
+TEST_F(Message, AddmsgCutsToTheBuffer)
+{
+	addmsg("{}", std::string(BUFSIZE + 20, 'x'));
+	EXPECT_EQ(text().size(), static_cast<std::size_t>(BUFSIZE - 1));
+}

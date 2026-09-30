@@ -269,6 +269,8 @@ extern const KindTable<Stick, magic_item> ws_magic_base;
 extern const struct magic_item things_base[];
 
 #include "game/Game.hpp"
+#include "game/Messages.hpp"
+#include "game/StatusLine.hpp"
 #include "items/ItemCatalog.hpp"
 #include "items/Identification.hpp"
 #include "items/Inventory.hpp"
@@ -295,6 +297,21 @@ extern const struct magic_item things_base[];
 #include "game/PlayerCommands.hpp"
 #include "game/Movement.hpp"
 
+using rogue::show_msg;
+using rogue::add_msg;
+using rogue::msg;
+using rogue::addmsg;
+using rogue::debug;
+using rogue::ifterse;
+using rogue::endmsg;
+using rogue::more;
+using rogue::putmsg;
+using rogue::noterse;
+using rogue::wait_for;
+using rogue::wait_msg;
+using rogue::str_attr;
+using rogue::status;
+using rogue::SIG2;
 using rogue::items::new_thing;
 using rogue::items::inv_name;
 using rogue::items::discovered;
@@ -448,51 +465,6 @@ void	init_materials(void);
 std::string	getsyl();
 char	rchr(std::string_view string);
 
-// io.cpp
-// msg(), addmsg() and ifterse() take std::format strings. An empty msg() clears the line.
-void	show_msg(std::string_view text);
-void	add_msg(std::string_view text);
-
-template <class... Args>
-void
-msg(std::format_string<Args...> fmt, Args &&...args)
-{
-	show_msg(std::format(fmt, std::forward<Args>(args)...));
-}
-
-template <class... Args>
-void
-addmsg(std::format_string<Args...> fmt, Args &&...args)
-{
-	add_msg(std::format(fmt, std::forward<Args>(args)...));
-}
-
-// A message from the consistency checks (rogue::config::debug_checks)
-template <class... Args>
-void
-debug(std::format_string<Args...> fmt, Args &&...args)
-{
-	show_msg(std::format(fmt, std::forward<Args>(args)...));
-}
-
-template <class... Args>
-void
-ifterse(std::format_string<Args...> tfmt, std::format_string<Args...> fmt, Args &&...args)
-{
-	msg(game().options.expert ? tfmt : fmt, std::forward<Args>(args)...);
-}
-
-void	wait_msg(std::string_view msg);
-void	endmsg(void);
-void	more(std::string_view msg);
-void	putmsg(std::string_view msg);
-void	status(void);
-void	wait_for(unsigned char ch);
-void	str_attr(std::string_view str);
-void	SIG2(void);
-std::string	io_unctrl(unsigned char ch);
-std::string_view	noterse(std::string_view str);
-
 // list.cpp
 Maybe<Item>	new_item();
 Maybe<Creature>	new_creature();
@@ -551,6 +523,7 @@ void	restore(const std::string &savefile);
 // Small helpers (core/Math.hpp, core/Text.hpp)
 using rogue::sign;
 using rogue::vowelstr;
+using rogue::io_unctrl;
 
 // ASCII character tests (core/Ascii.hpp)
 using rogue::is_alpha;

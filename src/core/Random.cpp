@@ -37,6 +37,12 @@ Random::roll(int count, int sides)
 	return total;
 }
 
+int
+Random::spread(int n)
+{
+	return n - n / 10 + below(n / 5);
+}
+
 Random::Seed
 Random::from_clock()
 {

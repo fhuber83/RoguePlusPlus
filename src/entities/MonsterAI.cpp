@@ -29,7 +29,7 @@ runners()
 	for (tp = game().level.monsters.first(); tp; tp = game().level.monsters.after(*tp)) {
 		if (!tp->t_flags.test(ISHELD) && tp->t_flags.test(ISRUN)) {
 			const CreatureId id = *game().pool.id_of(*tp);
-			dist = DISTANCE(player.body.t_pos.y, player.body.t_pos.x, tp->t_pos.y, tp->t_pos.x);
+			dist = distance_sq(player.body.t_pos, tp->t_pos);
 			if	(!(tp->t_flags.test(ISSLOW) || (tp->t_type == 'S' && dist > 3)) || tp->t_turn)
 				do_chase(*tp);
 			/*
@@ -46,7 +46,7 @@ runners()
 				do_chase(*tp);
 			if (!game().level.monsters.contains(id))
 				break;
-			dist = DISTANCE(player.body.t_pos.y, player.body.t_pos.x, tp->t_pos.y, tp->t_pos.x);
+			dist = distance_sq(player.body.t_pos, tp->t_pos);
 			if (tp->t_flags.test(ISFLY) && dist > 3)
 				do_chase(*tp);
 			if (!game().level.monsters.contains(id))
@@ -98,7 +98,7 @@ over:
 		const Coord dest = game().where(*th.t_dest);
 
 		for (i	= 0; i < from.r_nexits;	i++) {	/*	loop through doors */
-			dist = DISTANCE(dest.y, dest.x,from.r_exit[i].y, from.r_exit[i].x);
+			dist = distance_sq(dest, from.r_exit[i]);
 			if	(dist <	mindist) {
 				target = from.r_exit[i];
 				mindist = dist;
@@ -119,7 +119,7 @@ over:
 		if ((th.t_type == 'D' || th.t_type == 'I')
 			&&	(th.t_pos.y ==	player.body.t_pos.y || th.t_pos.x == player.body.t_pos.x
 			 || abs(th.t_pos.y - player.body.t_pos.y) == abs(th.t_pos.x - player.body.t_pos.x))
-			&&	((dist=DISTANCE(th.t_pos.y, th.t_pos.x, player.body.t_pos.y, player.body.t_pos.x)) > 2
+			&&	((dist=distance_sq(th.t_pos, player.body.t_pos)) > 2
 			 && dist <= BOLT_LENGTH	* BOLT_LENGTH)
 			&&	!th.t_flags.test(ISCANC) && rnd(DRAGONSHOT) == 0)
 		{
@@ -210,7 +210,7 @@ see_monst(const Creature &mp)
 		return	false;
 	if (mp.t_flags.test(ISINVIS) && !player.body.t_flags.test(CANSEE))
 		return	false;
-	if (DISTANCE(mp.t_pos.y, mp.t_pos.x, player.body.t_pos.y, player.body.t_pos.x) >= LAMPDIST &&
+	if (distance_sq(mp.t_pos, player.body.t_pos) >= LAMPDIST &&
 	  ((mp.t_room != player.body.t_room || game().level.room(*mp.t_room).r_flags.test(RoomFlag::Dark) ||
 	  game().level.room(*mp.t_room).r_flags.test(RoomFlag::Maze))))
 		return false;
@@ -280,7 +280,7 @@ chase(Creature &tp, Coord ee)
 		 * get	a valid	random move
 		 */
 		ch_ret = rndmove(tp);
-		dist =	DISTANCE(ch_ret.y, ch_ret.x, ee.y, ee.x);
+		dist =	distance_sq(ch_ret, ee);
 		/*
 		 * Small chance that it will become un-confused
 		 */
@@ -298,7 +298,7 @@ chase(Creature &tp, Coord ee)
 		 * This will eventually hold where we move to get closer
 		 * If we can't	find an	empty spot, we stay where we are.
 		 */
-		dist =	DISTANCE(er.y,	er.x, ee.y, ee.x);
+		dist =	distance_sq(er, ee);
 		ch_ret	= er;
 
 		ey = er.y + 1;
@@ -332,7 +332,7 @@ chase(Creature &tp, Coord ee)
 					 * If we didn't find any scrolls at this place or	it
 					 * wasn't	a scare	scroll,	then this place	counts
 					 */
-					thisdist = DISTANCE(y, x,	ee.y, ee.x);
+					thisdist = distance_sq(tryp, ee);
 					if (thisdist < dist)
 					{
 						plcnt = 1;

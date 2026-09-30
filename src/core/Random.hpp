@@ -29,6 +29,9 @@ public:
 	// Sum of `count` rolls of a die with `sides` faces (each 1..sides).
 	int roll(int count, int sides);
 
+	// About n, give or take 10%: n - n/10 + below(n/5), one draw.
+	int spread(int n);
+
 	// A seed derived from the current time, for new games.
 	static Seed from_clock();
 

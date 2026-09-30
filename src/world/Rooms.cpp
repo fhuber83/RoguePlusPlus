@@ -63,7 +63,7 @@ cansee(int y, int x)
 
 	if (player.body.t_flags.test(ISBLIND))
 		return	false;
-	if (DISTANCE(y, x, player.body.t_pos.y, player.body.t_pos.x) < LAMPDIST)
+	if (distance_sq({x, y}, player.body.t_pos) < LAMPDIST)
 		return	true;
 	/*
 	 * We can only see if the hero in the same room as

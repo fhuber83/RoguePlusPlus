@@ -371,27 +371,6 @@ aggravate()
 }
 
 /*
- * vowelstr:
- *      For printfs: if string starts with a vowel, return "n" for an
- *	"an".
- */
-std::string_view
-vowelstr(std::string_view str)
-{
-	switch (str.empty() ? '\0' : str.front())
-	{
-	case 'a': case 'A':
-	case 'e': case 'E':
-	case 'i': case 'I':
-	case 'o': case 'O':
-	case 'u': case 'U':
-		return "n";
-	default:
-		return "";
-	}
-}
-
-/*
  * is_current:
  *	See if the object is one of the currently used items
  */
@@ -455,29 +434,6 @@ find_dir(unsigned char ch)
 		case 'n': case'N': return Coord{ 1,  1};
 		default: return std::nullopt;
 	}
-}
-
-/*
- * sign:
- *	Return the sign of the number
- */
-int
-sign(int nm)
-{
-	if (nm < 0)
-		return -1;
-	else
-		return (nm > 0);
-}
-
-/*
- * spread:
- *	Give a spread around a given number (+/- 10%)
- */
-int
-spread(int nm)
-{
-	return nm - nm / 10 + rnd(nm / 5);
 }
 
 /*
@@ -656,12 +612,6 @@ help(const struct h_list *helpscr)
 	display().close_page();
 }
 
-
-int
-DISTANCE(int y1, int x1, int y2, int x2)
-{
-	return rogue::distance_sq({x1, y1}, {x2, y2});
-}
 
 int
 INDEX(int y, int x)

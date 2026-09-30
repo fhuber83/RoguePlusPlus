@@ -201,7 +201,7 @@ wake_monster(int y, int x)
 		&& !tp->t_flags.test(ISCANC) && tp->t_flags.test(ISRUN))
 	{
 		rp = player.body.t_room;
-		dst = DISTANCE(y, x, player.body.t_pos.y, player.body.t_pos.x);
+		dst = distance_sq({x, y}, player.body.t_pos);
 		if ((rp && !game().level.room(*rp).r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
 			tp->t_flags.set(ISFOUND);
 			if (!save(SaveThrow::Magic)) {

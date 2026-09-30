@@ -29,8 +29,10 @@
 #include "core/Dice.hpp"
 #include "core/Flags.hpp"
 #include "core/KindTable.hpp"
+#include "core/Math.hpp"
 #include "core/Maybe.hpp"
 #include "core/Random.hpp"
+#include "core/Text.hpp"
 #include "entities/List.hpp"
 #include "game/Slots.hpp"
 #include "items/Kinds.hpp"
@@ -488,6 +490,7 @@ void	leave(void);
 // legacy wrappers around rogue::rng()
 inline int	rnd(int range) { return rogue::rng().below(range); }
 inline int	roll(int number, int sides) { return rogue::rng().roll(number, sides); }
+inline int	spread(int nm) { return rogue::rng().spread(nm); }
 // The gold in a pile on this level (was GOLDCALC)
 inline int	gold_calc() { return rnd(50 + 10 * game().level.depth) + 2; }
 
@@ -512,11 +515,8 @@ std::optional<Coord>	find_dir(unsigned char ch);
 bool	step_ok(unsigned char ch);
 bool	offmap(int y, int x);
 std::string_view	tr_name(Trap type);
-std::string_view	vowelstr(std::string_view str);
 char	goodch(const Item &obj);
-int	sign(int nm);
 unsigned char	winat(int y, int x);
-int	spread(int nm);
 /*
  * How long things last, each spread by 10% (were BEARTIME, SLEEPTIME, ...)
  */
@@ -527,7 +527,6 @@ inline int	wander_time() { return spread(70); }	/* until the next wandering mons
 inline int	huh_duration() { return spread(20); }	/* confused */
 inline int	see_duration() { return spread(300); }	/* seeing invisible, or blind */
 inline int	hunger_time() { return spread(1300); }	/* a full stomach */
-int	DISTANCE(int y1, int x1, int y2, int x2);
 int	INDEX(int y, int x);
 
 // move.cpp
@@ -546,6 +545,10 @@ std::string	killname(unsigned char monst, bool doart);
 // save.cpp
 void	save_game(void);
 void	restore(const std::string &savefile);
+
+// Small helpers (core/Math.hpp, core/Text.hpp)
+using rogue::sign;
+using rogue::vowelstr;
 
 // ASCII character tests (core/Ascii.hpp)
 using rogue::is_alpha;

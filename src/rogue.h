@@ -257,6 +257,7 @@ inline constexpr rogue::CreatureFlag ISFLY = rogue::CreatureFlag::Flying;
 #include "game/Movement.hpp"
 #include "game/NewGame.hpp"
 #include "game/GameLoop.hpp"
+#include "game/Endings.hpp"
 #include "persistence/SaveCommands.hpp"
 
 using rogue::platform::fatal;
@@ -420,6 +421,10 @@ using rogue::getsyl;
 using rogue::rchr;
 using rogue::playit;
 using rogue::quit;
+using rogue::score;
+using rogue::death;
+using rogue::total_winner;
+using rogue::killname;
 using rogue::persistence::save_game;
 using rogue::persistence::restore;
 
@@ -455,12 +460,6 @@ inline int	wander_time() { return spread(70); }	/* until the next wandering mons
 inline int	huh_duration() { return spread(20); }	/* confused */
 inline int	see_duration() { return spread(300); }	/* seeing invisible, or blind */
 inline int	hunger_time() { return spread(1300); }	/* a full stomach */
-
-// rip.cpp
-void	score(int amount, int flags, char monst);
-void	death(char monst);
-void	total_winner(void);
-std::string	killname(unsigned char monst, bool doart);
 
 // Small helpers (core/Math.hpp, core/Text.hpp)
 using rogue::sign;

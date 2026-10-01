@@ -1,25 +1,25 @@
 /*
- * Functions for dealing with linked lists of goodies
+ * Taking creatures and items from the pool and giving them back. (The
+ * lists themselves are rogue::List, entities/List.hpp.)
  *
  * list.c	1.4 (A.I. Design) 12/5/85
  */
 
 #include "rogue.h"
 
-/*
- * The lists themselves are rogue::List (entities/List.hpp) now. What is left
- * here takes things from the pool and gives them back.
- */
+namespace rogue {
+
+namespace {
 
 /*
  * talloc: take the first free slot of a pool. The two pools share one count,
  * like the single pool of the original (see rogue::Pool).
  */
 template <class T>
-static Maybe<T>
-talloc(rogue::Slots<T, MAXITEMS> &slots)
+Maybe<T>
+talloc(Slots<T, MAXITEMS> &slots)
 {
-	rogue::Pool &pool = game().pool;
+	Pool &pool = game().pool;
 	T *thing;
 
 	if (pool.total >= MAXITEMS || (thing = slots.take()) == nullptr)
@@ -27,6 +27,21 @@ talloc(rogue::Slots<T, MAXITEMS> &slots)
 	++pool.total;
 	return *thing;
 }
+
+/*
+ * discard: give a slot back to its pool, which destroys what it held
+ */
+template <class T>
+bool
+discard_from(T *item, Slots<T, MAXITEMS> &slots)
+{
+	if (!slots.release(item))
+		return false;
+	--game().pool.total;
+	return true;
+}
+
+}  // namespace
 
 /*
  * new_item
@@ -46,23 +61,10 @@ new_creature()
 }
 
 /*
- * discard: give a slot back to its pool, which destroys what it held
- */
-template <class T>
-static int
-discard_from(T *item, rogue::Slots<T, MAXITEMS> &slots)
-{
-	if (!slots.release(item))
-		return 0;
-	--game().pool.total;
-	return 1;
-}
-
-/*
  * discard:
  *	Free up an item
  */
-int
+bool
 discard(Item &item)
 {
 	/*
@@ -86,8 +88,10 @@ discard(Item &item)
 	return discard_from(&item, game().pool.items);
 }
 
-int
+bool
 discard(Creature &item)
 {
 	return discard_from(&item, game().pool.creatures);
 }
+
+}  // namespace rogue

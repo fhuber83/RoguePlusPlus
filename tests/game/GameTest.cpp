@@ -68,12 +68,12 @@ TEST(Pool, CreaturesAndItemsShareTheLimit)
 	EXPECT_EQ(new_item(), std::nullopt);
 	EXPECT_EQ(new_creature(), std::nullopt);
 
-	EXPECT_EQ(discard(*c), 1);
+	EXPECT_TRUE(discard(*c));
 	EXPECT_NE(new_item(), std::nullopt);
 	EXPECT_EQ(game().pool.total, MAXITEMS);
 
 	Creature outside{};
-	EXPECT_EQ(discard(outside), 0);
+	EXPECT_FALSE(discard(outside));
 	game().pool = rogue::Pool();
 }
 

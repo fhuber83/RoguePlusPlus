@@ -225,6 +225,7 @@ inline constexpr rogue::CreatureFlag ISFLY = rogue::CreatureFlag::Flying;
 
 
 #include "game/Game.hpp"
+#include "game/Pool.hpp"
 #include "game/Messages.hpp"
 #include "game/StatusLine.hpp"
 #include "items/ItemCatalog.hpp"
@@ -254,6 +255,10 @@ inline constexpr rogue::CreatureFlag ISFLY = rogue::CreatureFlag::Flying;
 #include "game/Movement.hpp"
 #include "game/NewGame.hpp"
 
+using rogue::new_item;
+using rogue::new_creature;
+using rogue::discard;
+using rogue::list_free;
 using rogue::show_msg;
 using rogue::add_msg;
 using rogue::msg;
@@ -417,28 +422,6 @@ inline constexpr std::string_view flashmsg = "your {} gives off a flash{}";
  * Function types
  * mach_dep.cpp functions are declared in mach_dep.h
  */
-
-// list.cpp
-Maybe<Item>	new_item();
-Maybe<Creature>	new_creature();
-int	discard(Item &item);
-int	discard(Creature &item);
-
-/*
- * Empties a list of creatures or items and gives them back to the pool
- */
-template <class T>
-void
-list_free(rogue::List<T> &list)
-{
-	Maybe<T> item;
-
-	while ((item = list.first()))
-	{
-	list.remove(*item);
-	discard(*item);
-	}
-}
 
 // playit.cpp
 void	endit(void);

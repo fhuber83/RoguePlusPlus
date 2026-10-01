@@ -245,16 +245,6 @@ inline constexpr rogue::CreatureFlag ISHASTE = rogue::CreatureFlag::Hasted;
 inline constexpr rogue::CreatureFlag ISFLY = rogue::CreatureFlag::Flying;
 
 
-/*
- * Array containing information on all the various types of monsters
- */
-struct monster {
-	std::string_view m_name;		/* What to call the monster */
-	int m_carry;			/* Probability of carrying something */
-	CreatureFlags m_flags;		/* Things about the monster */
-	struct stats m_stats;		/* Initial stats */
-};
-
 #include "game/Game.hpp"
 #include "game/Messages.hpp"
 #include "game/StatusLine.hpp"
@@ -373,6 +363,8 @@ using rogue::rules::killed;
 using rogue::rules::eat;
 using rogue::rules::chg_str;
 using rogue::rules::add_str;
+using rogue::entities::MonsterKind;
+using rogue::entities::monsters;
 using rogue::entities::randmonster;
 using rogue::entities::pick_mons;
 using rogue::entities::new_monster;
@@ -432,7 +424,6 @@ inline constexpr std::string_view intense = " of intense white light";
 // a std::format string for msg()
 inline constexpr std::string_view flashmsg = "your {} gives off a flash{}";
 extern const struct h_list helpcoms[], helpobjs[];
-extern const struct monster monsters[];
 
 // the experience level table (init.cpp)
 extern const long e_levels[20];

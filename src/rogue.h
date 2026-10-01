@@ -35,6 +35,7 @@
 #include "core/Text.hpp"
 #include "entities/List.hpp"
 #include "game/Slots.hpp"
+#include "items/KindInfo.hpp"
 #include "items/Kinds.hpp"
 #include "ui/Display.hpp"
 #include "ui/Input.hpp"
@@ -131,15 +132,8 @@ using rogue::ui::TileStyle;
  */
 typedef unsigned int str_t;
 
-/*
- * Stuff about magic items
- */
-
-struct magic_item {
-	std::string_view mi_name;
-	int mi_prob;
-	short mi_worth;
-};
+// The name, odds and worth of a kind of item, see items/KindInfo.hpp
+using rogue::items::KindInfo;
 
 
 /*
@@ -261,13 +255,6 @@ struct monster {
 	struct stats m_stats;		/* Initial stats */
 };
 
-// The tables each game copies into game().items (extern.cpp)
-extern const KindTable<Scroll, magic_item> s_magic_base;
-extern const KindTable<Potion, magic_item> p_magic_base;
-extern const KindTable<Ring, magic_item> r_magic_base;
-extern const KindTable<Stick, magic_item> ws_magic_base;
-extern const struct magic_item things_base[];
-
 #include "game/Game.hpp"
 #include "game/Messages.hpp"
 #include "game/StatusLine.hpp"
@@ -312,6 +299,10 @@ using rogue::wait_msg;
 using rogue::str_attr;
 using rogue::status;
 using rogue::SIG2;
+using rogue::items::w_names;
+using rogue::items::a_names;
+using rogue::items::a_chances;
+using rogue::items::a_class;
 using rogue::items::new_thing;
 using rogue::items::inv_name;
 using rogue::items::discovered;
@@ -438,13 +429,9 @@ using rogue::rndmove;
 // The ranks, by experience level (he_man[level - 1])
 extern const std::array<std::string_view, 21> he_man;
 inline constexpr std::string_view intense = " of intense white light";
-// Weapon names, and the name of the WeaponType::Flame that fire_bolt() throws
-extern KindTable<WeaponType, std::string_view, kind_count<WeaponType> + 1> w_names;
-extern const KindTable<ArmorType, std::string_view> a_names;
 // a std::format string for msg()
 inline constexpr std::string_view flashmsg = "your {} gives off a flash{}";
 extern const struct h_list helpcoms[], helpobjs[];
-extern const KindTable<ArmorType, int> a_chances, a_class;
 extern const struct monster monsters[];
 
 // the experience level table (init.cpp)

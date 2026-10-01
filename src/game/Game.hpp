@@ -179,11 +179,11 @@ struct Level {
  */
 struct Items {
 	/* Names, cumulative odds and worth of each kind; init_*() accumulate */
-	KindTable<Scroll, magic_item> s_magic;
-	KindTable<Potion, magic_item> p_magic;
-	KindTable<Ring, magic_item> r_magic;
-	KindTable<Stick, magic_item> ws_magic;
-	struct magic_item things[NUMTHINGS];	/* Odds of each type of item */
+	KindTable<Scroll, items::KindInfo> s_magic;
+	KindTable<Potion, items::KindInfo> p_magic;
+	KindTable<Ring, items::KindInfo> r_magic;
+	KindTable<Stick, items::KindInfo> ws_magic;
+	std::array<items::KindInfo, NUMTHINGS> things;	/* Odds of each type of item */
 	/* How the kinds look in this game */
 	KindTable<Scroll, std::string> s_names;	/* Names of the scrolls */
 	KindTable<Potion, std::string_view> p_colors = {};	/* Colors of the potions */

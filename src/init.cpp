@@ -229,11 +229,11 @@ constexpr std::size_t NMETAL = std::size(metal);
  */
 template <typename E>
 static void
-accumulate_odds(KindTable<E, magic_item> &table)
+accumulate_odds(KindTable<E, KindInfo> &table)
 {
 	int odds = 0;
 
-	for (magic_item &mi : table)
+	for (KindInfo &mi : table)
 		mi.mi_prob = odds += mi.mi_prob;
 }
 
@@ -244,7 +244,7 @@ accumulate_odds(KindTable<E, magic_item> &table)
 void
 init_things()
 {
-	std::span<magic_item> things = game().items.things;
+	std::span<KindInfo> things = game().items.things;
 
 	for (std::size_t i = 1; i < things.size(); i++)
 		things[i].mi_prob += things[i-1].mi_prob;

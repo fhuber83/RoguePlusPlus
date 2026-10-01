@@ -212,10 +212,10 @@ json grid_json(const auto &grid)
 	return rows;
 }
 
-json odds_json(std::span<const magic_item> items)
+json odds_json(std::span<const KindInfo> items)
 {
 	json out = json::array();
-	for (const magic_item &mi : items)
+	for (const KindInfo &mi : items)
 		out.push_back(json::array({mi.mi_prob, mi.mi_worth}));
 	return out;
 }
@@ -660,7 +660,7 @@ void grid_from(auto &grid, const json &j, std::string_view key)
 	}
 }
 
-void odds_from(std::span<magic_item> items, const json &j, std::string_view key)
+void odds_from(std::span<KindInfo> items, const json &j, std::string_view key)
 {
 	const json &list = array_of(j, key, items.size());
 	for (std::size_t i = 0; i < items.size(); i++) {

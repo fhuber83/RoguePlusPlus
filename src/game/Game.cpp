@@ -1,16 +1,14 @@
-#include <algorithm>
-
 #include "rogue.h"
 
 namespace rogue {
 
 Items::Items()
 {
-	s_magic = s_magic_base;
-	p_magic = p_magic_base;
-	r_magic = r_magic_base;
-	ws_magic = ws_magic_base;
-	std::copy_n(things_base, NUMTHINGS, things);
+	s_magic = items::s_magic_base;
+	p_magic = items::p_magic_base;
+	r_magic = items::r_magic_base;
+	ws_magic = items::ws_magic_base;
+	things = items::things_base;
 }
 
 

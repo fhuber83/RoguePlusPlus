@@ -37,6 +37,7 @@
 #include "game/Slots.hpp"
 #include "items/KindInfo.hpp"
 #include "items/Kinds.hpp"
+#include "rules/Experience.hpp"
 #include "ui/Display.hpp"
 #include "ui/Input.hpp"
 #include "world/MapFlags.hpp"
@@ -251,6 +252,7 @@ inline constexpr rogue::CreatureFlag ISFLY = rogue::CreatureFlag::Flying;
 #include "game/Help.hpp"
 #include "game/PlayerCommands.hpp"
 #include "game/Movement.hpp"
+#include "game/NewGame.hpp"
 
 using rogue::show_msg;
 using rogue::add_msg;
@@ -338,6 +340,8 @@ using rogue::rules::save;
 using rogue::rules::is_magic;
 using rogue::rules::raise_level;
 using rogue::rules::killed;
+using rogue::rules::e_levels;
+using rogue::rules::he_man;
 using rogue::rules::eat;
 using rogue::rules::chg_str;
 using rogue::rules::add_str;
@@ -389,36 +393,30 @@ using rogue::do_macro;
 using rogue::do_run;
 using rogue::do_move;
 using rogue::rndmove;
+using rogue::init_player;
+using rogue::init_things;
+using rogue::init_names;
+using rogue::init_colors;
+using rogue::init_stones;
+using rogue::init_materials;
+using rogue::getsyl;
+using rogue::rchr;
 
 /*
- * External variables
- * The state of a game is in game() (game/Game.hpp). What is left here are
- * fixed tables and strings (extern.cpp, init.cpp).
+ * Common strings
+ * The state of a game is in game() (game/Game.hpp), and the fixed tables are
+ * in the modules that use them.
  */
 
-// The ranks, by experience level (he_man[level - 1])
-extern const std::array<std::string_view, 21> he_man;
+// The flash of a vorpal weapon: when it is made, and when it first sees its enemy
 inline constexpr std::string_view intense = " of intense white light";
 // a std::format string for msg()
 inline constexpr std::string_view flashmsg = "your {} gives off a flash{}";
-
-// the experience level table (init.cpp)
-extern const long e_levels[20];
 
 /*
  * Function types
  * mach_dep.cpp functions are declared in mach_dep.h
  */
-
-// init.cpp
-void	init_player(void);
-void	init_things(void);
-void	init_colors(void);
-void	init_names(void);
-void	init_stones(void);
-void	init_materials(void);
-std::string	getsyl();
-char	rchr(std::string_view string);
 
 // list.cpp
 Maybe<Item>	new_item();

@@ -1,90 +1,19 @@
 /*
- * global variable initializaton
+ * Setting up a new game: the rogue's first pack, and the odds and looks of
+ * the kinds of item.
  *
  * init.c	1.4 (A.I. Design) 12/14/84
  */
 
 #include "rogue.h"
 
+namespace rogue {
+
+namespace {
 
 /*
- * init_player:
- *	Roll up the rogue
- */
-void
-init_player()
-{
-	Maybe<Item> obj;
-	game().player.body.t_stats = game().player.max_stats;
-	game().player.food_left = hunger_time();
-	/*
-	 * initialize things
-	 */
-	game().pool = rogue::Pool();
-	/*
-	 * Give the rogue his weaponry.  First a mace.
-	 */
-	obj = new_item();
-	obj->o_type = ItemKind::Weapon;
-	obj->set_which(WeaponType::Mace);
-	init_weapon(*obj, WeaponType::Mace);
-	obj->o_hplus = 1;
-	obj->o_dplus = 1;
-	obj->o_flags.set(ISKNOW);
-	obj->o_count = 1;
-	obj->o_group = 0;
-	add_pack(*obj, true);
-	game().player.weapon = game().pool.id_of(obj);
-	/*
-	 * Now a +1 bow
-	 */
-	obj = new_item();
-	obj->o_type = ItemKind::Weapon;
-	obj->set_which(WeaponType::ShortBow);
-	init_weapon(*obj, WeaponType::ShortBow);
-	obj->o_hplus = 1;
-	obj->o_dplus = 0;
-	obj->o_count = 1;
-	obj->o_group = 0;
-	obj->o_flags.set(ISKNOW);
-	add_pack(*obj, true);
-	/*
-	 * Now some arrows
-	 */
-	obj = new_item();
-	obj->o_type = ItemKind::Weapon;
-	obj->set_which(WeaponType::Arrow);
-	init_weapon(*obj, WeaponType::Arrow);
-	obj->o_count = rnd(15) + 25;
-	obj->o_hplus = obj->o_dplus = 0;
-	obj->o_flags.set(ISKNOW);
-	add_pack(*obj, true);
-	/*
-	 * And his suit of armor
-	 */
-	obj = new_item();
-	obj->o_type = ItemKind::Armor;
-	obj->set_which(ArmorType::RingMail);
-	obj->o_ac = a_class[ArmorType::RingMail] - 1;
-	obj->o_flags.set(ISKNOW);
-	obj->o_count = 1;
-	obj->o_group = 0;
-	game().player.armor = game().pool.id_of(obj);
-	add_pack(*obj, true);
-	/*
-	 * Give him some food too
-	 */
-	obj = new_item();
-	obj->o_type = ItemKind::Food;
-	obj->o_count = 1;
-	obj->set_which(Food::Ration);
-	obj->o_group = 0;
-	add_pack(*obj, true);
-}
-
-/*
- * Contains definitions and functions for dealing with things like
- * potions and scrolls
+ * What the kinds of potion, ring and stick can look like, and the letters
+ * of scroll titles; each game picks its own (see Items)
  */
 
 constexpr auto rainbow = std::to_array<std::string_view>({
@@ -228,13 +157,91 @@ constexpr std::size_t NMETAL = std::size(metal);
  * compares its roll against
  */
 template <typename E>
-static void
+void
 accumulate_odds(KindTable<E, KindInfo> &table)
 {
 	int odds = 0;
 
 	for (KindInfo &mi : table)
 		mi.mi_prob = odds += mi.mi_prob;
+}
+
+}  // namespace
+
+
+/*
+ * init_player:
+ *	Roll up the rogue
+ */
+void
+init_player()
+{
+	Maybe<Item> obj;
+	game().player.body.t_stats = game().player.max_stats;
+	game().player.food_left = hunger_time();
+	/*
+	 * initialize things
+	 */
+	game().pool = rogue::Pool();
+	/*
+	 * Give the rogue his weaponry.  First a mace.
+	 */
+	obj = new_item();
+	obj->o_type = ItemKind::Weapon;
+	obj->set_which(WeaponType::Mace);
+	init_weapon(*obj, WeaponType::Mace);
+	obj->o_hplus = 1;
+	obj->o_dplus = 1;
+	obj->o_flags.set(ISKNOW);
+	obj->o_count = 1;
+	obj->o_group = 0;
+	add_pack(*obj, true);
+	game().player.weapon = game().pool.id_of(obj);
+	/*
+	 * Now a +1 bow
+	 */
+	obj = new_item();
+	obj->o_type = ItemKind::Weapon;
+	obj->set_which(WeaponType::ShortBow);
+	init_weapon(*obj, WeaponType::ShortBow);
+	obj->o_hplus = 1;
+	obj->o_dplus = 0;
+	obj->o_count = 1;
+	obj->o_group = 0;
+	obj->o_flags.set(ISKNOW);
+	add_pack(*obj, true);
+	/*
+	 * Now some arrows
+	 */
+	obj = new_item();
+	obj->o_type = ItemKind::Weapon;
+	obj->set_which(WeaponType::Arrow);
+	init_weapon(*obj, WeaponType::Arrow);
+	obj->o_count = rnd(15) + 25;
+	obj->o_hplus = obj->o_dplus = 0;
+	obj->o_flags.set(ISKNOW);
+	add_pack(*obj, true);
+	/*
+	 * And his suit of armor
+	 */
+	obj = new_item();
+	obj->o_type = ItemKind::Armor;
+	obj->set_which(ArmorType::RingMail);
+	obj->o_ac = a_class[ArmorType::RingMail] - 1;
+	obj->o_flags.set(ISKNOW);
+	obj->o_count = 1;
+	obj->o_group = 0;
+	game().player.armor = game().pool.id_of(obj);
+	add_pack(*obj, true);
+	/*
+	 * Give him some food too
+	 */
+	obj = new_item();
+	obj->o_type = ItemKind::Food;
+	obj->o_count = 1;
+	obj->set_which(Food::Ration);
+	obj->o_group = 0;
+	add_pack(*obj, true);
 }
 
 /*
@@ -257,12 +264,10 @@ init_things()
 void
 init_colors()
 {
-	unsigned int i, j;
-	bool used[NCOLORS];
+	unsigned int j;
+	std::array<bool, NCOLORS> used{};
 	rogue::Items &items = game().items;
 
-	for (i = 0; i < NCOLORS; i++)
-		used[i] = false;
 	for (Potion p : kinds<Potion>())
 	{
 		do
@@ -284,33 +289,33 @@ void
 init_names()
 {
 	rogue::Items &items = game().items;
-	 int nsyl;
-	 std::string sp;
-	 int nwords;
+	int nsyl;
+	std::string sp;
+	int nwords;
 
 	for (Scroll s : kinds<Scroll>())
 	{
-	std::string name;
-	nwords = rnd(game().options.terse?3:4) + 2;
-	while (nwords--)
-	{
-		nsyl = rnd(2) + 1;
-		while (nsyl--)
+		std::string name;
+		nwords = rnd(game().options.terse?3:4) + 2;
+		while (nwords--)
 		{
-		sp = getsyl();
-		if (name.size() + sp.size() > MAXNAME-1)
-		{
-			nwords = 0;
-			break;
+			nsyl = rnd(2) + 1;
+			while (nsyl--)
+			{
+				sp = getsyl();
+				if (name.size() + sp.size() > MAXNAME-1)
+				{
+					nwords = 0;
+					break;
+				}
+				name += sp;
+			}
+			name += ' ';
 		}
-		name += sp;
-		}
-		name += ' ';
-	}
-	name.pop_back();
-	items.s_know[s] = false;
-	items.s_guess[s].clear();
-	items.s_names[s] = name;
+		name.pop_back();
+		items.s_know[s] = false;
+		items.s_guess[s].clear();
+		items.s_names[s] = name;
 	}
 	accumulate_odds(items.s_magic);
 }
@@ -346,12 +351,10 @@ rchr(std::string_view string)
 void
 init_stones()
 {
-	unsigned int i, j;
-	bool used[NSTONES];
+	unsigned int j;
+	std::array<bool, NSTONES> used{};
 	rogue::Items &items = game().items;
 
-	for (i = 0; i < NSTONES; i++)
-		used[i] = false;
 	for (Ring r : kinds<Ring>())
 	{
 		do
@@ -373,15 +376,12 @@ init_stones()
 void
 init_materials()
 {
-	unsigned int i, j;
+	unsigned int j;
 	std::string_view str;
-	bool metused[NMETAL], woodused[NWOOD];
+	std::array<bool, NMETAL> metused{};
+	std::array<bool, NWOOD> woodused{};
 	rogue::Items &items = game().items;
 
-	for (i = 0; i < NWOOD; i++)
-		woodused[i] = false;
-	for (i = 0; i < NMETAL; i++)
-		metused[i] = false;
 	for (Stick w : kinds<Stick>())
 	{
 		for (;;)
@@ -414,11 +414,4 @@ init_materials()
 	accumulate_odds(items.ws_magic);
 }
 
-/*
- * The experience needed for each level: 10, doubling 18 times, then 0
- * to end the table
- */
-const long e_levels[20] = {
-	10L, 20L, 40L, 80L, 160L, 320L, 640L, 1280L, 2560L, 5120L, 10240L,
-	20480L, 40960L, 81920L, 163840L, 327680L, 655360L, 1310720L, 2621440L, 0L,
-};
+}  // namespace rogue

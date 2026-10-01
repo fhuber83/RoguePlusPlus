@@ -1,9 +1,10 @@
 /*
  * The help screens.
  *
- * help() comes from misc.c.
+ * help() comes from misc.c, the tables from extern.c.
  *
  * misc.c	1.4		(A.I. Design)	12/14/84
+ * @(#)extern.c	5.2 (Berkeley) 6/16/82
  */
 
 #include "rogue.h"
@@ -11,20 +12,126 @@
 namespace rogue {
 
 /*
+ * Original code used CP437 codes hard coded inside the help strings,
+ * instead of the #define'd char constants for FLOOR, PLAYER etc.
+ * To support the constants, helpcoms/helpobjs array type has changed from
+ * string to HelpLine (was struct h_list), whose constructors build the
+ * glyph column.
+ *
+ * Ironically, struct h_list already existed in rogue.h, but it was unused in
+ * code, so perhaps original authors either abandoned the idea or were halfway
+ * through implementing it.
+ */
+const std::array<HelpLine, 62> helpcoms = {{
+	{"F1     list of commands"},
+	{"F2     list of symbols"},
+	{"F3     repeat command"},
+	{"F4     repeat message"},
+	{"F5     rename something"},
+	{"F6     recall what's been discovered"},
+	{"F7     inventory of your possessions"},
+	{"F8     <dir> identify trap type"},
+	{"F9     The Any Key (definable)"},
+	{"Alt F9 defines the Any Key"},
+	{"Space  Clear -More- message"},
+	{"\x11\xd9     the Enter Key"},
+	{"\x1b      left"},
+	{"\x19      down"},
+	{"\x18      up"},
+	{"\x1a      right"},
+	{"Home   up & left"},
+	{"PgUp   up & right"},
+	{"End    down & left"},
+	{"PgDn   down & right"},
+	{"Scroll Fast Play mode"},
+	{".      rest"},
+	{">      go down a staircase"},
+	{"<      go up a staircase"},
+	{"Esc    cancel command"},
+	{"d      drop object"},
+	{"e      eat food"},
+	{"f      <dir> find something"},
+	{"q      quaff potion"},
+	{"r      read paper"},
+	{"s      search for trap/secret door"},
+	{"t      <dir> throw something"},
+	{"w      wield a weapon"},
+	{"z      <dir> zap with a wand"},
+	{"B      run down & left"},
+	{"H      run left"},
+	{"J      run down"},
+	{"K      run up"},
+	{"L      run right"},
+	{"N      run down & right"},
+	{"U      run up & right"},
+	{"Y      run up & left"},
+	{"W      wear armor"},
+	{"T      take armor off"},
+	{"P      put on ring"},
+	{"Q      quit"},
+	{"R      remove ring"},
+	{"S      save game"},
+	{"^      identify trap"},
+	{"?      help"},
+	{"/      key"},
+	{"+      throw"},
+	{"-      zap"},
+	{"Ctrl t terse message format"},
+	{"Ctrl r repeat message"},
+	{"Del    search for something hidden"},
+	{"Ins    <dir> find something"},
+	{"a      repeat command"},
+	{"c      rename something"},
+	{"i      inventory"},
+	{"v      version number"},
+	{"D      list what has been discovered"}
+}};
+
+const std::array<HelpLine, 23> helpobjs = {{
+	{FLOOR,   "the floor"},
+	{PLAYER,  "the hero"},
+	{FOOD,    "some food"},
+	{AMULET,  "the amulet of yendor"},
+	{SCROLL,  "a scroll"},
+	{WEAPON,  "a weapon"},
+	{ARMOR,   "a piece of armor"},
+	{GOLD,    "some gold"},
+	{STICK,   "a magic staff"},
+	{POTION,  "a potion"},
+	{RING,    "a magic ring"},
+	{0xB2,    "a passage"},  // not PASSAGE (0xB1)
+	/* make sure in 40 or 80 column none of line draw set connects */
+	/* this is currently in column 1 for 80 */
+	{DOOR,    "a door"},
+	{ULWALL,  "an upper left corner"},
+	{TRAP,    "a trap"},
+	{HWALL,   "a horizontal wall"},
+	{LRWALL,  "a lower right corner"},
+	{LLWALL,  "a lower left corner"},
+	{VWALL,   "a vertical wall"},
+	{URWALL,  "an upper right corner"},
+	{STAIRS,  "a stair case"},
+	{MAGIC, ',', BMAGIC, "safe and perilous magic"},
+	{'A', '-', 'Z', "26 different monsters"}
+}};
+
+/*
  * help:
  *	Print out help screens
  */
 void
-help(const h_list *helpscr)
+help(std::span<const HelpLine> lines)
 {
-	int hcount = 0;
 	int hrow, hcol;
 	bool isfull;
 	unsigned char answer = 0;
 
 	display().open_page();
-	while (!helpscr->h_desc.empty() && answer != ESCAPE)
+	for (int hcount = 0; hcount < std::ssize(lines) && answer != ESCAPE; hcount++)
 	{
+		const HelpLine &line = lines[hcount];
+		bool last = hcount + 1 == std::ssize(lines);
+
 		isfull = false;
 		if ((hcount % (game().options.terse?23:46)) == 0)
 			display().clear_page();
@@ -47,16 +154,15 @@ help(const h_list *helpscr)
 				 isfull = true;
 		}
 
-		display().write_at(hrow, hcol, helpscr->glyphs());
-		display().write(helpscr->h_desc);
-		helpscr++;
+		display().write_at(hrow, hcol, line.glyphs());
+		display().write(line.h_desc);
 
 		/*
 		 * decide if we need print a continue type message
 		 */
-		if (helpscr->h_desc.empty() || isfull)
+		if (last || isfull)
 		{
-			if (helpscr->h_desc.empty())
+			if (last)
 				display().write_at(24, 0, "--press space to continue--");
 			else if (game().options.terse)
 				display().write_at(24, 0, "--Space for more, Esc to continue--");
@@ -66,7 +172,6 @@ help(const h_list *helpscr)
 				answer = readchar();
 			while (answer != ' ' && answer != ESCAPE) ;
 		}
-		hcount++;
 	}
 	display().close_page();
 }

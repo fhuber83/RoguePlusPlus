@@ -92,28 +92,6 @@ inline constexpr int LAMPDIST = 3;
  */
 
 /*
- * Help list
- */
-struct h_list {
-	std::array<char, 5> h_chstr{};	// either (ch) or (ch,sep,ch2) appended with ": "
-	std::size_t h_chlen = 0;
-	std::string_view h_desc;
-
-	// A line of text; an empty one ends the list (were H_STR and H_END)
-	constexpr h_list(std::string_view desc) : h_desc(desc) {}
-	// A glyph and what it is (was H_CHSTR)
-	constexpr h_list(unsigned char ch, std::string_view desc)
-		: h_chstr{static_cast<char>(ch), ':', ' '}, h_chlen(3), h_desc(desc) {}
-	// Two glyphs with a separator, "A-Z" (was H_CH2STR)
-	constexpr h_list(unsigned char first, unsigned char sep, unsigned char last, std::string_view desc)
-		: h_chstr{static_cast<char>(first), static_cast<char>(sep), static_cast<char>(last), ':', ' '},
-		  h_chlen(5), h_desc(desc) {}
-
-	// The glyph column, "" for a line of text
-	constexpr std::string_view glyphs() const { return {h_chstr.data(), h_chlen}; }
-};
-
-/*
  * Coordinate data type
  */
 using rogue::Coord;  // see core/Coord.hpp
@@ -423,7 +401,6 @@ extern const std::array<std::string_view, 21> he_man;
 inline constexpr std::string_view intense = " of intense white light";
 // a std::format string for msg()
 inline constexpr std::string_view flashmsg = "your {} gives off a flash{}";
-extern const struct h_list helpcoms[], helpobjs[];
 
 // the experience level table (init.cpp)
 extern const long e_levels[20];

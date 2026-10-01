@@ -60,21 +60,22 @@ void
 SIG2()
 {
 	static int bighand, littlehand;
-	static long cur_time = 0;
-	int showtime = false;
-	long new_time = md_time();
+	static std::chrono::sys_seconds cur_time{};
+	bool showtime = false;
+	std::chrono::sys_seconds new_time = platform::now();
 
 	/*
 	 * Do not update while a page (inventory, discoveries, ...) is shown
 	 */
 	if (display().page_open())
 		return;
-	if (new_time - cur_time >= 60)
+	if (new_time - cur_time >= std::chrono::minutes(1))
 	{
-		TM local = md_localtime();
-		bighand = local.hour % 12;
-		littlehand = local.minute;
-		cur_time = new_time - local.second;
+		std::chrono::local_seconds local = platform::local_time(new_time);
+		std::chrono::hh_mm_ss hms{local - std::chrono::floor<std::chrono::days>(local)};
+		bighand = hms.hours().count() % 12;
+		littlehand = hms.minutes().count();
+		cur_time = new_time - hms.seconds();
 		showtime = true;
 	}
 

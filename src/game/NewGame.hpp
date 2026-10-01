@@ -4,13 +4,28 @@
 #include <string_view>
 
 /*
- * Setting up a new game: the rogue's first pack, and the odds and looks of
- * the kinds of item for this game. main() calls them in this order, after
- * reading the options and seeding rng(); each draw from rng() is part of the
- * dungeon a seed makes.
+ * Setting up a new game: the rogue's name, his first pack, and the odds and
+ * looks of the kinds of item for this game. main() calls credits(), the
+ * init_*() functions in the order below, and setup(), after reading the
+ * options and seeding rng(); each draw from rng() is part of the dungeon a
+ * seed makes.
  */
 
 namespace rogue {
+
+/*
+ * setup:
+ *	Start with the terse and expert toggles off (a restored game then
+ *	takes its own from the save).
+ */
+void setup();
+
+/*
+ * credits:
+ *	Show the title screen and ask for the rogue's name, which replaces
+ *	the one from rogue.opt unless the player only presses Enter or Escape.
+ */
+void credits();
 
 /*
  * init_player:

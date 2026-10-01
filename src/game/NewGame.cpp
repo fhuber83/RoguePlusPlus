@@ -3,6 +3,7 @@
  * the kinds of item.
  *
  * init.c	1.4 (A.I. Design) 12/14/84
+ * setup() and credits() come from mach_dep.c (1.4 (A.I. Design) 12/1/84).
  */
 
 #include "rogue.h"
@@ -168,6 +169,30 @@ accumulate_odds(KindTable<E, KindInfo> &table)
 
 }  // namespace
 
+
+/*
+ * setup:
+ *	Get starting setup for all games
+ */
+void
+setup()
+{
+	game().options.terse = false;
+	game().options.expert = game().options.terse;
+}
+
+/*
+ * credits:
+ *	Show the title screen and ask for the rogue's name
+ */
+void
+credits()
+{
+	display().draw_title();
+	if (auto name = input().read_line(Options::name_length); name && !name->empty())
+		game().options.name = *name;
+	display().end_title();
+}
 
 /*
  * init_player:

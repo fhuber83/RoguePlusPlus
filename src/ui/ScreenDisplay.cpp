@@ -263,7 +263,7 @@ bool ScreenDisplay::show_cursor(bool visible)
 // Title and ending screens
 
 /*
- * The title screen, for credits() in mach_dep.cpp
+ * The title screen, for credits() in game/NewGame.cpp
  */
 void ScreenDisplay::draw_title()
 {

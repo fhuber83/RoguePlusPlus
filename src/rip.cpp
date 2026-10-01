@@ -242,7 +242,8 @@ death(char monst)
 	game().player.purse -= game().player.purse / 10;
 
 	display().curtain_down();
-	year = md_localtime().year;
+	year = static_cast<int>(std::chrono::year_month_day{
+		std::chrono::floor<std::chrono::days>(rogue::platform::local_time(rogue::platform::now()))}.year());
 	display().draw_tombstone(game().options.name, killname(monst, true), game().player.purse, year);
 	display().curtain_up();
 	display().write_at(LINES-1, 0, "");

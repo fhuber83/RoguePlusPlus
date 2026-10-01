@@ -72,7 +72,7 @@ restore(const std::string &file)
 {
 	MapView view;
 
-	start_terminal();
+	platform::start_terminal(game().options.monochrome);
 	if (auto loaded = read_save(file, game(), view); !loaded)
 		fatal("Can't restore {}: {}\n", file, loaded.error().detail);
 	if (std::remove(file.c_str()) != 0)

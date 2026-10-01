@@ -45,7 +45,8 @@
 #include "world/Trap.hpp"
 
 #include "glyphs.h"
-#include "mach_dep.h"
+#include "platform/Clock.hpp"
+#include "platform/Session.hpp"
 
 /*
  * Screen size. Fixed at 80x25 (see rogue::ui::Screen); these used to be the
@@ -226,6 +227,7 @@ inline constexpr rogue::CreatureFlag ISFLY = rogue::CreatureFlag::Flying;
 
 #include "game/Game.hpp"
 #include "game/Pool.hpp"
+#include "game/Keyboard.hpp"
 #include "game/Messages.hpp"
 #include "game/StatusLine.hpp"
 #include "items/ItemCatalog.hpp"
@@ -257,6 +259,12 @@ inline constexpr rogue::CreatureFlag ISFLY = rogue::CreatureFlag::Flying;
 #include "game/GameLoop.hpp"
 #include "persistence/SaveCommands.hpp"
 
+using rogue::platform::fatal;
+using rogue::platform::md_exit;
+using rogue::readchar;
+using rogue::flush_type;
+using rogue::setup;
+using rogue::credits;
 using rogue::new_item;
 using rogue::new_creature;
 using rogue::discard;
@@ -428,7 +436,6 @@ inline constexpr std::string_view flashmsg = "your {} gives off a flash{}";
 
 /*
  * Function types
- * mach_dep.cpp functions are declared in mach_dep.h
  */
 
 // legacy wrappers around rogue::rng()

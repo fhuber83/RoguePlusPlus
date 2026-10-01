@@ -1,5 +1,5 @@
 /*
- * save and restore routines
+ * The save command, and restoring a saved game
  *
  * save.c	1.32	(A.I. Design)	12/13/84
  */
@@ -17,18 +17,22 @@
 #include "persistence/SaveGame.hpp"
 #include "rogue.h"
 
-using rogue::persistence::MapView;
+namespace rogue::persistence {
+
+namespace {
 
 // The map as the screen shows it: what the rogue remembers of the level
-static MapView
+MapView
 map_view()
 {
 	MapView view;
-	for (int r = 0; r < rogue::persistence::map_rows; r++)
-		for (int x = 0; x < rogue::persistence::map_cols; x++)
+	for (int r = 0; r < map_rows; r++)
+		for (int x = 0; x < map_cols; x++)
 			view[r][x] = {display().tile_at({x, r + 1}), display().tile_style_at({x, r + 1})};
 	return view;
 }
+
+}  // namespace
 
 /*
  * save_game:
@@ -47,11 +51,11 @@ save_game()
 	}
 	if (file->empty())
 		*file = game().options.save_file;
-	if (auto problems = rogue::pool_problems(game()); !problems.empty()) {
+	if (auto problems = pool_problems(game()); !problems.empty()) {
 		msg("can't save: {}", problems.front());
 		return;
 	}
-	if (auto saved = rogue::persistence::write_save(*file, game(), map_view()); !saved) {
+	if (auto saved = write_save(*file, game(), map_view()); !saved) {
 		msg("can't save: {}", saved.error().detail);
 		return;
 	}
@@ -69,13 +73,15 @@ restore(const std::string &file)
 	MapView view;
 
 	start_terminal();
-	if (auto loaded = rogue::persistence::read_save(file, game(), view); !loaded)
+	if (auto loaded = read_save(file, game(), view); !loaded)
 		fatal("Can't restore {}: {}\n", file, loaded.error().detail);
 	if (std::remove(file.c_str()) != 0)
 		fatal("Can't delete {} after restoring it, so the game is not restored\n", file);
-	for (int r = 0; r < rogue::persistence::map_rows; r++)
-		for (int x = 0; x < rogue::persistence::map_cols; x++)
+	for (int r = 0; r < map_rows; r++)
+		for (int x = 0; x < map_cols; x++)
 			display().draw_tile({x, r + 1}, view[r][x].glyph, view[r][x].style);
 	status();
-	rogue::resume_saved_game();
+	resume_saved_game();
 }
+
+}  // namespace rogue::persistence

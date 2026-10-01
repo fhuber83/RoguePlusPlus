@@ -254,6 +254,7 @@ inline constexpr rogue::CreatureFlag ISFLY = rogue::CreatureFlag::Flying;
 #include "game/PlayerCommands.hpp"
 #include "game/Movement.hpp"
 #include "game/NewGame.hpp"
+#include "persistence/SaveCommands.hpp"
 
 using rogue::new_item;
 using rogue::new_creature;
@@ -408,6 +409,8 @@ using rogue::init_stones;
 using rogue::init_materials;
 using rogue::getsyl;
 using rogue::rchr;
+using rogue::persistence::save_game;
+using rogue::persistence::restore;
 
 /*
  * Common strings
@@ -453,10 +456,6 @@ void	score(int amount, int flags, char monst);
 void	death(char monst);
 void	total_winner(void);
 std::string	killname(unsigned char monst, bool doart);
-
-// save.cpp
-void	save_game(void);
-void	restore(const std::string &savefile);
 
 // Small helpers (core/Math.hpp, core/Text.hpp)
 using rogue::sign;

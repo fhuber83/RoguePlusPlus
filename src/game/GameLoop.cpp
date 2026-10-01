@@ -16,6 +16,10 @@
 
 #include "rogue.h"
 
+namespace rogue {
+
+namespace {
+
 /*
  * endit:
  *	Exit the program abnormally.
@@ -25,6 +29,8 @@ endit()
 {
 	fatal("Ok, if you want to exit that badly, I'll have to allow it\n");
 }
+
+}  // namespace
 
 /*
  * playit:
@@ -57,17 +63,9 @@ playit(const std::optional<std::string> &sname)
 void
 quit()
 {
-	coord here;
+	Coord here;
 	unsigned char answer;
-	static bool qstate = false;
 
-	/*
-	 * if they try to interupt with a control C while in
-	 * this routine blow them away!
-	 */
-	if (qstate == true)
-		leave();
-	qstate = true;
 	game().message.end = 0;
 	here = display().write("");  // where the cursor was
 	display().clear_line(0);
@@ -89,18 +87,6 @@ quit()
 		game().message.end = 0;
 		game().turn.count = 0;
 	}
-	qstate = false;
 }
 
-/*
- * leave:
- *	Leave quickly, but courteously
- */
-void
-leave()
-{
-	look(false);
-	display().clear_line(LINES - 1);
-	display().clear_line(LINES - 2);
-	fatal("Ok, if you want to leave that badly\n");
-}
+}  // namespace rogue

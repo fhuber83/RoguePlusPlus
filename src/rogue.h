@@ -254,6 +254,7 @@ inline constexpr rogue::CreatureFlag ISFLY = rogue::CreatureFlag::Flying;
 #include "game/PlayerCommands.hpp"
 #include "game/Movement.hpp"
 #include "game/NewGame.hpp"
+#include "game/GameLoop.hpp"
 #include "persistence/SaveCommands.hpp"
 
 using rogue::new_item;
@@ -409,6 +410,8 @@ using rogue::init_stones;
 using rogue::init_materials;
 using rogue::getsyl;
 using rogue::rchr;
+using rogue::playit;
+using rogue::quit;
 using rogue::persistence::save_game;
 using rogue::persistence::restore;
 
@@ -428,11 +431,6 @@ inline constexpr std::string_view flashmsg = "your {} gives off a flash{}";
  * mach_dep.cpp functions are declared in mach_dep.h
  */
 
-// playit.cpp
-void	endit(void);
-void	playit(const std::optional<std::string> &sname);
-void	quit(void);
-void	leave(void);
 // legacy wrappers around rogue::rng()
 inline int	rnd(int range) { return rogue::rng().below(range); }
 inline int	roll(int number, int sides) { return rogue::rng().roll(number, sides); }

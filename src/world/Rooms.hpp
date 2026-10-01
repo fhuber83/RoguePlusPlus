@@ -48,4 +48,11 @@ void enter_room(Coord cp);
  */
 void leave_room(Coord cp);
 
+/*
+ * teleport:
+ *	Move the rogue to a random square of a random room, which confuses
+ *	him (a scroll of teleportation, a teleport trap).
+ */
+void teleport();
+
 }  // namespace rogue::world

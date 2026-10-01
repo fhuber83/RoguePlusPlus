@@ -430,4 +430,67 @@ call()
 	msg("");
 }
 
+/*
+ * whatis comes from wizard.c (wizard.c	1.4 (AI Design)	12/14/84).
+ */
+
+/*
+ * whatis:
+ *	What a certain object is: identify a kind (a scroll of identify)
+ */
+void
+whatis()
+{
+	Maybe<Item> obj;
+	rogue::Items &items = game().items;
+
+	if (game().player.body.t_pack.empty()) {
+		msg("You don't have anything in your pack to identify");
+		return;
+	}
+
+	for (;;) {
+		if (!(obj = get_item("identify", ItemFilter::all()))) {
+			msg("You must identify something");
+			msg(" ");
+			game().message.end = 0;
+		} else
+			break;
+	}
+
+	switch (obj->o_type) {
+	case ItemKind::Scroll:
+		items.s_know[obj->which<Scroll>()] = true;
+		items.s_guess[obj->which<Scroll>()].clear();
+		break;
+	case ItemKind::Potion:
+		items.p_know[obj->which<Potion>()] = true;
+		items.p_guess[obj->which<Potion>()].clear();
+		break;
+	case ItemKind::Stick:
+		items.ws_know[obj->which<Stick>()] = true;
+		obj->o_flags.set(ISKNOW);
+		items.ws_guess[obj->which<Stick>()].clear();
+		break;
+	case ItemKind::Weapon:
+	case ItemKind::Armor:
+		obj->o_flags.set(ISKNOW);
+		break;
+	case ItemKind::Ring:
+		items.r_know[obj->which<Ring>()] = true;
+		obj->o_flags.set(ISKNOW);
+		items.r_guess[obj->which<Ring>()].clear();
+		break;
+	default:	// the other kinds of item: nothing
+		break;
+	}
+	/*
+	 * If it is vorpally enchanted, then reveal what type of monster it is
+	 * vorpally enchanted against
+	 */
+	if (obj->o_enemy)
+		obj->o_flags.set(ISREVEAL);
+	msg("{}", inv_name(*obj, false));
+}
+
 }  // namespace rogue::items

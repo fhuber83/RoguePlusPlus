@@ -208,4 +208,59 @@ leave_room(Coord cp)
 	door_open(rp);
 }
 
+/*
+ * teleport comes from wizard.c (wizard.c	1.4 (AI Design)	12/14/84).
+ */
+
+/*
+ * teleport:
+ *	Bamf the hero someplace else
+ */
+void
+teleport()
+{
+	int rm;
+	Coord c;
+	rogue::Player &player = game().player;
+
+	display().draw_tile(player.body.t_pos, game().level.at(player.body.t_pos));
+	do
+	{
+		rm = rnd_room();
+		c = rnd_pos(game().level.rooms[rm]);
+	} while (!(step_ok(winat(c.y, c.x))));
+	if (RoomRef::room(rm) != player.body.t_room)
+	{
+		leave_room(player.body.t_pos);
+		player.body.t_pos = c;
+		enter_room(player.body.t_pos);
+	}
+	else
+	{
+		player.body.t_pos = c;
+		look(true);
+	}
+	display().draw_tile(player.body.t_pos, PLAYER);
+	/*
+	 * turn off ISHELD in case teleportation was done while fighting
+	 * a Fungi
+	 */
+	if (player.body.t_flags.test(ISHELD)) {
+		player.body.t_flags.unset(ISHELD);
+		f_restor();
+	}
+	player.no_move = 0;
+	game().turn.count = 0;
+	game().turn.running = false;
+	flush_type();
+	/*
+	 * Teleportation can be a confusing experience
+	 */
+	if (player.body.t_flags.test(ISHUH))
+		lengthen(Event::Unconfuse, rnd(4)+2);
+	else
+		fuse(Event::Unconfuse, rnd(4)+2);
+	player.body.t_flags.set(ISHUH);
+}
+
 }  // namespace rogue::world

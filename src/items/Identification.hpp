@@ -47,5 +47,12 @@ void call_it(bool know, std::string &guess);
  */
 void call();
 
+/*
+ * whatis:
+ *	Identify a kind of item the rogue picks from his pack (the scroll of
+ *	identify); he must pick one.
+ */
+void whatis();
+
 }  // namespace items
 }  // namespace rogue

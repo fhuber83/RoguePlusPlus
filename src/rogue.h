@@ -294,6 +294,7 @@ using rogue::items::can_drop;
 using rogue::items::is_current;
 using rogue::items::call_it;
 using rogue::items::call;
+using rogue::items::whatis;
 using rogue::items::effects::quaff;
 using rogue::items::effects::invis_on;
 using rogue::items::effects::turn_see;
@@ -374,6 +375,7 @@ using rogue::world::cansee;
 using rogue::world::rnd_pos;
 using rogue::world::enter_room;
 using rogue::world::leave_room;
+using rogue::world::teleport;
 using rogue::world::new_level;
 using rogue::world::rnd_room;
 using rogue::world::INDEX;
@@ -471,6 +473,3 @@ using rogue::is_print;
 using rogue::to_upper;
 using rogue::to_lower;
 
-// wizard.cpp
-void	whatis(void);
-int	teleport(void);

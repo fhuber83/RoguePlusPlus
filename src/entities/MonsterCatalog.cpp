@@ -52,7 +52,11 @@ const std::array<MonsterKind, 26> monsters = {{
 	{ "zombie",	 0,	ISMEAN,	{ XX,  6,   2,   8, NA, "1d8", NA } }
 }};
 
-static int	exp_add(const Creature &tp);
+namespace {
+
+int	exp_add(const Creature &tp);
+
+}  // namespace
 
 /*
  * List of monsters in rough order of vorpalness
@@ -149,7 +153,7 @@ new_monster(Creature &tp, unsigned char type, Coord cp)
  *  f_restor(): restore the initial damage of flytraps
  */
 void
-f_restor(void)
+f_restor()
 {
 	game().player.fung_hit = 0;
 }
@@ -168,11 +172,12 @@ flytrap_attacks(int hits)
 	return rogue::Attacks(rogue::Dice{hits, 1});
 }
 
+namespace {
+
 /*
  * expadd:
  *	Experience to add for this monster's level/hit points
  */
-static
 int
 exp_add(const Creature &tp)
 {
@@ -189,12 +194,14 @@ exp_add(const Creature &tp)
 	return mod;
 }
 
+}  // namespace
+
 /*
  * wanderer:
  *	Create a new wandering monster and aim it at the player
  */
 void
-wanderer(void)
+wanderer()
 {
 	int i;
 	Maybe<Creature> tp;
@@ -292,7 +299,7 @@ give_pack(Creature &tp)
  *	Picks from vorp_mons, which has no spaces; see the comment there.
  */
 char
-pick_mons(void)
+pick_mons()
 {
 	int i = static_cast<int>(vorp_mons.size());
 

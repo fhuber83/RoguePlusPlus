@@ -140,12 +140,14 @@ const std::array<KindInfo, NUMTHINGS> things_base = {{
 	{ "",			 5, NA }	/* stick */
 }};
 
+namespace {
+
 /*
  * pick_one:
  *	Pick an item out of a list of possible magic items, by their added-up
  *	odds; the index of the one picked
  */
-static int
+int
 pick_one(std::span<const KindInfo> magic)
 {
 	int i = rnd(100);
@@ -161,13 +163,19 @@ pick_one(std::span<const KindInfo> magic)
 	return 0;
 }
 
+}  // namespace
+
 // Pick a kind of E by the odds in the table
+namespace {
+
 template <typename E>
-static E
+E
 pick_one(const KindTable<E, KindInfo> &table)
 {
 	return static_cast<E>(pick_one(std::span<const KindInfo>(table.data(), table.size())));
 }
+
+}  // namespace
 
 /*
  * new_thing:

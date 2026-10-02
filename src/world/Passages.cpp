@@ -8,11 +8,13 @@
 
 namespace rogue::world {
 
-static void	conn(int r1, int r2);
-static void	door(Room &rm, Coord cp);
-static void	passnum(void);
-static void	numpass(int y, int x);
-static void	psplat(int y, int x);
+namespace {
+
+void	conn(int r1, int r2);
+void	door(Room &rm, Coord cp);
+void	passnum();
+void	numpass(int y, int x);
+void	psplat(int y, int x);
 
 /*
  * conn:
@@ -155,6 +157,8 @@ conn(int r1, int r2)
 	}
 }
 
+}  // namespace
+
 /*
  * do_passages:
  *	Draw all the passages on a level.
@@ -264,6 +268,7 @@ do_passages()
 	passnum();
 }
 
+namespace {
 
 /*
  * door:
@@ -292,8 +297,8 @@ door(Room &rm, Coord cp)
  * passnum:
  *	Assign a number to each passageway
  */
-static int pnum;
-static unsigned char newpnum;
+int pnum;
+unsigned char newpnum;
 
 void
 passnum()
@@ -358,5 +363,7 @@ psplat(int y, int x)
 	game().level.map[idx = INDEX(y, x)] = PASSAGE;
 	game().level.flags[idx].set(MapFlag::Passage);
 }
+
+}  // namespace
 
 }  // namespace rogue::world

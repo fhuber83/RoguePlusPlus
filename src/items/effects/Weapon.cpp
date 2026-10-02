@@ -15,7 +15,9 @@ struct init_weps {
 	ItemFlags iw_flags;	/* Miscellaneous flags */
 };
 
-static constexpr KindTable<WeaponType, init_weps> init_dam = {
+namespace {
+
+constexpr KindTable<WeaponType, init_weps> init_dam = {
 	{"2d4",	"1d3",	NONE,     {}},            	/* Mace */
 	{"3d4",	"1d2",	NONE,     {}},            	/* Long sword */
 	{"1d1",	"1d1",	NONE,     {}},            	/* Bow */
@@ -28,12 +30,18 @@ static constexpr KindTable<WeaponType, init_weps> init_dam = {
 	{"2d3",	"1d6",	NONE,     ISMISL}        	/* Spear */
 };
 
+}  // namespace
+
 // Where fallpos() puts an item: nowhere, a free spot, or a pile it joined
 struct JoinedPile {};
 using Landing = std::variant<std::monostate, Coord, JoinedPile>;
 
-static Landing	fallpos(const Item &obj);
-static std::string	short_name(const Item &obj);
+namespace {
+
+Landing	fallpos(const Item &obj);
+std::string	short_name(const Item &obj);
+
+}  // namespace
 
 /*
  * missile:
@@ -136,7 +144,8 @@ do_motion(Item &obj, int ydelta, int xdelta)
 	}
 }
 
-static
+namespace {
+
 std::string
 short_name(const Item &obj)
 {
@@ -157,6 +166,8 @@ short_name(const Item &obj)
 			return "bizzare thing";
 	}
 }
+
+}  // namespace
 
 /*
  * fall:
@@ -251,7 +262,7 @@ num(int n1, int n2, char type)
  *	Pull out a certain weapon
  */
 void
-wield(void)
+wield()
 {
 	Maybe<Item> obj, oweapon;
 	std::string sp;
@@ -285,11 +296,12 @@ bad:
 		sp, pack_char(*obj));
 }
 
+namespace {
+
 /*
  * fallpos:
  *	Pick a random position around the given (y, x) coordinates
  */
-static
 Landing
 fallpos(const Item &obj)
 {
@@ -328,10 +340,11 @@ fallpos(const Item &obj)
 	return newpos;
 }
 
+}  // namespace
 
 // pause for a tick, ie, 1/18.2 secs (about 55ms)
 void
-tick_pause(void)
+tick_pause()
 {
 	display().flush();
 	std::this_thread::sleep_for(std::chrono::milliseconds(55));

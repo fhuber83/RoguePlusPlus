@@ -8,12 +8,20 @@
 
 namespace rogue::entities {
 
-static void	do_chase(Creature &th);
-static void	chase(Creature &tp, Coord ee);
+namespace {
+
+void	do_chase(Creature &th);
+void	chase(Creature &tp, Coord ee);
+
+}  // namespace
 
 constexpr int DRAGONSHOT = 5;	/* one chance in DRAGONSHOT that a dragon will flame */
 
-static coord ch_ret;			/* Where chasing takes	you */
+namespace {
+
+coord ch_ret;			/* Where chasing takes	you */
+
+}  // namespace
 
 /*
  * runners:
@@ -56,11 +64,13 @@ runners()
 	}
 }
 
+namespace {
+
 /*
  * do_chase:
  *	Make one thing chase another.
  */
-static void
+void
 do_chase(Creature &th)
 {
 	int	mindist	= 32767, i, dist;
@@ -198,6 +208,8 @@ over:
 		th.t_oldch = ' ';
 }
 
+}  // namespace
+
 /*
  * see_monst:
  *	Return true if the hero can see the monster
@@ -253,12 +265,14 @@ start_run(Coord runner)
 		debug("start_run: moat == null ???");
 }
 
+namespace {
+
 /*
  * chase:
  *	Find	the spot for the chaser(er) to move closer to the
  *	chasee(ee).
  */
-static void
+void
 chase(Creature &tp, Coord ee)
 {
 	int	x, y;
@@ -350,6 +364,8 @@ chase(Creature &tp, Coord ee)
 	}
 }
 
+}  // namespace
+
 /*
  * find_dest:
  *	find	the proper destination for the monster
@@ -393,9 +409,13 @@ find_dest(const Creature &tp)
  *	Called when it has been decided that A slime should divide itself
  */
 
-static coord slimy;
+namespace {
 
-static bool	new_slime(Creature &tp);
+coord slimy;
+
+bool	new_slime(Creature &tp);
+
+}  // namespace
 
 void
 slime_split(Creature &tp)
@@ -413,7 +433,8 @@ slime_split(Creature &tp)
 	start_run(slimy);
 }
 
-static
+namespace {
+
 bool
 new_slime(Creature &tp)
 {
@@ -446,6 +467,8 @@ new_slime(Creature &tp)
 	tp.t_flags.unset(ISFLY);
 	return ret;
 }
+
+}  // namespace
 
 /*
  * Pick an appropriate spot around a central spot for a new monster to spawn

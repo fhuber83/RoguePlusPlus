@@ -2,11 +2,12 @@
 
 namespace rogue::items {
 
+namespace {
+
 /*
  * pack_obj:
  *	The item in the pack with the letter ch, if any
  */
-static
 Maybe<Item>
 pack_obj(unsigned char ch)
 {
@@ -19,6 +20,8 @@ pack_obj(unsigned char ch)
 			return obj;
 	return std::nullopt;
 }
+
+}  // namespace
 
 /*
  * add_pack:
@@ -428,7 +431,7 @@ money(int value)
  *	Put something down
  */
 void
-drop(void)
+drop()
 {
 	unsigned char ch;
 	Maybe<Item> nobj, op;

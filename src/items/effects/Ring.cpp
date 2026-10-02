@@ -2,7 +2,11 @@
 
 namespace rogue::items::effects {
 
-static std::optional<Hand>	gethand(void);
+namespace {
+
+std::optional<Hand>	gethand();
+
+}  // namespace
 
 /*
  * ring_on:
@@ -75,7 +79,7 @@ no_ring:
  *	Take off a ring
  */
 void
-ring_off(void)
+ring_off()
 {
 	Hand ring;
 	Maybe<Item> obj;
@@ -106,13 +110,14 @@ ring_off(void)
 		msg("was wearing {}({:c})", inv_name(*obj, true), packchar);
 }
 
+namespace {
+
 /*
  * gethand:
  *	Which hand is the hero interested in?
  */
-static
 std::optional<Hand>
-gethand(void)
+gethand()
 {
 	int c;
 
@@ -130,6 +135,8 @@ gethand(void)
 		msg("please type L or R");
 	}
 }
+
+}  // namespace
 
 /*
  * ring_eat:

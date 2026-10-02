@@ -13,12 +13,16 @@ constexpr int TREAS_ROOM = 20;	/* one chance in TREAS_ROOM for a treasure room *
 constexpr int MAXTREAS = 10;	/* maximum number of treasures in a treasure room */
 constexpr int MINTREAS = 2;	/* minimum number of treasures in a treasure room */
 
-static void	treas_room(void);
-static void	put_things(void);
-static void	do_rooms(void);
+namespace {
+
+void	treas_room();
+void	put_things();
+void	do_rooms();
+
+}  // namespace
 
 void
-new_level(void)
+new_level()
 {
 	int rm, i;
 	Maybe<Creature> tp;
@@ -113,7 +117,7 @@ new_level(void)
  *	Pick a room that is really there
  */
 int
-rnd_room(void)
+rnd_room()
 {
 	int rm;
 
@@ -123,12 +127,14 @@ rnd_room(void)
 	return rm;
 }
 
+namespace {
+
 /*
  * put_things:
  *	Put potions and scrolls on this level
  */
 void
-put_things(void)
+put_things()
 {
 	int i = 0;
 	Maybe<Item> cur;
@@ -197,15 +203,18 @@ put_things(void)
 		}
 }
 
+}  // namespace
+
 /*
  * treas_room:
  *	Add a treasure room
  */
 constexpr int MAXTRIES = 10;	/* max number of tries to put down a monster */
 
-static
+namespace {
+
 void
-treas_room(void)
+treas_room()
 {
 	int nm, index;
 	Maybe<Creature> tp;
@@ -264,6 +273,8 @@ treas_room(void)
 	level.depth--;
 }
 
+}  // namespace
+
 /*
  * Create the layout for the new level
  *
@@ -272,16 +283,18 @@ treas_room(void)
 
 constexpr int GOLDGRP = 1;
 
-static void	draw_room(const Room &rp);
-static void	vert(const Room &rp, int startx);
-static void	horiz(const Room &rp, int starty);
+namespace {
+
+void	draw_room(const Room &rp);
+void	vert(const Room &rp, int startx);
+void	horiz(const Room &rp, int starty);
 
 /*
  * do_rooms:
  *	Create rooms and corridors with a connectivity graph
  */
 void
-do_rooms(void)
+do_rooms()
 {
 	int i, rm;
 	rogue::Level &level = game().level;
@@ -441,7 +454,6 @@ draw_room(const Room &rp)
  * vert:
  *	Draw a vertical line
  */
-static
 void
 vert(const Room &rp, int startx)
 {
@@ -455,7 +467,6 @@ vert(const Room &rp, int startx)
  * horiz:
  *	Draw a horizontal line
  */
-static
 void
 horiz(const Room &rp, int starty)
 {
@@ -464,5 +475,7 @@ horiz(const Room &rp, int starty)
 	for (x = rp.r_pos.x; x <= rp.r_pos.x + rp.r_max.x - 1; x++)
 		game().level.at(starty, x) = HWALL;
 }
+
+}  // namespace
 
 }  // namespace rogue::world

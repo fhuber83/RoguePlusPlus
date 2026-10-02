@@ -2,9 +2,13 @@
 
 namespace rogue::items {
 
-static void	print_disc(ItemKind type);
-static void	set_order(std::span<short> order);
-static std::string	nothing(ItemKind type);
+namespace {
+
+void	print_disc(ItemKind type);
+void	set_order(std::span<short> order);
+std::string	nothing(ItemKind type);
+
+}  // namespace
 
 /*
  * inv_name:
@@ -173,14 +177,18 @@ inv_name(const Item &obj, bool drop)
 	return name;
 }
 
+namespace {
+
 /*
  * discovered:
  *	list what the player has discovered in this game of a certain type
  */
-static int line_cnt = 0;
+int line_cnt = 0;
+
+}  // namespace
 
 void
-discovered(void)
+discovered()
 {
 	print_disc(ItemKind::Potion);
 	add_line("", " ");
@@ -197,7 +205,8 @@ discovered(void)
  *	Print what we've discovered of type 'type'
  */
 
-static
+namespace {
+
 void
 print_disc(ItemKind type)
 {
@@ -253,7 +262,6 @@ print_disc(ItemKind type)
  * set_order:
  *	Set up order for list
  */
-static
 void
 set_order(std::span<short> order)
 {
@@ -271,6 +279,8 @@ set_order(std::span<short> order)
 		order[r] = t;
 	}
 }
+
+}  // namespace
 
 /*
  * add_line:
@@ -329,11 +339,12 @@ end_line(std::string_view use)
 	return(retchar);
 }
 
+namespace {
+
 /*
  * nothing:
  *	The message for "nothing found"
  */
-static
 std::string
 nothing(ItemKind type)
 {
@@ -351,6 +362,8 @@ nothing(ItemKind type)
 	return std::format("{} about any {}s",
 		game().options.terse ? "Nothing" : "Haven't discovered anything", tystr);
 }
+
+}  // namespace
 
 /*
  * call_it:

@@ -114,7 +114,7 @@ goodch(const Item &obj)
  *	Quaff a potion from the pack
  */
 void
-quaff(void)
+quaff()
 {
 	Maybe<Item> obj;
 	Maybe<Creature> th;
@@ -325,7 +325,7 @@ quaff(void)
  *	Turn on the ability to see invisible
  */
 void
-invis_on(void)
+invis_on()
 {
 	Maybe<Creature> th;
 

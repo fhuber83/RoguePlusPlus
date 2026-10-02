@@ -22,7 +22,7 @@ namespace {
  *	that might move.
  */
 void
-door_open(const struct room &rp)
+door_open(const Room &rp)
 {
 	int j, k;
 	unsigned char ch;
@@ -59,7 +59,7 @@ roomin(Coord cp)
 	rogue::Level &level = game().level;
 
 	for	(int i = 0; i < MAXROOMS; i++) {
-		const struct room &r = level.rooms[i];
+		const Room &r = level.rooms[i];
 		if (cp.x < r.r_pos.x + r.r_max.x && r.r_pos.x <= cp.x
 		 && cp.y < r.r_pos.y + r.r_max.y && r.r_pos.y <= cp.y)
 			return RoomRef::room(i);
@@ -113,7 +113,7 @@ cansee(int y, int x)
  *	Pick a random spot in a room
  */
 Coord
-rnd_pos(const struct room &rp)
+rnd_pos(const Room &rp)
 {
 	Coord cp;
 
@@ -140,7 +140,7 @@ enter_room(Coord cp)
 			debug("in a gone room");
 		return;
 	}
-	const struct room &rp = level.room(*in);
+	const Room &rp = level.room(*in);
 	door_open(rp);
 	if (!rp.r_flags.test(RoomFlag::Dark) && !game().player.body.t_flags.test(ISBLIND) && !rp.r_flags.test(RoomFlag::Maze))
 		for (y = rp.r_pos.y; y < rp.r_max.y + rp.r_pos.y; y++) {
@@ -172,7 +172,7 @@ leave_room(Coord cp)
 	unsigned char ch;
 	rogue::Player &player = game().player;
 
-	const struct room &rp = game().level.room(*player.body.t_room);
+	const Room &rp = game().level.room(*player.body.t_room);
 	player.body.t_room = game().level.passage_at(cp);
 	floor = (rp.r_flags.test(RoomFlag::Dark) && !player.body.t_flags.test(ISBLIND)) ? ' ' : FLOOR;
 	if (rp.r_flags.test(RoomFlag::Maze))

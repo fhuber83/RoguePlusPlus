@@ -5,7 +5,7 @@
  * waking one up, and finding the one on a square.
  *
  * Included by rogue.h after entities/Creature.hpp (Creature, CreatureFlags)
- * and the legacy struct stats.
+ * and entities/Stats.hpp (Stats).
  */
 
 namespace rogue {
@@ -21,7 +21,7 @@ struct MonsterKind {
 	std::string_view m_name;		/* What to call the monster */
 	int m_carry;			/* Probability of carrying something */
 	CreatureFlags m_flags;		/* Things about the monster */
-	struct stats m_stats;		/* Initial stats */
+	Stats m_stats;		/* Initial stats */
 };
 
 // The kinds of monster, by letter: monsters[letter - 'A']

@@ -26,7 +26,7 @@ static bool	maze_at(int y, int x);
 static bool	inrange(int y, int x);
 
 void
-draw_maze(struct room &rp)
+draw_maze(Room &rp)
 {
 	int y, x;
 	int psgcnt;

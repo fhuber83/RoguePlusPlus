@@ -4,12 +4,12 @@
  * Rooms at play time: entering and leaving one, which room a square is
  * in, and what the rogue can see from where it stands.
  *
- * Included by rogue.h after the legacy types (Coord, struct room).
+ * Included by rogue.h after Coord and world/Room.hpp.
  */
 
-struct room;
-
 namespace rogue::world {
+
+struct Room;
 
 /*
  * roomin:
@@ -34,7 +34,7 @@ bool cansee(int y, int x);
  * rnd_pos:
  *	Pick a random spot in a room.
  */
-Coord rnd_pos(const struct room &rp);
+Coord rnd_pos(const Room &rp);
 
 /*
  * enter_room:

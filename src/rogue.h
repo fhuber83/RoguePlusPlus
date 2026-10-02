@@ -34,6 +34,7 @@
 #include "core/Random.hpp"
 #include "core/Text.hpp"
 #include "entities/List.hpp"
+#include "entities/Stats.hpp"
 #include "game/Slots.hpp"
 #include "items/KindInfo.hpp"
 #include "items/Kinds.hpp"
@@ -41,6 +42,7 @@
 #include "ui/Display.hpp"
 #include "ui/Input.hpp"
 #include "world/MapFlags.hpp"
+#include "world/Room.hpp"
 #include "world/RoomRef.hpp"
 #include "world/Trap.hpp"
 
@@ -107,58 +109,17 @@ using rogue::ui::display;
 using rogue::ui::input;
 using rogue::ui::TileStyle;
 
-/*
- * Data type for strength values and modifiers
- */
-typedef unsigned int str_t;
-
 // The name, odds and worth of a kind of item, see items/KindInfo.hpp
 using rogue::items::KindInfo;
 
 
-/*
- * Room structure
- */
-namespace rogue {
-enum class RoomFlag : unsigned short {
-	Dark = 0x0001,	/* room is dark */
-	Gone = 0x0002,	/* room is gone (a corridor) */
-	Maze = 0x0004,	/* room is a maze */
-};
-template <>
-inline constexpr bool enable_flags<RoomFlag> = true;
-}  // namespace rogue
+// A room or passage (world/Room.hpp), and a fighting being's stats
+// (entities/Stats.hpp)
 using rogue::RoomFlag;
-using RoomFlags = rogue::Flags<RoomFlag>;
-
-struct room {
-	coord r_pos;			/* Upper left corner */
-	coord r_max;			/* Size of room */
-	coord r_gold;			/* Where the gold is */
-	int r_goldval;			/* How much the gold is worth */
-	RoomFlags r_flags;		/* Info about the room */
-	int r_nexits;			/* Number of exits */
-	coord r_exit[12];			/* Where the exits are */
-
-	// A corridor where a room would be, but not a maze (was isgone())
-	bool is_gone() const
-	{
-		return r_flags.test(RoomFlag::Gone) && !r_flags.test(RoomFlag::Maze);
-	}
-};
-
-/*
- * Structure describing a fighting being
- */
-struct stats {
-	str_t s_str;			/* Strength */
-	long s_exp;				/* Experience */
-	int s_lvl;			/* Level of mastery */
-	int s_arm;			/* Armor class */
-	int s_hpt;			/* Hit points */
-	rogue::Attacks s_dmg;		/* Damage done, per attack */
-	int s_maxhp;			/* Max hit points */
-};
+using rogue::RoomFlags;
+using rogue::world::Room;
+using rogue::entities::Stats;
+using rogue::entities::str_t;
 
 /*
  * The legacy union thing is split into a creature (monster or player) and an

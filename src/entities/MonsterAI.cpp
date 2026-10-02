@@ -94,7 +94,7 @@ do_chase(Creature &th)
 over:
 	if (rer != ree && !level.room(*rer).r_flags.test(RoomFlag::Maze))
 	{
-		const struct room &from = level.room(*rer);
+		const Room &from = level.room(*rer);
 		const Coord dest = game().where(*th.t_dest);
 
 		for (i	= 0; i < from.r_nexits;	i++) {	/*	loop through doors */

@@ -334,8 +334,8 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 	int hplus;
 	int dplus;
 	int damage;
-	const struct stats &att = thatt.t_stats;
-	struct stats &def = thdef.t_stats;
+	const Stats &att = thatt.t_stats;
+	Stats &def = thdef.t_stats;
 	if (!weap)
 	{
 		// every flytrap has the one growing attack

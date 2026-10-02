@@ -48,8 +48,8 @@ static_assert(sizeof(MessageLine) == 80, "a MessageLine field was added or remov
 static_assert(sizeof(Options) == 264, "an Options field was added or removed: decide whether to save it");
 static_assert(sizeof(Creature) == 152, "a Creature field was added or removed: save it");
 static_assert(sizeof(Item) == 128, "an Item field was added or removed: save it");
-static_assert(sizeof(struct room) == 132, "a room field was added or removed: save it");
-static_assert(sizeof(struct stats) == 80, "a stats field was added or removed: save it");
+static_assert(sizeof(Room) == 132, "a room field was added or removed: save it");
+static_assert(sizeof(Stats) == 80, "a stats field was added or removed: save it");
 #endif
 
 // A wrong or missing value while loading
@@ -139,7 +139,7 @@ bool is_flytrap(const Game &g, const Creature &c)
 	return c.t_type == 'F' && &c != &g.player.body;
 }
 
-json stats_json(const struct stats &s, bool flytrap)
+json stats_json(const Stats &s, bool flytrap)
 {
 	return {
 		{"str", s.s_str}, {"exp", s.s_exp}, {"level", s.s_lvl}, {"armor", s.s_arm},
@@ -175,7 +175,7 @@ json item_json(const Item &o)
 	};
 }
 
-json room_json(const struct room &r)
+json room_json(const Room &r)
 {
 	json exits = json::array();
 	for (const coord &c : r.r_exit)
@@ -317,9 +317,9 @@ json level_json(const Game &g)
 {
 	const Level &l = g.level;
 	json rooms = json::array(), passages = json::array(), monsters = json::array();
-	for (const struct room &r : l.rooms)
+	for (const Room &r : l.rooms)
 		rooms.push_back(room_json(r));
-	for (const struct room &r : l.passages)
+	for (const Room &r : l.passages)
 		passages.push_back(room_json(r));
 	for (CreatureId id : l.monsters.ids())
 		monsters.push_back(g.pool.creatures.used(id.slot) ? id.slot : -1);
@@ -549,9 +549,9 @@ Attacks attacks_of(const json &v, std::string_view what)
 	return *attacks;
 }
 
-struct stats stats_from(const json &j, bool flytrap)
+Stats stats_from(const json &j, bool flytrap)
 {
-	struct stats s{};
+	Stats s{};
 	s.s_str = num<str_t>(j, "str");
 	s.s_exp = num<long>(j, "exp");
 	s.s_lvl = num<int>(j, "level");
@@ -612,7 +612,7 @@ void item_from(Item &o, const json &j)
 	o.o_group = num<int>(j, "group");
 }
 
-void room_from(struct room &r, const json &j)
+void room_from(Room &r, const json &j)
 {
 	r.r_pos = coord_of(j, "pos");
 	r.r_max = coord_of(j, "size");

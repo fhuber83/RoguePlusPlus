@@ -1,7 +1,7 @@
 #pragma once
 
 /*
- * Eating. (The stomach daemon is rules/Daemons' stomach().)
+ * Eating, and digesting: the stomach daemon.
  */
 
 namespace rogue::rules {
@@ -12,5 +12,11 @@ namespace rogue::rules {
  *	stomach, and anything else is refused.
  */
 void eat();
+
+/*
+ * stomach:
+ *	Digest the hero's food.
+ */
+void stomach();
 
 }  // namespace rogue::rules

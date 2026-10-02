@@ -64,19 +64,17 @@ missile(int ydelta, int xdelta)
 	 * if it is the last thing, just drop it.  Otherwise, create a new
 	 * item with a count of one.
 	 */
-	hack:
+	/*
+	 * here is a quick hack to check if we can get a new item
+	 */
+	if (obj->o_count >= 2 && !(nitem = new_item())) {
+		obj->o_count = 1;
+		msg("something in your pack explodes!!!");
+	}
 	if (obj->o_count < 2) {
 		game().player.body.t_pack.remove(*obj);
 		game().player.in_pack--;
 	} else {
-		/*
-		 * here is a quick hack to check if we can get a new item
-		 */
-		if (!(nitem = new_item())) {
-			obj->o_count = 1;
-			msg("something in your pack explodes!!!");
-			goto hack;
-		}
 		obj->o_count--;
 		if (obj->o_group == 0)
 			game().player.in_pack--;
@@ -277,7 +275,6 @@ wield()
 	player.weapon = game().pool.id_of(oweapon);
 	if (!(obj = get_item("wield", ItemKind::Weapon)))
 	{
-bad:
 		game().turn.after = false;
 		return;
 	}
@@ -285,10 +282,14 @@ bad:
 	if (obj->o_type == ItemKind::Armor)
 	{
 		msg("you can't wield armor");
-		goto bad;
+		game().turn.after = false;
+		return;
 	}
 	if (is_current(*obj))
-		goto bad;
+	{
+		game().turn.after = false;
+		return;
+	}
 
 	sp = inv_name(*obj, true);
 	player.weapon = game().pool.id_of(obj);

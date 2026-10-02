@@ -101,44 +101,46 @@ do_chase(Creature &th)
 	 * and we are not in a maze, run to	the door nearest to
 	 * our goal.
 	 */
-over:
-	if (rer != ree && !level.room(*rer).r_flags.test(RoomFlag::Maze))
-	{
-		const Room &from = level.room(*rer);
-		const Coord dest = game().where(*th.t_dest);
+	for (;;) {
+		if (rer != ree && !level.room(*rer).r_flags.test(RoomFlag::Maze))
+		{
+			const Room &from = level.room(*rer);
+			const Coord dest = game().where(*th.t_dest);
 
-		for (i	= 0; i < from.r_nexits;	i++) {	/*	loop through doors */
-			dist = distance_sq(dest, from.r_exit[i]);
-			if	(dist <	mindist) {
-				target = from.r_exit[i];
-				mindist = dist;
+			for (i	= 0; i < from.r_nexits;	i++) {	/*	loop through doors */
+				dist = distance_sq(dest, from.r_exit[i]);
+				if	(dist <	mindist) {
+					target = from.r_exit[i];
+					mindist = dist;
+				}
+			}
+			if (door) {
+				rer = level.passage_at(th.t_pos);
+				door = false;
+				continue;
+			}
+		} else {
+			target =	game().where(*th.t_dest);
+			/*
+			 * For	monsters which can fire	bolts at the poor hero,	we check to
+			 * see	if (a) the hero	in on a	straight line from it, and (b) that
+			 * it is within shooting distance, but	outside	of striking range.
+			 */
+			if ((th.t_type == 'D' || th.t_type == 'I')
+				&&	(th.t_pos.y ==	player.body.t_pos.y || th.t_pos.x == player.body.t_pos.x
+				 || abs(th.t_pos.y - player.body.t_pos.y) == abs(th.t_pos.x - player.body.t_pos.x))
+				&&	((dist=distance_sq(th.t_pos, player.body.t_pos)) > 2
+				 && dist <= BOLT_LENGTH	* BOLT_LENGTH)
+				&&	!th.t_flags.test(ISCANC) && rnd(DRAGONSHOT) == 0)
+			{
+				game().turn.running = false;
+				game().turn.delta.y = sign(player.body.t_pos.y - th.t_pos.y);
+				game().turn.delta.x = sign(player.body.t_pos.x - th.t_pos.x);
+				fire_bolt(th.t_pos, game().turn.delta, th.t_type == 'D' ? "flame" : "frost");
+				return;
 			}
 		}
-		if (door) {
-			rer = level.passage_at(th.t_pos);
-			door = false;
-			goto over;
-		}
-	} else {
-		target =	game().where(*th.t_dest);
-		/*
-		 * For	monsters which can fire	bolts at the poor hero,	we check to
-		 * see	if (a) the hero	in on a	straight line from it, and (b) that
-		 * it is within shooting distance, but	outside	of striking range.
-		 */
-		if ((th.t_type == 'D' || th.t_type == 'I')
-			&&	(th.t_pos.y ==	player.body.t_pos.y || th.t_pos.x == player.body.t_pos.x
-			 || abs(th.t_pos.y - player.body.t_pos.y) == abs(th.t_pos.x - player.body.t_pos.x))
-			&&	((dist=distance_sq(th.t_pos, player.body.t_pos)) > 2
-			 && dist <= BOLT_LENGTH	* BOLT_LENGTH)
-			&&	!th.t_flags.test(ISCANC) && rnd(DRAGONSHOT) == 0)
-		{
-			game().turn.running = false;
-			game().turn.delta.y = sign(player.body.t_pos.y - th.t_pos.y);
-			game().turn.delta.x = sign(player.body.t_pos.x - th.t_pos.x);
-			fire_bolt(th.t_pos, game().turn.delta, th.t_type == 'D' ? "flame" : "frost");
-			return;
-		}
+		break;
 	}
 	/*
 	 * This now	contains what we want to run to	this time

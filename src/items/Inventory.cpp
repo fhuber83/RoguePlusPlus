@@ -21,6 +21,56 @@ pack_obj(unsigned char ch)
 	return std::nullopt;
 }
 
+/*
+ * picked_up:
+ *	The rogue has obj in the pack now (was add_pack()'s label): a monster
+ *	that wanted it runs at him instead, and he is told.
+ */
+void
+picked_up(Item &obj, bool silent)
+{
+	Maybe<Creature> mp;
+	rogue::Player &player = game().player;
+	rogue::Level &level = game().level;
+
+	/*
+	 * If this was the object of something's desire, that monster will
+	 * get mad and run at the hero
+	 */
+	for (mp = level.monsters.first(); mp; mp = level.monsters.after(*mp))
+	{
+		/*
+		 *  compiler bug: jll : 2-7-83
+		 *		It is stupid because it thinks the obj... is not an lvalue
+		 *		this may be true since there is no structure assignments,
+		 *		but still it should let you have the address??!!
+		 *
+		if (&obj->_o._o_pos == mp->t_dest)
+		 *
+		 *  the following should do the same
+		 */
+		/*
+		 * Another bug in Rogue: missed null check for t_dest. Monsters could
+		 * be not chasing (sleeping, another room, Ice Monster, etc), so a
+		 * destination could possibly have never been assigned.
+		 */
+		if (mp->t_dest && game().where(*mp->t_dest) == obj.o_pos)
+			mp->t_dest = Hero{};
+	}
+
+	if (obj.o_type == ItemKind::Amulet)
+	{
+		player.has_amulet = true;
+		player.saw_amulet = true;
+	}
+	/*
+	 * Notify the user
+	 */
+	if (!silent)
+		msg("{}{} ({:c})",noterse("you now have "),
+			inv_name(obj, true), pack_char(obj));
+}
+
 }  // namespace
 
 /*
@@ -32,7 +82,6 @@ void
 add_pack(Maybe<Item> given, bool silent)
 {
 	Maybe<Item> obj, op, lp;
-	Maybe<Creature> mp;
 	bool exact, from_floor;
 	unsigned char floor;
 	rogue::Player &player = game().player;
@@ -83,8 +132,8 @@ add_pack(Maybe<Item> given, bool silent)
 					level.at(player.body.t_pos) = floor;
 				}
 				discard(*obj);
-				obj = op;
-				goto picked_up;
+				picked_up(*op, silent);
+				return;
 			}
 		}
 	}
@@ -173,48 +222,12 @@ add_pack(Maybe<Item> given, bool silent)
 		{
 			op->o_count++;
 			discard(*obj);
-			obj = op;
-			goto picked_up;
+			picked_up(*op, silent);
+			return;
 		}
 		player.body.t_pack.insert_before(*op, *obj);
 	}
-picked_up:
-	/*
-	 * If this was the object of something's desire, that monster will
-	 * get mad and run at the hero
-	 */
-	for (mp = level.monsters.first(); mp; mp = level.monsters.after(*mp))
-	{
-		/*
-		 *  compiler bug: jll : 2-7-83
-		 *		It is stupid because it thinks the obj... is not an lvalue
-		 *		this may be true since there is no structure assignments,
-		 *		but still it should let you have the address??!!
-		 *
-		if (&obj->_o._o_pos == mp->t_dest)
-		 *
-		 *  the following should do the same
-		 */
-		/*
-		 * Another bug in Rogue: missed null check for t_dest. Monsters could
-		 * be not chasing (sleeping, another room, Ice Monster, etc), so a
-		 * destination could possibly have never been assigned.
-		 */
-		if (mp->t_dest && game().where(*mp->t_dest) == obj->o_pos)
-			mp->t_dest = Hero{};
-	}
-
-	if (obj->o_type == ItemKind::Amulet)
-	{
-		player.has_amulet = true;
-		player.saw_amulet = true;
-	}
-	/*
-	 * Notify the user
-	 */
-	if (!silent)
-		msg("{}{} ({:c})",noterse("you now have "),
-			inv_name(*obj, true), pack_char(*obj));
+	picked_up(*obj, silent);
 }
 
 /*
@@ -277,7 +290,7 @@ pick_up(unsigned char ch)
 		/*
 		 * find_dest() can point a monster's t_dest straight at this gold's
 		 * o_pos. Redirect it to the hero before the gold's pool slot is
-		 * discarded, same as add_pack()'s "picked_up" redirect for other
+		 * discarded, same as add_pack()'s picked_up() redirect for other
 		 * floor items, so nothing is left pointing at a freed Item.
 		 */
 		for (mp = game().level.monsters.first(); mp; mp = game().level.monsters.after(*mp))
@@ -313,7 +326,7 @@ get_item(std::string_view purpose, ItemFilter type)
 	unsigned char ch;
 	rogue::Turn &turn = game().turn;
 	unsigned char gi_state;	/* get item sub state */
-	int once_only = false;
+	bool once_only = false;
 
 	if (((game().options.menu.starts_with("sel") && purpose != "eat"
 	  && purpose != "drop")) || game().options.menu == "on")
@@ -330,20 +343,19 @@ get_item(std::string_view purpose, ItemFilter type)
 			 * changed then don't ask just give him the same thing
 			 * he got on the last command.
 			 */
-			if (gi_state && game().pool.item(turn.last_item) == pack_obj(ch))
-				goto skip;
-			if (once_only) {
-				ch = '*';
-				goto skip;
+			if (!(gi_state && game().pool.item(turn.last_item) == pack_obj(ch))) {
+				if (once_only)
+					ch = '*';
+				else {
+					if (!game().options.brief())
+						addmsg("which object do you want to ");
+					msg("{}? (* for list): ",purpose);
+					/*
+					 * ignore any alt characters that may be typed
+					 */
+					ch = readchar();
+				}
 			}
-			if (!game().options.brief())
-				addmsg("which object do you want to ");
-			msg("{}? (* for list): ",purpose);
-			/*
-			 * ignore any alt characters that may be typed
-			 */
-			ch = readchar();
-			skip:
 			game().message.end = 0;
 			gi_state = false;
 			once_only = false;

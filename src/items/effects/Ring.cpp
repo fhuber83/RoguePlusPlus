@@ -6,34 +6,32 @@ namespace {
 
 std::optional<Hand>	gethand();
 
-}  // namespace
-
 /*
- * ring_on:
- *	Put a ring on a hand
+ * put_ring_on:
+ *	Put a ring on a hand: false if none went on
  */
-void
-ring_on()
+bool
+put_ring_on()
 {
 	Maybe<Item> obj;
 	std::optional<Hand> ring;
 	rogue::Player &player = game().player;
 
 	if (!(obj = get_item("put on", ItemKind::Ring)))
-		goto no_ring;
+		return false;
 	/*
 	 * Make certain that it is somethings that we want to wear
 	 */
 	if (obj->o_type != ItemKind::Ring) {
 		msg("you can't put that on your finger");
-		goto no_ring;
+		return false;
 	}
 
 	/*
 	 * find out which hand to put it on
 	 */
 	if (is_current(*obj))
-		goto no_ring;
+		return false;
 
 	if (!player.ring_item(Hand::Left))
 		ring = Hand::Left;
@@ -41,10 +39,10 @@ ring_on()
 		ring = Hand::Right;
 	if (!player.ring_item(Hand::Left) && !player.ring_item(Hand::Right))
 		if (!(ring = gethand()))
-			goto no_ring;
+			return false;
 	if (!ring) {
 		msg("you already have a ring on each hand");
-		goto no_ring;
+		return false;
 	}
 	player.rings[*ring] = game().pool.id_of(obj);
 
@@ -67,11 +65,20 @@ ring_on()
 
 	msg("{}wearing {} ({:c})", noterse("you are now "),
 		inv_name(*obj, true), pack_char(*obj));
-	return ;
+	return true;
+}
 
-no_ring:
-	game().turn.after = false;
-	return;
+}  // namespace
+
+/*
+ * ring_on:
+ *	Put a ring on a hand
+ */
+void
+ring_on()
+{
+	if (!put_ring_on())
+		game().turn.after = false;
 }
 
 /*

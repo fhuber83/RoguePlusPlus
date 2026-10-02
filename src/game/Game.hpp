@@ -2,15 +2,12 @@
 
 #include "core/Random.hpp"
 #include "rules/Scheduler.hpp"
-
-// The index of a map square in Level::map and Level::flags (misc.cpp)
-int INDEX(int y, int x);
+#include "world/Map.hpp"
 
 /*
  * The state of one game, gathered from the globals of the original sources.
  *
- * Included by rogue.h after the legacy types it holds (Creature, Item,
- * struct room,
+ * Included by rogue.h after the types it holds (Creature, Item, Room,
  * ...). Game files include rogue.h, not this header.
  */
 
@@ -98,7 +95,7 @@ enum class Trapped : unsigned char {
  */
 struct Player {
 	Creature body = {};				/* player: position, stats, flags, pack */
-	struct stats max_stats = { 16, 0, 1, 10, 12, "1d4", 12 };	/* The maximum for the player */
+	Stats max_stats = { 16, 0, 1, 10, 12, "1d4", 12 };	/* The maximum for the player */
 	int purse = 0;					/* How much gold the rogue has */
 	int in_pack = 0;				/* inpack: number of things in pack */
 	std::optional<ItemId> armor;		/* cur_armor: what a well dresssed rogue wears */
@@ -135,8 +132,8 @@ struct Level {
 	int depth = 1;					/* level: what level rogue is on */
 	int ntraps = 0;					/* Number of traps on this level */
 	int no_food = 0;				/* Number of levels without food */
-	struct room rooms[MAXROOMS] = {};	/* One for each room -- A level */
-	struct room passages[MAXPASS] = {};	/* One for each passage */
+	std::array<world::Room, MAXROOMS> rooms = {};	/* One for each room -- A level */
+	std::array<world::Room, MAXPASS> passages = {};	/* One for each passage */
 	/*
 	 * What is at each square, and its MapFlags. Index them with INDEX(y, x),
 	 * or use at()/flags_at().
@@ -155,14 +152,14 @@ struct Level {
 	}
 
 	// What is at a square (was chat())
-	unsigned char &at(int y, int x) { return map[INDEX(y, x)]; }
+	unsigned char &at(int y, int x) { return map[world::INDEX(y, x)]; }
 	unsigned char &at(Coord pos) { return at(pos.y, pos.x); }
 	// A square's MapFlags (was flat())
-	MapFlags &flags_at(int y, int x) { return flags[INDEX(y, x)]; }
+	MapFlags &flags_at(int y, int x) { return flags[world::INDEX(y, x)]; }
 	MapFlags &flags_at(Coord pos) { return flags_at(pos.y, pos.x); }
 	// The room or passage a RoomRef names
-	struct room &room(RoomRef r) { return r.kind == RoomRef::Kind::Room ? rooms[r.index] : passages[r.index]; }
-	const struct room &room(RoomRef r) const
+	Room &room(RoomRef r) { return r.kind == RoomRef::Kind::Room ? rooms[r.index] : passages[r.index]; }
+	const Room &room(RoomRef r) const
 	{
 		return r.kind == RoomRef::Kind::Room ? rooms[r.index] : passages[r.index];
 	}
@@ -181,11 +178,11 @@ struct Level {
  */
 struct Items {
 	/* Names, cumulative odds and worth of each kind; init_*() accumulate */
-	KindTable<Scroll, magic_item> s_magic;
-	KindTable<Potion, magic_item> p_magic;
-	KindTable<Ring, magic_item> r_magic;
-	KindTable<Stick, magic_item> ws_magic;
-	struct magic_item things[NUMTHINGS];	/* Odds of each type of item */
+	KindTable<Scroll, items::KindInfo> s_magic;
+	KindTable<Potion, items::KindInfo> p_magic;
+	KindTable<Ring, items::KindInfo> r_magic;
+	KindTable<Stick, items::KindInfo> ws_magic;
+	std::array<items::KindInfo, NUMTHINGS> things;	/* Odds of each type of item */
 	/* How the kinds look in this game */
 	KindTable<Scroll, std::string> s_names;	/* Names of the scrolls */
 	KindTable<Potion, std::string_view> p_colors = {};	/* Colors of the potions */

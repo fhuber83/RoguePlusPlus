@@ -5,177 +5,76 @@
  * rip.c	1.4 (A.I. Design)	12/14/84
  */
 
+#include <fstream>
 #include <vector>
 
 #include "persistence/HighScores.hpp"
 #include "rogue.h"
 
-constexpr int TOPSCORES = 10;
-struct sc_ent {
-	char sc_name[38];
-	int sc_rank;
-	int sc_gold;
-	int sc_fate;
-	int sc_level;
-};
+namespace rogue {
 
-static FILE *file;
+using persistence::ScoreEntry;
 
-static bool	get_scores(struct sc_ent *top10, bool *legacy);
-static void	put_scores(struct sc_ent *top10);
-static void	pr_scores(int newrank, struct sc_ent *top10);
-static int	add_scores(struct sc_ent *newscore, struct sc_ent *oldlist);
-
-/*
- * score:
- *	Figure score and post it.
- */
-/* VARARGS2 */
-void
-score(int amount, int flags, char monst)
-{
-	struct sc_ent his_score, top_ten[TOPSCORES];
-	int rank=0;
-	char response = ' ';
-
-
-	display().open_page();  // stops the clock, as is_saved did
-
-	if (amount || flags || monst)
-	{
-		wait_msg("see rankings");
-	}
-	while ((file = fopen(game().options.score_file.c_str(), "r")) == nullptr)
-	{
-		display().write("\n");
-		if (game().noscore || (amount == 0))
-			return;
-		str_attr("No scorefile: %Create %Retry %Abort");
-reread:
-		switch(response = readchar())
-		{
-		case 'c':
-		case 'C':
-			fclose(fopen(game().options.score_file.c_str(), "w"));
-			break;
-		case 'r':
-		case 'R':
-			break;
-		case 'a':
-		case 'A':
-			return;
-		default:
-			goto reread;
-		}
-	}
-	display().write("\n");
-	bool legacy = false;
-	bool readable = get_scores(top_ten, &legacy);
-
-	if (game().noscore != true)
-	{
-		strcpy(his_score.sc_name,game().options.name.c_str());
-		his_score.sc_gold = amount;
-		his_score.sc_fate = flags ? flags : monst;
-		his_score.sc_level = game().player.max_level;
-		his_score.sc_rank  = game().player.body.t_stats.s_lvl;
-		rank = add_scores(&his_score, top_ten);
-	}
-	fclose(file);
-	// an unreadable file is left alone; an old binary one is rewritten as JSON
-	if (readable && (rank > 0 || legacy))
-		put_scores(top_ten);
-	pr_scores(rank, top_ten);
-	if (!readable)
-		display().write("The score file can't be read, so this score is not kept.\n");
-	wait_msg("exit");
-	display().write("\n");
-}
+namespace {
 
 /*
  * get_scores:
- *	Fill top10 from the score file (persistence/HighScores); the entries
- *	after the last have no gold. Returns false, with an empty list, if the
- *	file can't be read. *legacy is set for a file in the original format.
+ *	The scores in the score file (persistence/HighScores), richest first.
+ *	nullopt if the file can't be read. *legacy is set for a file in the
+ *	original format.
  */
-static
-bool
-get_scores(struct sc_ent *top10, bool *legacy)
+std::optional<std::vector<ScoreEntry>>
+get_scores(bool &legacy)
 {
-	for (int i = 0; i < TOPSCORES; i++)
-		top10[i] = sc_ent{};
-	auto list = rogue::persistence::load_scores(game().options.score_file);
+	auto list = persistence::load_scores(game().options.score_file);
 	if (!list)
-		return false;
-	*legacy = list->format == rogue::persistence::ScoresFormat::Legacy;
-	int i = 0;
-	for (const rogue::persistence::ScoreEntry &e : list->entries) {
-		e.name.copy(top10[i].sc_name, sizeof top10[i].sc_name - 1);
-		top10[i].sc_gold = e.gold;
-		top10[i].sc_level = e.depth;
-		top10[i].sc_rank = e.experience;
-		top10[i].sc_fate = e.fate;
-		i++;
-	}
-	return true;
+		return std::nullopt;
+	legacy = list->format == persistence::ScoresFormat::Legacy;
+	return std::move(list->entries);
 }
 
 /*
  * put_scores:
- *	Write the entries with gold to the score file, with the cause of each
- *	fate in words.
+ *	Write the scores to the score file, with the cause of each fate in
+ *	words.
  */
-static
 void
-put_scores(struct sc_ent *top10)
+put_scores(std::vector<ScoreEntry> scores)
 {
-	std::vector<rogue::persistence::ScoreEntry> entries;
-
-	for (int i = 0; i < TOPSCORES && top10[i].sc_gold; i++)
+	for (ScoreEntry &e : scores)
 	{
-		const sc_ent &sc = top10[i];
-		rogue::persistence::ScoreEntry e;
-		e.name = sc.sc_name;
-		e.gold = sc.sc_gold;
-		e.depth = sc.sc_level;
-		e.experience = sc.sc_rank;
-		e.fate = sc.sc_fate;
-		if (is_alpha(sc.sc_fate))
-			e.cause = std::string("killed by ") + killname(0xff & sc.sc_fate, true);
+		if (is_alpha(e.fate))
+			e.cause = std::string("killed by ") + killname(0xff & e.fate, true);
 		else
-			e.cause = sc.sc_fate == 2 ? "a total winner" : sc.sc_fate == 1 ? "quit" : "weirded out";
-		entries.push_back(std::move(e));
+			e.cause = e.fate == 2 ? "a total winner" : e.fate == 1 ? "quit" : "weirded out";
 	}
-	rogue::persistence::save_scores(game().options.score_file, entries);
+	persistence::save_scores(game().options.score_file, scores);
 }
 
-static
 void
-pr_scores(int newrank, struct sc_ent *top10)
+pr_scores(int newrank, const std::vector<ScoreEntry> &top10)
 {
-	int i, n;
 	std::string dthstr;
-	std::string texts[TOPSCORES];
-	rogue::ui::ScoreLine lines[TOPSCORES];
+	std::vector<std::string> texts;
+	std::vector<ui::ScoreLine> lines;
 	std::optional<std::string_view> altmsg;
 
-	for (i=0,n=0;i<TOPSCORES;i++,top10++)
+	texts.reserve(top10.size());	// the lines point into them
+	for (const ScoreEntry &sc : top10)
 	{
-		std::string &text = texts[n];
-
 		altmsg.reset();
-		if (top10->sc_gold <=0 )
+		if (sc.gold <= 0)
 			break;
-		if (top10->sc_level >= 26)
+		if (sc.depth >= 26)
 			altmsg = " Honored by the Guild";
 
-		if (is_alpha(top10->sc_fate))
+		if (is_alpha(sc.fate))
 		{
-			dthstr = " killed by " + killname((0xff & top10->sc_fate), true);
+			dthstr = " killed by " + killname((0xff & sc.fate), true);
 		}
 		else
 		{
-			switch(top10->sc_fate)
+			switch(sc.fate)
 			{
 				case 2:
 					altmsg = " A total winner!";
@@ -188,46 +87,111 @@ pr_scores(int newrank, struct sc_ent *top10)
 					break;
 			}
 		}
-		text.clear();
-		if ((signed)(strlen(top10->sc_name) + 10 +
-			he_man[top10->sc_rank-1].size()) < COLS)
+		std::string &text = texts.emplace_back();
+		if (static_cast<int>(sc.name.size() + 10 + he_man[sc.experience-1].size()) < COLS)
 		{
-			if (top10->sc_rank > 1 && (strlen(top10->sc_name)))
-				text = std::format(" \"{}\"", he_man[top10->sc_rank - 1]);
+			if (sc.experience > 1 && !sc.name.empty())
+				text = std::format(" \"{}\"", he_man[sc.experience - 1]);
 		}
 		if (!altmsg)
-			text += std::format("{} on level {}", dthstr, top10->sc_level);
+			text += std::format("{} on level {}", dthstr, sc.depth);
 		else
 			text += *altmsg;
-		lines[n].gold = top10->sc_gold;
-		lines[n].name = top10->sc_name;
-		lines[n].text = text;
-		n++;
+		lines.push_back({.gold = sc.gold, .name = sc.name, .text = text});
 	}
-	display().draw_scores(std::span(lines, n), newrank - 1);
+	display().draw_scores(lines, newrank - 1);
 }
 
-static
-int
-add_scores(struct sc_ent *newscore, struct sc_ent *oldlist)
-{
-	struct sc_ent *sentry, *insert;
-	int retcode = TOPSCORES+1;
+}  // namespace
 
-	for(sentry=&oldlist[TOPSCORES-1];sentry>=oldlist;sentry--) {
-		if ((unsigned)newscore->sc_gold > (unsigned)sentry->sc_gold) {
-			insert = sentry;
-			retcode--;
-			if ((insert < &oldlist[TOPSCORES-1]) && sentry->sc_gold)
-				sentry[1] = *sentry;
-		}
-		else
-			break;
-	}
-	if (retcode == 11)
+/*
+ * add_score:
+ *	Put a score in its place among the ten best: after those with as much
+ *	gold or more, comparing as unsigned, as the original did.
+ */
+int
+add_score(std::vector<ScoreEntry> &scores, const ScoreEntry &entry)
+{
+	// No gold is never more than an empty place, which has none
+	if (entry.gold == 0)
 		return 0;
-	*insert = *newscore;
-	return retcode;
+	auto richer = [&](const ScoreEntry &e) {
+		return static_cast<unsigned>(e.gold) >= static_cast<unsigned>(entry.gold);
+	};
+	std::size_t place = std::find_if_not(scores.begin(), scores.end(), richer) - scores.begin();
+	if (place >= persistence::max_scores)
+		return 0;
+	scores.insert(scores.begin() + place, entry);
+	if (scores.size() > persistence::max_scores)
+		scores.pop_back();
+	return static_cast<int>(place) + 1;
+}
+
+/*
+ * score:
+ *	Figure score and post it.
+ */
+void
+score(int amount, int flags, char monst)
+{
+	int rank = 0;
+
+	display().open_page();  // stops the clock, as is_saved did
+
+	if (amount || flags || monst)
+	{
+		wait_msg("see rankings");
+	}
+	while (!std::ifstream(game().options.score_file).is_open())
+	{
+		display().write("\n");
+		if (game().noscore || (amount == 0))
+			return;
+		str_attr("No scorefile: %Create %Retry %Abort");
+		for (bool retry = false; !retry; )
+		{
+			switch (readchar())
+			{
+			case 'c':
+			case 'C':
+				std::ofstream(game().options.score_file);
+				retry = true;
+				break;
+			case 'r':
+			case 'R':
+				retry = true;
+				break;
+			case 'a':
+			case 'A':
+				return;
+			default:
+				break;
+			}
+		}
+	}
+	display().write("\n");
+	bool legacy = false;
+	std::optional<std::vector<ScoreEntry>> top_ten = get_scores(legacy);
+	std::vector<ScoreEntry> unread;		// shown in its place: no scores
+
+	if (game().noscore != true)
+	{
+		ScoreEntry his_score;
+		his_score.name = game().options.name;
+		his_score.gold = amount;
+		his_score.fate = flags ? flags : monst;
+		his_score.depth = game().player.max_level;
+		his_score.experience = game().player.body.t_stats.s_lvl;
+		rank = add_score(top_ten ? *top_ten : unread, his_score);
+	}
+	// an unreadable file is left alone; an old binary one is rewritten as JSON
+	if (top_ten && (rank > 0 || legacy))
+		put_scores(*top_ten);
+	pr_scores(rank, top_ten ? *top_ten : unread);
+	if (!top_ten)
+		display().write("The score file can't be read, so this score is not kept.\n");
+	wait_msg("exit");
+	display().write("\n");
 }
 
 /*
@@ -242,7 +206,8 @@ death(char monst)
 	game().player.purse -= game().player.purse / 10;
 
 	display().curtain_down();
-	year = md_localtime().year;
+	year = static_cast<int>(std::chrono::year_month_day{
+		std::chrono::floor<std::chrono::days>(rogue::platform::local_time(rogue::platform::now()))}.year());
 	display().draw_tombstone(game().options.name, killname(monst, true), game().player.purse, year);
 	display().curtain_up();
 	display().write_at(LINES-1, 0, "");
@@ -255,7 +220,7 @@ death(char monst)
  *	Code for a winner
  */
 void
-total_winner(void)
+total_winner()
 {
 	Maybe<Item> obj;
 	int worth = 0;
@@ -410,3 +375,4 @@ killname(unsigned char monst, bool doart)
 	return std::string(sp);
 }
 
+}  // namespace rogue

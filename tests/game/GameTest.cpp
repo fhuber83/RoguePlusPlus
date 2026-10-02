@@ -34,14 +34,14 @@ TEST(Items, OddsAreCopiedPerGame)
 {
 	rogue::Items items;
 	for (Scroll s : kinds<Scroll>())
-		EXPECT_EQ(items.s_magic[s].mi_prob, s_magic_base[s].mi_prob);
+		EXPECT_EQ(items.s_magic[s].mi_prob, rogue::items::s_magic_base[s].mi_prob);
 	for (int i = 0; i < NUMTHINGS; i++)
-		EXPECT_EQ(items.things[i].mi_prob, things_base[i].mi_prob);
+		EXPECT_EQ(items.things[i].mi_prob, rogue::items::things_base[i].mi_prob);
 
 	game().items = {};
 	init_things();
 	EXPECT_EQ(game().items.things[NUMTHINGS-1].mi_prob, 100);
-	EXPECT_EQ(things_base[NUMTHINGS-1].mi_prob, 5);
+	EXPECT_EQ(rogue::items::things_base[NUMTHINGS-1].mi_prob, 5);
 	game().items = {};
 }
 
@@ -68,12 +68,12 @@ TEST(Pool, CreaturesAndItemsShareTheLimit)
 	EXPECT_EQ(new_item(), std::nullopt);
 	EXPECT_EQ(new_creature(), std::nullopt);
 
-	EXPECT_EQ(discard(*c), 1);
+	EXPECT_TRUE(discard(*c));
 	EXPECT_NE(new_item(), std::nullopt);
 	EXPECT_EQ(game().pool.total, MAXITEMS);
 
 	Creature outside{};
-	EXPECT_EQ(discard(outside), 0);
+	EXPECT_FALSE(discard(outside));
 	game().pool = rogue::Pool();
 }
 

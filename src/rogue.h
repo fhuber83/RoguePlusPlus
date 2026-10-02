@@ -29,19 +29,26 @@
 #include "core/Dice.hpp"
 #include "core/Flags.hpp"
 #include "core/KindTable.hpp"
+#include "core/Math.hpp"
 #include "core/Maybe.hpp"
 #include "core/Random.hpp"
+#include "core/Text.hpp"
 #include "entities/List.hpp"
+#include "entities/Stats.hpp"
 #include "game/Slots.hpp"
+#include "items/KindInfo.hpp"
 #include "items/Kinds.hpp"
+#include "rules/Experience.hpp"
 #include "ui/Display.hpp"
 #include "ui/Input.hpp"
 #include "world/MapFlags.hpp"
+#include "world/Room.hpp"
 #include "world/RoomRef.hpp"
 #include "world/Trap.hpp"
 
 #include "glyphs.h"
-#include "mach_dep.h"
+#include "platform/Clock.hpp"
+#include "platform/Session.hpp"
 
 /*
  * Screen size. Fixed at 80x25 (see rogue::ui::Screen); these used to be the
@@ -89,28 +96,6 @@ inline constexpr int LAMPDIST = 3;
  */
 
 /*
- * Help list
- */
-struct h_list {
-	std::array<char, 5> h_chstr{};	// either (ch) or (ch,sep,ch2) appended with ": "
-	std::size_t h_chlen = 0;
-	std::string_view h_desc;
-
-	// A line of text; an empty one ends the list (were H_STR and H_END)
-	constexpr h_list(std::string_view desc) : h_desc(desc) {}
-	// A glyph and what it is (was H_CHSTR)
-	constexpr h_list(unsigned char ch, std::string_view desc)
-		: h_chstr{static_cast<char>(ch), ':', ' '}, h_chlen(3), h_desc(desc) {}
-	// Two glyphs with a separator, "A-Z" (was H_CH2STR)
-	constexpr h_list(unsigned char first, unsigned char sep, unsigned char last, std::string_view desc)
-		: h_chstr{static_cast<char>(first), static_cast<char>(sep), static_cast<char>(last), ':', ' '},
-		  h_chlen(5), h_desc(desc) {}
-
-	// The glyph column, "" for a line of text
-	constexpr std::string_view glyphs() const { return {h_chstr.data(), h_chlen}; }
-};
-
-/*
  * Coordinate data type
  */
 using rogue::Coord;  // see core/Coord.hpp
@@ -124,65 +109,17 @@ using rogue::ui::display;
 using rogue::ui::input;
 using rogue::ui::TileStyle;
 
-/*
- * Data type for strength values and modifiers
- */
-typedef unsigned int str_t;
-
-/*
- * Stuff about magic items
- */
-
-struct magic_item {
-	std::string_view mi_name;
-	int mi_prob;
-	short mi_worth;
-};
+// The name, odds and worth of a kind of item, see items/KindInfo.hpp
+using rogue::items::KindInfo;
 
 
-/*
- * Room structure
- */
-namespace rogue {
-enum class RoomFlag : unsigned short {
-	Dark = 0x0001,	/* room is dark */
-	Gone = 0x0002,	/* room is gone (a corridor) */
-	Maze = 0x0004,	/* room is a maze */
-};
-template <>
-inline constexpr bool enable_flags<RoomFlag> = true;
-}  // namespace rogue
+// A room or passage (world/Room.hpp), and a fighting being's stats
+// (entities/Stats.hpp)
 using rogue::RoomFlag;
-using RoomFlags = rogue::Flags<RoomFlag>;
-
-struct room {
-	coord r_pos;			/* Upper left corner */
-	coord r_max;			/* Size of room */
-	coord r_gold;			/* Where the gold is */
-	int r_goldval;			/* How much the gold is worth */
-	RoomFlags r_flags;		/* Info about the room */
-	int r_nexits;			/* Number of exits */
-	coord r_exit[12];			/* Where the exits are */
-
-	// A corridor where a room would be, but not a maze (was isgone())
-	bool is_gone() const
-	{
-		return r_flags.test(RoomFlag::Gone) && !r_flags.test(RoomFlag::Maze);
-	}
-};
-
-/*
- * Structure describing a fighting being
- */
-struct stats {
-	str_t s_str;			/* Strength */
-	long s_exp;				/* Experience */
-	int s_lvl;			/* Level of mastery */
-	int s_arm;			/* Armor class */
-	int s_hpt;			/* Hit points */
-	rogue::Attacks s_dmg;		/* Damage done, per attack */
-	int s_maxhp;			/* Max hit points */
-};
+using rogue::RoomFlags;
+using rogue::world::Room;
+using rogue::entities::Stats;
+using rogue::entities::str_t;
 
 /*
  * The legacy union thing is split into a creature (monster or player) and an
@@ -249,24 +186,11 @@ inline constexpr rogue::CreatureFlag ISHASTE = rogue::CreatureFlag::Hasted;
 inline constexpr rogue::CreatureFlag ISFLY = rogue::CreatureFlag::Flying;
 
 
-/*
- * Array containing information on all the various types of monsters
- */
-struct monster {
-	std::string_view m_name;		/* What to call the monster */
-	int m_carry;			/* Probability of carrying something */
-	CreatureFlags m_flags;		/* Things about the monster */
-	struct stats m_stats;		/* Initial stats */
-};
-
-// The tables each game copies into game().items (extern.cpp)
-extern const KindTable<Scroll, magic_item> s_magic_base;
-extern const KindTable<Potion, magic_item> p_magic_base;
-extern const KindTable<Ring, magic_item> r_magic_base;
-extern const KindTable<Stick, magic_item> ws_magic_base;
-extern const struct magic_item things_base[];
-
 #include "game/Game.hpp"
+#include "game/Pool.hpp"
+#include "game/Keyboard.hpp"
+#include "game/Messages.hpp"
+#include "game/StatusLine.hpp"
 #include "items/ItemCatalog.hpp"
 #include "items/Identification.hpp"
 #include "items/Inventory.hpp"
@@ -276,16 +200,58 @@ extern const struct magic_item things_base[];
 #include "items/effects/Ring.hpp"
 #include "items/effects/Armor.hpp"
 #include "items/effects/Weapon.hpp"
-#include "rules/Daemons.hpp"
 #include "rules/Combat.hpp"
+#include "rules/Conditions.hpp"
+#include "rules/Hunger.hpp"
+#include "rules/Regeneration.hpp"
+#include "rules/Strength.hpp"
+#include "rules/Wandering.hpp"
 #include "entities/MonsterCatalog.hpp"
 #include "entities/MonsterAI.hpp"
 #include "world/Rooms.hpp"
+#include "world/Look.hpp"
+#include "world/Traps.hpp"
 #include "world/Maze.hpp"
 #include "world/Passages.hpp"
 #include "world/LevelGenerator.hpp"
 #include "game/CommandDispatcher.hpp"
+#include "game/Help.hpp"
+#include "game/PlayerCommands.hpp"
+#include "game/Movement.hpp"
+#include "game/NewGame.hpp"
+#include "game/GameLoop.hpp"
+#include "game/Endings.hpp"
+#include "persistence/SaveCommands.hpp"
 
+using rogue::platform::fatal;
+using rogue::platform::md_exit;
+using rogue::readchar;
+using rogue::flush_type;
+using rogue::setup;
+using rogue::credits;
+using rogue::new_item;
+using rogue::new_creature;
+using rogue::discard;
+using rogue::list_free;
+using rogue::show_msg;
+using rogue::add_msg;
+using rogue::msg;
+using rogue::addmsg;
+using rogue::debug;
+using rogue::ifterse;
+using rogue::endmsg;
+using rogue::more;
+using rogue::putmsg;
+using rogue::noterse;
+using rogue::wait_for;
+using rogue::wait_msg;
+using rogue::str_attr;
+using rogue::status;
+using rogue::SIG2;
+using rogue::items::w_names;
+using rogue::items::a_names;
+using rogue::items::a_chances;
+using rogue::items::a_class;
 using rogue::items::new_thing;
 using rogue::items::inv_name;
 using rogue::items::discovered;
@@ -299,6 +265,10 @@ using rogue::items::pack_char;
 using rogue::items::money;
 using rogue::items::drop;
 using rogue::items::can_drop;
+using rogue::items::is_current;
+using rogue::items::call_it;
+using rogue::items::call;
+using rogue::items::whatis;
 using rogue::items::effects::quaff;
 using rogue::items::effects::invis_on;
 using rogue::items::effects::turn_see;
@@ -350,6 +320,13 @@ using rogue::rules::save;
 using rogue::rules::is_magic;
 using rogue::rules::raise_level;
 using rogue::rules::killed;
+using rogue::rules::e_levels;
+using rogue::rules::he_man;
+using rogue::rules::eat;
+using rogue::rules::chg_str;
+using rogue::rules::add_str;
+using rogue::entities::MonsterKind;
+using rogue::entities::monsters;
 using rogue::entities::randmonster;
 using rogue::entities::pick_mons;
 using rogue::entities::new_monster;
@@ -365,158 +342,77 @@ using rogue::entities::see_monst;
 using rogue::entities::find_dest;
 using rogue::entities::slime_split;
 using rogue::entities::plop_monster;
+using rogue::entities::aggravate;
 using rogue::world::roomin;
 using rogue::world::diag_ok;
 using rogue::world::cansee;
 using rogue::world::rnd_pos;
 using rogue::world::enter_room;
 using rogue::world::leave_room;
+using rogue::world::teleport;
 using rogue::world::new_level;
 using rogue::world::rnd_room;
+using rogue::world::INDEX;
+using rogue::world::offmap;
+using rogue::world::winat;
+using rogue::world::step_ok;
+using rogue::world::find_obj;
+using rogue::world::look;
+using rogue::world::search;
+using rogue::world::tr_name;
+using rogue::world::be_trapped;
+using rogue::world::descend;
 using rogue::command;
 using rogue::show_count;
 using rogue::execcom;
+using rogue::help;
+using rogue::get_dir;
+using rogue::find_dir;
+using rogue::d_level;
+using rogue::u_level;
+using rogue::do_macro;
+using rogue::do_run;
+using rogue::do_move;
+using rogue::rndmove;
+using rogue::init_player;
+using rogue::init_things;
+using rogue::init_names;
+using rogue::init_colors;
+using rogue::init_stones;
+using rogue::init_materials;
+using rogue::getsyl;
+using rogue::rchr;
+using rogue::playit;
+using rogue::quit;
+using rogue::score;
+using rogue::death;
+using rogue::total_winner;
+using rogue::killname;
+using rogue::persistence::save_game;
+using rogue::persistence::restore;
 
 /*
- * External variables
- * The state of a game is in game() (game/Game.hpp). What is left here are
- * fixed tables and strings (extern.cpp, init.cpp).
+ * Common strings
+ * The state of a game is in game() (game/Game.hpp), and the fixed tables are
+ * in the modules that use them.
  */
 
-// The ranks, by experience level (he_man[level - 1])
-extern const std::array<std::string_view, 21> he_man;
+// The flash of a vorpal weapon: when it is made, and when it first sees its enemy
 inline constexpr std::string_view intense = " of intense white light";
-// Weapon names, and the name of the WeaponType::Flame that fire_bolt() throws
-extern KindTable<WeaponType, std::string_view, kind_count<WeaponType> + 1> w_names;
-extern const KindTable<ArmorType, std::string_view> a_names;
 // a std::format string for msg()
 inline constexpr std::string_view flashmsg = "your {} gives off a flash{}";
-extern const struct h_list helpcoms[], helpobjs[];
-extern const KindTable<ArmorType, int> a_chances, a_class;
-extern const struct monster monsters[];
-
-// the experience level table (init.cpp)
-extern const long e_levels[20];
 
 /*
  * Function types
- * mach_dep.cpp functions are declared in mach_dep.h
  */
 
-// init.cpp
-void	init_player(void);
-void	init_things(void);
-void	init_colors(void);
-void	init_names(void);
-void	init_stones(void);
-void	init_materials(void);
-std::string	getsyl();
-char	rchr(std::string_view string);
-
-// io.cpp
-// msg(), addmsg() and ifterse() take std::format strings. An empty msg() clears the line.
-void	show_msg(std::string_view text);
-void	add_msg(std::string_view text);
-
-template <class... Args>
-void
-msg(std::format_string<Args...> fmt, Args &&...args)
-{
-	show_msg(std::format(fmt, std::forward<Args>(args)...));
-}
-
-template <class... Args>
-void
-addmsg(std::format_string<Args...> fmt, Args &&...args)
-{
-	add_msg(std::format(fmt, std::forward<Args>(args)...));
-}
-
-// A message from the consistency checks (rogue::config::debug_checks)
-template <class... Args>
-void
-debug(std::format_string<Args...> fmt, Args &&...args)
-{
-	show_msg(std::format(fmt, std::forward<Args>(args)...));
-}
-
-template <class... Args>
-void
-ifterse(std::format_string<Args...> tfmt, std::format_string<Args...> fmt, Args &&...args)
-{
-	msg(game().options.expert ? tfmt : fmt, std::forward<Args>(args)...);
-}
-
-void	wait_msg(std::string_view msg);
-void	endmsg(void);
-void	more(std::string_view msg);
-void	putmsg(std::string_view msg);
-void	status(void);
-void	wait_for(unsigned char ch);
-void	str_attr(std::string_view str);
-void	SIG2(void);
-std::string	io_unctrl(unsigned char ch);
-std::string_view	noterse(std::string_view str);
-
-// list.cpp
-Maybe<Item>	new_item();
-Maybe<Creature>	new_creature();
-int	discard(Item &item);
-int	discard(Creature &item);
-
-/*
- * Empties a list of creatures or items and gives them back to the pool
- */
-template <class T>
-void
-list_free(rogue::List<T> &list)
-{
-	Maybe<T> item;
-
-	while ((item = list.first()))
-	{
-	list.remove(*item);
-	discard(*item);
-	}
-}
-
-// playit.cpp
-void	endit(void);
-void	playit(const std::optional<std::string> &sname);
-void	quit(void);
-void	leave(void);
 // legacy wrappers around rogue::rng()
 inline int	rnd(int range) { return rogue::rng().below(range); }
 inline int	roll(int number, int sides) { return rogue::rng().roll(number, sides); }
+inline int	spread(int nm) { return rogue::rng().spread(nm); }
 // The gold in a pile on this level (was GOLDCALC)
 inline int	gold_calc() { return rnd(50 + 10 * game().level.depth) + 2; }
 
-// misc.cpp
-void	look(bool wakeup);
-void	eat(void);
-void	chg_str(int amt);
-void	add_str(str_t &sp, int amt);
-void	aggravate(void);
-void	call_it(bool know, std::string &guess);
-void	help(const struct h_list *helpscr);
-void	search(void);
-void	d_level(void);
-void	u_level(void);
-void	call(void);
-void	do_macro(std::string &macro);
-Maybe<Item>	find_obj(int y, int x);
-bool	add_haste(bool potion);
-bool	is_current(const Item &obj);
-bool	get_dir(void);
-std::optional<Coord>	find_dir(unsigned char ch);
-bool	step_ok(unsigned char ch);
-bool	offmap(int y, int x);
-std::string_view	tr_name(Trap type);
-std::string_view	vowelstr(std::string_view str);
-char	goodch(const Item &obj);
-int	sign(int nm);
-unsigned char	winat(int y, int x);
-int	spread(int nm);
 /*
  * How long things last, each spread by 10% (were BEARTIME, SLEEPTIME, ...)
  */
@@ -527,25 +423,11 @@ inline int	wander_time() { return spread(70); }	/* until the next wandering mons
 inline int	huh_duration() { return spread(20); }	/* confused */
 inline int	see_duration() { return spread(300); }	/* seeing invisible, or blind */
 inline int	hunger_time() { return spread(1300); }	/* a full stomach */
-int	DISTANCE(int y1, int x1, int y2, int x2);
-int	INDEX(int y, int x);
 
-// move.cpp
-void	do_run(unsigned char ch);
-void	do_move(int dy, int dx);
-void	door_open(const struct room &rp);
-void	descend(std::string_view mesg);
-Coord	rndmove(const Creature &who);
-
-// rip.cpp
-void	score(int amount, int flags, char monst);
-void	death(char monst);
-void	total_winner(void);
-std::string	killname(unsigned char monst, bool doart);
-
-// save.cpp
-void	save_game(void);
-void	restore(const std::string &savefile);
+// Small helpers (core/Math.hpp, core/Text.hpp)
+using rogue::sign;
+using rogue::vowelstr;
+using rogue::io_unctrl;
 
 // ASCII character tests (core/Ascii.hpp)
 using rogue::is_alpha;
@@ -557,6 +439,3 @@ using rogue::is_print;
 using rogue::to_upper;
 using rogue::to_lower;
 
-// wizard.cpp
-void	whatis(void);
-int	teleport(void);

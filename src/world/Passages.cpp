@@ -8,11 +8,13 @@
 
 namespace rogue::world {
 
-static void	conn(int r1, int r2);
-static void	door(struct room &rm, Coord cp);
-static void	passnum(void);
-static void	numpass(int y, int x);
-static void	psplat(int y, int x);
+namespace {
+
+void	conn(int r1, int r2);
+void	door(Room &rm, Coord cp);
+void	passnum();
+void	numpass(int y, int x);
+void	psplat(int y, int x);
 
 /*
  * conn:
@@ -21,7 +23,7 @@ static void	psplat(int y, int x);
 void
 conn(int r1, int r2)
 {
-	Maybe<struct room> rpt;
+	Maybe<Room> rpt;
 	int rmt, rm;
 	int distance = 0, turn_spot, turn_distance;
 	int direc;
@@ -41,7 +43,7 @@ conn(int r1, int r2)
 		else
 			direc = 'd';
 	}
-	struct room &rpf = level.rooms[rm];
+	Room &rpf = level.rooms[rm];
 	/*
 	 * Set up the movement variables, in two cases:
 	 * first drawing one down.
@@ -155,6 +157,8 @@ conn(int r1, int r2)
 	}
 }
 
+}  // namespace
+
 /*
  * do_passages:
  *	Draw all the passages on a level.
@@ -264,6 +268,7 @@ do_passages()
 	passnum();
 }
 
+namespace {
 
 /*
  * door:
@@ -271,7 +276,7 @@ do_passages()
  *	the exits array of the room.
  */
 void
-door(struct room &rm, Coord cp)
+door(Room &rm, Coord cp)
 {
 	int index, xit;
 
@@ -292,8 +297,8 @@ door(struct room &rm, Coord cp)
  * passnum:
  *	Assign a number to each passageway
  */
-static int pnum;
-static unsigned char newpnum;
+int pnum;
+unsigned char newpnum;
 
 void
 passnum()
@@ -302,9 +307,9 @@ passnum()
 
 	pnum = 0;
 	newpnum = false;
-	for (struct room &rp : game().level.passages)
+	for (Room &rp : game().level.passages)
 		rp.r_nexits = 0;
-	for (const struct room &rp : game().level.rooms)
+	for (const Room &rp : game().level.rooms)
 		for (i = 0; i < rp.r_nexits; i++)
 		{
 			newpnum++;
@@ -335,7 +340,7 @@ numpass(int y, int x)
 	 * or a numerable type of place
 	 */
 	if ((ch = level.at(y, x)) == DOOR || (!fp.test(MapFlag::Real) && ch != FLOOR)) {
-		struct room &rp = level.passages[pnum];
+		Room &rp = level.passages[pnum];
 		rp.r_exit[rp.r_nexits].y = y;
 		rp.r_exit[rp.r_nexits++].x = x;
 	} else if (!fp.test(MapFlag::Passage))
@@ -358,5 +363,7 @@ psplat(int y, int x)
 	game().level.map[idx = INDEX(y, x)] = PASSAGE;
 	game().level.flags[idx].set(MapFlag::Passage);
 }
+
+}  // namespace
 
 }  // namespace rogue::world

@@ -8,17 +8,26 @@
 
 namespace rogue::rules {
 
-static bool	roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl);
+namespace {
+
+bool	roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl);
+
+}  // namespace
+
 // Who does something in a message: a monster's name, or nullopt for the rogue
 using Who = std::optional<std::string_view>;
 
-static std::string	prname(Who who, bool upper);
-static void	hit(Who er, Who ee);
-static void	miss(Who er, Who ee);
-static void	thunk(const Item &weap, std::string_view mname, std::string_view does, std::string_view did);
-static void	remove_monster(Coord mp, Creature &tp, bool waskill);
-static int	str_plus(str_t str);
-static int	add_dam(str_t str);
+namespace {
+
+std::string	prname(Who who, bool upper);
+void	hit(Who er, Who ee);
+void	miss(Who er, Who ee);
+void	thunk(const Item &weap, std::string_view mname, std::string_view does, std::string_view did);
+void	remove_monster(Coord mp, Creature &tp, bool waskill);
+int	str_plus(str_t str);
+int	add_dam(str_t str);
+
+}  // namespace
 
 /*
  * fight:
@@ -299,7 +308,7 @@ swing(int at_lvl, int op_arm, int wplus)
  *	Check to see if the guy has gone up a level.
  */
 void
-check_level(void)
+check_level()
 {
 	int i, add, olevel;
 	rogue::Player &player = game().player;
@@ -320,11 +329,13 @@ check_level(void)
 	}
 }
 
+namespace {
+
 /*
  * roll_em:
  *	Roll several attacks
  */
-static bool
+bool
 roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 {
 	rogue::Player &player = game().player;
@@ -334,8 +345,8 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 	int hplus;
 	int dplus;
 	int damage;
-	const struct stats &att = thatt.t_stats;
-	struct stats &def = thdef.t_stats;
+	const Stats &att = thatt.t_stats;
+	Stats &def = thdef.t_stats;
 	if (!weap)
 	{
 		// every flytrap has the one growing attack
@@ -430,7 +441,7 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
  * prname:
  *	The print name of a combatant
  */
-static std::string
+std::string
 prname(Who who, bool upper)
 {
 	std::string name;
@@ -450,7 +461,7 @@ prname(Who who, bool upper)
  * hit:
  *	Print a message to indicate a succesful hit
  */
-static void
+void
 hit(Who er, Who ee)
 {
 	std::string_view s = "";
@@ -471,7 +482,7 @@ hit(Who er, Who ee)
  * miss:
  *	Print a message to indicate a poor swing
  */
-static void
+void
 miss(Who er, Who ee)
 {
 	std::string_view s = "";
@@ -493,7 +504,7 @@ miss(Who er, Who ee)
  * save_throw:
  *	See if a creature save against something
  */
-static bool
+bool
 throw_against(int which, const Creature &tp)
 {
 	int need;
@@ -501,6 +512,8 @@ throw_against(int which, const Creature &tp)
 	need = 14 + which - tp.t_stats.s_lvl / 2;
 	return (roll(1, 20) >= need);
 }
+
+}  // namespace
 
 bool
 save_throw(SaveThrow which, const Creature &tp)
@@ -526,11 +539,13 @@ save(SaveThrow which)
 	return throw_against(against, game().player.body);
 }
 
+namespace {
+
 /*
  * str_plus:
  *	Compute bonus/penalties for strength on the "to hit" roll
  */
-static int
+int
 str_plus(str_t str)
 {
 	int add = 4;
@@ -552,7 +567,7 @@ str_plus(str_t str)
  * add_dam:
  *	Compute additional damage done for exceptionally high or low strength
  */
-static int
+int
 add_dam(str_t str)
 {
 	int add = 6;
@@ -574,12 +589,14 @@ add_dam(str_t str)
 	return add;
 }
 
+}  // namespace
+
 /*
  * raise_level:
  *	The guy just magically went up a level.
  */
 void
-raise_level(void)
+raise_level()
 {
 	rogue::Player &player = game().player;
 
@@ -587,11 +604,13 @@ raise_level(void)
 	check_level();
 }
 
+namespace {
+
 /*
  * thunk:
  *	A missile hit or missed a monster
  */
-static void
+void
 thunk(const Item &weap, std::string_view mname, std::string_view does, std::string_view did)
 {
 	if (weap.o_type == ItemKind::Weapon)
@@ -608,7 +627,7 @@ thunk(const Item &weap, std::string_view mname, std::string_view does, std::stri
  * remove_monster:
  *	Remove a monster from the screen
  */
-static void
+void
 remove_monster(Coord mp, Creature &tp, bool waskill)
 {
 	Maybe<Item> obj, nexti;
@@ -632,6 +651,8 @@ remove_monster(Coord mp, Creature &tp, bool waskill)
 	game().level.monsters.remove(tp);
 	discard(tp);
 }
+
+}  // namespace
 
 /*
  * is_magic:

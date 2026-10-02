@@ -22,3 +22,18 @@ TEST(StaticTables, MonsterFlags)
 	EXPECT_EQ(monsters['O'-'A'].m_flags, CreatureFlags(ISGREED));
 	EXPECT_EQ(monsters['P'-'A'].m_flags.bits(), 0x0010);
 }
+
+// The help tables hold every line, and no empty one (the old tables ended
+// with one, which help() no longer looks for).
+TEST(StaticTables, HelpTables)
+{
+	for (const rogue::HelpLine &line : rogue::helpcoms)
+		EXPECT_FALSE(line.h_desc.empty());
+	for (const rogue::HelpLine &line : rogue::helpobjs)
+		EXPECT_FALSE(line.h_desc.empty());
+	EXPECT_EQ(rogue::helpcoms.front().h_desc, "F1     list of commands");
+	EXPECT_EQ(rogue::helpcoms.back().h_desc, "D      list what has been discovered");
+	EXPECT_EQ(rogue::helpobjs.front().glyphs(), std::string({static_cast<char>(FLOOR), ':', ' '}));
+	EXPECT_EQ(rogue::helpobjs.back().glyphs(), "A-Z: ");
+	EXPECT_EQ(rogue::helpobjs.back().h_desc, "26 different monsters");
+}

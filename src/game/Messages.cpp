@@ -1,33 +1,28 @@
 /*
- * Various input/output functions
+ * The message line, and the prompts that wait for a key.
  *
  * io.c		1.4		(A.I. Design) 12/10/84
  */
 
-#include	<algorithm>
+#include "rogue.h"
 
-#include	"ui/Display.hpp"
+namespace rogue {
 
-#include	"rogue.h"
+namespace {
 
-// The armor class the status line shows: the game's counts down from 11 (was AC())
-static constexpr int
-armor_class(int ac)
+// more() for a message line text that ends in column col
+void
+more_at(std::string_view msg, int col)
 {
-	return -(ac - 11);
+	rogue::ui::Display &display = rogue::ui::display();
+
+	display.show_more(msg, col);
+	while (readchar() != ' ')
+		display.blink_more();
+	display.hide_more();
 }
 
-/*
- * msg:
- *	Display a message at the top of the screen.
- */
-
-static void more_at(std::string_view msg, int col);
-
-/*
- * msg(), addmsg() and ifterse() are templates in rogue.h that format with
- * std::format and pass the text on to these.
- */
+}  // namespace
 
 void
 show_msg(std::string_view text)
@@ -54,7 +49,7 @@ show_msg(std::string_view text)
  *	if it is up there with the -More-)
  */
 void
-endmsg(void)
+endmsg()
 {
 	rogue::MessageLine &message = game().message;
 	if (message.remember)
@@ -85,17 +80,6 @@ more(std::string_view msg)
 	more_at(msg, game().message.end);
 }
 
-// more() for a message line text that ends in column col
-static void
-more_at(std::string_view msg, int col)
-{
-	rogue::ui::Display &display = rogue::ui::display();
-
-	display.show_more(msg, col);
-	while (readchar() != ' ')
-		display.blink_more();
-	display.hide_more();
-}
 
 
 /*
@@ -155,54 +139,6 @@ putmsg(std::string_view msg)
 			}
 		}
 	} while (curlen > COLS);
-}
-
-/*
- * io_unctrl:
- *	Print a readable version of a certain character
- */
-std::string
-io_unctrl(unsigned char ch)
-{
-	if (is_space(ch))
-		return " ";
-	else if (!is_print(ch))
-		if (ch < ' ')
-			return std::format("^{}", static_cast<char>(ch + '@'));
-		else
-			return std::format("\\x{:x}", ch);
-	else
-		return std::string(1, static_cast<char>(ch));
-}
-
-/*
- * status:
- *	Display the important stats line.  Keep the cursor where it was.
- */
-void
-status(void)
-{
-	rogue::ui::Status st;
-	int ac;
-	rogue::Player &player = game().player;
-
-	SIG2();
-
-	/*
-	 * The armor class shown ignores rings of protection, as it always did
-	 */
-	ac = player.armor_item() ? player.armor_item()->o_ac : player.body.t_stats.s_arm;
-
-	st.level = game().level.depth;
-	st.hp = player.body.t_stats.s_hpt;
-	st.hp_max = player.body.t_stats.s_maxhp;
-	st.str = player.body.t_stats.s_str;
-	st.str_max = player.max_stats.s_str;
-	st.gold = player.purse;
-	st.armor = armor_class(ac);
-	st.rank = he_man[player.body.t_stats.s_lvl-1];
-	st.hunger = player.hungry_state;
-	rogue::ui::display().draw_status(st);
 }
 
 /*
@@ -266,40 +202,13 @@ str_attr(std::string_view str)
 }
 
 /*
- * SIG2:
- *	Periodic status update: draws the clock in the bottom-right corner.
- *	The original also showed NUM LOCK/CAP LOCK and toggled "Fast Play" via
- *	Scroll Lock by reading keyboard LEDs through BIOS; terminals cannot
- *	report those, so faststate stays false.
+ * noterse:
+ *	The text, unless messages are brief
  */
-void
-SIG2(void)
-{
-	static int bighand, littlehand;
-	static long cur_time = 0;
-	int showtime = false;
-	long new_time = md_time();
-
-	/*
-	 * Do not update while a page (inventory, discoveries, ...) is shown
-	 */
-	if (display().page_open())
-		return;
-	if (new_time - cur_time >= 60)
-	{
-		TM local = md_localtime();
-		bighand = local.hour % 12;
-		littlehand = local.minute;
-		cur_time = new_time - local.second;
-		showtime = true;
-	}
-
-	if (showtime)
-		rogue::ui::display().draw_clock(bighand ? bighand : 12, littlehand);
-}
-
 std::string_view
 noterse(std::string_view str)
 {
 	return( game().options.brief() ? "" : str);
 }
+
+}  // namespace rogue

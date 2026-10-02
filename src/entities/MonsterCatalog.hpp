@@ -4,7 +4,8 @@
  * Monsters: choosing which kind shows up, making one, wandering monsters,
  * waking one up, and finding the one on a square.
  *
- * Included by rogue.h after entities/Creature.hpp (Creature).
+ * Included by rogue.h after entities/Creature.hpp (Creature, CreatureFlags)
+ * and entities/Stats.hpp (Stats).
  */
 
 namespace rogue {
@@ -12,6 +13,19 @@ namespace rogue {
 class Creature;
 
 namespace entities {
+
+/*
+ * A kind of monster, one per letter (was struct monster)
+ */
+struct MonsterKind {
+	std::string_view m_name;		/* What to call the monster */
+	int m_carry;			/* Probability of carrying something */
+	CreatureFlags m_flags;		/* Things about the monster */
+	Stats m_stats;		/* Initial stats */
+};
+
+// The kinds of monster, by letter: monsters[letter - 'A']
+extern const std::array<MonsterKind, 26> monsters;
 
 /*
  * randmonster:

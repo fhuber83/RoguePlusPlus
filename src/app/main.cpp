@@ -41,7 +41,7 @@ main(int argc, char **argv)
 					 savfile = game().options.save_file;
 					 break;
 				case 's': case 'S':
-					start_terminal();
+					rogue::platform::start_terminal(game().options.monochrome);
 					game().noscore = true;
 					score(0,0,0);
 					fatal("");
@@ -59,7 +59,7 @@ main(int argc, char **argv)
 	}
 	if (!savfile) {
 		rogue::rng().reseed(seed);
-		start_terminal();
+		rogue::platform::start_terminal(game().options.monochrome);
 		credits();
 
 		init_player();			/* Set up initial player stats */

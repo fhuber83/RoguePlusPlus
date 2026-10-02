@@ -13,12 +13,16 @@ constexpr int TREAS_ROOM = 20;	/* one chance in TREAS_ROOM for a treasure room *
 constexpr int MAXTREAS = 10;	/* maximum number of treasures in a treasure room */
 constexpr int MINTREAS = 2;	/* minimum number of treasures in a treasure room */
 
-static void	treas_room(void);
-static void	put_things(void);
-static void	do_rooms(void);
+namespace {
+
+void	treas_room();
+void	put_things();
+void	do_rooms();
+
+}  // namespace
 
 void
-new_level(void)
+new_level()
 {
 	int rm, i;
 	Maybe<Creature> tp;
@@ -113,7 +117,7 @@ new_level(void)
  *	Pick a room that is really there
  */
 int
-rnd_room(void)
+rnd_room()
 {
 	int rm;
 
@@ -123,12 +127,14 @@ rnd_room(void)
 	return rm;
 }
 
+namespace {
+
 /*
  * put_things:
  *	Put potions and scrolls on this level
  */
 void
-put_things(void)
+put_things()
 {
 	int i = 0;
 	Maybe<Item> cur;
@@ -197,15 +203,18 @@ put_things(void)
 		}
 }
 
+}  // namespace
+
 /*
  * treas_room:
  *	Add a treasure room
  */
 constexpr int MAXTRIES = 10;	/* max number of tries to put down a monster */
 
-static
+namespace {
+
 void
-treas_room(void)
+treas_room()
 {
 	int nm, index;
 	Maybe<Creature> tp;
@@ -214,7 +223,7 @@ treas_room(void)
 	int spots, num_monst;
 	coord mp;
 
-	const struct room &rp = level.rooms[rnd_room()];
+	const Room &rp = level.rooms[rnd_room()];
 	spots = (rp.r_max.y - 2) * (rp.r_max.x - 2) - MINTREAS;
 	if (spots > (MAXTREAS - MINTREAS))
 		spots = (MAXTREAS - MINTREAS);
@@ -264,6 +273,8 @@ treas_room(void)
 	level.depth--;
 }
 
+}  // namespace
+
 /*
  * Create the layout for the new level
  *
@@ -272,16 +283,18 @@ treas_room(void)
 
 constexpr int GOLDGRP = 1;
 
-static void	draw_room(const struct room &rp);
-static void	vert(const struct room &rp, int startx);
-static void	horiz(const struct room &rp, int starty);
+namespace {
+
+void	draw_room(const Room &rp);
+void	vert(const Room &rp, int startx);
+void	horiz(const Room &rp, int starty);
 
 /*
  * do_rooms:
  *	Create rooms and corridors with a connectivity graph
  */
 void
-do_rooms(void)
+do_rooms()
 {
 	int i, rm;
 	rogue::Level &level = game().level;
@@ -302,7 +315,7 @@ do_rooms(void)
 	/*
 	 * Clear things for a new level
 	 */
-	for (struct room &rp : level.rooms)
+	for (Room &rp : level.rooms)
 	{
 		rp.r_goldval = rp.r_nexits = 0;
 		rp.r_flags.reset();
@@ -315,7 +328,7 @@ do_rooms(void)
 		do
 			rm = rnd_room();
 		while (level.rooms[rm].r_flags.test(RoomFlag::Maze));
-		struct room &rp = level.rooms[rm];
+		Room &rp = level.rooms[rm];
 		rp.r_flags.set(RoomFlag::Gone);
 		if (rm > 2 && level.depth > 10 && rnd(20) < level.depth - 9)
 			rp.r_flags.set(RoomFlag::Maze);
@@ -324,7 +337,7 @@ do_rooms(void)
 	 * dig and populate all the rooms on the level
 	 */
 	for (i = 0; i < MAXROOMS; i++) {
-		struct room &rp = level.rooms[i];
+		Room &rp = level.rooms[i];
 
 		/*
 		 * Find upper left corner of box that this room goes in
@@ -413,7 +426,7 @@ do_rooms(void)
  *	Draw a box around a room and lay down the floor
  */
 void
-draw_room(const struct room &rp)
+draw_room(const Room &rp)
 {
 	int y, x;
 	rogue::Level &level = game().level;
@@ -441,9 +454,8 @@ draw_room(const struct room &rp)
  * vert:
  *	Draw a vertical line
  */
-static
 void
-vert(const struct room &rp, int startx)
+vert(const Room &rp, int startx)
 {
 	int y;
 
@@ -455,14 +467,15 @@ vert(const struct room &rp, int startx)
  * horiz:
  *	Draw a horizontal line
  */
-static
 void
-horiz(const struct room &rp, int starty)
+horiz(const Room &rp, int starty)
 {
 	int x;
 
 	for (x = rp.r_pos.x; x <= rp.r_pos.x + rp.r_max.x - 1; x++)
 		game().level.at(starty, x) = HWALL;
 }
+
+}  // namespace
 
 }  // namespace rogue::world

@@ -2,9 +2,13 @@
 
 namespace rogue::items {
 
-static void	print_disc(ItemKind type);
-static void	set_order(std::span<short> order);
-static std::string	nothing(ItemKind type);
+namespace {
+
+void	print_disc(ItemKind type);
+void	set_order(std::span<short> order);
+std::string	nothing(ItemKind type);
+
+}  // namespace
 
 /*
  * inv_name:
@@ -173,14 +177,18 @@ inv_name(const Item &obj, bool drop)
 	return name;
 }
 
+namespace {
+
 /*
  * discovered:
  *	list what the player has discovered in this game of a certain type
  */
-static int line_cnt = 0;
+int line_cnt = 0;
+
+}  // namespace
 
 void
-discovered(void)
+discovered()
 {
 	print_disc(ItemKind::Potion);
 	add_line("", " ");
@@ -197,7 +205,8 @@ discovered(void)
  *	Print what we've discovered of type 'type'
  */
 
-static
+namespace {
+
 void
 print_disc(ItemKind type)
 {
@@ -253,7 +262,6 @@ print_disc(ItemKind type)
  * set_order:
  *	Set up order for list
  */
-static
 void
 set_order(std::span<short> order)
 {
@@ -271,6 +279,8 @@ set_order(std::span<short> order)
 		order[r] = t;
 	}
 }
+
+}  // namespace
 
 /*
  * add_line:
@@ -329,11 +339,12 @@ end_line(std::string_view use)
 	return(retchar);
 }
 
+namespace {
+
 /*
  * nothing:
  *	The message for "nothing found"
  */
-static
 std::string
 nothing(ItemKind type)
 {
@@ -350,6 +361,149 @@ nothing(ItemKind type)
 	}
 	return std::format("{} about any {}s",
 		game().options.terse ? "Nothing" : "Haven't discovered anything", tystr);
+}
+
+}  // namespace
+
+/*
+ * call_it:
+ *	Call an object something after use.
+ */
+void
+call_it(bool know, std::string &guess)
+{
+	if (know && !guess.empty())
+		guess.clear();
+	else if (!know && guess.empty()) {
+		msg("{}call it? ",noterse("what do you want to "));
+		if (auto name = input().read_line(MAXNAME))
+			guess = *name;
+		msg("");
+	}
+}
+
+/*
+ * call:
+ *	Allow a user to call a potion, scroll, or ring something
+ */
+void
+call()
+{
+	Maybe<Item> obj;
+	std::span<std::string> guess;
+	std::string_view elsewise;
+	std::span<const bool> know;
+	rogue::Items &items = game().items;
+
+	obj = get_item("call", ItemFilter::callable());
+	/*
+	 * Make certain that it is somethings that we want to wear
+	 */
+	if (!obj)
+		return;
+	switch (obj->o_type)
+	{
+	case ItemKind::Ring:
+		guess = items.r_guess;
+		know = items.r_know;
+		elsewise = (!guess[obj->o_which].empty() ?
+			guess[obj->o_which] : items.r_stones[obj->which<Ring>()]);
+		break;
+	case ItemKind::Potion:
+		guess = items.p_guess;
+		know = items.p_know;
+		elsewise = (!guess[obj->o_which].empty() ?
+			guess[obj->o_which] : items.p_colors[obj->which<Potion>()]);
+		break;
+	case ItemKind::Scroll:
+		guess = items.s_guess;
+		know = items.s_know;
+		elsewise = (!guess[obj->o_which].empty() ?
+			guess[obj->o_which] : items.s_names[obj->which<Scroll>()]);
+		break;
+	case ItemKind::Stick:
+		guess = items.ws_guess;
+		know = items.ws_know;
+		elsewise = (!guess[obj->o_which].empty() ?
+			guess[obj->o_which] : items.ws_made[obj->which<Stick>()]);
+		break;
+	default:
+		msg("you can't call that anything");
+		return;
+	}
+	if (know[obj->o_which])
+	{
+		msg("that has already been identified");
+		return;
+	}
+	msg("Was called \"{}\"", elsewise);
+	msg("what do you want to call it? ");
+	if (auto name = input().read_line(MAXNAME); name && !name->empty())
+		guess[obj->o_which] = *name;
+	msg("");
+}
+
+/*
+ * whatis comes from wizard.c (wizard.c	1.4 (AI Design)	12/14/84).
+ */
+
+/*
+ * whatis:
+ *	What a certain object is: identify a kind (a scroll of identify)
+ */
+void
+whatis()
+{
+	Maybe<Item> obj;
+	rogue::Items &items = game().items;
+
+	if (game().player.body.t_pack.empty()) {
+		msg("You don't have anything in your pack to identify");
+		return;
+	}
+
+	for (;;) {
+		if (!(obj = get_item("identify", ItemFilter::all()))) {
+			msg("You must identify something");
+			msg(" ");
+			game().message.end = 0;
+		} else
+			break;
+	}
+
+	switch (obj->o_type) {
+	case ItemKind::Scroll:
+		items.s_know[obj->which<Scroll>()] = true;
+		items.s_guess[obj->which<Scroll>()].clear();
+		break;
+	case ItemKind::Potion:
+		items.p_know[obj->which<Potion>()] = true;
+		items.p_guess[obj->which<Potion>()].clear();
+		break;
+	case ItemKind::Stick:
+		items.ws_know[obj->which<Stick>()] = true;
+		obj->o_flags.set(ISKNOW);
+		items.ws_guess[obj->which<Stick>()].clear();
+		break;
+	case ItemKind::Weapon:
+	case ItemKind::Armor:
+		obj->o_flags.set(ISKNOW);
+		break;
+	case ItemKind::Ring:
+		items.r_know[obj->which<Ring>()] = true;
+		obj->o_flags.set(ISKNOW);
+		items.r_guess[obj->which<Ring>()].clear();
+		break;
+	default:	// the other kinds of item: nothing
+		break;
+	}
+	/*
+	 * If it is vorpally enchanted, then reveal what type of monster it is
+	 * vorpally enchanted against
+	 */
+	if (obj->o_enemy)
+		obj->o_flags.set(ISREVEAL);
+	msg("{}", inv_name(*obj, false));
 }
 
 }  // namespace rogue::items

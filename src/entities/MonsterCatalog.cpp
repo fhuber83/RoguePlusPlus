@@ -8,7 +8,55 @@
 
 namespace rogue::entities {
 
-static int	exp_add(const Creature &tp);
+/*
+ * A value the game never reads (was ___): s_hpt and s_maxhp of the monster
+ * templates, as each new monster rolls its hit points.
+ */
+constexpr int NA = 1;
+// Every monster's strength
+constexpr str_t XX = 10;
+
+const std::array<MonsterKind, 26> monsters = {{
+	/* Name		 CARRY	FLAG    str, exp, lvl, amr, hpt, dmg, maxhp */
+	{ "aquator",	0,	ISMEAN,	{ XX, 20,   5,   2, NA, "0d0/0d0", NA } },
+	{ "bat",	 	0,	ISFLY,	{ XX,  1,   1,   3, NA, "1d2", NA } },
+	{ "centaur",	 15,	{},	{ XX, 25,   4,   4, NA, "1d6/1d6", NA } },
+	{ "dragon",	 100,	ISMEAN,	{ XX,6800, 10,  -1, NA, "1d8/1d8/3d10", NA } },
+	{ "emu",	 0,	ISMEAN,	{ XX,  2,   1,   7, NA, "1d2", NA } },
+		/* until one hits; then every flytrap does fung_hit d1, see flytrap_attacks() */
+		/* string with others, since it is written on in the program */
+	{ "venus flytrap",0,	ISMEAN,	{ XX, 80,   8,   3, NA, "0d0", NA } },
+	{ "griffin",	 20,	ISMEAN|ISFLY|ISREGEN,	{XX,2000, 13, 2,NA, "4d3/3d5/4d3", NA } },
+	{ "hobgoblin",	 0,	ISMEAN,	{ XX,  3,   1,   5, NA, "1d8", NA } },
+	{ "ice monster", 0,	ISMEAN,	{ XX,  15,   1,   9, NA, "1d2", NA } },
+	{ "jabberwock",  70,	{},	{ XX,4000, 15,   6, NA, "2d12/2d4", NA } },
+	{ "kestral",	 0,	ISMEAN|ISFLY, { XX,  1,   1,   7, NA, "1d4", NA } },
+		/*
+		 * The original has ISGREED (0x40) in the CARRY column: leprechauns
+		 * carry something 64% of the time and are not greedy. Kept as is.
+		 */
+	{ "leprechaun",	 0x40,	{},	{ XX, 10,   3,   8, NA, "1d2", NA } },
+	{ "medusa",	 40,	ISMEAN,	{ XX,200,   8,   2, NA, "3d4/3d4/2d5", NA } },
+	{ "nymph",	 100,	{},	{ XX, 37,   3,   9, NA, "0d0", NA } },
+	{ "orc",	 15,	ISGREED,{ XX,  5,   1,   6, NA, "1d8", NA } },
+	{ "phantom",	 0,ISINVIS,{ XX,120,   8,   3, NA, "4d4", NA } },
+	{ "quagga",	 30,	ISMEAN,	{ XX, 32,   3,   2, NA, "1d2/1d2/1d4", NA } },
+	{ "rattlesnake", 0,	ISMEAN,	{ XX,  9,   2,   3, NA, "1d6", NA } },
+	{ "slime",	 	 0,	ISMEAN,	{ XX,  1,   2,   8, NA, "1d3", NA } },
+	{ "troll",	 50,	ISREGEN|ISMEAN,{ XX, 120, 6, 4, NA, "1d8/1d8/2d6", NA } },
+	{ "ur-vile",	 0,	ISMEAN,	{ XX,190,   7,  -2, NA, "1d3/1d3/1d3/4d6", NA } },
+	{ "vampire",	 20,	ISREGEN|ISMEAN,{ XX,350,   8,   1, NA, "1d10", NA } },
+	{ "wraith",	 0,	{},	{ XX, 55,   5,   4, NA, "1d6", NA } },
+	{ "xeroc",30,	{},	{ XX,100,   7,   7, NA, "3d4", NA } },
+	{ "yeti",	 30,	{},	{ XX, 50,   4,   6, NA, "1d6/1d6", NA } },
+	{ "zombie",	 0,	ISMEAN,	{ XX,  6,   2,   8, NA, "1d8", NA } }
+}};
+
+namespace {
+
+int	exp_add(const Creature &tp);
+
+}  // namespace
 
 /*
  * List of monsters in rough order of vorpalness
@@ -71,7 +119,7 @@ new_monster(Creature &tp, unsigned char type, Coord cp)
 	tp.t_pos = cp;
 	tp.t_oldch = '@';
 	tp.t_room = roomin(cp);
-	const struct monster &mp = monsters[tp.t_type-'A'];
+	const MonsterKind &mp = monsters[tp.t_type-'A'];
 	tp.t_stats.s_lvl = mp.m_stats.s_lvl + lev_add;
 	tp.t_stats.s_maxhp = tp.t_stats.s_hpt = roll(tp.t_stats.s_lvl, 8);
 	tp.t_stats.s_arm = mp.m_stats.s_arm - lev_add;
@@ -105,7 +153,7 @@ new_monster(Creature &tp, unsigned char type, Coord cp)
  *  f_restor(): restore the initial damage of flytraps
  */
 void
-f_restor(void)
+f_restor()
 {
 	game().player.fung_hit = 0;
 }
@@ -124,11 +172,12 @@ flytrap_attacks(int hits)
 	return rogue::Attacks(rogue::Dice{hits, 1});
 }
 
+namespace {
+
 /*
  * expadd:
  *	Experience to add for this monster's level/hit points
  */
-static
 int
 exp_add(const Creature &tp)
 {
@@ -145,12 +194,14 @@ exp_add(const Creature &tp)
 	return mod;
 }
 
+}  // namespace
+
 /*
  * wanderer:
  *	Create a new wandering monster and aim it at the player
  */
 void
-wanderer(void)
+wanderer()
 {
 	int i;
 	Maybe<Creature> tp;
@@ -201,7 +252,7 @@ wake_monster(int y, int x)
 		&& !tp->t_flags.test(ISCANC) && tp->t_flags.test(ISRUN))
 	{
 		rp = player.body.t_room;
-		dst = DISTANCE(y, x, player.body.t_pos.y, player.body.t_pos.x);
+		dst = distance_sq({x, y}, player.body.t_pos);
 		if ((rp && !game().level.room(*rp).r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
 			tp->t_flags.set(ISFOUND);
 			if (!save(SaveThrow::Magic)) {
@@ -248,7 +299,7 @@ give_pack(Creature &tp)
  *	Picks from vorp_mons, which has no spaces; see the comment there.
  */
 char
-pick_mons(void)
+pick_mons()
 {
 	int i = static_cast<int>(vorp_mons.size());
 

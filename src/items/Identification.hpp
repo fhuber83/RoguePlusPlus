@@ -33,5 +33,26 @@ void discovered();
 unsigned char add_line(std::string_view use, std::optional<std::string_view> line);
 unsigned char end_line(std::string_view use);
 
+/*
+ * call_it:
+ *	After using an item: forget the guess once the kind is known, or ask
+ *	what to call a kind that is neither known nor guessed.
+ */
+void call_it(bool know, std::string &guess);
+
+/*
+ * call:
+ *	The call command: name a kind of potion, scroll, ring or wand that is
+ *	not identified yet.
+ */
+void call();
+
+/*
+ * whatis:
+ *	Identify a kind of item the rogue picks from his pack (the scroll of
+ *	identify); he must pick one.
+ */
+void whatis();
+
 }  // namespace items
 }  // namespace rogue

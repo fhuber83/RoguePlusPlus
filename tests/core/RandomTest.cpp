@@ -99,3 +99,17 @@ TEST(Random, RestoreRejectsJunk)
 	EXPECT_EQ(a.seed(), 5u);
 	EXPECT_EQ(a.below(1000), next);
 }
+
+TEST(Random, SpreadIsOneDrawWithinTenPercent)
+{
+	// spread(n) is n - n/10 + below(n/5): the same single draw the original
+	// made, so the numbers after it don't move.
+	Random a{99}, b{99};
+	for (int n : {2, 3, 5, 7, 20, 70, 300, 1300}) {
+		const int s = a.spread(n);
+		EXPECT_EQ(s, n - n / 10 + b.below(n / 5)) << n;
+		EXPECT_GE(s, n - n / 10) << n;
+		EXPECT_LT(s, n - n / 10 + (n / 5 < 1 ? 1 : n / 5)) << n;
+	}
+	EXPECT_EQ(a.below(1 << 30), b.below(1 << 30));
+}

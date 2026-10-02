@@ -23,7 +23,9 @@ for t in new asan; do
 done
 
 for t in base new asan; do
+	# d_level() is in misc.cpp up to phase 13.1, then in game/PlayerCommands.cpp
 	misc="$dir/$t/src/misc.cpp"
+	[ -f "$misc" ] || misc="$dir/$t/src/game/PlayerCommands.cpp"
 	# d_level()'s test, before and after phase 10.7 removed chat() and hero
 	sed -i -e 's/if (chat(hero.y, hero.x) != STAIRS)/if (false)/' \
 		-e 's/if (game().level.at(player.body.t_pos) != STAIRS)/if (false)/' "$misc"
@@ -39,8 +41,8 @@ cmake -S "$dir/base" -B "$dir/base/build" "${common[@]}" >/dev/null
 cmake -S "$dir/new" -B "$dir/new/build" "${common[@]}" >/dev/null
 cmake -S "$dir/asan" -B "$dir/asan/build" "${common[@]}" -DCMAKE_BUILD_TYPE=Debug \
 	"-DCMAKE_CXX_FLAGS=$san -O1" "-DCMAKE_EXE_LINKER_FLAGS=$san" >/dev/null
+# One tree at a time, on at most JOBS cores (default 8)
 for t in base new asan; do
-	cmake --build "$dir/$t/build" -j --target rogue++ &
+	cmake --build "$dir/$t/build" -j "${JOBS:-8}" --target rogue++
 done
-wait
 ls "$dir"/{base,new,asan}/build/rogue++

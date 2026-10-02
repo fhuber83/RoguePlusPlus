@@ -14,19 +14,23 @@ constexpr int MAXFRNT = 100;
 constexpr unsigned char FRONTIER = 'F';
 constexpr unsigned char NOTHING = ' ';
 
-static int frcnt, ny, nx, topy, topx;
-static int maxx, maxy;
-static std::array<int, MAXFRNT> fr_y, fr_x;	/* the frontier */
+namespace {
 
-static void	new_frontier(int y, int x);
-static void	add_frnt(int y, int x);
-static void	con_frnt(void);
-static void	splat(int y, int x);
-static bool	maze_at(int y, int x);
-static bool	inrange(int y, int x);
+int frcnt, ny, nx, topy, topx;
+int maxx, maxy;
+std::array<int, MAXFRNT> fr_y, fr_x;	/* the frontier */
+
+void	new_frontier(int y, int x);
+void	add_frnt(int y, int x);
+void	con_frnt();
+void	splat(int y, int x);
+bool	maze_at(int y, int x);
+bool	inrange(int y, int x);
+
+}  // namespace
 
 void
-draw_maze(struct room &rp)
+draw_maze(Room &rp)
 {
 	int y, x;
 	int psgcnt;
@@ -82,6 +86,8 @@ draw_maze(struct room &rp)
 	} while (level.at(spos) == PASSAGE || psgcnt % 5);
 	splat(spos.y, spos.x);
 }
+
+namespace {
 
 void
 new_frontier(int y, int x)
@@ -183,5 +189,7 @@ inrange(int y, int x)
 {
 	return y >= topy && y < topy + (maxrow + 1) / 3 && x >= topx && x < topx + COLS / 3;
 }
+
+}  // namespace
 
 }  // namespace rogue::world

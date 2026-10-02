@@ -3,15 +3,50 @@
  * in, and what the rogue can see from where it stands.
  *
  * rnd_pos(), enter_room() and leave_room() come from rooms.c; roomin(),
- * diag_ok() and cansee() from chase.c.
+ * diag_ok() and cansee() from chase.c; door_open() from move.c.
  *
  * rooms.c	1.4 (A.I. Design)	12/16/84
  * chase.c	1.32	(A.I. Design) 12/12/84
+ * move.c	1.4 (A.I. Design)	12/22/84
  */
 
 #include "rogue.h"
 
 namespace rogue::world {
+
+namespace {
+
+/*
+ * door_open:
+ *	Called to illuminate a room.  If it is dark, remove anything
+ *	that might move.
+ */
+void
+door_open(const Room &rp)
+{
+	int j, k;
+	unsigned char ch;
+	Maybe<Creature> tp;
+
+	if (!rp.r_flags.test(RoomFlag::Gone) && !game().player.body.t_flags.test(ISBLIND))
+		for (j = rp.r_pos.y; j < rp.r_pos.y + rp.r_max.y; j++)
+			for (k = rp.r_pos.x; k < rp.r_pos.x + rp.r_max.x; k++) {
+				ch = winat(j, k);
+				/* move(j, k); Why do this,?????? */
+				if (is_monster(ch)) {
+					tp = wake_monster(j, k);
+					if (!tp)
+					{
+						continue;
+					}
+					if (tp->t_oldch == ' ' && !rp.r_flags.test(RoomFlag::Dark)
+						&& !game().player.body.t_flags.test(ISBLIND))
+							tp->t_oldch = game().level.at(j, k);
+				}
+			}
+}
+
+}  // namespace
 
 /*
  * roomin:
@@ -24,7 +59,7 @@ roomin(Coord cp)
 	rogue::Level &level = game().level;
 
 	for	(int i = 0; i < MAXROOMS; i++) {
-		const struct room &r = level.rooms[i];
+		const Room &r = level.rooms[i];
 		if (cp.x < r.r_pos.x + r.r_max.x && r.r_pos.x <= cp.x
 		 && cp.y < r.r_pos.y + r.r_max.y && r.r_pos.y <= cp.y)
 			return RoomRef::room(i);
@@ -63,7 +98,7 @@ cansee(int y, int x)
 
 	if (player.body.t_flags.test(ISBLIND))
 		return	false;
-	if (DISTANCE(y, x, player.body.t_pos.y, player.body.t_pos.x) < LAMPDIST)
+	if (distance_sq({x, y}, player.body.t_pos) < LAMPDIST)
 		return	true;
 	/*
 	 * We can only see if the hero in the same room as
@@ -78,7 +113,7 @@ cansee(int y, int x)
  *	Pick a random spot in a room
  */
 Coord
-rnd_pos(const struct room &rp)
+rnd_pos(const Room &rp)
 {
 	Coord cp;
 
@@ -105,7 +140,7 @@ enter_room(Coord cp)
 			debug("in a gone room");
 		return;
 	}
-	const struct room &rp = level.room(*in);
+	const Room &rp = level.room(*in);
 	door_open(rp);
 	if (!rp.r_flags.test(RoomFlag::Dark) && !game().player.body.t_flags.test(ISBLIND) && !rp.r_flags.test(RoomFlag::Maze))
 		for (y = rp.r_pos.y; y < rp.r_max.y + rp.r_pos.y; y++) {
@@ -137,7 +172,7 @@ leave_room(Coord cp)
 	unsigned char ch;
 	rogue::Player &player = game().player;
 
-	const struct room &rp = game().level.room(*player.body.t_room);
+	const Room &rp = game().level.room(*player.body.t_room);
 	player.body.t_room = game().level.passage_at(cp);
 	floor = (rp.r_flags.test(RoomFlag::Dark) && !player.body.t_flags.test(ISBLIND)) ? ' ' : FLOOR;
 	if (rp.r_flags.test(RoomFlag::Maze))
@@ -171,6 +206,61 @@ leave_room(Coord cp)
 				break;
 			}
 	door_open(rp);
+}
+
+/*
+ * teleport comes from wizard.c (wizard.c	1.4 (AI Design)	12/14/84).
+ */
+
+/*
+ * teleport:
+ *	Bamf the hero someplace else
+ */
+void
+teleport()
+{
+	int rm;
+	Coord c;
+	rogue::Player &player = game().player;
+
+	display().draw_tile(player.body.t_pos, game().level.at(player.body.t_pos));
+	do
+	{
+		rm = rnd_room();
+		c = rnd_pos(game().level.rooms[rm]);
+	} while (!(step_ok(winat(c.y, c.x))));
+	if (RoomRef::room(rm) != player.body.t_room)
+	{
+		leave_room(player.body.t_pos);
+		player.body.t_pos = c;
+		enter_room(player.body.t_pos);
+	}
+	else
+	{
+		player.body.t_pos = c;
+		look(true);
+	}
+	display().draw_tile(player.body.t_pos, PLAYER);
+	/*
+	 * turn off ISHELD in case teleportation was done while fighting
+	 * a Fungi
+	 */
+	if (player.body.t_flags.test(ISHELD)) {
+		player.body.t_flags.unset(ISHELD);
+		f_restor();
+	}
+	player.no_move = 0;
+	game().turn.count = 0;
+	game().turn.running = false;
+	flush_type();
+	/*
+	 * Teleportation can be a confusing experience
+	 */
+	if (player.body.t_flags.test(ISHUH))
+		lengthen(Event::Unconfuse, rnd(4)+2);
+	else
+		fuse(Event::Unconfuse, rnd(4)+2);
+	player.body.t_flags.set(ISHUH);
 }
 
 }  // namespace rogue::world

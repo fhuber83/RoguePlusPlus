@@ -2,12 +2,119 @@
 
 namespace rogue::items::effects {
 
+namespace {
+
+/*
+ * add_haste:
+ *	Add a haste to the player
+ */
+bool
+add_haste(bool potion)
+{
+	rogue::Player &player = game().player;
+	if (player.body.t_flags.test(ISHASTE))
+	{
+		player.no_command += rnd(8);
+		player.body.t_flags.unset(ISRUN);
+		extinguish(Event::NoHaste);
+		player.body.t_flags.unset(ISHASTE);
+		msg("you faint from exhaustion");
+		return false;
+	}
+	else
+	{
+		player.body.t_flags.set(ISHASTE);
+		if (potion)
+			fuse(Event::NoHaste, rnd(4)+10);
+		return true;
+	}
+}
+
+/*
+ * goodch:
+ *	Decide how good an object is and return the correct character for
+ * printing.
+ */
+char
+goodch(const Item &obj)
+{
+	char ch = MAGIC;
+
+	if (obj.o_flags.test(ISCURSED))
+		ch = BMAGIC;
+	switch (obj.o_type) {
+	case ItemKind::Armor:
+		if (obj.o_ac > a_class[obj.which<ArmorType>()])
+			ch = BMAGIC;
+		break;
+	case ItemKind::Weapon:
+		if (obj.o_hplus < 0 || obj.o_dplus < 0)
+			ch = BMAGIC;
+		break;
+	case ItemKind::Scroll:
+		switch (obj.which<Scroll>()) {
+		case Scroll::Sleep:
+		case Scroll::CreateMonster:
+		case Scroll::AggravateMonsters:
+			ch = BMAGIC;
+			break;
+		default:
+			break;
+		}
+		break;
+	case ItemKind::Potion:
+		switch (obj.which<Potion>()) {
+		case Potion::Confusion:
+		case Potion::Paralysis:
+		case Potion::Poison:
+		case Potion::Blindness:
+			ch = BMAGIC;
+			break;
+		default:
+			break;
+		}
+		break;
+	case ItemKind::Stick:
+		switch (obj.which<Stick>()) {
+		case Stick::HasteMonster:
+		case Stick::TeleportTo:
+			ch = BMAGIC;
+			break;
+		default:
+			break;
+		}
+		break;
+	case ItemKind::Ring:
+		switch (obj.which<Ring>()) {
+		case Ring::Protection:
+		case Ring::AddStrength:
+		case Ring::IncreaseDamage:
+		case Ring::Dexterity:
+			if (obj.o_ac < 0)
+				ch = BMAGIC;
+			break;
+		case Ring::AggravateMonster:
+		case Ring::Teleportation:
+			ch = BMAGIC;
+			break;
+		default:
+			break;
+		}
+		break;
+	default:	// the other kinds of item: nothing
+		break;
+	}
+	return ch;
+}
+
+}  // namespace
+
 /*
  * quaff:
  *	Quaff a potion from the pack
  */
 void
-quaff(void)
+quaff()
 {
 	Maybe<Item> obj;
 	Maybe<Creature> th;
@@ -218,7 +325,7 @@ quaff(void)
  *	Turn on the ability to see invisible
  */
 void
-invis_on(void)
+invis_on()
 {
 	Maybe<Creature> th;
 

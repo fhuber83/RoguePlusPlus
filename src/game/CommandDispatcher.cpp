@@ -9,7 +9,11 @@
 namespace rogue {
 
 // Set by resume_saved_game() until the first command after a restore
-static bool resuming = false;
+namespace {
+
+bool resuming = false;
+
+}  // namespace
 
 void
 resume_saved_game()
@@ -63,7 +67,9 @@ command()
 	}
 }
 
-static unsigned char
+namespace {
+
+unsigned char
 com_char()
 {
 	bool same;
@@ -91,7 +97,7 @@ com_char()
  * Read a command, setting thing up according to prefix like devices
  * Return the command character to be executed.
  */
-static unsigned char
+unsigned char
 get_prefix()
 {
 	int junk;
@@ -175,6 +181,8 @@ get_prefix()
 	}
 	return retch;
 }
+
+}  // namespace
 
 void
 show_count()

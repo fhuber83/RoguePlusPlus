@@ -4,8 +4,8 @@
  * A fighting being: a monster or the rogue himself.
  *
  * Was the _t half of the legacy union thing. Included by rogue.h after the
- * legacy types it uses (coord, struct stats) and world/RoomRef.hpp; game files include
- * rogue.h.
+ * types it uses (Coord, entities/Stats.hpp) and world/RoomRef.hpp; game
+ * files include rogue.h.
  */
 
 #include <optional>
@@ -63,7 +63,7 @@ struct Creature {
 	unsigned char t_oldch;				/* Character that was where it was */
 	std::optional<Destination> t_dest;	/* Where it is running to, if anywhere */
 	CreatureFlags t_flags;		/* State word */
-	struct stats t_stats;		/* Physical description */
+	Stats t_stats;		/* Physical description */
 	std::optional<RoomRef> t_room;	/* Current room for thing, if any */
 	List<Item> t_pack;			/* What the thing is carrying */
 };

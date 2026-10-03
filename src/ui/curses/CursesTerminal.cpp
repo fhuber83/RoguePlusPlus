@@ -505,11 +505,9 @@ int
 CursesTerminal::read_key(int timeout_ms)
 {
 	wint_t wch;
-	int ret;
-	int ch;
 
 	wtimeout(stdscr, timeout_ms);
-	ret = wget_wch(stdscr, &wch);
+	int ret = wget_wch(stdscr, &wch);
 	nodelay(stdscr, false);
 
 	// we're only interested in ASCII input and special keys
@@ -517,7 +515,7 @@ CursesTerminal::read_key(int timeout_ms)
 		return key::None;
 
 	// mask-map custom keys
-	ch = key_mask & static_cast<int>(wch);
+	int ch = key_mask & static_cast<int>(wch);
 
 	// window resize needs special handling
 	if (ch == KEY_RESIZE) {

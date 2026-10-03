@@ -454,19 +454,18 @@ void ScreenDisplay::curtain_up()
  */
 void ScreenDisplay::wipe()
 {
-	int j, delay, r, c, cinc = Screen::Cols/10/2, er, ec;
-
-	er = Screen::Rows-3;
-	delay = 50;
-	for (r = 0,c = 0,ec = Screen::Cols-1; r < 10; r++,c += cinc,er--,ec -= cinc) {
+	const int cinc = Screen::Cols/10/2;
+	const int delay = 50;
+	int er = Screen::Rows-3;
+	for (int r = 0, c = 0, ec = Screen::Cols-1; r < 10; r++, c += cinc, er--, ec -= cinc) {
 		frame(r, c, er, ec, true);
 		screen_.refresh();
 		animation_pause(delay);
-		for (j = r+1; j <= er-1; j++) {
+		for (int j = r+1; j <= er-1; j++) {
 			screen_.line(j, c+1, ' ', cinc-1, false);
 			screen_.line(j, ec-cinc+1, ' ', cinc-1, false);
 		}
-		for (j = r; j <= er; j++) {
+		for (int j = r; j <= er; j++) {
 			screen_.line(j, c, ' ', 1, false);
 			screen_.line(j, ec, ' ', 1, false);
 		}

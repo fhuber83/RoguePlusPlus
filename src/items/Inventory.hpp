@@ -3,16 +3,17 @@
 /*
  * The pack: picking things up, dropping them, listing them and picking one
  * out for a command.
- *
- * Included by rogue.h after core/Maybe.hpp (Maybe), entities/Item.hpp (Item,
- * ItemFilter) and entities/List.hpp (List).
  */
+
+#include <string_view>
+
+#include "core/Maybe.hpp"
+#include "entities/List.hpp"
 
 namespace rogue {
 
 struct Item;
 class ItemFilter;
-template <typename T> class List;
 
 namespace items {
 

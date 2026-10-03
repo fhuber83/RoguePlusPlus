@@ -3,10 +3,12 @@
 /*
  * Sticks (wands and staves): setting one up, zapping it, and the bolt it
  * fires.
- *
- * Included by rogue.h after core/Coord.hpp (coord) and entities/Item.hpp
- * (Item).
  */
+
+#include <string>
+#include <string_view>
+
+#include "core/Coord.hpp"
 
 namespace rogue {
 

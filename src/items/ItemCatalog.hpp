@@ -1,18 +1,17 @@
 #pragma once
 
+/*
+ * What items there are: the names and odds of the kinds of item, the
+ * weapon and armor tables, and making a new random item.
+ */
+
 #include <array>
 #include <string_view>
 
 #include "core/KindTable.hpp"
+#include "core/Maybe.hpp"
 #include "items/KindInfo.hpp"
 #include "items/Kinds.hpp"
-
-/*
- * What items there are: the names and odds of the kinds of item, the
- * weapon and armor tables, and making a new random item.
- *
- * Included by rogue.h after game/Game.hpp (NUMTHINGS, Maybe<Item>).
- */
 
 namespace rogue {
 

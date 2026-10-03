@@ -3,9 +3,12 @@
 /*
  * Rooms at play time: entering and leaving one, which room a square is
  * in, and what the rogue can see from where it stands.
- *
- * Included by rogue.h after Coord and world/Room.hpp.
  */
+
+#include <optional>
+
+#include "core/Coord.hpp"
+#include "world/RoomRef.hpp"
 
 namespace rogue::world {
 

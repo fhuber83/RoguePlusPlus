@@ -2,8 +2,6 @@
 
 /*
  * Maze rooms, dug while a new level is made.
- *
- * Included by rogue.h after world/Room.hpp.
  */
 
 namespace rogue::world {

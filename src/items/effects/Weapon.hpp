@@ -3,8 +3,6 @@
 /*
  * Weapons: throwing one, wielding one, and what happens to an item that
  * lands on the floor.
- *
- * Included by rogue.h after entities/Item.hpp (Item).
  */
 
 #include <string_view>

@@ -5,6 +5,8 @@
  * string for the inventory name.
  */
 
+#include <string>
+
 namespace rogue {
 
 struct Item;

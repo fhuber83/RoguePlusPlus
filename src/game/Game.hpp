@@ -1,15 +1,32 @@
 #pragma once
 
-#include "core/Random.hpp"
-#include "rules/Scheduler.hpp"
-#include "world/Map.hpp"
-
 /*
  * The state of one game, gathered from the globals of the original sources.
- *
- * Included by rogue.h after the types it holds (Creature, Item, Room,
- * ...). Game files include rogue.h, not this header.
  */
+
+#include <array>
+#include <optional>
+#include <string>
+#include <vector>
+
+#include "core/Coord.hpp"
+#include "core/Glyphs.hpp"
+#include "core/KindTable.hpp"
+#include "core/Maybe.hpp"
+#include "core/Random.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Item.hpp"
+#include "entities/List.hpp"
+#include "entities/Stats.hpp"
+#include "game/Id.hpp"
+#include "game/Slots.hpp"
+#include "items/KindInfo.hpp"
+#include "items/Kinds.hpp"
+#include "rules/Scheduler.hpp"
+#include "world/Map.hpp"
+#include "world/MapFlags.hpp"
+#include "world/Room.hpp"
+#include "world/RoomRef.hpp"
 
 namespace rogue {
 
@@ -97,7 +114,7 @@ enum class Trapped : unsigned char {
  */
 struct Player {
 	Creature body = {};				/* player: position, stats, flags, pack */
-	Stats max_stats = { 16, 0, 1, 10, 12, "1d4", 12 };	/* The maximum for the player */
+	entities::Stats max_stats = { 16, 0, 1, 10, 12, "1d4", 12 };	/* The maximum for the player */
 	int purse = 0;					/* How much gold the rogue has */
 	int in_pack = 0;				/* inpack: number of things in pack */
 	std::optional<ItemId> armor;		/* cur_armor: what a well dresssed rogue wears */
@@ -160,8 +177,8 @@ struct Level {
 	MapFlags &flags_at(int y, int x) { return flags[world::INDEX(y, x)]; }
 	MapFlags &flags_at(Coord pos) { return flags_at(pos.y, pos.x); }
 	// The room or passage a RoomRef names
-	Room &room(RoomRef r) { return r.kind == RoomRef::Kind::Room ? rooms[r.index] : passages[r.index]; }
-	const Room &room(RoomRef r) const
+	world::Room &room(RoomRef r) { return r.kind == RoomRef::Kind::Room ? rooms[r.index] : passages[r.index]; }
+	const world::Room &room(RoomRef r) const
 	{
 		return r.kind == RoomRef::Kind::Room ? rooms[r.index] : passages[r.index];
 	}

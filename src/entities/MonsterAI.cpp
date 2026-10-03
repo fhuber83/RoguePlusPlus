@@ -98,7 +98,7 @@ do_chase(Creature &th)
 	world::Level &level = game().level;
 
 	std::optional<RoomRef> rer = th.room;		/* Find room of chaser */
-	if (th.flags.test(CreatureFlag::Greedy) && level.room(*rer).r_goldval == 0)
+	if (th.flags.test(CreatureFlag::Greedy) && level.room(*rer).gold_value == 0)
 		th.dest = Hero{};	/*	If gold	has been taken,	run after hero */
 	std::optional<RoomRef> ree = player.body.room;	/* room of chasee */
 	if (th.dest != Destination(Hero{}))	/*	Find room of chasee */
@@ -118,15 +118,15 @@ do_chase(Creature &th)
 	int mindist = 32767;
 	Coord target;				/* Temporary	destination for	chaser */
 	for (;;) {
-		if (rer != ree && !level.room(*rer).r_flags.test(RoomFlag::Maze))
+		if (rer != ree && !level.room(*rer).flags.test(RoomFlag::Maze))
 		{
 			const world::Room &from = level.room(*rer);
 			const Coord dest = game().where(*th.dest);
 
-			for (int i = 0; i < from.r_nexits; i++) {	/*	loop through doors */
-				int dist = distance_sq(dest, from.r_exit[i]);
+			for (int i = 0; i < from.nexits; i++) {	/*	loop through doors */
+				int dist = distance_sq(dest, from.exits[i]);
 				if	(dist <	mindist) {
-					target = from.r_exit[i];
+					target = from.exits[i];
 					mindist = dist;
 				}
 			}
@@ -175,7 +175,7 @@ do_chase(Creature &th)
 				level.objects.remove(*obj);
 				th.pack.push_front(*obj);
 				unsigned char oldchar = level.at(obj->pos) =
-				level.room(*th.room).r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
+				level.room(*th.room).flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
 				if (world::cansee(obj->pos.y, obj->pos.x))
 					ui::display().draw_tile(obj->pos, oldchar);
 				th.dest = find_dest(th);
@@ -222,7 +222,7 @@ do_chase(Creature &th)
 	else
 		th.under = '@';
 
-	if (th.under == FLOOR && level.room(*oroom).r_flags.test(RoomFlag::Dark))
+	if (th.under == FLOOR && level.room(*oroom).flags.test(RoomFlag::Dark))
 		th.under = ' ';
 }
 
@@ -241,8 +241,8 @@ see_monst(const Creature &mp)
 	if (mp.flags.test(CreatureFlag::Invisible) && !player.body.flags.test(CreatureFlag::SeeInvisible))
 		return	false;
 	if (distance_sq(mp.pos, player.body.pos) >= world::LAMPDIST &&
-	  ((mp.room != player.body.room || game().level.room(*mp.room).r_flags.test(RoomFlag::Dark) ||
-	  game().level.room(*mp.room).r_flags.test(RoomFlag::Maze))))
+	  ((mp.room != player.body.room || game().level.room(*mp.room).flags.test(RoomFlag::Dark) ||
+	  game().level.room(*mp.room).flags.test(RoomFlag::Maze))))
 		return false;
 	/*
 	 * If we are seeing	the enemy of a vorpally	enchanted weapon for the first

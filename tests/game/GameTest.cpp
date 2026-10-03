@@ -62,9 +62,9 @@ TEST(Level, PassagesAreGoneAndDark)
 {
 	world::Level level;
 	for (const auto &p : level.passages) {
-		EXPECT_TRUE(p.r_flags.test(RoomFlag::Gone));
-		EXPECT_TRUE(p.r_flags.test(RoomFlag::Dark));
-		EXPECT_FALSE(p.r_flags.test(RoomFlag::Maze));
+		EXPECT_TRUE(p.flags.test(RoomFlag::Gone));
+		EXPECT_TRUE(p.flags.test(RoomFlag::Dark));
+		EXPECT_FALSE(p.flags.test(RoomFlag::Maze));
 	}
 	EXPECT_EQ(level.depth, 1);
 }

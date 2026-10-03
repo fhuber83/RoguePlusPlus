@@ -52,7 +52,7 @@ look(bool wakeup)
 						continue;
 					unsigned char ch = ui::display().tile_at({x, y});
 					if (ch == FLOOR) {
-						if (level.room(*player.old_room).r_flags.test(RoomFlag::Dark) && !level.room(*player.old_room).r_flags.test(RoomFlag::Gone))
+						if (level.room(*player.old_room).flags.test(RoomFlag::Dark) && !level.room(*player.old_room).flags.test(RoomFlag::Gone))
 							ui::display().draw_tile({x, y}, ' ');
 					} else {
 						MapFlags &fp = level.flags[Level::index({x, y})];
@@ -128,7 +128,7 @@ look(bool wakeup)
 					if (wakeup)
 						entities::wake_monster(y, x);
 					if (tp->under != ' ' ||
-						(!level.room(*rp).r_flags.test(RoomFlag::Dark) && !player.body.flags.test(CreatureFlag::Blind)))
+						(!level.room(*rp).flags.test(RoomFlag::Dark) && !player.body.flags.test(CreatureFlag::Blind)))
 							tp->under = level.map[index];
 					if (entities::see_monst(*tp))
 						ch = tp->disguise;

@@ -27,18 +27,18 @@ inline constexpr int MAXPASS = 13;	/* upper limit on number of passages */
  * the one a RoomRef names.
  */
 struct Room {
-	Coord r_pos;			/* Upper left corner */
-	Coord r_max;			/* Size of room */
-	Coord r_gold;			/* Where the gold is */
-	int r_goldval;			/* How much the gold is worth */
-	RoomFlags r_flags;		/* Info about the room */
-	int r_nexits;			/* Number of exits */
-	std::array<Coord, 12> r_exit;	/* Where the exits are */
+	Coord pos;			/* Upper left corner */
+	Coord size;			/* Size of room */
+	Coord gold;			/* Where the gold is */
+	int gold_value;			/* How much the gold is worth */
+	RoomFlags flags;		/* Info about the room */
+	int nexits;			/* Number of exits */
+	std::array<Coord, 12> exits;	/* Where the exits are */
 
 	// A corridor where a room would be, but not a maze (was isgone())
 	bool is_gone() const
 	{
-		return r_flags.test(RoomFlag::Gone) && !r_flags.test(RoomFlag::Maze);
+		return flags.test(RoomFlag::Gone) && !flags.test(RoomFlag::Maze);
 	}
 };
 

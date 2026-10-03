@@ -128,7 +128,7 @@ add_pack(Maybe<Item> given, bool silent)
 	 *  init_player(), which happens before any room even exist. room is
 	 *  set in enter_room(), which is first called in new_level()
 	 */
-	unsigned char floor = (player.body.room && level.room(*player.body.room).r_flags.test(RoomFlag::Gone)) ? PASSAGE : FLOOR;
+	unsigned char floor = (player.body.room && level.room(*player.body.room).flags.test(RoomFlag::Gone)) ? PASSAGE : FLOOR;
 	if (obj->group)
 	{
 		for (Item &op : player.body.pack)
@@ -311,7 +311,7 @@ pick_up(unsigned char ch)
 				mp.dest = Hero{};
 		game().level.objects.remove(*obj);
 		discard(*obj);
-		game().level.room(*player.body.room).r_goldval = 0;
+		game().level.room(*player.body.room).gold_value = 0;
 		break;
 	}
 	default:
@@ -436,7 +436,7 @@ money(int value)
 {
 	rogue::Player &player = game().player;
 
-	unsigned char floor = game().level.room(*player.body.room).r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
+	unsigned char floor = game().level.room(*player.body.room).flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
 	player.purse += value;
 	ui::display().draw_tile(player.body.pos, floor);
 	game().level.at(player.body.pos) = floor;

@@ -85,8 +85,8 @@ TEST(Level, MonsterAndObjectAt)
 TEST(Level, RoomAtAndDiagonals)
 {
 	world::Level level;
-	level.rooms[4].r_pos = {30, 8};
-	level.rooms[4].r_max = {10, 6};
+	level.rooms[4].pos = {30, 8};
+	level.rooms[4].size = {10, 6};
 	EXPECT_EQ(level.room_at({30, 8}), RoomRef::room(4));
 	EXPECT_EQ(level.room_at({39, 13}), RoomRef::room(4));
 	EXPECT_EQ(level.room_at({40, 13}), std::nullopt);

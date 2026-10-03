@@ -269,7 +269,7 @@ wake_monster(int y, int x)
 	{
 		std::optional<RoomRef> rp = player.body.room;
 		int dst = distance_sq({x, y}, player.body.pos);
-		if ((rp && !game().level.room(*rp).r_flags.test(RoomFlag::Dark)) || dst < world::LAMPDIST) {
+		if ((rp && !game().level.room(*rp).flags.test(RoomFlag::Dark)) || dst < world::LAMPDIST) {
 			tp->flags.set(CreatureFlag::Found);
 			if (!rules::save(rules::SaveThrow::Magic)) {
 				if (player.body.flags.test(CreatureFlag::Confused))
@@ -286,7 +286,7 @@ wake_monster(int y, int x)
 	 */
 	if (tp->flags.test(CreatureFlag::Greedy) && !tp->flags.test(CreatureFlag::Running)) {
 		tp->flags.set(CreatureFlag::Running);
-		if (game().level.room(*player.body.room).r_goldval)
+		if (game().level.room(*player.body.room).gold_value)
 			tp->dest = Gold{*player.body.room};
 		else
 			tp->dest = Hero{};

@@ -62,8 +62,8 @@ Level::room_at(Coord pos)
 {
 	for (int i = 0; i < MAXROOMS; i++) {
 		const Room &r = rooms[i];
-		if (pos.x < r.r_pos.x + r.r_max.x && r.r_pos.x <= pos.x
-		 && pos.y < r.r_pos.y + r.r_max.y && r.r_pos.y <= pos.y)
+		if (pos.x < r.pos.x + r.size.x && r.pos.x <= pos.x
+		 && pos.y < r.pos.y + r.size.y && r.pos.y <= pos.y)
 			return RoomRef::room(i);
 	}
 	if (flags_at(pos).test(MapFlag::Passage))

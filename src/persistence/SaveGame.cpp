@@ -208,11 +208,11 @@ json item_json(const Item &o)
 json room_json(const world::Room &r)
 {
 	json exits = json::array();
-	for (const Coord &c : r.r_exit)
+	for (const Coord &c : r.exits)
 		exits.push_back(coord_json(c));
 	return {
-		{"pos", coord_json(r.r_pos)}, {"size", coord_json(r.r_max)}, {"gold", coord_json(r.r_gold)},
-		{"gold_value", r.r_goldval}, {"flags", r.r_flags.bits()}, {"exit_count", r.r_nexits},
+		{"pos", coord_json(r.pos)}, {"size", coord_json(r.size)}, {"gold", coord_json(r.gold)},
+		{"gold_value", r.gold_value}, {"flags", r.flags.bits()}, {"exit_count", r.nexits},
 		{"exits", std::move(exits)},
 	};
 }
@@ -648,15 +648,15 @@ void item_from(Item &o, const json &j)
 
 void room_from(world::Room &r, const json &j)
 {
-	r.r_pos = coord_of(j, "pos");
-	r.r_max = coord_of(j, "size");
-	r.r_gold = coord_of(j, "gold");
-	r.r_goldval = num<int>(j, "gold_value");
-	r.r_flags = RoomFlags::from_bits(num<RoomFlags::Bits>(j, "flags"));
-	r.r_nexits = num_in<int>(j, "exit_count", 0, std::size(r.r_exit));
-	const json &exits = array_of(j, "exits", std::size(r.r_exit));
-	for (std::size_t i = 0; i < std::size(r.r_exit); i++)
-		r.r_exit[i] = to_coord(exits[i], "\"exits\"");
+	r.pos = coord_of(j, "pos");
+	r.size = coord_of(j, "size");
+	r.gold = coord_of(j, "gold");
+	r.gold_value = num<int>(j, "gold_value");
+	r.flags = RoomFlags::from_bits(num<RoomFlags::Bits>(j, "flags"));
+	r.nexits = num_in<int>(j, "exit_count", 0, std::size(r.exits));
+	const json &exits = array_of(j, "exits", std::size(r.exits));
+	for (std::size_t i = 0; i < std::size(r.exits); i++)
+		r.exits[i] = to_coord(exits[i], "\"exits\"");
 }
 
 int hex_value(char c)

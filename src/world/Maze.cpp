@@ -55,9 +55,9 @@ draw_maze(Room &rp)
 {
 	world::Level &level = game().level;
 
-	if (rp.r_pos.y == 0)
-		++rp.r_pos.y;
-	MazeBuilder maze{.topy = rp.r_pos.y, .topx = rp.r_pos.x};
+	if (rp.pos.y == 0)
+		++rp.pos.y;
+	MazeBuilder maze{.topy = rp.pos.y, .topx = rp.pos.x};
 	/*
 	 * Choose a random spot in the maze and initialize the frontier
 	 * to be the immediate neighbors of this random spot.
@@ -77,8 +77,8 @@ draw_maze(Room &rp)
 	 * According to the Grand Beeking, every maze should have a loop
 	 * Don't worry if you don't understand this.
 	 */
-	rp.r_max.x = maze.maxx - rp.r_pos.x + 1;
-	rp.r_max.y = maze.maxy - rp.r_pos.y + 1;
+	rp.size.x = maze.maxx - rp.pos.x + 1;
+	rp.size.y = maze.maxy - rp.pos.y + 1;
 	Coord spos;
 	int psgcnt;
 	do {

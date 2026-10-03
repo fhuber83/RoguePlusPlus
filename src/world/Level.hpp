@@ -40,7 +40,7 @@ struct Level {
 	Level()
 	{
 		for (auto &p : passages)
-			p.r_flags = RoomFlag::Gone | RoomFlag::Dark;
+			p.flags = RoomFlag::Gone | RoomFlag::Dark;
 	}
 
 	// Where a square is kept in map and flags (was INDEX())

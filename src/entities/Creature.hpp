@@ -27,7 +27,7 @@ struct Hero {
 	friend constexpr bool operator==(Hero, Hero) = default;
 };
 struct Gold {
-	RoomRef room;			/* the room or passage whose r_gold it is */
+	RoomRef room;			/* the room or passage whose gold it is */
 
 	friend constexpr bool operator==(const Gold &, const Gold &) = default;
 };

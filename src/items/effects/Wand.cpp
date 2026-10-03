@@ -104,14 +104,14 @@ do_zap()
 		else
 		{
 			game().items.ws_know[Stick::Light] = true;
-			if (game().level.room(*player.body.room).r_flags.test(RoomFlag::Gone))
+			if (game().level.room(*player.body.room).flags.test(RoomFlag::Gone))
 				msg("the corridor glows and then fades");
 			else
 				msg("the room is lit by a shimmering blue light");
 		}
-		if (!game().level.room(*player.body.room).r_flags.test(RoomFlag::Gone))
+		if (!game().level.room(*player.body.room).flags.test(RoomFlag::Gone))
 		{
-			game().level.room(*player.body.room).r_flags.unset(RoomFlag::Dark);
+			game().level.room(*player.body.room).flags.unset(RoomFlag::Dark);
 			/*
 			 * Light the room and put the player back up
 			 */
@@ -324,7 +324,7 @@ drain()
 		corp = level.passage_at(player.body.pos);
 	else
 		corp = std::nullopt;
-	bool inpass = level.room(*player.body.room).r_flags.test(RoomFlag::Gone);
+	bool inpass = level.room(*player.body.room).flags.test(RoomFlag::Gone);
 	std::vector<std::reference_wrapper<Creature>> drainee;
 	for (Creature &mp : level.monsters)
 		if (mp.room == player.body.room || mp.room == corp ||

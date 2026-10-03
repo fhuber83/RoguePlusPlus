@@ -61,7 +61,7 @@ inv_name(const Item &obj, bool drop)
 		else
 			name = std::format("{} scrolls ", obj.count);
 		if (items.s_know[which])
-			name += std::format("of {}", items.s_magic[which].mi_name);
+			name += std::format("of {}", items.s_magic[which].name);
 		else if (!items.s_guess[which].empty())
 			name += std::format("called {}", items.s_guess[which]);
 		else if (brief)
@@ -78,8 +78,8 @@ inv_name(const Item &obj, bool drop)
 		else
 			name = std::format("{} potions ", obj.count);
 		if (items.p_know[which])
-			name += brief ? std::format("of {}", items.p_magic[which].mi_name)
-				: std::format("of {}({})", items.p_magic[which].mi_name, items.p_colors[which]);
+			name += brief ? std::format("of {}", items.p_magic[which].name)
+				: std::format("of {}({})", items.p_magic[which].name, items.p_colors[which]);
 		else if (!items.p_guess[which].empty())
 			name += brief ? std::format("called {}", items.p_guess[which])
 				: std::format("called {}({})", items.p_guess[which], items.p_colors[which]);
@@ -122,7 +122,7 @@ inv_name(const Item &obj, bool drop)
 		if (obj.count > 1)
 			name += "s";
 		if (obj.enemy && obj.flags.test(ItemFlag::Revealed))
-			name += std::format(" of {} slaying", entities::monsters[obj.enemy-'A'].m_name);
+			name += std::format(" of {} slaying", entities::monsters[obj.enemy-'A'].name);
 		break;
 	}
 	case ItemKind::Armor: {
@@ -146,8 +146,8 @@ inv_name(const Item &obj, bool drop)
 
 		name = std::format("A{} {} ", vowelstr(items.ws_type[which]), items.ws_type[which]);
 		if (items.ws_know[which])
-			name += brief ? std::format("of {}{}", items.ws_magic[which].mi_name, items::effects::charge_str(obj))
-				: std::format("of {}{}({})", items.ws_magic[which].mi_name,
+			name += brief ? std::format("of {}{}", items.ws_magic[which].name, items::effects::charge_str(obj))
+				: std::format("of {}{}({})", items.ws_magic[which].name,
 					items::effects::charge_str(obj), items.ws_made[which]);
 		else if (!items.ws_guess[which].empty())
 			name += brief ? std::format("called {}", items.ws_guess[which])
@@ -166,9 +166,9 @@ inv_name(const Item &obj, bool drop)
 		Ring which = obj.which<Ring>();
 
 		if (items.r_know[which])
-			name = brief ? std::format("A{} ring of {}", items::effects::ring_num(obj), items.r_magic[which].mi_name)
+			name = brief ? std::format("A{} ring of {}", items::effects::ring_num(obj), items.r_magic[which].name)
 				: std::format("A{} ring of {}({})", items::effects::ring_num(obj),
-					items.r_magic[which].mi_name, items.r_stones[which]);
+					items.r_magic[which].name, items.r_stones[which]);
 		else if (!items.r_guess[which].empty())
 			name = brief ? std::format("A ring called {}", items.r_guess[which])
 				: std::format("A ring called {}({})", items.r_guess[which], items.r_stones[which]);

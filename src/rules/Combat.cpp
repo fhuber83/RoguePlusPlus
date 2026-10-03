@@ -94,7 +94,7 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 			return false;
 		msg("wait! That's a Xeroc!");
 	}
-	std::string_view mname = entities::monsters[mn-'A'].m_name;
+	std::string_view mname = entities::monsters[mn-'A'].name;
 	if (player.body.flags.test(CreatureFlag::Blind))
 		mname = "it";
 	if (roll_em(player.body, *tp, weap, thrown)||(weap && weap->kind == ItemKind::Potion)) {
@@ -155,7 +155,7 @@ attack(Creature &mp)
 	game().turn.count = player.quiet = 0;
 	if (mp.type == 'X' && !player.body.flags.test(CreatureFlag::Blind))
 		mp.disguise = 'X';
-	std::string_view mname = entities::monsters[mp.type-'A'].m_name;
+	std::string_view mname = entities::monsters[mp.type-'A'].name;
 	if (player.body.flags.test(CreatureFlag::Blind))
 		mname = "it";
 	if (roll_em(mp, player.body, std::nullopt, false)) {
@@ -742,7 +742,7 @@ killed(Creature &tp, bool pr)
 	if (game().player.body.flags.test(CreatureFlag::Blind))
 		msg("it");
 	else
-		msg("the {}", entities::monsters[type-'A'].m_name);
+		msg("the {}", entities::monsters[type-'A'].name);
 	}
 	/*
 	 * Do adjustments if he went up a level

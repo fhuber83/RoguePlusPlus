@@ -47,14 +47,14 @@ TEST(Items, OddsAreCopiedPerGame)
 {
 	Items items;
 	for (Scroll s : kinds<Scroll>())
-		EXPECT_EQ(items.s_magic[s].mi_prob, items::s_magic_base[s].mi_prob);
+		EXPECT_EQ(items.s_magic[s].prob, items::s_magic_base[s].prob);
 	for (int i = 0; i < items::NUMTHINGS; i++)
-		EXPECT_EQ(items.things[i].mi_prob, items::things_base[i].mi_prob);
+		EXPECT_EQ(items.things[i].prob, items::things_base[i].prob);
 
 	game().items = {};
 	init_things();
-	EXPECT_EQ(game().items.things[items::NUMTHINGS-1].mi_prob, 100);
-	EXPECT_EQ(items::things_base[items::NUMTHINGS-1].mi_prob, 5);
+	EXPECT_EQ(game().items.things[items::NUMTHINGS-1].prob, 100);
+	EXPECT_EQ(items::things_base[items::NUMTHINGS-1].prob, 5);
 	game().items = {};
 }
 

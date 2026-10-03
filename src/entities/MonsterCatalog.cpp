@@ -144,13 +144,13 @@ new_monster(Creature &tp, unsigned char type, Coord cp)
 	tp.under = '@';
 	tp.room = world::roomin(cp);
 	const MonsterKind &mp = monsters[tp.type-'A'];
-	tp.stats.level = mp.m_stats.level + lev_add;
+	tp.stats.level = mp.stats.level + lev_add;
 	tp.stats.max_hp = tp.stats.hp = roll(tp.stats.level, 8);
-	tp.stats.armor = mp.m_stats.armor - lev_add;
-	tp.stats.damage = mp.m_stats.damage;
-	tp.stats.str = mp.m_stats.str;
-	tp.stats.exp = mp.m_stats.exp + lev_add * 10 + exp_add(tp);
-	tp.flags = mp.m_flags;
+	tp.stats.armor = mp.stats.armor - lev_add;
+	tp.stats.damage = mp.stats.damage;
+	tp.stats.str = mp.stats.str;
+	tp.stats.exp = mp.stats.exp + lev_add * 10 + exp_add(tp);
+	tp.flags = mp.flags;
 	tp.its_turn = true;
 	tp.pack.clear();
 	if (game().player.wears(Ring::AggravateMonster))
@@ -192,7 +192,7 @@ rogue::Attacks
 flytrap_attacks(int hits)
 {
 	if (hits == 0)
-		return monsters['F'-'A'].m_stats.damage;
+		return monsters['F'-'A'].stats.damage;
 	return rogue::Attacks(rogue::Dice{hits, 1});
 }
 
@@ -304,7 +304,7 @@ give_pack(Creature &tp)
 	/*
 	 * check if we can allocate a new item
 	 */
-	if (game().pool.total < MAXITEMS && rnd(100) < monsters[tp.type-'A'].m_carry)
+	if (game().pool.total < MAXITEMS && rnd(100) < monsters[tp.type-'A'].carry)
 		tp.pack.push_front(*items::new_thing());
 }
 

@@ -146,7 +146,7 @@ constexpr short NA = 1;
 
 /*
  * The odds of each kind of random item. init_things() accumulates them in
- * the game's copy, and the only user is new_thing(). mi_worth is unused (NA).
+ * the game's copy, and the only user is new_thing(). worth is unused (NA).
  */
 const std::array<KindInfo, NUMTHINGS> things_base = {{
 	{ "",			27, NA },	/* potion */
@@ -171,12 +171,12 @@ pick_one(std::span<const KindInfo> magic)
 	int i = rnd(100);
 
 	for (std::size_t n = 0; n < magic.size(); n++)
-		if (i < magic[n].mi_prob)
+		if (i < magic[n].prob)
 			return static_cast<int>(n);
 	if constexpr (rogue::config::debug_checks) {
 		debug("bad pick_one: {} from {} items", i, magic.size());
 		for (const KindInfo &mi : magic)
-			debug("{}: {}%", mi.mi_name, mi.mi_prob);
+			debug("{}: {}%", mi.name, mi.prob);
 	}
 	return 0;
 }

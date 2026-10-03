@@ -299,21 +299,21 @@ total_winner()
 			obj.flags.set(ItemFlag::Known);
 			break;
 		case ItemKind::Scroll:
-			worth = items.s_magic[obj.which<Scroll>()].mi_worth;
+			worth = items.s_magic[obj.which<Scroll>()].worth;
 			worth *= obj.count;
 			if (!items.s_know[obj.which<Scroll>()])
 				worth /= 2;
 			items.s_know[obj.which<Scroll>()] = true;
 			break;
 		case ItemKind::Potion:
-			worth = items.p_magic[obj.which<Potion>()].mi_worth;
+			worth = items.p_magic[obj.which<Potion>()].worth;
 			worth *= obj.count;
 			if (!items.p_know[obj.which<Potion>()])
 				worth /= 2;
 			items.p_know[obj.which<Potion>()] = true;
 			break;
 		case ItemKind::Ring:
-			worth = items.r_magic[obj.which<Ring>()].mi_worth;
+			worth = items.r_magic[obj.which<Ring>()].worth;
 			if (obj.which<Ring>() == Ring::AddStrength || obj.which<Ring>() == Ring::IncreaseDamage ||
 				obj.which<Ring>() == Ring::Protection || obj.which<Ring>() == Ring::Dexterity)
 			{
@@ -328,7 +328,7 @@ total_winner()
 			items.r_know[obj.which<Ring>()] = true;
 			break;
 		case ItemKind::Stick:
-			worth = items.ws_magic[obj.which<Stick>()].mi_worth;
+			worth = items.ws_magic[obj.which<Stick>()].worth;
 			worth += 20 * obj.charges();
 			if (!obj.flags.test(ItemFlag::Known))
 				worth /= 2;
@@ -383,7 +383,7 @@ killname(unsigned char monst, bool doart)
 		break;
 	default:
 		if (is_monster(monst))
-			sp = entities::monsters[monst-'A'].m_name;
+			sp = entities::monsters[monst-'A'].name;
 		else
 		{
 			sp = "God";

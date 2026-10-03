@@ -185,7 +185,7 @@ accumulate_odds(KindTable<E, items::KindInfo> &table)
 	int odds = 0;
 
 	for (items::KindInfo &mi : table)
-		mi.mi_prob = odds += mi.mi_prob;
+		mi.prob = odds += mi.prob;
 }
 
 }  // namespace
@@ -298,7 +298,7 @@ init_things()
 	std::span<items::KindInfo> things = game().items.things;
 
 	for (std::size_t i = 1; i < things.size(); i++)
-		things[i].mi_prob += things[i-1].mi_prob;
+		things[i].prob += things[i-1].prob;
 }
 
 /*
@@ -405,7 +405,7 @@ init_stones()
 		items.r_stones[r] = stones[j].st_name;
 		items.r_know[r] = false;
 		items.r_guess[r].clear();
-		items.r_magic[r].mi_worth += stones[j].st_value;
+		items.r_magic[r].worth += stones[j].st_value;
 	}
 	accumulate_odds(items.r_magic);
 }

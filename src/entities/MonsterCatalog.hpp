@@ -24,10 +24,10 @@ namespace entities {
  * A kind of monster, one per letter (was struct monster)
  */
 struct MonsterKind {
-	std::string_view m_name;		/* What to call the monster */
-	int m_carry;			/* Probability of carrying something */
-	CreatureFlags m_flags;		/* Things about the monster */
-	Stats m_stats;		/* Initial stats */
+	std::string_view name;		/* What to call the monster */
+	int carry;			/* Probability of carrying something */
+	CreatureFlags flags;		/* Things about the monster */
+	Stats stats;		/* Initial stats */
 };
 
 // The kinds of monster, by letter: monsters[letter - 'A']

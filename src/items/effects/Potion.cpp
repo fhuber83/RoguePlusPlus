@@ -397,7 +397,7 @@ th_effect(const Item &obj, Creature &tp)
 	case Potion::Confusion:
 	case Potion::Blindness:
 		tp.flags.set(CreatureFlag::Confused);
-		msg("the {} appears confused", entities::monsters[tp.type-'A'].m_name);
+		msg("the {} appears confused", entities::monsters[tp.type-'A'].name);
 		break;
 	case Potion::Paralysis:
 		tp.flags.unset(CreatureFlag::Running);

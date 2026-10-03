@@ -280,7 +280,7 @@ read_scroll()
 							cur_weapon->flags.set(ItemFlag::Ego|ItemFlag::Revealed);
 							s_know[Scroll::Vorpalize] = true;
 							msg("you feel a sudden desire to kill {}s.",
-							monsters[cur_weapon->enemy-'A'].m_name);
+							monsters[cur_weapon->enemy-'A'].name);
 						}
 					}
 				 */

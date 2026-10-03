@@ -385,7 +385,7 @@ find_dest(const Creature &tp)
 {
 	rogue::Player &player = game().player;
 
-	int prob = monsters[tp.type - 'A'].m_carry;
+	int prob = monsters[tp.type - 'A'].carry;
 	if (prob <= 0 || tp.room == player.body.room
 	|| see_monst(tp))
 		return Hero{};

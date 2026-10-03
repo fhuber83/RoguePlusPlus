@@ -156,7 +156,7 @@ do_zap()
 				if (monster == obj->enemy)
 				{
 					msg("the {} vanishes in a puff of smoke",
-						entities::monsters[monster-'A'].m_name);
+						entities::monsters[monster-'A'].name);
 					rules::killed(*tp, false);
 				}
 				else
@@ -430,7 +430,7 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 					if (by_hero)
 						entities::start_run(pos);
 					msg("the {} whizzes past the {}",
-						name, entities::monsters[ch-'A'].m_name);
+						name, entities::monsters[ch-'A'].name);
 				}
 			} else if (hit_hero && (pos == player.body.pos)) {
 				hit_hero = false;

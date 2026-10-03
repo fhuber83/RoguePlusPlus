@@ -246,7 +246,7 @@ json odds_json(std::span<const items::KindInfo> odds)
 {
 	json out = json::array();
 	for (const items::KindInfo &mi : odds)
-		out.push_back(json::array({mi.mi_prob, mi.mi_worth}));
+		out.push_back(json::array({mi.prob, mi.worth}));
 	return out;
 }
 
@@ -595,7 +595,7 @@ entities::Stats stats_from(const json &j, bool flytrap)
 	if (flytrap != (damage == flytrap_alias))
 		fail(flytrap ? "a venus flytrap's \"damage\" is not the flytrap alias"
 			: "only a venus flytrap's \"damage\" is the flytrap alias");
-	s.damage = flytrap ? entities::monsters['F'-'A'].m_stats.damage : attacks_of(damage, "\"damage\"");
+	s.damage = flytrap ? entities::monsters['F'-'A'].stats.damage : attacks_of(damage, "\"damage\"");
 	s.max_hp = num<int>(j, "max_hp");
 	return s;
 }
@@ -700,11 +700,11 @@ void odds_from(std::span<items::KindInfo> odds, const json &j, std::string_view 
 	for (std::size_t i = 0; i < odds.size(); i++) {
 		if (!list[i].is_array() || list[i].size() != 2)
 			fail(std::format("\"{}\" entries should be [odds, worth]", key));
-		odds[i].mi_prob = whole(list[i][0], key);
+		odds[i].prob = whole(list[i][0], key);
 		int worth = whole(list[i][1], key);
 		if (!std::in_range<short>(worth))
 			fail(std::format("\"{}\" is out of range", key));
-		odds[i].mi_worth = static_cast<short>(worth);
+		odds[i].worth = static_cast<short>(worth);
 	}
 }
 

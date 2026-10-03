@@ -34,33 +34,23 @@ namespace rogue::world {
 void
 look(bool wakeup)
 {
-	int x, y;
-	unsigned char ch, pch;
-	int index;
-	Maybe<Creature> tp;
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
-	std::optional<RoomRef> rp;
-	int ey, ex;
-	int passcount = 0;
-	MapFlags pfl;
-	int sy, sx, sumhero = 0, diffhero = 0;
 
-	rp = player.body.t_room;
-	index = INDEX(player.body.t_pos.y, player.body.t_pos.x);
-	pfl = level.flags[index];
-	pch = level.map[index];
+	std::optional<RoomRef> rp = player.body.t_room;
+	MapFlags pfl = level.flags_at(player.body.t_pos);
+	unsigned char pch = level.at(player.body.t_pos);
 	/*
 	 * if the hero has moved
 	 */
 	if (!(player.old_pos == player.body.t_pos)) {
 		if (!player.body.t_flags.test(CreatureFlag::Blind)) {
-			for (x = player.old_pos.x - 1; x <= (player.old_pos.x + 1); x++)
-				for (y = player.old_pos.y - 1; y <= (player.old_pos.y + 1); y++) {
+			for (int x = player.old_pos.x - 1; x <= (player.old_pos.x + 1); x++)
+				for (int y = player.old_pos.y - 1; y <= (player.old_pos.y + 1); y++) {
 					if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || offmap(y,x))
 						continue;
-					ch = ui::display().tile_at({x, y});
+					unsigned char ch = ui::display().tile_at({x, y});
 					if (ch == FLOOR) {
 						if (level.room(*player.old_room).r_flags.test(RoomFlag::Dark) && !level.room(*player.old_room).r_flags.test(RoomFlag::Gone))
 							ui::display().draw_tile({x, y}, ' ');
@@ -81,16 +71,18 @@ look(bool wakeup)
 		player.old_pos = player.body.t_pos;
 		player.old_room = rp;
 	}
-	ey = player.body.t_pos.y + 1;
-	ex = player.body.t_pos.x + 1;
-	sx = player.body.t_pos.x - 1;
-	sy = player.body.t_pos.y - 1;
+	int ey = player.body.t_pos.y + 1;
+	int ex = player.body.t_pos.x + 1;
+	int sx = player.body.t_pos.x - 1;
+	int sy = player.body.t_pos.y - 1;
+	int sumhero = 0, diffhero = 0;
 	if (turn.door_stop && !turn.first_move && turn.running) {
 		sumhero = player.body.t_pos.y + player.body.t_pos.x;
 		diffhero = player.body.t_pos.y - player.body.t_pos.x;
 	}
-	for (y = sy; y <= ey; y++)
-		if (y > 0 && y < maxrow) for (x = sx; x <= ex; x++) {
+	int passcount = 0;
+	for (int y = sy; y <= ey; y++)
+		if (y > 0 && y < maxrow) for (int x = sx; x <= ex; x++) {
 			if (x <= 0 || x >= MAXCOLS)
 				continue;
 			if (!player.body.t_flags.test(CreatureFlag::Blind)) {
@@ -99,13 +91,13 @@ look(bool wakeup)
 			} else if (y != player.body.t_pos.y || x != player.body.t_pos.x)
 				continue;
 
-			index = INDEX(y, x);
+			int index = INDEX(y, x);
 			/*
 			 * THIS REPLICATES THE moat() MACRO.  IF MOAT IS CHANGED,
 			 * THIS MUST BE CHANGED ALSO ?? What does this really mean ??
 			 */
 			MapFlags &fp = level.flags[index];
-			ch = level.map[index];
+			unsigned char ch = level.map[index];
 			/*
 			 * No Doors
 			 */
@@ -127,7 +119,7 @@ look(bool wakeup)
 					continue;
 			}
 
-			if ((tp = entities::moat(y,x))) {
+			if (Maybe<Creature> tp = entities::moat(y,x)) {
 				if (player.body.t_flags.test(CreatureFlag::SeeMonst) && tp->t_flags.test(CreatureFlag::Invisible)) {
 					if (turn.door_stop && !turn.first_move)
 						turn.running = false;
@@ -229,17 +221,15 @@ look(bool wakeup)
 void
 search()
 {
-	int y, x;
-	int ey, ex;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 
 	if (player.body.t_flags.test(CreatureFlag::Blind))
 		return;
-	ey = player.body.t_pos.y + 1;
-	ex = player.body.t_pos.x + 1;
-	for (y = player.body.t_pos.y - 1; y <= ey; y++)
-		for (x = player.body.t_pos.x - 1; x <= ex; x++)
+	int ey = player.body.t_pos.y + 1;
+	int ex = player.body.t_pos.x + 1;
+	for (int y = player.body.t_pos.y - 1; y <= ey; y++)
+		for (int x = player.body.t_pos.x - 1; x <= ex; x++)
 		{
 			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || offmap(y, x))
 				continue;

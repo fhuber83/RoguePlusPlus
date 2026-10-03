@@ -36,10 +36,10 @@ void
 conn(int r1, int r2)
 {
 	Maybe<Room> rpt;
-	int rmt, rm;
-	int distance = 0, turn_spot, turn_distance;
+	int rm;
+	int distance = 0, turn_distance;
 	int direc;
-	Coord del, curr, turn_delta, spos, epos;
+	Coord del, turn_delta, spos, epos;
 	rogue::Level &level = game().level;
 
 	if (r1 < r2) {
@@ -61,7 +61,7 @@ conn(int r1, int r2)
 	 * first drawing one down.
 	 */
 	if (direc == 'd') {
-		rmt = rm + 3;				/* room # of dest */
+		int rmt = rm + 3;			/* room # of dest */
 		rpt = level.rooms[rmt];			/* the destination room */
 		del.x = 0;				/* direction of move */
 		del.y = 1;
@@ -90,7 +90,7 @@ conn(int r1, int r2)
 		turn_delta.x = (spos.x < epos.x ? 1 : -1);
 		turn_distance = abs(spos.x - epos.x);	/* how far to turn */
 	} else if (direc == 'r') {			/* setup for moving right */
-		rmt = rm + 1;
+		int rmt = rm + 1;
 		rpt = level.rooms[rmt];
 		del.x = 1;
 		del.y = 0;
@@ -117,7 +117,7 @@ conn(int r1, int r2)
 	}
 	else if constexpr (rogue::config::debug_checks)
 		debug("error in connection tables");
-	turn_spot = rnd(distance-1) + 1;
+	int turn_spot = rnd(distance-1) + 1;
 	/*
 	 * Draw in the doors on either side of the passage or just put #'s
 	 * if the rooms are gone.
@@ -133,8 +133,7 @@ conn(int r1, int r2)
 	/*
 	 * Get ready to move...
 	 */
-	curr.x = spos.x;
-	curr.y = spos.y;
+	Coord curr = spos;
 	while (distance)
 	{
 	/*
@@ -290,9 +289,7 @@ namespace {
 void
 door(Room &rm, Coord cp)
 {
-	int index, xit;
-
-	index = INDEX(cp.y, cp.x);
+	int index = INDEX(cp.y, cp.x);
 	if (rnd(10) + 1 < game().level.depth && rnd(5) == 0)
 	{
 		game().level.map[index] = (cp.y == rm.r_pos.y || cp.y == rm.r_pos.y + rm.r_max.y - 1) ? HWALL : VWALL;
@@ -300,7 +297,7 @@ door(Room &rm, Coord cp)
 	}
 	else
 		game().level.map[index] = DOOR;
-	xit = rm.r_nexits++;
+	int xit = rm.r_nexits++;
 	rm.r_exit[xit] = cp;
 }
 
@@ -314,14 +311,12 @@ unsigned char newpnum;
 void
 passnum()
 {
-	int i;
-
 	pnum = 0;
 	newpnum = false;
 	for (Room &rp : game().level.passages)
 		rp.r_nexits = 0;
 	for (const Room &rp : game().level.rooms)
-		for (i = 0; i < rp.r_nexits; i++)
+		for (int i = 0; i < rp.r_nexits; i++)
 		{
 			newpnum++;
 			numpass(rp.r_exit[i].y, rp.r_exit[i].x);
@@ -369,9 +364,8 @@ numpass(int y, int x)
 void
 psplat(int y, int x)
 {
-	int idx;
-
-	game().level.map[idx = INDEX(y, x)] = PASSAGE;
+	int idx = INDEX(y, x);
+	game().level.map[idx] = PASSAGE;
 	game().level.flags[idx].set(MapFlag::Passage);
 }
 

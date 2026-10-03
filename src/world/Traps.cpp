@@ -67,14 +67,12 @@ tr_name(Trap type)
 Trap
 be_trapped(Coord tc)
 {
-	Trap tr;
-	int index;
 	rogue::Player &player = game().player;
 
 	game().turn.count = game().turn.running = false;
-	index = INDEX(tc.y, tc.x);
+	int index = INDEX(tc.y, tc.x);
 	game().level.map[index] = TRAP;
-	tr = game().level.flags[index].trap();
+	Trap tr = game().level.flags[index].trap();
 	player.was_trapped = rogue::Trapped::Sprung;
 	switch (tr) {
 	case Trap::Door:
@@ -100,9 +98,7 @@ be_trapped(Coord tc)
 				msg("oh no! An arrow shot you");
 		}
 		else {
-			Maybe<Item> arrow;
-
-			if ((arrow = new_item())) {
+			if (Maybe<Item> arrow = new_item()) {
 				arrow->o_type = ItemKind::Weapon;
 				arrow->set_which(WeaponType::Arrow);
 				items::effects::init_weapon(*arrow, WeaponType::Arrow);

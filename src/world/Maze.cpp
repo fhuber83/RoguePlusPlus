@@ -44,9 +44,6 @@ bool	inrange(int y, int x);
 void
 draw_maze(Room &rp)
 {
-	int y, x;
-	int psgcnt;
-	Coord spos;
 	rogue::Level &level = game().level;
 
 	maxx = maxy = 0;
@@ -58,10 +55,8 @@ draw_maze(Room &rp)
 	 * Choose a random spot in the maze and initialize the frontier
 	 * to be the immediate neighbors of this random spot.
 	 */
-	y = topy;
-	x = topx;
-	splat(y,x);
-	new_frontier(y, x);
+	splat(topy, topx);
+	new_frontier(topy, topx);
 	/*
 	 * While there are new frontiers, connect them to the path and
 	 * possibly expand the frontier even more.
@@ -77,6 +72,8 @@ draw_maze(Room &rp)
 	 */
 	rp.r_max.x = maxx - rp.r_pos.x + 1;
 	rp.r_max.y = maxy - rp.r_pos.y + 1;
+	Coord spos;
+	int psgcnt;
 	do {
 		static constexpr Coord ld[4] = {
 			{-1,  0},
@@ -84,13 +81,11 @@ draw_maze(Room &rp)
 			{ 1,  0},
 			{ 0, -1}
 		};
-		int sh;
-
 		spos = rnd_pos(rp);
 		psgcnt = 0;
-		sh = 1;
+		int sh = 1;
 		for (Coord d : ld) {
-			y = d.y + spos.y; x = d.x + spos.x;
+			int y = d.y + spos.y, x = d.x + spos.x;
 			if (!offmap(y, x) && level.at(y, x) == PASSAGE)
 				psgcnt += sh;
 			sh <<= 1;
@@ -132,14 +127,10 @@ add_frnt(int y, int x)
 void
 con_frnt()
 {
-	int n, which, ydelt = 0, xdelt = 0;
-	int choice[4];
-	int cnt = 0, y, x;
-
 	/*
 	 * Choose a random frontier
 	 */
-	n = rnd(frcnt);
+	int n = rnd(frcnt);
 	ny = fr_y[n];
 	nx = fr_x[n];
 	fr_y[n] = fr_y[frcnt-1];
@@ -148,6 +139,8 @@ con_frnt()
 	/*
 	 * Count and collect the adjacent points we can connect to
 	 */
+	std::array<int, 4> choice;
+	int cnt = 0;
 	if (maze_at(ny-2, nx))
 		choice[cnt++] = 0;
 	if (maze_at(ny+2, nx))
@@ -160,8 +153,9 @@ con_frnt()
 	 * Choose one of the open places, connect to it and
 	 * then the task is complete
 	 */
-	which = choice[rnd(cnt)];
+	int which = choice[rnd(cnt)];
 	splat(ny, nx);
+	int ydelt = 0, xdelt = 0;
 	switch(which)
 	{
 		case 0: which = 1; ydelt = -1; break;
@@ -170,8 +164,8 @@ con_frnt()
 		case 3: which = 2; xdelt = 1;
 		break;
 	}
-	y = ny + ydelt;
-	x = nx + xdelt;
+	int y = ny + ydelt;
+	int x = nx + xdelt;
 	if (inrange(y, x))
 		splat(y, x);
 }

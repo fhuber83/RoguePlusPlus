@@ -443,21 +443,29 @@ What that means for the plan:
 
 ## Target architecture
 
+As it stands after phase 13; phase 14 replaces `rogue.h` and `glyphs.h` with includes of these modules.
+
 ```
 src/
-  core/         Coord, Random (seedable, injectable), Dice ("2d4" -> struct), bitflag enums
-  world/        Level (tile grid + flags), Rooms (play time), LevelGenerator (new_leve + rooms), Passages, Maze
-  entities/     Creature, Player, Monster, MonsterCatalog (monsters[]), MonsterAI (chase, slime, wander)
-  items/        Item, ItemKind, Inventory (pack), ItemCatalog + Identification (names/guesses/know),
-                effects: Potion, Scroll, Wand, Ring, Armor, Weapon
-  rules/        Combat (fight), Scheduler (daemons + fuses), Hunger/Regeneration
-  game/         Game (owns all state that is global today), Command enum, CommandDispatcher
-  ui/           Display + Input interfaces; curses/ implementation (map view, status line,
-                message log, screens: inventory, help, discoveries, tombstone, scores)
-  persistence/  Options (rogue.opt), HighScores, SaveGame (real serialization)
+  app/          main.cpp: arguments, seeding, starting or restoring a game
+  core/         Coord, Random, Dice/Attacks, Flags, KindTable, Maybe, Ascii, Math, Text, Config
+  world/        Level map (Map, MapFlags), Room/RoomRef, Rooms (play time), Look, Traps,
+                LevelGenerator, Passages, Maze
+  entities/     Creature, Item, List, Stats, MonsterCatalog (monsters[]), MonsterAI (chase, slime)
+  items/        Kinds, KindInfo, ItemCatalog (tables, new_thing), Identification (names, guesses),
+                Inventory (pack); effects/: Potion, Scroll, Wand, Ring, Armor, Weapon
+  rules/        Combat, Scheduler (daemons + fuses), Hunger, Regeneration, Wandering,
+                Conditions (fuses that end a condition), Strength, Experience
+  game/         Game (all state of one game), Pool/Slots/Id, Command + CommandDispatcher,
+                GameLoop, Movement, PlayerCommands, Messages, StatusLine, Keyboard, Help,
+                NewGame, Endings
+  ui/           Display + Input interfaces, Screen grid, ScreenDisplay/ScreenInput, Keys;
+                curses/ (the only file that includes <curses.h>)
+  platform/     Clock, Session (terminal start and stop, fatal(), md_exit())
+  persistence/  OptionsFile (rogue.opt), HighScores, SaveGame (JSON), SaveCommands (S, -r)
 ```
 
-Dependency rule: `ui` → `game` → (`rules`, `entities`, `items`, `world`) → `core`. Game logic never includes curses. It reports what happens (messages, "tile changed", "show inventory") through the `Display` interface and gets `Command`s from `Input`. A headless `Display`/`Input` pair then allows scripted play tests.
+Dependency rule: game code (`game`, `rules`, `entities`, `items`, `world`) → `core`, and it reaches the screen only through the `ui::Display`/`ui::Input` interfaces; `ui` never reads `game()`, and only `ui/curses/` includes curses. A headless `Display`/`Input` pair allows scripted play tests: `tests/support/ScriptedGame.hpp` (since F.2) runs the real `ScreenDisplay`/`ScreenInput` on a fake `Terminal` that types scripted keys.
 
 ## Phases
 
@@ -547,7 +555,12 @@ Each phase is a series of small commits that each build and play.
     5. *Done:* `rip.cpp` to `game/Endings`, `save.cpp` to `persistence/`, `playit.cpp` to `game/GameLoop`, `list.cpp` to `game/Pool`, `wizard.cpp` (`whatis()` and `teleport()`, which are not wizard commands) to `items/` and `world/`, `mach_dep.cpp` to `platform/` (time, sleep, exit) and `ui/` (key translation, title).
     6. *Done:* `rules/Daemons` is split into `rules/Hunger`, `rules/Regeneration` and the wandering monsters, as the target architecture says.
     7. *Done:* what the file steps left of the C syntax: `struct room` and `struct stats`, file-scope `static`, `(void)` and `goto` (see 13.7).
-14. **The legacy headers go.** `rogue.h`'s 100 `using rogue::...` lines go, and every file includes the module headers it uses. `glyphs.h` becomes `core/Glyphs.hpp`. `rogue.h` and `glyphs.h` are deleted (`extern.h` went in 10.8, `mach_dep.h` in 13.5), and `CLAUDE.md` loses the include-order rule. A headless `Display`/`Input` pair drives scripted play tests, which the target architecture mentions and the replays have stood in for.
+14. **The legacy headers go.** `rogue.h` and `glyphs.h` are deleted (`extern.h` went in 10.8, `mach_dep.h` in 13.5): every file includes the module headers it uses, and `CLAUDE.md` loses the "include `rogue.h`" rule. After 13.7, `rogue.h` (441 lines) holds the standard and module includes in an order the headers rely on (21 headers say "Included by rogue.h after ..."), 221 `using rogue::...` lines that bring module names into the global namespace, the game's constants (`MAXPACK`, `MAXITEMS`, `STOMACHSIZE`, the screen size, ...), the legacy flag names (`ISBLIND`, `ISKNOW`, ...: aliases of `CreatureFlag`/`ItemFlag` values), the `rnd()`/`roll()`/`spread()` wrappers, the durations (`wander_time()`, ...) and two common strings. Every `.cpp` that includes it is already inside a `namespace rogue...` (but `main.cpp`). Steps:
+    1. Every header stands alone: it includes or declares what it uses, and the "Included by rogue.h after" notes go. A build target compiles each header on its own, so one that doesn't stand alone breaks the build. Forward declarations agree with the definitions (`game/Id.hpp` declares `struct Item`, which is a `class`).
+    2. `glyphs.h` becomes `core/Glyphs.hpp`, in `namespace rogue`. `rogue.h`'s constants, wrappers, durations and strings go to the module that owns them (`MAXPACK` to `items/Inventory`, `STOMACHSIZE` to `rules/Hunger`, `rnd()` next to `rng()`, ...), all in `namespace rogue`. The legacy flag names go: code says `CreatureFlag::Blind` and `ItemFlag::Known`.
+    3. Every `.cpp` and test includes the module headers it uses, one commit per module directory, and names something of another module by its namespace (`world::roomin()`, `items::inv_name()`), so a file's calls show what it depends on. When no file includes `rogue.h`, it and its `using` lines are deleted.
+    4. Scripted play tests: the headless pair of `tests/support/ScriptedGame.hpp` becomes a reusable fixture, and tests play seeded games through `command()`: going down the stairs, a fight to the death, and a save and restore in the middle of a game that plays on like the uninterrupted one (8.3d's resume check as a unit test).
+    - Verified by replays against phase 13's end (with the ASan/UBSan build) and the resume check: steps 1 to 3 move declarations and spell names out, so every replay must be identical.
 
 Open questions, to settle before the phase that needs them:
 
@@ -560,10 +573,10 @@ Open questions, to settle before the phase that needs them:
 - Discarded creatures and items are freed since 6.6. A read after `discard()` is a use-after-free: replay an ASan/UBSan build to find one (`tools/replay/`; 6.5 and 6.6 fixed five). `discard(Item &)` already clears `turn.last_item` and monsters' `t_dest`; a new long-lived link to an item needs the same, since an `Id` carries no generation (12.3). Take a thing out of its list before discarding it.
 - `rogue.scr` is JSON since 8.2. Files written by builds before 8.2 are binary `sc_ent` records with uninitialized bytes after the name; compare those by the name up to its NUL.
 
-- `faststate` ("Fast Play") used to be toggled by Scroll Lock and is now always `FALSE`. Reintroduce it as a real option or key if wanted.
+- `turn.fast_state` ("Fast Play", was `faststate`) used to be toggled by Scroll Lock and is now always `false`. Reintroduce it as a real option or key if wanted.
 - Saves are JSON since 8.3 (`persistence/SaveGame`). A new field in `Game` or the structs it holds trips the size `static_assert`s in `SaveGame.cpp`: save and load it, then update the size. Test a change to saving with the resume-equivalence replay of 8.3d (`tools/replay/resume.py`).
 - **Fixed in F.1 (found in 12.3):** a thrown weapon that hit a monster was never discarded and kept its pool slot, so `pool_problems()` reported it and `S` refused to save for the rest of the game. Replays before F.1 that throw a weapon and hit (seed 8 of the random play throws its mace at a slime) show it; references from F.1 on don't.
 - Since 10.2 the consistency checks are built in with `-DROGUE_DEBUG_CHECKS=ON` and compile in every build. None fires in the replays; keep it that way, since a check's message (and its `--More--`) takes keys and makes the replay diverge.
-- Release builds (`-O2`) warn that `target` may be used uninitialized in `do_chase()` (`entities/MonsterAI.cpp`), inlined into `chase()`. The default build (no optimisation) doesn't see it. It predates phase 10.
+- Release builds (`-O2`) warn that `newpos` may be used uninitialized in `fallpos()`, inlined into `fall()` (`items/effects/Weapon.cpp`), and that a temporary may be in `dest_at()` (`persistence/SaveGame.cpp`). The default build (no optimisation) doesn't see them. The older `-O2` warning about `target` in `do_chase()` went with 13.7c's loop.
 - The terminal must be 80×25. The last 40-column path went in 10.3.
 - `command()` returns since F.2; before, the ring loop's count kept it running for the whole session (see 10.4), so a hasted rogue got no extra moves. Replays made before F.2 of a game with a hasted rogue are no reference for later steps.

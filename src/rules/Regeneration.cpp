@@ -20,25 +20,25 @@ doctor()
 {
 	rogue::Player &player = game().player;
 
-	int lv = player.body.t_stats.s_lvl;
-	int ohp = player.body.t_stats.s_hpt;
+	int lv = player.body.stats.s_lvl;
+	int ohp = player.body.stats.s_hpt;
 	player.quiet++;
 	if (lv < 8)
 	{
 		if (player.quiet + (lv << 1) > 20)
-			player.body.t_stats.s_hpt++;
+			player.body.stats.s_hpt++;
 	}
 	else
 	if (player.quiet >= 3)
-		player.body.t_stats.s_hpt += rnd(lv - 7) + 1;
+		player.body.stats.s_hpt += rnd(lv - 7) + 1;
 	if (player.wears(Hand::Left, Ring::Regeneration))
-		player.body.t_stats.s_hpt++;
+		player.body.stats.s_hpt++;
 	if (player.wears(Hand::Right, Ring::Regeneration))
-		player.body.t_stats.s_hpt++;
-	if (ohp != player.body.t_stats.s_hpt)
+		player.body.stats.s_hpt++;
+	if (ohp != player.body.stats.s_hpt)
 	{
-		if (player.body.t_stats.s_hpt > player.body.t_stats.s_maxhp)
-			player.body.t_stats.s_hpt = player.body.t_stats.s_maxhp;
+		if (player.body.stats.s_hpt > player.body.stats.s_maxhp)
+			player.body.stats.s_hpt = player.body.stats.s_maxhp;
 		player.quiet = 0;
 	}
 }

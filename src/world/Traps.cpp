@@ -84,14 +84,14 @@ be_trapped(Coord tc)
 		break;
 	case Trap::Sleep:
 		player.no_command += rules::sleep_time();
-		player.body.t_flags.unset(CreatureFlag::Running);
+		player.body.flags.unset(CreatureFlag::Running);
 		msg("a {}mist envelops you and you fall asleep",
 			noterse("strange white "));
 		break;
 	case Trap::Arrow:
-		if (rules::swing(player.body.t_stats.s_lvl-1, player.body.t_stats.s_arm, 1)) {
-			player.body.t_stats.s_hpt -= roll(1, 6);
-			if (player.body.t_stats.s_hpt <= 0) {
+		if (rules::swing(player.body.stats.s_lvl-1, player.body.stats.s_arm, 1)) {
+			player.body.stats.s_hpt -= roll(1, 6);
+			if (player.body.stats.s_hpt <= 0) {
 				msg("an arrow killed you");
 				death('a');
 			} else
@@ -103,7 +103,7 @@ be_trapped(Coord tc)
 				arrow->set_which(WeaponType::Arrow);
 				items::effects::init_weapon(*arrow, WeaponType::Arrow);
 				arrow->o_count = 1;
-				arrow->o_pos = player.body.t_pos;
+				arrow->o_pos = player.body.pos;
 				items::effects::fall(*arrow, false);
 			}
 			msg("an arrow shoots past you");
@@ -116,9 +116,9 @@ be_trapped(Coord tc)
 		player.was_trapped = rogue::Trapped::Teleported;
 		break;
 	case Trap::Dart:
-		if (rules::swing(player.body.t_stats.s_lvl+1, player.body.t_stats.s_arm, 1)) {
-			player.body.t_stats.s_hpt -= roll(1, 4);
-			if (player.body.t_stats.s_hpt <= 0) {
+		if (rules::swing(player.body.stats.s_lvl+1, player.body.stats.s_arm, 1)) {
+			player.body.stats.s_hpt -= roll(1, 4);
+			if (player.body.stats.s_hpt <= 0) {
 				msg("a poisoned dart killed you");
 				death('d');
 			}
@@ -148,7 +148,7 @@ descend(std::string_view mesg)
 	msg("{}", mesg);
 	if (!rules::save(rules::SaveThrow::Luck)) {
 		msg("you are damaged by the fall");
-		if ((game().player.body.t_stats.s_hpt -= roll(1,8)) <= 0)
+		if ((game().player.body.stats.s_hpt -= roll(1,8)) <= 0)
 			death('f');
 	}
 }

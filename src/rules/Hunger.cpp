@@ -61,7 +61,7 @@ eat()
 		player.weapon = std::nullopt;
 	if (--obj->o_count < 1)
 	{
-		player.body.t_pack.remove(*obj);
+		player.body.pack.remove(*obj);
 		discard(*obj);
 	}
 	if (player.food_left < 0)
@@ -76,7 +76,7 @@ eat()
 	else
 		if (rnd(100) > 70)
 		{
-			player.body.t_stats.s_exp++;
+			player.body.stats.s_exp++;
 			msg("yuk, this food tastes awful");
 			check_level();
 		}
@@ -105,7 +105,7 @@ stomach()
 		if (player.no_command || rnd(5) != 0)
 			return;
 		player.no_command += rnd(8) + 4;
-		player.body.t_flags.unset(CreatureFlag::Running);
+		player.body.flags.unset(CreatureFlag::Running);
 		game().turn.running = false;
 		game().turn.count = 0;
 		player.hungry_state = 3;

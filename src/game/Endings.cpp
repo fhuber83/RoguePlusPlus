@@ -206,7 +206,7 @@ score(int amount, int flags, char monst)
 		his_score.gold = amount;
 		his_score.fate = flags ? flags : monst;
 		his_score.depth = game().player.max_level;
-		his_score.experience = game().player.body.t_stats.s_lvl;
+		his_score.experience = game().player.body.stats.s_lvl;
 		rank = add_score(top_ten ? *top_ten : unread, his_score);
 	}
 	// an unreadable file is left alone; an old binary one is rewritten as JSON
@@ -255,7 +255,7 @@ total_winner()
 	ui::display().write_at(0, 0, "   Worth  Item");
 	int oldpurse = player.purse;
 	unsigned char c = 'a';
-	for (Item &obj : player.body.t_pack)
+	for (Item &obj : player.body.pack)
 	{
 	switch (obj.o_type)
 	{

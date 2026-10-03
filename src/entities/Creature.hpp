@@ -59,16 +59,16 @@ using CreatureFlags = Flags<CreatureFlag>;
 struct Item;
 
 struct Creature {
-	Coord t_pos;				/* Position */
-	char t_turn;				/* If slowed, is it a turn to move */
-	char t_type;				/* What it is */
-	unsigned char t_disguise;			/* What mimic looks like */
-	unsigned char t_oldch;				/* Character that was where it was */
-	std::optional<Destination> t_dest;	/* Where it is running to, if anywhere */
-	CreatureFlags t_flags;		/* State word */
-	entities::Stats t_stats;		/* Physical description */
-	std::optional<RoomRef> t_room;	/* Current room for thing, if any */
-	List<Item> t_pack;			/* What the thing is carrying */
+	Coord pos;				/* Position */
+	char its_turn;				/* If slowed, is it a turn to move */
+	char type;				/* What it is */
+	unsigned char disguise;			/* What mimic looks like */
+	unsigned char under;				/* Character that was where it was */
+	std::optional<Destination> dest;	/* Where it is running to, if anywhere */
+	CreatureFlags flags;		/* State word */
+	entities::Stats stats;		/* Physical description */
+	std::optional<RoomRef> room;	/* Current room for thing, if any */
+	List<Item> pack;			/* What the thing is carrying */
 };
 
 }  // namespace rogue

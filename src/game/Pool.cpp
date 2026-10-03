@@ -94,8 +94,8 @@ discard(Item &item)
 	 */
 	if (std::optional<ItemId> id = game().pool.id_of(item))
 		for (Creature &mp : game().level.monsters)
-			if (mp.t_dest == Destination(*id))
-				mp.t_dest = Hero{};
+			if (mp.dest == Destination(*id))
+				mp.dest = Hero{};
 	return discard_from(&item, game().pool.items);
 }
 

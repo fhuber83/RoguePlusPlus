@@ -96,7 +96,7 @@ missile(int ydelta, int xdelta)
 		msg("something in your pack explodes!!!");
 	}
 	if (obj->o_count < 2) {
-		game().player.body.t_pack.remove(*obj);
+		game().player.body.pack.remove(*obj);
 		game().player.in_pack--;
 	} else {
 		obj->o_count--;
@@ -134,12 +134,12 @@ do_motion(Item &obj, int ydelta, int xdelta)
 	/*
 	 * Come fly with us ...
 	 */
-	obj.o_pos = player.body.t_pos;
+	obj.o_pos = player.body.pos;
 	for (;;) {
 		/*
 		 * Erase the old one
 		 */
-		if (under != '@' && !(obj.o_pos == player.body.t_pos) && world::cansee(obj.o_pos.y, obj.o_pos.x))
+		if (under != '@' && !(obj.o_pos == player.body.pos) && world::cansee(obj.o_pos.y, obj.o_pos.x))
 			ui::display().draw_tile(obj.o_pos, under);
 		/*
 		 * Get the new position
@@ -214,7 +214,7 @@ fall(Item &obj, bool pr)
 					 level.flags_at(obj.o_pos).test(MapFlag::Maze))
 						? ui::TileStyle::Inverse : ui::TileStyle::Normal);
 			if (level.monster_at(fpos))
-				level.monster_at(fpos)->t_oldch = glyph_of(obj.o_type);
+				level.monster_at(fpos)->under = glyph_of(obj.o_type);
 		}
 		level.objects.push_front(obj);
 		return;
@@ -259,7 +259,7 @@ hit_monster(int y, int x, Item &obj)
 	Maybe<Creature> mo = game().level.monster_at({x, y});
 
 	if (mo)
-		return rules::fight({x, y}, mo->t_type, obj, true);
+		return rules::fight({x, y}, mo->type, obj, true);
 	return false;
 }
 
@@ -338,7 +338,7 @@ fallpos(const Item &obj)
 			 * put the object there, set it in the level list
 			 * and re-draw the room if he can see it
 			 */
-			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || world::Level::off_map({x, y}))
+			if ((y == player.body.pos.y && x == player.body.pos.x) || world::Level::off_map({x, y}))
 				continue;
 			int ch = game().level.at(y, x);
 			if (ch == FLOOR || ch == PASSAGE) {

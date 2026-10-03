@@ -27,8 +27,8 @@ chg_str(int amt)
 
 	if (amt == 0)
 		return;
-	add_str(player.body.t_stats.s_str, amt);
-	entities::str_t comp = player.body.t_stats.s_str;
+	add_str(player.body.stats.s_str, amt);
+	entities::str_t comp = player.body.stats.s_str;
 	if (player.wears(Hand::Left, Ring::AddStrength))
 		add_str(comp, -player.ring_item(Hand::Left)->o_ac);
 	if (player.wears(Hand::Right, Ring::AddStrength))

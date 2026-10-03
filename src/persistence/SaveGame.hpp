@@ -20,7 +20,7 @@
  * Pointers are saved as what they point to:
  *	- items and creatures by pool slot (slots keep their numbers, since new
  *	  things take the first free one);
- *	- a monster's t_dest as "hero", {"room_gold": i}, {"passage_gold": i}
+ *	- a monster's dest as "hero", {"room_gold": i}, {"passage_gold": i}
  *	  or {"item": slot} (a floor item's position);
  *	- rooms as {"room": i} or {"passage": i};
  *	- potion colours, stones and materials by their text, which the loader

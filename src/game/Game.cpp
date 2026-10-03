@@ -43,16 +43,16 @@ pool_problems(const Game &g)
 			item_refs[id.slot]++;
 	};
 	count_items(level.objects);
-	count_items(g.player.body.t_pack);
+	count_items(g.player.body.pack);
 	for (CreatureId id : level.monsters.ids()) {
 		int slot = id.slot;
 		creature_refs[slot]++;
 		Maybe<const Creature> tp = pool.creature(std::optional<CreatureId>(id));
 		if (!tp)
 			continue;
-		count_items(tp->t_pack);
+		count_items(tp->pack);
 
-		const std::optional<Destination> &dest = tp->t_dest;
+		const std::optional<Destination> &dest = tp->dest;
 		bool dest_ok = !dest || std::holds_alternative<Hero>(*dest)
 			|| (std::holds_alternative<Gold>(*dest) && world::Level::valid(std::get<Gold>(*dest).room));
 		if (dest && std::holds_alternative<ItemId>(*dest)) {
@@ -61,7 +61,7 @@ pool_problems(const Game &g)
 		}
 		if (!dest_ok)
 			problem("monster " + std::to_string(slot) + " is after something that isn't the hero, gold or a floor item");
-		if (tp->t_room && !world::Level::valid(*tp->t_room))
+		if (tp->room && !world::Level::valid(*tp->room))
 			problem("monster " + std::to_string(slot) + " is in a room that isn't one");
 	}
 
@@ -81,11 +81,11 @@ pool_problems(const Game &g)
 
 	const Player &player = g.player;
 	for (std::optional<ItemId> worn : {player.armor, player.weapon, player.rings[Hand::Left], player.rings[Hand::Right]})
-		if (worn && (!pool.item(worn) || !player.body.t_pack.contains(*pool.item(worn))))
+		if (worn && (!pool.item(worn) || !player.body.pack.contains(*pool.item(worn))))
 			problem("a worn item isn't in the pack");
 	if (g.turn.last_item && !pool.item(g.turn.last_item))
 		problem("the item picked last isn't in use");
-	if (player.body.t_room && !world::Level::valid(*player.body.t_room))
+	if (player.body.room && !world::Level::valid(*player.body.room))
 		problem("the rogue is in a room that isn't one");
 	if (player.old_room && !world::Level::valid(*player.old_room))
 		problem("the rogue was in a room that isn't one");
@@ -95,7 +95,7 @@ pool_problems(const Game &g)
 Coord Game::where(const Destination &dest) const
 {
 	if (std::holds_alternative<Hero>(dest))
-		return player.body.t_pos;
+		return player.body.pos;
 	if (std::holds_alternative<Gold>(dest))
 		return level.room(std::get<Gold>(dest).room).r_gold;
 	return pool.item(std::get<ItemId>(dest)).o_pos;

@@ -138,36 +138,36 @@ new_monster(Creature &tp, unsigned char type, Coord cp)
 	if (lev_add < 0)
 		lev_add = 0;
 	game().level.monsters.push_front(tp);
-	tp.t_type = type;
-	tp.t_disguise = type;
-	tp.t_pos = cp;
-	tp.t_oldch = '@';
-	tp.t_room = world::roomin(cp);
-	const MonsterKind &mp = monsters[tp.t_type-'A'];
-	tp.t_stats.s_lvl = mp.m_stats.s_lvl + lev_add;
-	tp.t_stats.s_maxhp = tp.t_stats.s_hpt = roll(tp.t_stats.s_lvl, 8);
-	tp.t_stats.s_arm = mp.m_stats.s_arm - lev_add;
-	tp.t_stats.s_dmg = mp.m_stats.s_dmg;
-	tp.t_stats.s_str = mp.m_stats.s_str;
-	tp.t_stats.s_exp = mp.m_stats.s_exp + lev_add * 10 + exp_add(tp);
-	tp.t_flags = mp.m_flags;
-	tp.t_turn = true;
-	tp.t_pack.clear();
+	tp.type = type;
+	tp.disguise = type;
+	tp.pos = cp;
+	tp.under = '@';
+	tp.room = world::roomin(cp);
+	const MonsterKind &mp = monsters[tp.type-'A'];
+	tp.stats.s_lvl = mp.m_stats.s_lvl + lev_add;
+	tp.stats.s_maxhp = tp.stats.s_hpt = roll(tp.stats.s_lvl, 8);
+	tp.stats.s_arm = mp.m_stats.s_arm - lev_add;
+	tp.stats.s_dmg = mp.m_stats.s_dmg;
+	tp.stats.s_str = mp.m_stats.s_str;
+	tp.stats.s_exp = mp.m_stats.s_exp + lev_add * 10 + exp_add(tp);
+	tp.flags = mp.m_flags;
+	tp.its_turn = true;
+	tp.pack.clear();
 	if (game().player.wears(Ring::AggravateMonster))
 		start_run(cp);
 	if (type == 'X')
 	{
 		switch (rnd(game().level.depth > 25 ? 9 : 8))
 		{
-		case 0: tp.t_disguise = GOLD; break;
-		case 1: tp.t_disguise = POTION; break;
-		case 2: tp.t_disguise = SCROLL; break;
-		case 3: tp.t_disguise = STAIRS; break;
-		case 4: tp.t_disguise = WEAPON; break;
-		case 5: tp.t_disguise = ARMOR; break;
-		case 6: tp.t_disguise = RING; break;
-		case 7: tp.t_disguise = STICK; break;
-		case 8: tp.t_disguise = AMULET;
+		case 0: tp.disguise = GOLD; break;
+		case 1: tp.disguise = POTION; break;
+		case 2: tp.disguise = SCROLL; break;
+		case 3: tp.disguise = STAIRS; break;
+		case 4: tp.disguise = WEAPON; break;
+		case 5: tp.disguise = ARMOR; break;
+		case 6: tp.disguise = RING; break;
+		case 7: tp.disguise = STICK; break;
+		case 8: tp.disguise = AMULET;
 		break;
 		}
 	}
@@ -205,10 +205,10 @@ namespace {
 int
 exp_add(const Creature &tp)
 {
-	int mod = tp.t_stats.s_lvl == 1 ? tp.t_stats.s_maxhp / 8 : tp.t_stats.s_maxhp / 6;
-	if (tp.t_stats.s_lvl > 9)
+	int mod = tp.stats.s_lvl == 1 ? tp.stats.s_maxhp / 8 : tp.stats.s_maxhp / 6;
+	if (tp.stats.s_lvl > 9)
 		mod *= 20;
-	else if (tp.t_stats.s_lvl > 6)
+	else if (tp.stats.s_lvl > 6)
 		mod *= 4;
 	return mod;
 }
@@ -234,12 +234,12 @@ wanderer()
 	Coord cp;
 	do {
 		i = world::rnd_room();
-		if (RoomRef::room(i) == player.body.t_room)
+		if (RoomRef::room(i) == player.body.room)
 			continue;
 		cp = rnd_pos(game().level.rooms[i]);
-	} while (!(RoomRef::room(i) != player.body.t_room && step_ok(game().level.seen_at(cp))));
+	} while (!(RoomRef::room(i) != player.body.room && step_ok(game().level.seen_at(cp))));
 	new_monster(*tp, randmonster(true), cp);
-	start_run(tp->t_pos);
+	start_run(tp->pos);
 }
 
 /*
@@ -254,29 +254,29 @@ wake_monster(int y, int x)
 	Maybe<Creature> tp = game().level.monster_at({x, y});
 	if (!tp)
 		return tp;
-	unsigned char ch = tp->t_type;
+	unsigned char ch = tp->type;
 	/*
 	 * Every time he sees mean monster, it might start chasing him
 	 */
-	if (!tp->t_flags.test(CreatureFlag::Running) && rnd(3) != 0 && tp->t_flags.test(CreatureFlag::Mean) && !tp->t_flags.test(CreatureFlag::Held)
+	if (!tp->flags.test(CreatureFlag::Running) && rnd(3) != 0 && tp->flags.test(CreatureFlag::Mean) && !tp->flags.test(CreatureFlag::Held)
 		&& !player.wears(Ring::Stealth))
 	{
-		tp->t_dest = Hero{};
-		tp->t_flags.set(CreatureFlag::Running);
+		tp->dest = Hero{};
+		tp->flags.set(CreatureFlag::Running);
 	}
-	if (ch == 'M' && !player.body.t_flags.test(CreatureFlag::Blind) && !tp->t_flags.test(CreatureFlag::Found)
-		&& !tp->t_flags.test(CreatureFlag::Cancelled) && tp->t_flags.test(CreatureFlag::Running))
+	if (ch == 'M' && !player.body.flags.test(CreatureFlag::Blind) && !tp->flags.test(CreatureFlag::Found)
+		&& !tp->flags.test(CreatureFlag::Cancelled) && tp->flags.test(CreatureFlag::Running))
 	{
-		std::optional<RoomRef> rp = player.body.t_room;
-		int dst = distance_sq({x, y}, player.body.t_pos);
+		std::optional<RoomRef> rp = player.body.room;
+		int dst = distance_sq({x, y}, player.body.pos);
 		if ((rp && !game().level.room(*rp).r_flags.test(RoomFlag::Dark)) || dst < world::LAMPDIST) {
-			tp->t_flags.set(CreatureFlag::Found);
+			tp->flags.set(CreatureFlag::Found);
 			if (!rules::save(rules::SaveThrow::Magic)) {
-				if (player.body.t_flags.test(CreatureFlag::Confused))
+				if (player.body.flags.test(CreatureFlag::Confused))
 					rules::lengthen(rules::Event::Unconfuse, rnd(20) + rules::huh_duration());
 				else
 					rules::fuse(rules::Event::Unconfuse, rnd(20) + rules::huh_duration());
-				player.body.t_flags.set(CreatureFlag::Confused);
+				player.body.flags.set(CreatureFlag::Confused);
 				msg("the medusa's gaze has confused you");
 			}
 		}
@@ -284,12 +284,12 @@ wake_monster(int y, int x)
 	/*
 	 * Let greedy ones guard gold
 	 */
-	if (tp->t_flags.test(CreatureFlag::Greedy) && !tp->t_flags.test(CreatureFlag::Running)) {
-		tp->t_flags.set(CreatureFlag::Running);
-		if (game().level.room(*player.body.t_room).r_goldval)
-			tp->t_dest = Gold{*player.body.t_room};
+	if (tp->flags.test(CreatureFlag::Greedy) && !tp->flags.test(CreatureFlag::Running)) {
+		tp->flags.set(CreatureFlag::Running);
+		if (game().level.room(*player.body.room).r_goldval)
+			tp->dest = Gold{*player.body.room};
 		else
-			tp->t_dest = Hero{};
+			tp->dest = Hero{};
 	}
 	return tp;
 }
@@ -304,8 +304,8 @@ give_pack(Creature &tp)
 	/*
 	 * check if we can allocate a new item
 	 */
-	if (game().pool.total < MAXITEMS && rnd(100) < monsters[tp.t_type-'A'].m_carry)
-		tp.t_pack.push_front(*items::new_thing());
+	if (game().pool.total < MAXITEMS && rnd(100) < monsters[tp.type-'A'].m_carry)
+		tp.pack.push_front(*items::new_thing());
 }
 
 /*

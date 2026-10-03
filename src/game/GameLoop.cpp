@@ -65,9 +65,9 @@ playit(const std::optional<std::string> &sname)
 		persistence::restore(*sname);
 		ui::display().show_cursor(false);
 	} else {
-		player.old_pos.x = player.body.t_pos.x;
-		player.old_pos.y = player.body.t_pos.y;
-		player.old_room = world::roomin(player.body.t_pos);
+		player.old_pos.x = player.body.pos.x;
+		player.old_pos.y = player.body.pos.y;
+		player.old_room = world::roomin(player.body.pos);
 	}
 	while (game().playing)
 		command();			/* Command execution */

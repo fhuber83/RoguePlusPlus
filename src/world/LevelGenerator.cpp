@@ -56,7 +56,7 @@ new_level()
 	rogue::Player &player = game().player;
 	world::Level &level = game().level;
 
-	player.body.t_flags.unset(CreatureFlag::Held);	/* unhold when you go down just in case */
+	player.body.flags.unset(CreatureFlag::Held);	/* unhold when you go down just in case */
 	/*
 	 * Monsters only get displayed when you move
 	 * so start a level by having the poor guy rest
@@ -73,7 +73,7 @@ new_level()
 	 * Free up the monsters on the last level
 	 */
 	for (Creature &tp : level.monsters)
-		list_free(tp.t_pack);
+		list_free(tp.pack);
 	list_free(level.monsters);
 	/*
 	 * just in case we left some flytraps behind
@@ -124,17 +124,17 @@ new_level()
 	}
 	do {
 		int rm = rnd_room();
-		player.body.t_pos = rnd_pos(level.rooms[rm]);
-		index = Level::index(player.body.t_pos);
+		player.body.pos = rnd_pos(level.rooms[rm]);
+		index = Level::index(player.body.pos);
 	} while (!(is_floor(level.map[index]) && level.flags[index].test(MapFlag::Real)
-				&& !level.monster_at(player.body.t_pos)));
+				&& !level.monster_at(player.body.pos)));
 
 	game().message.end = 0;
-	enter_room(player.body.t_pos);
-	ui::display().draw_tile(player.body.t_pos, PLAYER);
-	player.old_pos = player.body.t_pos;
-	player.old_room = player.body.t_room;
-	if (player.body.t_flags.test(CreatureFlag::SeeMonst))
+	enter_room(player.body.pos);
+	ui::display().draw_tile(player.body.pos, PLAYER);
+	player.old_pos = player.body.pos;
+	player.old_room = player.body.room;
+	if (player.body.flags.test(CreatureFlag::SeeMonst))
 		items::effects::turn_see(false);
 }
 
@@ -289,7 +289,7 @@ treas_room()
 			if (Maybe<Creature> tp = new_creature())
 			{
 				entities::new_monster(*tp, entities::randmonster(false), mp);
-				tp->t_flags.set(CreatureFlag::Mean);	/* no sloughers in THIS room */
+				tp->flags.set(CreatureFlag::Mean);	/* no sloughers in THIS room */
 				entities::give_pack(*tp);
 			}
 		}

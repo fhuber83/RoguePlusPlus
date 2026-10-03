@@ -70,7 +70,7 @@ command()
 	 * in, and the moves it had left.
 	 */
 	if (!turn.resuming || turn.moves_left == 0)
-		turn.moves_left = player.body.t_flags.test(CreatureFlag::Hasted) ? rnd(2) + 2 : 1;
+		turn.moves_left = player.body.flags.test(CreatureFlag::Hasted) ? rnd(2) + 2 : 1;
 	for (; turn.moves_left > 0; turn.moves_left--) {
 		status();
 		if (player.no_command) {
@@ -198,7 +198,7 @@ get_prefix()
 		turn.fast_mode = false;
 	// Which commands a count repeats is in game/Command.cpp
 	if (command_of(retch) == Command::Move && turn.fast_mode && !turn.running) {
-		if (!game().player.body.t_flags.test(CreatureFlag::Blind)) {
+		if (!game().player.body.flags.test(CreatureFlag::Blind)) {
 			turn.door_stop = true;
 			turn.first_move = true;
 		}
@@ -252,7 +252,7 @@ execcom()
 				turn.after = false;
 			break;
 		case Command::Quit: quit(); break;
-		case Command::Inventory: items::inventory(player.body.t_pack, ItemFilter::all(), ""); break;
+		case Command::Inventory: items::inventory(player.body.pack, ItemFilter::all(), ""); break;
 		case Command::Drop: items::drop(); break;
 		case Command::Quaff: items::effects::quaff(); break;
 		case Command::Read: items::effects::read_scroll(); break;
@@ -291,7 +291,7 @@ execcom()
 		case Command::Rest: rules::doctor(); break;
 		case Command::IdentifyTrap:
 			if (get_dir()) {
-				Coord lookat = player.body.t_pos + turn.delta;
+				Coord lookat = player.body.pos + turn.delta;
 				if (level.at(lookat) != TRAP)
 					msg("no trap there.");
 				else

@@ -25,7 +25,7 @@ namespace rogue::rules {
 void
 unconfuse()
 {
-	game().player.body.t_flags.unset(CreatureFlag::Confused);
+	game().player.body.flags.unset(CreatureFlag::Confused);
 	msg("you feel less confused now");
 }
 
@@ -37,9 +37,9 @@ void
 unsee()
 {
 	for (Creature &th : game().level.monsters)
-		if (th.t_flags.test(CreatureFlag::Invisible) && entities::see_monst(th) && th.t_oldch != '@')
-			ui::display().draw_tile(th.t_pos, th.t_oldch);
-	game().player.body.t_flags.unset(CreatureFlag::SeeInvisible);
+		if (th.flags.test(CreatureFlag::Invisible) && entities::see_monst(th) && th.under != '@')
+			ui::display().draw_tile(th.pos, th.under);
+	game().player.body.flags.unset(CreatureFlag::SeeInvisible);
 }
 
 /*
@@ -51,12 +51,12 @@ sight()
 {
 	rogue::Player &player = game().player;
 
-	if (player.body.t_flags.test(CreatureFlag::Blind))
+	if (player.body.flags.test(CreatureFlag::Blind))
 	{
 		extinguish(Event::Sight);
-		player.body.t_flags.unset(CreatureFlag::Blind);
-		if (!game().level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone))
-			world::enter_room(player.body.t_pos);
+		player.body.flags.unset(CreatureFlag::Blind);
+		if (!game().level.room(*player.body.room).r_flags.test(RoomFlag::Gone))
+			world::enter_room(player.body.pos);
 		msg("the veil of darkness lifts");
 	}
 }
@@ -68,7 +68,7 @@ sight()
 void
 nohaste()
 {
-	game().player.body.t_flags.unset(CreatureFlag::Hasted);
+	game().player.body.flags.unset(CreatureFlag::Hasted);
 	msg("you feel yourself slowing down");
 }
 

@@ -470,7 +470,7 @@ whatis()
 	Maybe<Item> obj;
 	rogue::Items &items = game().items;
 
-	if (game().player.body.t_pack.empty()) {
+	if (game().player.body.pack.empty()) {
 		msg("You don't have anything in your pack to identify");
 		return;
 	}

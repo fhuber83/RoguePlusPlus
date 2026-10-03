@@ -244,7 +244,7 @@ struct Game {
  * each item in use is in exactly one of the level's objects, the rogue's
  * pack or a monster's pack; each creature in use is on the level's monster
  * list once; worn items are in the pack; the item get_item() gave last is in
- * use; a monster's t_dest is the hero, a room's or passage's gold, or a floor
+ * use; a monster's dest is the hero, a room's or passage's gold, or a floor
  * item; rooms are rooms or passages; and the count of things in use is right.
  * Holds between commands, which is
  * when a game is saved.

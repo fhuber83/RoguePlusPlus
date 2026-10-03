@@ -60,9 +60,9 @@ TEST(Level, MonsterAndObjectAt)
 	gold.o_type = ItemKind::Gold;
 	gold.o_pos = {10, 5};
 	Creature &mimic = *new_creature();
-	mimic.t_type = 'X';
-	mimic.t_disguise = STAIRS;
-	mimic.t_pos = {11, 5};
+	mimic.type = 'X';
+	mimic.disguise = STAIRS;
+	mimic.pos = {11, 5};
 	level.at({10, 5}) = GOLD;
 	level.at({11, 5}) = FLOOR;
 	level.objects.push_front(gold);

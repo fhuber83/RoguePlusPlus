@@ -61,7 +61,7 @@ read_scroll()
 		/*
 		 * Scroll of monster confusion.  Give him that power.
 		 */
-		player.body.t_flags.set(CreatureFlag::CanConfuse);
+		player.body.flags.set(CreatureFlag::CanConfuse);
 		msg("your hands begin to glow red");
 		break;
 	case Scroll::EnchantArmor:
@@ -78,13 +78,13 @@ read_scroll()
 		 * from chasing after the hero.
 		 */
 
-		for (int x = player.body.t_pos.x - 3; x <= player.body.t_pos.x + 3; x++)
+		for (int x = player.body.pos.x - 3; x <= player.body.pos.x + 3; x++)
 			if (x >= 0 && x < MAXCOLS)
-				for (int y = player.body.t_pos.y - 3; y <= player.body.t_pos.y + 3; y++)
+				for (int y = player.body.pos.y - 3; y <= player.body.pos.y + 3; y++)
 					if (y > 0 && y < maxrow)
 						if (Maybe<Creature> mo = level.monster_at({x, y})) {
-							mo->t_flags.unset(CreatureFlag::Running);
-							mo->t_flags.set(CreatureFlag::Held);
+							mo->flags.unset(CreatureFlag::Running);
+							mo->flags.set(CreatureFlag::Held);
 						}
 		break;
 	case Scroll::Sleep:
@@ -93,12 +93,12 @@ read_scroll()
 		 */
 		items.s_know[Scroll::Sleep] = true;
 		player.no_command += rnd(rules::sleep_time()) + 4;
-		player.body.t_flags.unset(CreatureFlag::Running);
+		player.body.flags.unset(CreatureFlag::Running);
 		msg("you fall asleep");
 		break;
 	case Scroll::CreateMonster:
 		{
-		std::optional<Coord> mp = entities::plop_monster(player.body.t_pos.y, player.body.t_pos.x);
+		std::optional<Coord> mp = entities::plop_monster(player.body.pos.y, player.body.pos.x);
 
 		Maybe<Creature> mo = mp ? new_creature() : Maybe<Creature>();
 		if (mo)
@@ -148,8 +148,8 @@ read_scroll()
 				case PASSAGE:
 				case STAIRS:
 					if (Maybe<Creature> mo = level.monster_at({x, y}))
-						if (mo->t_oldch == ' ')
-							mo->t_oldch = ch;
+						if (mo->under == ' ')
+							mo->under = ch;
 					break;
 				default:
 					ch = ' ';
@@ -188,9 +188,9 @@ read_scroll()
 		 * Make him dissapear and reappear
 		 */
 		{
-		std::optional<RoomRef> cur_room = player.body.t_room;
+		std::optional<RoomRef> cur_room = player.body.room;
 		world::teleport();
-		if (cur_room != player.body.t_room)
+		if (cur_room != player.body.room)
 			items.s_know[Scroll::Teleportation] = true;
 		}
 		break;
@@ -261,7 +261,7 @@ read_scroll()
 			if (player.weapon_item()->o_enemy != 0) {
 				msg("your {} vanishes in a puff of smoke",
 				w_names[player.weapon_item()->which<WeaponType>()]);
-				player.body.t_pack.remove(*player.weapon_item());
+				player.body.pack.remove(*player.weapon_item());
 				discard(*player.weapon_item());
 				player.weapon = std::nullopt;
 			} else {
@@ -301,7 +301,7 @@ read_scroll()
 	obj->o_count--;
 	else
 	{
-	player.body.t_pack.remove(*obj);
+	player.body.pack.remove(*obj);
 	discardit = true;
 	}
 	call_it(items.s_know[obj->which<Scroll>()], items.s_guess[obj->which<Scroll>()]);

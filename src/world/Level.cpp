@@ -27,7 +27,7 @@ unsigned char
 Level::seen_at(Coord pos)
 {
 	if (Maybe<Creature> tp = monster_at(pos))
-		return tp->t_disguise;
+		return tp->disguise;
 	return at(pos);
 }
 
@@ -35,7 +35,7 @@ Maybe<Creature>
 Level::monster_at(Coord pos) const
 {
 	for (Creature &tp : monsters)
-		if (tp.t_pos == pos)
+		if (tp.pos == pos)
 			return tp;
 	return std::nullopt;
 }

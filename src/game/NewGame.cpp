@@ -221,7 +221,7 @@ credits()
 void
 init_player()
 {
-	game().player.body.t_stats = game().player.max_stats;
+	game().player.body.stats = game().player.max_stats;
 	game().player.food_left = rules::hunger_time();
 	/*
 	 * initialize things

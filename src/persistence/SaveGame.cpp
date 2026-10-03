@@ -166,7 +166,7 @@ const json flytrap_alias = {{"alias", "flytrap"}};
 // A monster that fights with the flytraps' growing attack
 bool is_flytrap(const Game &g, const Creature &c)
 {
-	return c.t_type == 'F' && &c != &g.player.body;
+	return c.type == 'F' && &c != &g.player.body;
 }
 
 json stats_json(const entities::Stats &s, bool flytrap)
@@ -188,10 +188,10 @@ json item_list(const Game &g, const List<Item> &list)
 json creature_json(const Game &g, const Creature &c)
 {
 	return {
-		{"pos", coord_json(c.t_pos)}, {"turn", c.t_turn}, {"type", c.t_type},
-		{"disguise", c.t_disguise}, {"oldch", c.t_oldch}, {"dest", dest_ref(g, c.t_dest)},
-		{"flags", c.t_flags.bits()}, {"stats", stats_json(c.t_stats, is_flytrap(g, c))},
-		{"room", room_ref(c.t_room)}, {"pack", item_list(g, c.t_pack)},
+		{"pos", coord_json(c.pos)}, {"turn", c.its_turn}, {"type", c.type},
+		{"disguise", c.disguise}, {"oldch", c.under}, {"dest", dest_ref(g, c.dest)},
+		{"flags", c.flags.bits()}, {"stats", stats_json(c.stats, is_flytrap(g, c))},
+		{"room", room_ref(c.room)}, {"pack", item_list(g, c.pack)},
 	};
 }
 
@@ -617,16 +617,16 @@ void items_into(Game &g, List<Item> &list, const json &slots, std::string_view w
 
 void creature_from(Game &g, Creature &c, const json &j)
 {
-	c.t_pos = coord_of(j, "pos");
-	c.t_turn = num<char>(j, "turn");
-	c.t_type = num<char>(j, "type");
-	c.t_disguise = num<unsigned char>(j, "disguise");
-	c.t_oldch = num<unsigned char>(j, "oldch");
-	c.t_dest = dest_at(g, field(j, "dest"));
-	c.t_flags = CreatureFlags::from_bits(num<CreatureFlags::Bits>(j, "flags"));
-	c.t_stats = stats_from(field(j, "stats"), is_flytrap(g, c));
-	c.t_room = room_at(field(j, "room"), "\"room\"");
-	items_into(g, c.t_pack, field(j, "pack"), "\"pack\"");
+	c.pos = coord_of(j, "pos");
+	c.its_turn = num<char>(j, "turn");
+	c.type = num<char>(j, "type");
+	c.disguise = num<unsigned char>(j, "disguise");
+	c.under = num<unsigned char>(j, "oldch");
+	c.dest = dest_at(g, field(j, "dest"));
+	c.flags = CreatureFlags::from_bits(num<CreatureFlags::Bits>(j, "flags"));
+	c.stats = stats_from(field(j, "stats"), is_flytrap(g, c));
+	c.room = room_at(field(j, "room"), "\"room\"");
+	items_into(g, c.pack, field(j, "pack"), "\"pack\"");
 }
 
 void item_from(Item &o, const json &j)

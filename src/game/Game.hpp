@@ -19,6 +19,7 @@
 #include "entities/List.hpp"
 #include "entities/Stats.hpp"
 #include "game/Id.hpp"
+#include "game/MessageLine.hpp"
 #include "game/Slots.hpp"
 #include "items/KindInfo.hpp"
 #include "items/Kinds.hpp"
@@ -54,20 +55,6 @@ struct Options {
 
 	// Leave out the flavour text of messages
 	bool brief() const { return terse || expert; }
-};
-
-/*
- * The message line: the message being built, the one shown and the last one
- * kept for ^R.
- */
-inline constexpr int BUFSIZE = 128;	/* the longest message, with its end */
-
-struct MessageLine {
-	std::string text;				/* msgbuf: the message being built, at most BUFSIZE - 1 */
-	std::string last;				/* huh: the last message printed */
-	int end = 0;					/* mpos: where the shown message ends, 0 if none */
-	int next_end = 0;				/* newpos: where the message being built ends */
-	bool remember = true;			/* save_msg: keep the message for ^R */
 };
 
 /*

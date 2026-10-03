@@ -2,8 +2,10 @@
 
 /*
  * The message line, and the prompts that wait for a key: messages are built
- * in game().message, shown through the display, and wait for Space at
- * "More" when a new one would cover one not yet read.
+ * in game().message (game/MessageLine.hpp), shown through the display, and
+ * wait for Space at "More" when a new one would cover one not yet read. The
+ * first five functions are game().message's members, for the callers that
+ * don't hold the game's message line.
  */
 
 #include <format>

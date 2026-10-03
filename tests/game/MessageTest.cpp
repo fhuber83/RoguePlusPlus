@@ -4,6 +4,7 @@
 #include <string>
 
 #include "game/Game.hpp"
+#include "game/MessageLine.hpp"
 #include "game/Messages.hpp"
 
 namespace rogue {

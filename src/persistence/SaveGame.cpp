@@ -40,6 +40,7 @@
 #include "entities/Stats.hpp"
 #include "game/Game.hpp"
 #include "game/Id.hpp"
+#include "game/MessageLine.hpp"
 #include "items/KindInfo.hpp"
 #include "items/Kinds.hpp"
 #include "items/effects/Weapon.hpp"

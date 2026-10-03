@@ -59,14 +59,12 @@ Coord ch_ret;			/* Where chasing takes	you */
 void
 runners()
 {
-	Maybe<Creature> tp;
-	int dist;
 	rogue::Player &player = game().player;
 
-	for (tp = game().level.monsters.first(); tp; tp = game().level.monsters.after(*tp)) {
+	for (Maybe<Creature> tp = game().level.monsters.first(); tp; tp = game().level.monsters.after(*tp)) {
 		if (!tp->t_flags.test(CreatureFlag::Held) && tp->t_flags.test(CreatureFlag::Running)) {
 			const CreatureId id = *game().pool.id_of(*tp);
-			dist = distance_sq(player.body.t_pos, tp->t_pos);
+			int dist = distance_sq(player.body.t_pos, tp->t_pos);
 			if	(!(tp->t_flags.test(CreatureFlag::Slow) || (tp->t_type == 'S' && dist > 3)) || tp->t_turn)
 				do_chase(*tp);
 			/*
@@ -102,19 +100,13 @@ namespace {
 void
 do_chase(Creature &th)
 {
-	int	mindist	= 32767, i, dist;
-	bool door;
-	Maybe<Item> obj;
-	std::optional<RoomRef> oroom;
-	std::optional<RoomRef> rer, ree;	/* room of chaser, room of chasee */
-	Coord target;				/* Temporary	destination for	chaser */
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 
-	rer	= th.t_room;		/* Find room of chaser */
+	std::optional<RoomRef> rer = th.t_room;		/* Find room of chaser */
 	if (th.t_flags.test(CreatureFlag::Greedy) && level.room(*rer).r_goldval == 0)
 		th.t_dest = Hero{};	/*	If gold	has been taken,	run after hero */
-	ree	= player.body.t_room;
+	std::optional<RoomRef> ree = player.body.t_room;	/* room of chasee */
 	if (th.t_dest != Destination(Hero{}))	/*	Find room of chasee */
 		ree = world::roomin(game().where(*th.t_dest));
 	if (!ree)
@@ -122,21 +114,23 @@ do_chase(Creature &th)
 	/*
 	 * We don't	count doors as inside rooms for	this routine
 	 */
-	door = (level.at(th.t_pos) == DOOR);
+	bool door = (level.at(th.t_pos) == DOOR);
 
 	/*
 	 * If the object of	our desire is in a different room,
 	 * and we are not in a maze, run to	the door nearest to
 	 * our goal.
 	 */
+	int mindist = 32767;
+	Coord target;				/* Temporary	destination for	chaser */
 	for (;;) {
 		if (rer != ree && !level.room(*rer).r_flags.test(RoomFlag::Maze))
 		{
 			const world::Room &from = level.room(*rer);
 			const Coord dest = game().where(*th.t_dest);
 
-			for (i	= 0; i < from.r_nexits;	i++) {	/*	loop through doors */
-				dist = distance_sq(dest, from.r_exit[i]);
+			for (int i = 0; i < from.r_nexits; i++) {	/*	loop through doors */
+				int dist = distance_sq(dest, from.r_exit[i]);
 				if	(dist <	mindist) {
 					target = from.r_exit[i];
 					mindist = dist;
@@ -154,6 +148,7 @@ do_chase(Creature &th)
 			 * see	if (a) the hero	in on a	straight line from it, and (b) that
 			 * it is within shooting distance, but	outside	of striking range.
 			 */
+			int dist;
 			if ((th.t_type == 'D' || th.t_type == 'I')
 				&&	(th.t_pos.y ==	player.body.t_pos.y || th.t_pos.x == player.body.t_pos.x
 				 || abs(th.t_pos.y - player.body.t_pos.y) == abs(th.t_pos.x - player.body.t_pos.x))
@@ -180,13 +175,11 @@ do_chase(Creature &th)
 		rules::attack(th);
 		return;
 	} else if (ch_ret == game().where(*th.t_dest)) {
-		for (obj = level.objects.first(); obj; obj = level.objects.after(*obj))
+		for (Maybe<Item> obj = level.objects.first(); obj; obj = level.objects.after(*obj))
 			if	(th.t_dest == Destination(*game().pool.id_of(obj))) {
-				unsigned char oldchar;
-
 				level.objects.remove(*obj);
 				th.t_pack.push_front(*obj);
-				oldchar = level.at(obj->o_pos) =
+				unsigned char oldchar = level.at(obj->o_pos) =
 				level.room(*th.t_room).r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
 				if (world::cansee(obj->o_pos.y, obj->o_pos.x))
 					ui::display().draw_tile(obj->o_pos, oldchar);
@@ -209,7 +202,7 @@ do_chase(Creature &th)
 		else
 			ui::display().draw_tile(th.t_pos, th.t_oldch);
 	}
-	oroom = th.t_room;
+	std::optional<RoomRef> oroom = th.t_room;
 	if (!(ch_ret == th.t_pos))
 	{
 		if (!(th.t_room = world::roomin(ch_ret))) {
@@ -277,12 +270,10 @@ see_monst(const Creature &mp)
 void
 start_run(Coord runner)
 {
-	Maybe<Creature> tp;
-
 	/*
 	 * If we couldn't find him,	something is funny
 	 */
-	tp = moat(runner.y, runner.x);
+	Maybe<Creature> tp = moat(runner.y, runner.x);
 	if (tp) {
 		/*
 		 *	Start the beastie running
@@ -305,11 +296,8 @@ namespace {
 void
 chase(Creature &tp, Coord ee)
 {
-	int	x, y;
-	int	dist, thisdist;
-	Maybe<Item> obj;
 	const Coord er = tp.t_pos;
-	unsigned char ch;
+	int	dist;
 	int	plcnt =	1;
 
 	/*
@@ -337,7 +325,6 @@ chase(Creature &tp, Coord ee)
 	 */
 	else
 	{
-		int ey, ex;
 		/*
 		 * This will eventually hold where we move to get closer
 		 * If we can't	find an	empty spot, we stay where we are.
@@ -345,17 +332,17 @@ chase(Creature &tp, Coord ee)
 		dist =	distance_sq(er, ee);
 		ch_ret	= er;
 
-		ey = er.y + 1;
-		ex = er.x + 1;
-		for (x	= er.x	- 1; x <= ex; x++)
+		int ey = er.y + 1;
+		int ex = er.x + 1;
+		for (int x = er.x - 1; x <= ex; x++)
 		{
-			for (y = er.y - 1; y <= ey; y++)
+			for (int y = er.y - 1; y <= ey; y++)
 			{
 				const Coord tryp = {x, y};
 
 				if (world::offmap(y,	x) || !world::diag_ok(er, tryp))
 					continue;
-				ch = world::winat(y,	x);
+				unsigned char ch = world::winat(y, x);
 				if (world::step_ok(ch))
 				{
 					/*
@@ -364,7 +351,8 @@ chase(Creature &tp, Coord ee)
 					 */
 					if (ch ==	SCROLL)
 					{
-						for (obj = game().level.objects.first(); obj; obj = game().level.objects.after(*obj))
+						Maybe<Item> obj = game().level.objects.first();
+						for (; obj; obj = game().level.objects.after(*obj))
 						{
 							if (y ==	obj->o_pos.y &&	x == obj->o_pos.x)
 								break;
@@ -376,7 +364,7 @@ chase(Creature &tp, Coord ee)
 					 * If we didn't find any scrolls at this place or	it
 					 * wasn't	a scare	scroll,	then this place	counts
 					 */
-					thisdist = distance_sq(tryp, ee);
+					int thisdist = distance_sq(tryp, ee);
 					if (thisdist < dist)
 					{
 						plcnt = 1;
@@ -403,16 +391,14 @@ chase(Creature &tp, Coord ee)
 Destination
 find_dest(const Creature &tp)
 {
-	Maybe<Item> obj;
-	int prob;
-	std::optional<RoomRef> rp;
 	rogue::Player &player = game().player;
 
-	if ((prob =	monsters[tp.t_type - 'A'].m_carry) <= 0 || tp.t_room == player.body.t_room
+	int prob = monsters[tp.t_type - 'A'].m_carry;
+	if (prob <= 0 || tp.t_room == player.body.t_room
 	|| see_monst(tp))
 		return Hero{};
-	rp = tp.t_room;
-	for (obj = game().level.objects.first(); obj; obj = game().level.objects.after(*obj))
+	std::optional<RoomRef> rp = tp.t_room;
+	for (Maybe<Item> obj = game().level.objects.first(); obj; obj = game().level.objects.after(*obj))
 	{
 	if (obj->o_type == ItemKind::Scroll && obj->which<Scroll>() == Scroll::ScareMonster)
 		continue;
@@ -450,9 +436,10 @@ bool	new_slime(Creature &tp);
 void
 slime_split(Creature &tp)
 {
-	Maybe<Creature> nslime;
-
-	if (!new_slime(tp) || !(nslime = new_creature()))
+	if (!new_slime(tp))
+		return;
+	Maybe<Creature> nslime = new_creature();
+	if (!nslime)
 		return;
 	msg("The slime divides.  Ick!");
 	new_monster(*nslime, 'S', slimy);
@@ -468,28 +455,28 @@ namespace {
 bool
 new_slime(Creature &tp)
 {
-	int y, x, ty, tx;
-	bool ret;
-	Maybe<Creature> ntp;
-
-	ret = false;
+	bool ret = false;
 	tp.t_flags.set(CreatureFlag::Flying);
-	std::optional<Coord> sp = plop_monster((ty = tp.t_pos.y), (tx = tp.t_pos.x));
+	int ty = tp.t_pos.y;
+	int tx = tp.t_pos.x;
+	std::optional<Coord> sp = plop_monster(ty, tx);
 	if (!sp) {
 		/*
 		 * There were no open spaces next to this slime, look for other
 		 * slimes that might have open spaces next to them.
 		 */
-		for (y = ty -1; y <= ty+1; y++)
-			for (x = tx-1; x <= tx+1; x++)
-				if (world::winat(y, x) == 'S' && (ntp = moat(y, x))) {
-					if (ntp->t_flags.test(CreatureFlag::Flying))
-						continue;				/* Already done this one */
-					if (new_slime(*ntp)) {
-						y = ty+2;
-						x = tx +2;
-					}
+		for (int y = ty -1; y <= ty+1; y++)
+			for (int x = tx-1; x <= tx+1; x++) {
+				if (world::winat(y, x) != 'S')
+					continue;
+				Maybe<Creature> ntp = moat(y, x);
+				if (!ntp || ntp->t_flags.test(CreatureFlag::Flying))
+					continue;				/* none, or already done this one */
+				if (new_slime(*ntp)) {
+					y = ty+2;
+					x = tx +2;
 				}
+			}
 	} else {
 		ret = true;
 		slimy = *sp;
@@ -513,13 +500,12 @@ new_slime(Creature &tp)
 std::optional<Coord>
 plop_monster(int r, int c)
 {
-	int y, x, inv_odds = 0;
+	int inv_odds = 0;
 	std::optional<Coord> spot;
-	unsigned char ch;
 	rogue::Player &player = game().player;
 
-	for (y = r-1; y <= r+1; y++)
-		for (x = c-1; x <= c+1; x++) {
+	for (int y = r-1; y <= r+1; y++)
+		for (int x = c-1; x <= c+1; x++) {
 			/*
 			 * Don't put a monster in top of the player.
 			 */
@@ -528,7 +514,8 @@ plop_monster(int r, int c)
 			/*
 			 * Or anything else nasty
 			 */
-			if (world::step_ok(ch = world::winat(y, x))) {
+			unsigned char ch = world::winat(y, x);
+			if (world::step_ok(ch)) {
 				if (ch == SCROLL && world::find_obj(y, x)->which<Scroll>() == Scroll::ScareMonster)
 					continue;
 				/*
@@ -550,9 +537,7 @@ plop_monster(int r, int c)
 void
 aggravate()
 {
-	Maybe<Creature> mi;
-
-	for (mi = game().level.monsters.first(); mi; mi = game().level.monsters.after(*mi))
+	for (Maybe<Creature> mi = game().level.monsters.first(); mi; mi = game().level.monsters.after(*mi))
 		start_run(mi->t_pos);
 }
 

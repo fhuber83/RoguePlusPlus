@@ -134,9 +134,8 @@ randmonster(bool wander)
 void
 new_monster(Creature &tp, unsigned char type, Coord cp)
 {
-	int lev_add;
-
-	if ((lev_add = game().level.depth - world::AMULETLEVEL) < 0)
+	int lev_add = game().level.depth - world::AMULETLEVEL;
+	if (lev_add < 0)
 		lev_add = 0;
 	game().level.monsters.push_front(tp);
 	tp.t_type = type;
@@ -206,12 +205,7 @@ namespace {
 int
 exp_add(const Creature &tp)
 {
-	int mod;
-
-	if (tp.t_stats.s_lvl == 1)
-		mod = tp.t_stats.s_maxhp / 8;
-	else
-		mod = tp.t_stats.s_maxhp / 6;
+	int mod = tp.t_stats.s_lvl == 1 ? tp.t_stats.s_maxhp / 8 : tp.t_stats.s_maxhp / 6;
 	if (tp.t_stats.s_lvl > 9)
 		mod *= 20;
 	else if (tp.t_stats.s_lvl > 6)
@@ -228,16 +222,16 @@ exp_add(const Creature &tp)
 void
 wanderer()
 {
-	int i;
-	Maybe<Creature> tp;
-	Coord cp;
 	rogue::Player &player = game().player;
 
 	/*
 	 * can we allocate a new monster
 	 */
-	if (!(tp = new_creature()))
+	Maybe<Creature> tp = new_creature();
+	if (!tp)
 		return;
+	int i;
+	Coord cp;
 	do {
 		i = world::rnd_room();
 		if (RoomRef::room(i) == player.body.t_room)
@@ -255,15 +249,12 @@ wanderer()
 Maybe<Creature>
 wake_monster(int y, int x)
 {
-	Maybe<Creature> tp;
-	std::optional<RoomRef> rp;
-	unsigned char ch;
-	int dst;
 	rogue::Player &player = game().player;
 
-	if (!(tp = moat(y, x)))
+	Maybe<Creature> tp = moat(y, x);
+	if (!tp)
 		return tp;
-	ch = tp->t_type;
+	unsigned char ch = tp->t_type;
 	/*
 	 * Every time he sees mean monster, it might start chasing him
 	 */
@@ -276,8 +267,8 @@ wake_monster(int y, int x)
 	if (ch == 'M' && !player.body.t_flags.test(CreatureFlag::Blind) && !tp->t_flags.test(CreatureFlag::Found)
 		&& !tp->t_flags.test(CreatureFlag::Cancelled) && tp->t_flags.test(CreatureFlag::Running))
 	{
-		rp = player.body.t_room;
-		dst = distance_sq({x, y}, player.body.t_pos);
+		std::optional<RoomRef> rp = player.body.t_room;
+		int dst = distance_sq({x, y}, player.body.t_pos);
 		if ((rp && !game().level.room(*rp).r_flags.test(RoomFlag::Dark)) || dst < world::LAMPDIST) {
 			tp->t_flags.set(CreatureFlag::Found);
 			if (!rules::save(rules::SaveThrow::Magic)) {
@@ -344,9 +335,7 @@ pick_mons()
 Maybe<Creature>
 moat(int my, int mx)
 {
-	Maybe<Creature> tp;
-
-	for (tp = game().level.monsters.first(); tp; tp = game().level.monsters.after(*tp))
+	for (Maybe<Creature> tp = game().level.monsters.first(); tp; tp = game().level.monsters.after(*tp))
 		if (tp->t_pos.x == mx  && tp->t_pos.y == my)
 			return(tp);
 	return std::nullopt;

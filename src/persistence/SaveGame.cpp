@@ -557,8 +557,11 @@ std::optional<Destination> dest_at(Game &g, const json &v)
 			gold = RoomRef::room(whole(v["room_gold"], "dest"));
 		else if (v.contains("passage_gold"))
 			gold = RoomRef::passage(whole(v["passage_gold"], "dest"));
-		else if (v.contains("item"))
-			return *g.pool.id_of(item_at(g, v["item"], "dest"));
+		else if (v.contains("item")) {
+			Item &item = *item_at(g, v["item"], "dest");	// in use, or item_at() fails
+			ItemId id = *g.pool.id_of(item);
+			return Destination{id};
+		}
 		if (gold && Level::valid(*gold))
 			return Gold{*gold};
 	}

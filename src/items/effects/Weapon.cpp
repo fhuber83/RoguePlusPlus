@@ -330,7 +330,7 @@ Landing
 fallpos(const Item &obj)
 {
 	int y, x, cnt = 0, ch;
-	Coord newpos;
+	std::optional<Coord> newpos;	/* set with the first free square */
 	Maybe<Item> onfloor;
 	rogue::Player &player = game().player;
 
@@ -359,9 +359,9 @@ fallpos(const Item &obj)
 			}
 		}
 	}
-	if (cnt == 0)
+	if (!newpos)
 		return std::monostate{};
-	return newpos;
+	return *newpos;
 }
 
 }  // namespace

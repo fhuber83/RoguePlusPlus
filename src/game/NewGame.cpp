@@ -74,8 +74,8 @@ constexpr std::string_view c_set = "bcdfghjklmnpqrstvwxyz";
 constexpr std::string_view v_set = "aeiou";
 
 struct Stone {
-	std::string_view st_name;
-	int st_value;
+	std::string_view name;
+	int value;
 };
 
 constexpr auto stones = std::to_array<Stone>({
@@ -402,10 +402,10 @@ init_stones()
 			j = rnd(NSTONES);
 		while (used[j]);
 		used[j] = true;
-		items.r_stones[r] = stones[j].st_name;
+		items.r_stones[r] = stones[j].name;
 		items.r_know[r] = false;
 		items.r_guess[r].clear();
-		items.r_magic[r].worth += stones[j].st_value;
+		items.r_magic[r].worth += stones[j].value;
 	}
 	accumulate_odds(items.r_magic);
 }

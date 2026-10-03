@@ -35,14 +35,14 @@ TEST(StaticTables, MonsterFlags)
 TEST(StaticTables, HelpTables)
 {
 	for (const HelpLine &line : helpcoms)
-		EXPECT_FALSE(line.h_desc.empty());
+		EXPECT_FALSE(line.desc.empty());
 	for (const HelpLine &line : helpobjs)
-		EXPECT_FALSE(line.h_desc.empty());
-	EXPECT_EQ(helpcoms.front().h_desc, "F1     list of commands");
-	EXPECT_EQ(helpcoms.back().h_desc, "D      list what has been discovered");
+		EXPECT_FALSE(line.desc.empty());
+	EXPECT_EQ(helpcoms.front().desc, "F1     list of commands");
+	EXPECT_EQ(helpcoms.back().desc, "D      list what has been discovered");
 	EXPECT_EQ(helpobjs.front().glyphs(), std::string({static_cast<char>(FLOOR), ':', ' '}));
 	EXPECT_EQ(helpobjs.back().glyphs(), "A-Z: ");
-	EXPECT_EQ(helpobjs.back().h_desc, "26 different monsters");
+	EXPECT_EQ(helpobjs.back().desc, "26 different monsters");
 }
 
 }  // namespace rogue

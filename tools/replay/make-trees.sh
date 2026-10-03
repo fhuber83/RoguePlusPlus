@@ -26,9 +26,11 @@ for t in base new asan; do
 	# d_level() is in misc.cpp up to phase 13.1, then in game/PlayerCommands.cpp
 	misc="$dir/$t/src/misc.cpp"
 	[ -f "$misc" ] || misc="$dir/$t/src/game/PlayerCommands.cpp"
-	# d_level()'s test, before and after phase 10.7 removed chat() and hero
+	# d_level()'s test: before phase 10.7 removed chat() and hero, before and
+	# after 16.2 renamed t_pos
 	sed -i -e 's/if (chat(hero.y, hero.x) != STAIRS)/if (false)/' \
-		-e 's/if (game().level.at(player.body.t_pos) != STAIRS)/if (false)/' "$misc"
+		-e 's/if (game().level.at(player.body.t_pos) != STAIRS)/if (false)/' \
+		-e 's/if (game().level.at(player.body.pos) != STAIRS)/if (false)/' "$misc"
 	grep -q 'if (false)' "$misc" || { echo "the stairs patch no longer applies to $misc" >&2; exit 1; }
 done
 

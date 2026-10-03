@@ -30,7 +30,7 @@ using json = nlohmann::ordered_json;	// keeps keys in the order written
 constexpr std::string_view format_name = "rogue++ save";
 constexpr int format_version = 1;
 
-static_assert(map_rows == maxrow - 1 && map_cols == COLS);
+static_assert(map_rows == maxrow - 1 && map_cols == MAXCOLS);
 
 /*
  * Every field of the game is saved. A field added to one of these types
@@ -80,7 +80,7 @@ json text_json(std::string_view text)
 	return bytes_to_utf8(text);
 }
 
-json coord_json(const coord &c)
+json coord_json(const Coord &c)
 {
 	return json::array({c.x, c.y});
 }
@@ -178,7 +178,7 @@ json item_json(const Item &o)
 json room_json(const Room &r)
 {
 	json exits = json::array();
-	for (const coord &c : r.r_exit)
+	for (const Coord &c : r.r_exit)
 		exits.push_back(coord_json(c));
 	return {
 		{"pos", coord_json(r.r_pos)}, {"size", coord_json(r.r_max)}, {"gold", coord_json(r.r_gold)},
@@ -202,7 +202,7 @@ json grid_json(const auto &grid)
 	json rows = json::array();
 	for (int y = 1; y < maxrow; y++) {
 		std::string row;
-		for (int x = 0; x < COLS; x++) {
+		for (int x = 0; x < MAXCOLS; x++) {
 			unsigned char b = byte_of(grid[INDEX(y, x)]);
 			row += hex_digits[b >> 4];
 			row += hex_digits[b & 0xf];
@@ -449,14 +449,14 @@ int whole(const json &v, std::string_view what)
 	return static_cast<int>(n);
 }
 
-coord to_coord(const json &v, std::string_view what)
+Coord to_coord(const json &v, std::string_view what)
 {
 	if (!v.is_array() || v.size() != 2)
 		fail(std::format("{} should be [x, y]", what));
-	return coord{whole(v[0], what), whole(v[1], what)};
+	return Coord{whole(v[0], what), whole(v[1], what)};
 }
 
-coord coord_of(const json &j, std::string_view key)
+Coord coord_of(const json &j, std::string_view key)
 {
 	return to_coord(field(j, key), key);
 }
@@ -634,14 +634,14 @@ int hex_value(char c)
 	return -1;
 }
 
-// A row of COLS bytes as hex
+// A row of MAXCOLS bytes as hex
 std::vector<unsigned char> hex_row(const json &v, std::string_view what)
 {
-	if (!v.is_string() || v.get_ref<const std::string &>().size() != 2 * COLS)
-		fail(std::format("{} rows should be {} hex digits", what, 2 * COLS));
+	if (!v.is_string() || v.get_ref<const std::string &>().size() != 2 * MAXCOLS)
+		fail(std::format("{} rows should be {} hex digits", what, 2 * MAXCOLS));
 	const std::string &s = v.get_ref<const std::string &>();
 	std::vector<unsigned char> out;
-	for (int x = 0; x < COLS; x++) {
+	for (int x = 0; x < MAXCOLS; x++) {
 		int hi = hex_value(s[2 * x]), lo = hex_value(s[2 * x + 1]);
 		if (hi < 0 || lo < 0)
 			fail(std::format("{} rows should be hex digits", what));
@@ -655,7 +655,7 @@ void grid_from(auto &grid, const json &j, std::string_view key)
 	const json &rows = array_of(j, key, map_rows);
 	for (int y = 1; y < maxrow; y++) {
 		std::vector<unsigned char> row = hex_row(rows[y - 1], key);
-		for (int x = 0; x < COLS; x++)
+		for (int x = 0; x < MAXCOLS; x++)
 			set_byte(grid[INDEX(y, x)], row[x]);
 	}
 }
@@ -917,7 +917,7 @@ void game_from(Game &g, MapView &view, const json &doc)
 	const json &message = field(doc, "message");
 	g.message.text = text_of(message, "text", BUFSIZE - 1);
 	g.message.last = text_of(message, "last", BUFSIZE - 1);
-	g.message.end = num_in<int>(message, "end", 0, COLS);
+	g.message.end = num_in<int>(message, "end", 0, MAXCOLS);
 	g.message.next_end = num_in<int>(message, "next_end", 0, BUFSIZE);
 	g.message.remember = flag(message, "remember");
 

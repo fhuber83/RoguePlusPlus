@@ -3,20 +3,23 @@
 /*
  * A fighting being: a monster or the rogue himself.
  *
- * Was the _t half of the legacy union thing. Included by rogue.h after the
- * types it uses (Coord, entities/Stats.hpp) and world/RoomRef.hpp; game
- * files include rogue.h.
+ * Was the _t half of the legacy union thing.
  */
 
 #include <optional>
 #include <variant>
 
+#include "core/Coord.hpp"
+#include "core/Flags.hpp"
+#include "entities/List.hpp"
+#include "entities/Stats.hpp"
 #include "game/Id.hpp"
+#include "world/RoomRef.hpp"
 
 namespace rogue {
 
 /*
- * Where a running monster is headed (was a coord * at the position): the
+ * Where a running monster is headed (was a Coord * at the position): the
  * hero, a room's or passage's gold, or an item on the floor. Game::where()
  * gives the position, as it is when asked, as the pointer read it.
  */
@@ -56,14 +59,14 @@ using CreatureFlags = Flags<CreatureFlag>;
 struct Item;
 
 struct Creature {
-	coord t_pos;				/* Position */
+	Coord t_pos;				/* Position */
 	char t_turn;				/* If slowed, is it a turn to move */
 	char t_type;				/* What it is */
 	unsigned char t_disguise;			/* What mimic looks like */
 	unsigned char t_oldch;				/* Character that was where it was */
 	std::optional<Destination> t_dest;	/* Where it is running to, if anywhere */
 	CreatureFlags t_flags;		/* State word */
-	Stats t_stats;		/* Physical description */
+	entities::Stats t_stats;		/* Physical description */
 	std::optional<RoomRef> t_room;	/* Current room for thing, if any */
 	List<Item> t_pack;			/* What the thing is carrying */
 };

@@ -34,7 +34,7 @@ get_dir()
 	while (!(dir = find_dir(ch)));
 	turn.delta = *dir;
 	msg("");
-	if (game().player.body.t_flags.test(ISHUH) && rnd(5) == 0)
+	if (game().player.body.t_flags.test(CreatureFlag::Confused) && rnd(5) == 0)
 		do {
 			turn.delta.y = rnd(3) - 1;
 			turn.delta.x = rnd(3) - 1;

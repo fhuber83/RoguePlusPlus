@@ -12,18 +12,18 @@ bool
 add_haste(bool potion)
 {
 	rogue::Player &player = game().player;
-	if (player.body.t_flags.test(ISHASTE))
+	if (player.body.t_flags.test(CreatureFlag::Hasted))
 	{
 		player.no_command += rnd(8);
-		player.body.t_flags.unset(ISRUN);
+		player.body.t_flags.unset(CreatureFlag::Running);
 		extinguish(Event::NoHaste);
-		player.body.t_flags.unset(ISHASTE);
+		player.body.t_flags.unset(CreatureFlag::Hasted);
 		msg("you faint from exhaustion");
 		return false;
 	}
 	else
 	{
-		player.body.t_flags.set(ISHASTE);
+		player.body.t_flags.set(CreatureFlag::Hasted);
 		if (potion)
 			fuse(Event::NoHaste, rnd(4)+10);
 		return true;
@@ -40,7 +40,7 @@ goodch(const Item &obj)
 {
 	char ch = MAGIC;
 
-	if (obj.o_flags.test(ISCURSED))
+	if (obj.o_flags.test(ItemFlag::Cursed))
 		ch = BMAGIC;
 	switch (obj.o_type) {
 	case ItemKind::Armor:
@@ -142,13 +142,13 @@ quaff()
 	{
 	case Potion::Confusion:
 		items.p_know[Potion::Confusion] = true;
-		if (!player.body.t_flags.test(ISHUH))
+		if (!player.body.t_flags.test(CreatureFlag::Confused))
 			{
-			if (player.body.t_flags.test(ISHUH))
+			if (player.body.t_flags.test(CreatureFlag::Confused))
 				lengthen(Event::Unconfuse, rnd(8)+huh_duration());
 			else
 				fuse(Event::Unconfuse, rnd(8)+huh_duration());
-			player.body.t_flags.set(ISHUH);
+			player.body.t_flags.set(CreatureFlag::Confused);
 			msg("wait, what's going on? Huh? What? Who?");
 		}
 		break;
@@ -237,11 +237,11 @@ quaff()
 	case Potion::Paralysis:
 		items.p_know[Potion::Paralysis] = true;
 		player.no_command = hold_time();
-		player.body.t_flags.unset(ISRUN);
+		player.body.t_flags.unset(CreatureFlag::Running);
 		msg("you can't move");
 		break;
 	case Potion::SeeInvisible:
-		if (!player.body.t_flags.test(CANSEE)) {
+		if (!player.body.t_flags.test(CreatureFlag::SeeInvisible)) {
 			fuse(Event::Unsee, see_duration());
 			look(false);
 			invis_on();
@@ -286,9 +286,9 @@ quaff()
 		break;
 	case Potion::Blindness:
 		items.p_know[Potion::Blindness] = true;
-		if (!player.body.t_flags.test(ISBLIND))
+		if (!player.body.t_flags.test(CreatureFlag::Blind))
 		{
-			player.body.t_flags.set(ISBLIND);
+			player.body.t_flags.set(CreatureFlag::Blind);
 			fuse(Event::Sight, see_duration());
 			look(false);
 		}
@@ -329,9 +329,9 @@ invis_on()
 {
 	Maybe<Creature> th;
 
-	game().player.body.t_flags.set(CANSEE);
+	game().player.body.t_flags.set(CreatureFlag::SeeInvisible);
 	for (th = game().level.monsters.first(); th; th = game().level.monsters.after(*th))
-	if (th->t_flags.test(ISINVIS) && see_monst(*th))
+	if (th->t_flags.test(CreatureFlag::Invisible) && see_monst(*th))
 	{
 		display().draw_tile(th->t_pos, th->t_disguise);
 	}
@@ -363,9 +363,9 @@ turn_see(bool turn_off)
 					can_see ? TileStyle::Normal : TileStyle::Inverse);
 		}
 	}
-	game().player.body.t_flags.set(SEEMONST);
+	game().player.body.t_flags.set(CreatureFlag::SeeMonst);
 	if (turn_off)
-		game().player.body.t_flags.unset(SEEMONST);
+		game().player.body.t_flags.unset(CreatureFlag::SeeMonst);
 	return add_new;
 }
 
@@ -380,12 +380,12 @@ th_effect(const Item &obj, Creature &tp)
 	{
 	case Potion::Confusion:
 	case Potion::Blindness:
-		tp.t_flags.set(ISHUH);
+		tp.t_flags.set(CreatureFlag::Confused);
 		msg("the {} appears confused", monsters[tp.t_type-'A'].m_name);
 		break;
 	case Potion::Paralysis:
-		tp.t_flags.unset(ISRUN);
-		tp.t_flags.set(ISHELD);
+		tp.t_flags.unset(CreatureFlag::Running);
+		tp.t_flags.set(CreatureFlag::Held);
 		break;
 	case Potion::Healing:
 	case Potion::ExtraHealing:
@@ -398,7 +398,7 @@ th_effect(const Item &obj, Creature &tp)
 		tp.t_stats.s_lvl++;
 		break;
 	case Potion::Haste:
-		tp.t_flags.set(ISHASTE);
+		tp.t_flags.set(CreatureFlag::Hasted);
 		break;
 	default:
 		break;

@@ -4,6 +4,8 @@
 
 namespace rogue::items {
 
+inline constexpr int NUMTHINGS = 7;	/* number of kinds of things to find */
+
 /*
  * A kind of potion, scroll, ring or stick, or a type of item: what it is
  * called, its odds of turning up and what it is worth (was struct

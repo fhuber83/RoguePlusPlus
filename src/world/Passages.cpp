@@ -27,7 +27,7 @@ conn(int r1, int r2)
 	int rmt, rm;
 	int distance = 0, turn_spot, turn_distance;
 	int direc;
-	coord del, curr, turn_delta, spos, epos;
+	Coord del, curr, turn_delta, spos, epos;
 	rogue::Level &level = game().level;
 
 	if (r1 < r2) {

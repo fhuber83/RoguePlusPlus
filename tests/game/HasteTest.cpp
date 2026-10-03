@@ -28,7 +28,7 @@ TEST_F(Haste, OneMoveACommand)
 // once and a hasted rogue got one move a command like any other
 TEST_F(Haste, TwoOrThreeMovesACommandWhenHasted)
 {
-	game().player.body.t_flags.set(ISHASTE);
+	game().player.body.t_flags.set(CreatureFlag::Hasted);
 	std::set<int> seen;
 	for (int i = 0; i < 20; i++) {
 		int moves = moves_of_a_command(terminal);

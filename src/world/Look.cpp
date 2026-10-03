@@ -39,7 +39,7 @@ look(bool wakeup)
 	 * if the hero has moved
 	 */
 	if (!(player.old_pos == player.body.t_pos)) {
-		if (!player.body.t_flags.test(ISBLIND)) {
+		if (!player.body.t_flags.test(CreatureFlag::Blind)) {
 			for (x = player.old_pos.x - 1; x <= (player.old_pos.x + 1); x++)
 				for (y = player.old_pos.y - 1; y <= (player.old_pos.y + 1); y++) {
 					if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || offmap(y,x))
@@ -75,9 +75,9 @@ look(bool wakeup)
 	}
 	for (y = sy; y <= ey; y++)
 		if (y > 0 && y < maxrow) for (x = sx; x <= ex; x++) {
-			if (x <= 0 || x >= COLS)
+			if (x <= 0 || x >= MAXCOLS)
 				continue;
-			if (!player.body.t_flags.test(ISBLIND)) {
+			if (!player.body.t_flags.test(CreatureFlag::Blind)) {
 				if (y == player.body.t_pos.y && x == player.body.t_pos.x)
 					continue;
 			} else if (y != player.body.t_pos.y || x != player.body.t_pos.x)
@@ -112,7 +112,7 @@ look(bool wakeup)
 			}
 
 			if ((tp = moat(y,x))) {
-				if (player.body.t_flags.test(SEEMONST) && tp->t_flags.test(ISINVIS)) {
+				if (player.body.t_flags.test(CreatureFlag::SeeMonst) && tp->t_flags.test(CreatureFlag::Invisible)) {
 					if (turn.door_stop && !turn.first_move)
 						turn.running = false;
 					continue;
@@ -120,7 +120,7 @@ look(bool wakeup)
 					if (wakeup)
 						wake_monster(y, x);
 					if (tp->t_oldch != ' ' ||
-						(!level.room(*rp).r_flags.test(RoomFlag::Dark) && !player.body.t_flags.test(ISBLIND)))
+						(!level.room(*rp).r_flags.test(RoomFlag::Dark) && !player.body.t_flags.test(CreatureFlag::Blind)))
 							tp->t_oldch = level.map[index];
 					if (see_monst(*tp))
 						ch = tp->t_disguise;
@@ -218,7 +218,7 @@ search()
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 
-	if (player.body.t_flags.test(ISBLIND))
+	if (player.body.t_flags.test(CreatureFlag::Blind))
 		return;
 	ey = player.body.t_pos.y + 1;
 	ex = player.body.t_pos.x + 1;

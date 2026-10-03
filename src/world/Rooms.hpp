@@ -9,6 +9,8 @@
 
 namespace rogue::world {
 
+inline constexpr int LAMPDIST = 3;	/* squared distance he sees in the dark (next to him) */
+
 struct Room;
 
 /*

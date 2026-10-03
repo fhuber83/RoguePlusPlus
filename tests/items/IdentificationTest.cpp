@@ -86,7 +86,7 @@ TEST_F(Names, WeaponsAndArmor)
 	obj.o_hplus = 1;
 	obj.o_dplus = -2;
 	EXPECT_EQ(inv_name(obj, false), "A mace");
-	obj.o_flags.set(ISKNOW);
+	obj.o_flags.set(ItemFlag::Known);
 	EXPECT_EQ(inv_name(obj, false), "A +1,-2 mace");
 	game().player.weapon = game().pool.id_of(obj);
 	EXPECT_EQ(inv_name(obj, false), "A +1,-2 mace (weapon in hand)");
@@ -95,7 +95,7 @@ TEST_F(Names, WeaponsAndArmor)
 	Item armor = item(ItemKind::Armor, ArmorType::RingMail);
 	armor.o_ac = a_class[ArmorType::RingMail] - 1;	// one better than usual
 	EXPECT_EQ(inv_name(armor, false), "Ring mail");
-	armor.o_flags.set(ISKNOW);
+	armor.o_flags.set(ItemFlag::Known);
 	EXPECT_EQ(inv_name(armor, false),
 		"+1 ring mail [armor class " + std::to_string(11 - armor.o_ac) + "]");
 	game().options.expert = true;
@@ -120,7 +120,7 @@ TEST_F(Names, RingsAndHands)
 	game().player.rings[Hand::Left] = game().pool.id_of(obj);
 	EXPECT_EQ(inv_name(obj, false), "An opal ring (on left hand)");
 	game().items.r_know[Ring::Protection] = true;
-	obj.o_flags.set(ISKNOW);
+	obj.o_flags.set(ItemFlag::Known);
 	EXPECT_EQ(inv_name(obj, false),
 		std::format("A +2 ring of {}(opal) (on left hand)", game().items.r_magic[Ring::Protection].mi_name));
 }
@@ -137,9 +137,9 @@ TEST_F(Names, DropLowercases)
 
 TEST(Formatting, PlusNumbers)
 {
-	EXPECT_EQ(num(0, 0, ARMOR), "+0");
-	EXPECT_EQ(num(-3, 0, ARMOR), "-3");
-	EXPECT_EQ(num(2, -1, WEAPON), "+2,-1");
+	EXPECT_EQ(num(0, 0, rogue::ARMOR), "+0");
+	EXPECT_EQ(num(-3, 0, rogue::ARMOR), "-3");
+	EXPECT_EQ(num(2, -1, rogue::WEAPON), "+2,-1");
 }
 
 TEST(Formatting, KillNames)

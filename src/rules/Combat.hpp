@@ -10,8 +10,8 @@
 
 namespace rogue {
 
-class Item;
-class Creature;
+struct Item;
+struct Creature;
 
 namespace rules {
 

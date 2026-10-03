@@ -40,13 +40,13 @@ read_scroll()
 		/*
 		 * Scroll of monster confusion.  Give him that power.
 		 */
-		player.body.t_flags.set(CANHUH);
+		player.body.t_flags.set(CreatureFlag::CanConfuse);
 		msg("your hands begin to glow red");
 		break;
 	case Scroll::EnchantArmor:
 		if (player.armor_item()) {
 			player.armor_item()->o_ac--;
-			player.armor_item()->o_flags.unset(ISCURSED);
+			player.armor_item()->o_flags.unset(ItemFlag::Cursed);
 			ifterse("your armor glows faintly",
 				"your armor glows faintly for a moment");
 		}
@@ -58,11 +58,11 @@ read_scroll()
 		 */
 
 		for (x = player.body.t_pos.x - 3; x <= player.body.t_pos.x + 3; x++)
-			if (x >= 0 && x < COLS)
+			if (x >= 0 && x < MAXCOLS)
 				for (y = player.body.t_pos.y - 3; y <= player.body.t_pos.y + 3; y++)
 					if ((y > 0 && y < maxrow) && (mo = moat(y, x))) {
-						mo->t_flags.unset(ISRUN);
-						mo->t_flags.set(ISHELD);
+						mo->t_flags.unset(CreatureFlag::Running);
+						mo->t_flags.set(CreatureFlag::Held);
 					}
 		break;
 	case Scroll::Sleep:
@@ -71,7 +71,7 @@ read_scroll()
 		 */
 		items.s_know[Scroll::Sleep] = true;
 		player.no_command += rnd(sleep_time()) + 4;
-		player.body.t_flags.unset(ISRUN);
+		player.body.t_flags.unset(CreatureFlag::Running);
 		msg("you fall asleep");
 		break;
 	case Scroll::CreateMonster:
@@ -105,7 +105,7 @@ read_scroll()
 		 * Take all the things we want to keep hidden out of the window
 		 */
 		for (y = 1; y < maxrow; y++)
-			for (x = 0; x < COLS; x++) {
+			for (x = 0; x < MAXCOLS; x++) {
 				index = INDEX(y, x);
 				switch (ch = level.map[index])
 				{
@@ -176,7 +176,7 @@ read_scroll()
 		msg("you feel a strange sense of loss");
 		else
 		{
-		player.weapon_item()->o_flags.unset(ISCURSED);
+		player.weapon_item()->o_flags.unset(ItemFlag::Cursed);
 		if (rnd(2) == 0)
 			player.weapon_item()->o_hplus++;
 		else
@@ -193,13 +193,13 @@ read_scroll()
 		break;
 	case Scroll::RemoveCurse:
 		if (player.armor_item())
-			player.armor_item()->o_flags.unset(ISCURSED);
+			player.armor_item()->o_flags.unset(ItemFlag::Cursed);
 		if (player.weapon_item())
-			player.weapon_item()->o_flags.unset(ISCURSED);
+			player.weapon_item()->o_flags.unset(ItemFlag::Cursed);
 		if (player.ring_item(Hand::Left))
-			player.ring_item(Hand::Left)->o_flags.unset(ISCURSED);
+			player.ring_item(Hand::Left)->o_flags.unset(ItemFlag::Cursed);
 		if (player.ring_item(Hand::Right))
-			player.ring_item(Hand::Right)->o_flags.unset(ISCURSED);
+			player.ring_item(Hand::Right)->o_flags.unset(ItemFlag::Cursed);
 		ifterse("somebody is watching over you","you feel as if somebody is watching over you");
 		break;
 	case Scroll::AggravateMonsters:
@@ -252,9 +252,9 @@ read_scroll()
 				/*
 				 * Sometimes this is a mixed blessing ...
 					if (rnd(20) == 0) {
-						cur_weapon->o_flags.set(ISCURSED);
+						cur_weapon->o_flags.set(ItemFlag::Cursed);
 						if (!save(SaveThrow::Magic)) {
-							cur_weapon->o_flags.set(ISEGO|ISREVEAL);
+							cur_weapon->o_flags.set(ItemFlag::Ego|ItemFlag::Revealed);
 							s_know[Scroll::Vorpalize] = true;
 							msg("you feel a sudden desire to kill {}s.",
 							monsters[cur_weapon->o_enemy-'A'].m_name);

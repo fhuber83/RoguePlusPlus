@@ -14,15 +14,15 @@ TEST(ItemKind, GlyphRoundTrip)
 // The glyphs are still the CP437 codes the map and help screen use.
 TEST(ItemKind, Glyphs)
 {
-	EXPECT_EQ(glyph_of(ItemKind::Potion), POTION);
-	EXPECT_EQ(glyph_of(ItemKind::Gold), GOLD);
+	EXPECT_EQ(glyph_of(ItemKind::Potion), rogue::POTION);
+	EXPECT_EQ(glyph_of(ItemKind::Gold), rogue::GOLD);
 	EXPECT_EQ(glyph_of(ItemKind::Missile), '*');
 }
 
 TEST(ItemKind, OtherGlyphsAreNoItems)
 {
-	EXPECT_EQ(kind_of_glyph(FLOOR), std::nullopt);
-	EXPECT_EQ(kind_of_glyph(STAIRS), std::nullopt);
+	EXPECT_EQ(kind_of_glyph(rogue::FLOOR), std::nullopt);
+	EXPECT_EQ(kind_of_glyph(rogue::STAIRS), std::nullopt);
 	EXPECT_EQ(kind_of_glyph('*'), std::nullopt);
 	EXPECT_EQ(kind_of_glyph('A'), std::nullopt);
 }

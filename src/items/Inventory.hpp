@@ -10,11 +10,13 @@
 
 namespace rogue {
 
-class Item;
+struct Item;
 class ItemFilter;
 template <typename T> class List;
 
 namespace items {
+
+inline constexpr int MAXPACK = 23;	/* things in the pack at most */
 
 /*
  * add_pack:

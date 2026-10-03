@@ -7,7 +7,7 @@
 
 namespace rogue {
 
-class Item;
+struct Item;
 enum class Hand;
 
 namespace items::effects {

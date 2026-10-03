@@ -225,7 +225,7 @@ new_thing()
 		init_weapon(*cur, cur->which<WeaponType>());
 		if ((k = rnd(100)) < 10)
 		{
-			cur->o_flags.set(ISCURSED);
+			cur->o_flags.set(ItemFlag::Cursed);
 			cur->o_hplus -= rnd(3) + 1;
 		}
 		else if (k < 15)
@@ -251,7 +251,7 @@ new_thing()
 		cur->o_ac = a_class[*armor];
 		if ((k = rnd(100)) < 20)
 		{
-			cur->o_flags.set(ISCURSED);
+			cur->o_flags.set(ItemFlag::Cursed);
 			cur->o_ac += rnd(3) + 1;
 		}
 		else if (k < 28)
@@ -270,12 +270,12 @@ new_thing()
 			if ((cur->o_ac = rnd(3)) == 0)
 			{
 				cur->o_ac = -1;
-				cur->o_flags.set(ISCURSED);
+				cur->o_flags.set(ItemFlag::Cursed);
 			}
 			break;
 		case Ring::AggravateMonster:
 		case Ring::Teleportation:
-			cur->o_flags.set(ISCURSED);
+			cur->o_flags.set(ItemFlag::Cursed);
 			break;
 		default:
 			break;

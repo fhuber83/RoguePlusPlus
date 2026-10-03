@@ -9,6 +9,13 @@
 
 namespace rogue::world {
 
+namespace {
+
+constexpr int MAXOBJ = 9;	/* tries to put a thing on a level */
+constexpr int MAXTRAPS = 10;	/* traps on a level at most */
+
+}  // namespace
+
 constexpr int TREAS_ROOM = 20;	/* one chance in TREAS_ROOM for a treasure room */
 constexpr int MAXTREAS = 10;	/* maximum number of treasures in a treasure room */
 constexpr int MINTREAS = 2;	/* minimum number of treasures in a treasure room */
@@ -27,11 +34,11 @@ new_level()
 	int rm, i;
 	Maybe<Creature> tp;
 	int index;
-	coord stairs;
+	Coord stairs;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 
-	player.body.t_flags.unset(ISHELD);	/* unhold when you go down just in case */
+	player.body.t_flags.unset(CreatureFlag::Held);	/* unhold when you go down just in case */
 	/*
 	 * Monsters only get displayed when you move
 	 * so start a level by having the poor guy rest
@@ -108,7 +115,7 @@ new_level()
 	display().draw_tile(player.body.t_pos, PLAYER);
 	player.old_pos = player.body.t_pos;
 	player.old_room = player.body.t_room;
-	if (player.body.t_flags.test(SEEMONST))
+	if (player.body.t_flags.test(CreatureFlag::SeeMonst))
 		turn_see(false);
 }
 
@@ -139,7 +146,7 @@ put_things()
 	int i = 0;
 	Maybe<Item> cur;
 	int rm;
-	coord tp;
+	Coord tp;
 	rogue::Level &level = game().level;
 
 	/*
@@ -221,7 +228,7 @@ treas_room()
 	Maybe<Item> obj;
 	rogue::Level &level = game().level;
 	int spots, num_monst;
-	coord mp;
+	Coord mp;
 
 	const Room &rp = level.rooms[rnd_room()];
 	spots = (rp.r_max.y - 2) * (rp.r_max.x - 2) - MINTREAS;
@@ -265,7 +272,7 @@ treas_room()
 			if ((tp = new_creature()))
 			{
 				new_monster(*tp, randmonster(false), mp);
-				tp->t_flags.set(ISMEAN);	/* no sloughers in THIS room */
+				tp->t_flags.set(CreatureFlag::Mean);	/* no sloughers in THIS room */
 				give_pack(*tp);
 			}
 		}
@@ -300,9 +307,9 @@ do_rooms()
 	rogue::Level &level = game().level;
 	Maybe<Creature> tp;
 	int left_out;
-	coord top;
-	coord bsze;
-	coord mp;
+	Coord top;
+	Coord bsze;
+	Coord mp;
 	int endline;
 
 	endline = maxrow + 1;
@@ -310,7 +317,7 @@ do_rooms()
 	/*
 	 * bsze is the maximum room size
 	 */
-	bsze.x = COLS/3;
+	bsze.x = MAXCOLS/3;
 	bsze.y = endline/3;
 	/*
 	 * Clear things for a new level
@@ -361,7 +368,7 @@ do_rooms()
 				do {
 					rp.r_pos.x = top.x + rnd(bsze.x-2) + 1;
 					rp.r_pos.y = top.y + rnd(bsze.y-2) + 1;
-					rp.r_max.x = -COLS;
+					rp.r_max.x = -MAXCOLS;
 					rp.r_max.x = -endline;
 				} while (!(rp.r_pos.y > 0 && rp.r_pos.y < endline-1));
 			}
@@ -396,7 +403,7 @@ do_rooms()
 						break;
 				}
 				gold->o_pos = rp.r_gold;
-				gold->o_flags = ISMANY;
+				gold->o_flags = ItemFlag::Many;
 				gold->o_group = GOLDGRP;
 				gold->o_type = ItemKind::Gold;
 				level.objects.push_front(*gold);

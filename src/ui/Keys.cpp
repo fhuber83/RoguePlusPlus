@@ -6,7 +6,7 @@
 
 #include "ui/Keys.hpp"
 
-#include "glyphs.h"
+#include "core/Glyphs.hpp"
 #include "ui/Input.hpp"
 
 namespace rogue::ui {

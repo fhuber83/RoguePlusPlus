@@ -24,7 +24,7 @@ turn_corner()
 	rogue::Level &level = game().level;
 	const Coord pos = player.body.t_pos;
 
-	if (!turn.running || !level.room(*player.body.t_room).is_gone() || player.body.t_flags.test(ISBLIND))
+	if (!turn.running || !level.room(*player.body.t_room).is_gone() || player.body.t_flags.test(CreatureFlag::Blind))
 		return std::nullopt;
 	auto opens = [&](int y, int x) {
 		return level.flags_at(y, x).test(MapFlag::Passage) || level.at(y, x) == DOOR;
@@ -42,7 +42,7 @@ turn_corner()
 	case 'j':
 	case 'k': {
 		const bool left = pos.x > 1 && opens(pos.y, pos.x - 1);
-		const bool right = pos.x < COLS - 2 && opens(pos.y, pos.x + 1);
+		const bool right = pos.x < MAXCOLS - 2 && opens(pos.y, pos.x + 1);
 		if (left == right)
 			return std::nullopt;
 		turn.run_dir = left ? 'h' : 'l';
@@ -104,7 +104,7 @@ do_move(int dy, int dx)
 	 * Do a confused move (maybe)
 	 */
 	Coord nh;
-	if (player.body.t_flags.test(ISHUH) && rnd(5) != 0)
+	if (player.body.t_flags.test(CreatureFlag::Confused) && rnd(5) != 0)
 		nh = rndmove(player.body);
 	else
 		nh = player.body.t_pos + Coord{dx, dy};
@@ -140,7 +140,7 @@ do_move(int dy, int dx)
 			if (!fl.test(MapFlag::Real) && ch == FLOOR) {
 				level.at(nh) = ch = TRAP;
 				level.flags_at(nh).set(MapFlag::Real);
-			} else if (player.body.t_flags.test(ISHELD) && ch != 'F') {
+			} else if (player.body.t_flags.test(CreatureFlag::Held) && ch != 'F') {
 				msg("you are being held");
 				return;
 			}

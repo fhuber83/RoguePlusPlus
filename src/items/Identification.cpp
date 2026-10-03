@@ -85,21 +85,21 @@ inv_name(const Item &obj, bool drop)
 			name = std::format("{} ", obj.o_count);
 		else
 			name = std::format("A{} ", vowelstr(w_names[which]));
-		if (obj.o_flags.test(ISKNOW))
+		if (obj.o_flags.test(ItemFlag::Known))
 			name += std::format("{} {}", num(obj.o_hplus, obj.o_dplus, WEAPON),
 				w_names[which]);
 		else
 			name += w_names[which];
 		if (obj.o_count > 1)
 			name += "s";
-		if (obj.o_enemy && obj.o_flags.test(ISREVEAL))
+		if (obj.o_enemy && obj.o_flags.test(ItemFlag::Revealed))
 			name += std::format(" of {} slaying", monsters[obj.o_enemy-'A'].m_name);
 		break;
 	}
 	case ItemKind::Armor: {
 		ArmorType which = obj.which<ArmorType>();
 
-		if (!obj.o_flags.test(ISKNOW))
+		if (!obj.o_flags.test(ItemFlag::Known))
 			name = a_names[which];
 		else if (brief)
 			name = std::format("{} {}", num(a_class[which] - obj.o_ac, 0, ARMOR),
@@ -296,13 +296,13 @@ add_line(std::string_view use, std::optional<std::string_view> line)
 		display().open_page();
 		display().clear_page();
 	}
-	if (line_cnt >= LINES - 1 || !line)
+	if (line_cnt >= MAXLINES - 1 || !line)
 	{
 		if (!use.empty())
-			display().write_at(LINES-1, 0,
+			display().write_at(MAXLINES-1, 0,
 				std::format("-Select item to {}. Esc to cancel-", use));
 		else
-			display().write_at(LINES-1, 0, "-Press space to continue-");
+			display().write_at(MAXLINES-1, 0, "-Press space to continue-");
 		do
 			retchar = readchar();
 		while (retchar != ESCAPE && retchar != ' ' && (!is_lower(retchar)));
@@ -311,7 +311,7 @@ add_line(std::string_view use, std::optional<std::string_view> line)
 	}
 	if (line && !(line_cnt == 0 && line->empty()))
 	{
-		coord end;
+		Coord end;
 
 		end = display().write_at(line_cnt, 0, *line);
 		/*
@@ -482,16 +482,16 @@ whatis()
 		break;
 	case ItemKind::Stick:
 		items.ws_know[obj->which<Stick>()] = true;
-		obj->o_flags.set(ISKNOW);
+		obj->o_flags.set(ItemFlag::Known);
 		items.ws_guess[obj->which<Stick>()].clear();
 		break;
 	case ItemKind::Weapon:
 	case ItemKind::Armor:
-		obj->o_flags.set(ISKNOW);
+		obj->o_flags.set(ItemFlag::Known);
 		break;
 	case ItemKind::Ring:
 		items.r_know[obj->which<Ring>()] = true;
-		obj->o_flags.set(ISKNOW);
+		obj->o_flags.set(ItemFlag::Known);
 		items.r_guess[obj->which<Ring>()].clear();
 		break;
 	default:	// the other kinds of item: nothing
@@ -502,7 +502,7 @@ whatis()
 	 * vorpally enchanted against
 	 */
 	if (obj->o_enemy)
-		obj->o_flags.set(ISREVEAL);
+		obj->o_flags.set(ItemFlag::Revealed);
 	msg("{}", inv_name(*obj, false));
 }
 

@@ -3,16 +3,17 @@
 /*
  * An object: something lying on the floor or carried in a pack.
  *
- * Was the _o half of the legacy union thing. Included by rogue.h after the
- * legacy types it uses (coord, int) and the glyph codes; game files include
- * rogue.h.
+ * Was the _o half of the legacy union thing.
  */
 
 #include <optional>
-
-#include "core/Dice.hpp"
 #include <type_traits>
 #include <utility>
+
+#include "core/Coord.hpp"
+#include "core/Dice.hpp"
+#include "core/Flags.hpp"
+#include "core/Glyphs.hpp"
 
 namespace rogue {
 
@@ -124,7 +125,7 @@ using ItemFlags = Flags<ItemFlag>;
 
 struct Item {
 	ItemKind o_type;			/* What kind of object it is */
-	coord o_pos;				/* Where it lives on the screen */
+	Coord o_pos;				/* Where it lives on the screen */
 	char o_launch;				/* What you need to launch it */
 	rogue::Attacks o_damage;	/* Damage if used like sword */
 	rogue::Attacks o_hurldmg;	/* Damage if thrown */

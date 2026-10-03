@@ -502,7 +502,7 @@ can_drop(const Item &op)
 	if (!refers_to(player.armor_item(), op) && !refers_to(player.weapon_item(), op)
 		&& !refers_to(player.ring_item(Hand::Left), op) && !refers_to(player.ring_item(Hand::Right), op))
 		return true;
-	if (op.o_flags.test(ISCURSED)) {
+	if (op.o_flags.test(ItemFlag::Cursed)) {
 		msg("you can't.  It appears to be cursed");
 		return false;
 	}

@@ -184,7 +184,7 @@ ring_eat(Hand hand)
 std::string
 ring_num(const Item &obj)
 {
-	if (!obj.o_flags.test(ISKNOW))
+	if (!obj.o_flags.test(ItemFlag::Known))
 		return "";
 	switch (obj.which<Ring>()) {
 	case Ring::Protection:

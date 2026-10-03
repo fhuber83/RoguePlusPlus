@@ -10,7 +10,7 @@
 
 namespace rogue {
 
-class Creature;
+struct Creature;
 
 namespace entities {
 

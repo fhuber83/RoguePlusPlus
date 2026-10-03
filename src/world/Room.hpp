@@ -19,8 +19,11 @@ using RoomFlags = Flags<RoomFlag>;
 
 namespace world {
 
+inline constexpr int MAXROOMS = 9;	/* rooms on a level */
+inline constexpr int MAXPASS = 13;	/* upper limit on number of passages */
+
 /*
- * A room of the level, or a passage (was Room). Level::room() gives
+ * A room of the level, or a passage (was struct room). Level::room() gives
  * the one a RoomRef names.
  */
 struct Room {

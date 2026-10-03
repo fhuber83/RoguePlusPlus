@@ -43,6 +43,8 @@ struct Options {
  * The message line: the message being built, the one shown and the last one
  * kept for ^R.
  */
+inline constexpr int BUFSIZE = 128;	/* the longest message, with its end */
+
 struct MessageLine {
 	std::string text;				/* msgbuf: the message being built, at most BUFSIZE - 1 */
 	std::string last;				/* huh: the last message printed */
@@ -66,7 +68,7 @@ struct Turn {
 	bool first_move = false;		/* First move after setting door_stop */
 	bool fast_mode = false;			/* Run until you see something */
 	bool fast_state = false;		/* Toggle for find (see above) */
-	coord delta = {};				/* Change indicated to get_dir() */
+	Coord delta = {};				/* Change indicated to get_dir() */
 	std::string typeahead;			/* typebuf: keys a macro still types */
 	bool bailout = false;			/* The hero is nowhere: fall through */
 	int moves_left = 0;				/* ntimes: moves left in this command (2 or 3 when hasted) */
@@ -111,7 +113,7 @@ struct Player {
 	int quiet = 0;					/* Number of quiet turns */
 	int fung_hit = 0;				/* Number of times the venus flytrap has hit; its attack is fung_hit d1 */
 	Trapped was_trapped = Trapped::None;	/* Was a trap sprung (be_trapped(), look()) */
-	coord old_pos = {};				/* oldpos: position before last look() call */
+	Coord old_pos = {};				/* oldpos: position before last look() call */
 	std::optional<RoomRef> old_room;	/* oldrp: roomin(old_pos) */
 
 	// What he wears and wields, if anything (these look it up in game().pool)
@@ -132,8 +134,8 @@ struct Level {
 	int depth = 1;					/* level: what level rogue is on */
 	int ntraps = 0;					/* Number of traps on this level */
 	int no_food = 0;				/* Number of levels without food */
-	std::array<world::Room, MAXROOMS> rooms = {};	/* One for each room -- A level */
-	std::array<world::Room, MAXPASS> passages = {};	/* One for each passage */
+	std::array<world::Room, world::MAXROOMS> rooms = {};	/* One for each room -- A level */
+	std::array<world::Room, world::MAXPASS> passages = {};	/* One for each passage */
 	/*
 	 * What is at each square, and its MapFlags. Index them with INDEX(y, x),
 	 * or use at()/flags_at().
@@ -166,7 +168,7 @@ struct Level {
 	// Whether a RoomRef names one of this level's rooms or passages
 	static constexpr bool valid(RoomRef r)
 	{
-		return r.index >= 0 && r.index < (r.kind == RoomRef::Kind::Room ? MAXROOMS : MAXPASS);
+		return r.index >= 0 && r.index < (r.kind == RoomRef::Kind::Room ? world::MAXROOMS : world::MAXPASS);
 	}
 	// The passage a passage or maze square belongs to
 	RoomRef passage_at(Coord pos) { return RoomRef::passage(flags_at(pos).passage()); }
@@ -176,13 +178,15 @@ struct Level {
  * What there is to find in this game, how it looks, and what the rogue knows
  * about it.
  */
+inline constexpr int MAXNAME = 20;	/* the longest name he calls a kind */
+
 struct Items {
 	/* Names, cumulative odds and worth of each kind; init_*() accumulate */
 	KindTable<Scroll, items::KindInfo> s_magic;
 	KindTable<Potion, items::KindInfo> p_magic;
 	KindTable<Ring, items::KindInfo> r_magic;
 	KindTable<Stick, items::KindInfo> ws_magic;
-	std::array<items::KindInfo, NUMTHINGS> things;	/* Odds of each type of item */
+	std::array<items::KindInfo, items::NUMTHINGS> things;	/* Odds of each type of item */
 	/* How the kinds look in this game */
 	KindTable<Scroll, std::string> s_names;	/* Names of the scrolls */
 	KindTable<Potion, std::string_view> p_colors = {};	/* Colors of the potions */
@@ -223,6 +227,8 @@ struct ListPool<Creature> {
  * array of MAXITEMS things (_things), so the count is shared: when it is
  * full, neither kind can be made, and level generation checks it.
  */
+inline constexpr int MAXITEMS = 83;	/* things in the pool at most, both kinds */
+
 struct Pool {
 	Slots<Item, MAXITEMS> items;
 	Slots<Creature, MAXITEMS> creatures;
@@ -280,6 +286,12 @@ Game &game();
 
 // The generator of the game being played; rnd() and roll() use it.
 inline Random &rng() { return game().random; }
+
+// Shorthands for rng(): a number below range, the sum of number dice of
+// sides, and nm give or take 10%
+inline int rnd(int range) { return rng().below(range); }
+inline int roll(int number, int sides) { return rng().roll(number, sides); }
+inline int spread(int nm) { return rng().spread(nm); }
 
 }  // namespace rogue
 

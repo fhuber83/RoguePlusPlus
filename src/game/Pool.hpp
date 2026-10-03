@@ -9,8 +9,8 @@
 
 namespace rogue {
 
-class Item;
-class Creature;
+struct Item;
+struct Creature;
 
 /*
  * new_item, new_creature:

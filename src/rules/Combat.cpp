@@ -54,14 +54,14 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 	/*
 	 * Let him know it was really a mimic (if it was one).
 	 */
-	if (tp->t_type == 'X' && tp->t_disguise != 'X' && !player.body.t_flags.test(ISBLIND)) {
+	if (tp->t_type == 'X' && tp->t_disguise != 'X' && !player.body.t_flags.test(CreatureFlag::Blind)) {
 		mn = tp->t_disguise = 'X';
 		if (thrown)
 			return false;
 		msg("wait! That's a Xeroc!");
 	}
 	mname = monsters[mn-'A'].m_name;
-	if (player.body.t_flags.test(ISBLIND))
+	if (player.body.t_flags.test(CreatureFlag::Blind))
 		mname = "it";
 	if (roll_em(player.body, *tp, weap, thrown)||(weap && weap->o_type == ItemKind::Potion)) {
 		bool did_huh = false;
@@ -83,15 +83,15 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 				player.weapon = std::nullopt;
 			}
 		}
-		if (player.body.t_flags.test(CANHUH)) {
+		if (player.body.t_flags.test(CreatureFlag::CanConfuse)) {
 			did_huh = true;
-			tp->t_flags.set(ISHUH);
-			player.body.t_flags.unset(CANHUH);
+			tp->t_flags.set(CreatureFlag::Confused);
+			player.body.t_flags.unset(CreatureFlag::CanConfuse);
 			msg("your hands stop glowing red");
 		}
 		if (tp->t_stats.s_hpt <= 0)
 			killed(*tp, true);
-		else if (did_huh && !player.body.t_flags.test(ISBLIND))
+		else if (did_huh && !player.body.t_flags.test(CreatureFlag::Blind))
 			msg("the {} appears confused", mname);
 		return true;
 	}
@@ -120,16 +120,16 @@ attack(Creature &mp)
 	 */
 	game().turn.running = false;
 	game().turn.count = player.quiet = 0;
-	if (mp.t_type == 'X' && !player.body.t_flags.test(ISBLIND))
+	if (mp.t_type == 'X' && !player.body.t_flags.test(CreatureFlag::Blind))
 		mp.t_disguise = 'X';
 	mname = monsters[mp.t_type-'A'].m_name;
-	if (player.body.t_flags.test(ISBLIND))
+	if (player.body.t_flags.test(CreatureFlag::Blind))
 		mname = "it";
 	if (roll_em(mp, player.body, std::nullopt, false)) {
 		hit(mname, std::nullopt);
 		if (player.body.t_stats.s_hpt <= 0)
 			death(mp.t_type);	/* Bye bye life ... */
-		if (!mp.t_flags.test(ISCANC))
+		if (!mp.t_flags.test(CreatureFlag::Cancelled))
 			switch (mp.t_type)
 		{
 		case 'A':
@@ -210,7 +210,7 @@ attack(Creature &mp)
 			/*
 			 * Violet fungi stops the poor guy from moving
 			 */
-			player.body.t_flags.set(ISHELD);
+			player.body.t_flags.set(CreatureFlag::Held);
 			++player.fung_hit;
 			break;
 		case 'L':
@@ -378,7 +378,7 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 				hplus += player.ring_item(Hand::Right)->o_ac;
 		}
 		attacks = weap->o_damage;
-		if (hurl && weap->o_flags.test(ISMISL) && player.weapon_item() &&
+		if (hurl && weap->o_flags.test(ItemFlag::Missile) && player.weapon_item() &&
 			  launched_by(player.weapon_item()->which<WeaponType>()) == weap->o_launch)
 		{
 			attacks = weap->o_hurldmg;
@@ -405,7 +405,7 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 	 * If the creature being attacked is not running (alseep or held)
 	 * then the attacker gets a plus four bonus to hit.
 	 */
-	if (!thdef.t_flags.test(ISRUN))
+	if (!thdef.t_flags.test(CreatureFlag::Running))
 		hplus += 4;
 	def_arm = def.s_arm;
 	if (&def == &player.body.t_stats)
@@ -448,7 +448,7 @@ prname(Who who, bool upper)
 
 	if (!who)
 		name = "you";
-	else if (game().player.body.t_flags.test(ISBLIND))
+	else if (game().player.body.t_flags.test(CreatureFlag::Blind))
 		name = "it";
 	else
 		name = std::format("the {}", *who);
@@ -617,7 +617,7 @@ thunk(const Item &weap, std::string_view mname, std::string_view does, std::stri
 		addmsg("the {} {} ", w_names[weap.which<WeaponType>()], does);
 	else
 		addmsg("you {} ", did);
-	if (game().player.body.t_flags.test(ISBLIND))
+	if (game().player.body.t_flags.test(CreatureFlag::Blind))
 		msg("it");
 	else
 		msg("the {}", mname);
@@ -695,7 +695,7 @@ killed(Creature &tp, bool pr)
 	switch (tp.t_type)
 	{
 	case 'F':
-		game().player.body.t_flags.unset(ISHELD);
+		game().player.body.t_flags.unset(CreatureFlag::Held);
 		f_restor();
 		break;
 	case 'L':;
@@ -717,7 +717,7 @@ killed(Creature &tp, bool pr)
 	if (pr)
 	{
 	addmsg("you have defeated ");
-	if (game().player.body.t_flags.test(ISBLIND))
+	if (game().player.body.t_flags.test(CreatureFlag::Blind))
 		msg("it");
 	else
 		msg("the {}", monsters[type-'A'].m_name);

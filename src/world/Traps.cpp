@@ -62,7 +62,7 @@ be_trapped(Coord tc)
 		break;
 	case Trap::Sleep:
 		player.no_command += sleep_time();
-		player.body.t_flags.unset(ISRUN);
+		player.body.t_flags.unset(CreatureFlag::Running);
 		msg("a {}mist envelops you and you fall asleep",
 			noterse("strange white "));
 		break;

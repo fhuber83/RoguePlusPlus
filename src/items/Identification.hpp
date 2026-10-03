@@ -9,7 +9,7 @@
 
 namespace rogue {
 
-class Item;
+struct Item;
 
 namespace items {
 

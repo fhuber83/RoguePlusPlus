@@ -25,7 +25,7 @@ wear()
 		return;
 	}
 	waste_time();
-	obj->o_flags.set(ISKNOW);
+	obj->o_flags.set(ItemFlag::Known);
 	sp = inv_name(*obj, true);
 	game().player.armor = game().pool.id_of(obj);
 	msg("you are now wearing {}", sp);

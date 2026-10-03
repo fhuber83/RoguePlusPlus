@@ -23,7 +23,7 @@ INDEX(int y, int x)
 bool
 offmap(int y, int x)
 {
-	return y < 1 || y >= maxrow || x < 0 || x >= COLS;
+	return y < 1 || y >= maxrow || x < 0 || x >= MAXCOLS;
 }
 
 unsigned char

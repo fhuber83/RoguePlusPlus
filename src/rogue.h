@@ -46,50 +46,9 @@
 #include "world/RoomRef.hpp"
 #include "world/Trap.hpp"
 
-#include "glyphs.h"
+#include "core/Glyphs.hpp"
 #include "platform/Clock.hpp"
 #include "platform/Session.hpp"
-
-/*
- * Screen size. Fixed at 80x25 (see rogue::ui::Screen); these used to be the
- * ncurses globals of the same name. Only game files see these; the curses
- * backend uses ncurses' own.
- */
-inline constexpr int LINES = MAXLINES;
-inline constexpr int COLS = MAXCOLS;
-// Last line used for the map
-inline constexpr int maxrow = MAXLINES - 2;
-
-
-/*
- *  Options set for PC rogue
- */
-inline constexpr int REV = 1;		/* the version, 1.48 */
-inline constexpr int VER = 48;
-inline constexpr std::string_view ENVFILE = "rogue.opt";
-
-/*
- * Maximum number of different things
- */
-inline constexpr int MAXROOMS = 9;
-inline constexpr int MAXOBJ = 9;
-inline constexpr int MAXPACK = 23;
-inline constexpr int MAXTRAPS = 10;
-inline constexpr int AMULETLEVEL = 26;
-inline constexpr int NUMTHINGS = 7;	/* number of types of things */
-inline constexpr int MAXPASS = 13;	/* upper limit on number of passages */
-inline constexpr int MAXNAME = 20;	/* Maximum Length of a scroll */
-inline constexpr int MAXITEMS = 83;	/* Maximum number of randomly generated things */
-inline constexpr int BUFSIZE = 128;
-
-/*
- * Various constants
- */
-inline constexpr int MORETIME = 150;
-inline constexpr int STOMACHSIZE = 2000;
-inline constexpr int STARVETIME = 850;
-inline constexpr int BOLT_LENGTH = 6;
-inline constexpr int LAMPDIST = 3;
 
 /*
  * Now we define the structures and types
@@ -157,34 +116,6 @@ using rogue::glyph_of;
 using rogue::kind_of_glyph;
 using rogue::CreatureFlags;
 using rogue::ItemFlags;
-
-/*
- * Various flag bits: rogue::ItemFlag and rogue::CreatureFlag, in Flags sets
- */
-inline constexpr rogue::ItemFlag ISCURSED = rogue::ItemFlag::Cursed;
-inline constexpr rogue::ItemFlag ISKNOW = rogue::ItemFlag::Known;
-inline constexpr rogue::ItemFlag DIDFLASH = rogue::ItemFlag::DidFlash;
-inline constexpr rogue::ItemFlag ISEGO = rogue::ItemFlag::Ego;
-inline constexpr rogue::ItemFlag ISMISL = rogue::ItemFlag::Missile;
-inline constexpr rogue::ItemFlag ISMANY = rogue::ItemFlag::Many;
-inline constexpr rogue::ItemFlag ISREVEAL = rogue::ItemFlag::Revealed;
-inline constexpr rogue::CreatureFlag ISBLIND = rogue::CreatureFlag::Blind;
-inline constexpr rogue::CreatureFlag SEEMONST = rogue::CreatureFlag::SeeMonst;
-inline constexpr rogue::CreatureFlag ISRUN = rogue::CreatureFlag::Running;
-inline constexpr rogue::CreatureFlag ISFOUND = rogue::CreatureFlag::Found;
-inline constexpr rogue::CreatureFlag ISINVIS = rogue::CreatureFlag::Invisible;
-inline constexpr rogue::CreatureFlag ISMEAN = rogue::CreatureFlag::Mean;
-inline constexpr rogue::CreatureFlag ISGREED = rogue::CreatureFlag::Greedy;
-inline constexpr rogue::CreatureFlag ISHELD = rogue::CreatureFlag::Held;
-inline constexpr rogue::CreatureFlag ISHUH = rogue::CreatureFlag::Confused;
-inline constexpr rogue::CreatureFlag ISREGEN = rogue::CreatureFlag::Regen;
-inline constexpr rogue::CreatureFlag CANHUH = rogue::CreatureFlag::CanConfuse;
-inline constexpr rogue::CreatureFlag CANSEE = rogue::CreatureFlag::SeeInvisible;
-inline constexpr rogue::CreatureFlag ISCANC = rogue::CreatureFlag::Cancelled;
-inline constexpr rogue::CreatureFlag ISSLOW = rogue::CreatureFlag::Slow;
-inline constexpr rogue::CreatureFlag ISHASTE = rogue::CreatureFlag::Hasted;
-inline constexpr rogue::CreatureFlag ISFLY = rogue::CreatureFlag::Flying;
-
 
 #include "game/Game.hpp"
 #include "game/Pool.hpp"
@@ -391,38 +322,43 @@ using rogue::killname;
 using rogue::persistence::save_game;
 using rogue::persistence::restore;
 
-/*
- * Common strings
- * The state of a game is in game() (game/Game.hpp), and the fixed tables are
- * in the modules that use them.
- */
+#include "rules/Durations.hpp"
 
-// The flash of a vorpal weapon: when it is made, and when it first sees its enemy
-inline constexpr std::string_view intense = " of intense white light";
-// a std::format string for msg()
-inline constexpr std::string_view flashmsg = "your {} gives off a flash{}";
-
-/*
- * Function types
- */
-
-// legacy wrappers around rogue::rng()
-inline int	rnd(int range) { return rogue::rng().below(range); }
-inline int	roll(int number, int sides) { return rogue::rng().roll(number, sides); }
-inline int	spread(int nm) { return rogue::rng().spread(nm); }
-// The gold in a pile on this level (was GOLDCALC)
-inline int	gold_calc() { return rnd(50 + 10 * game().level.depth) + 2; }
-
-/*
- * How long things last, each spread by 10% (were BEARTIME, SLEEPTIME, ...)
- */
-inline int	bear_time() { return spread(3); }		/* held by a bear trap */
-inline int	sleep_time() { return spread(5); }		/* asleep from a gas trap or scroll */
-inline int	hold_time() { return spread(2); }		/* paralyzed by a potion */
-inline int	wander_time() { return spread(70); }	/* until the next wandering monster */
-inline int	huh_duration() { return spread(20); }	/* confused */
-inline int	see_duration() { return spread(300); }	/* seeing invisible, or blind */
-inline int	hunger_time() { return spread(1300); }	/* a full stomach */
+// Moved to their modules in phase 14.1; the files that still include rogue.h
+// see them here until 14.3
+using rogue::MAXSTR;
+using rogue::MAXLINES;
+using rogue::MAXCOLS;
+using rogue::maxrow;
+using rogue::ctrl;
+using rogue::ESCAPE;
+using rogue::is_floor;
+using rogue::is_monster;
+using rogue::BUFSIZE;
+using rogue::MAXNAME;
+using rogue::MAXITEMS;
+using rogue::rnd;
+using rogue::roll;
+using rogue::spread;
+using rogue::items::NUMTHINGS;
+using rogue::items::MAXPACK;
+using rogue::items::effects::BOLT_LENGTH;
+using rogue::items::effects::intense;
+using rogue::items::effects::flashmsg;
+using rogue::world::MAXROOMS;
+using rogue::world::MAXPASS;
+using rogue::world::AMULETLEVEL;
+using rogue::world::LAMPDIST;
+using rogue::world::gold_calc;
+using rogue::rules::bear_time;
+using rogue::rules::sleep_time;
+using rogue::rules::hold_time;
+using rogue::rules::wander_time;
+using rogue::rules::huh_duration;
+using rogue::rules::see_duration;
+using rogue::rules::hunger_time;
+using rogue::ItemFlag;
+using rogue::CreatureFlag;
 
 // Small helpers (core/Math.hpp, core/Text.hpp)
 using rogue::sign;

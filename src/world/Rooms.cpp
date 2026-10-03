@@ -28,7 +28,7 @@ door_open(const Room &rp)
 	unsigned char ch;
 	Maybe<Creature> tp;
 
-	if (!rp.r_flags.test(RoomFlag::Gone) && !game().player.body.t_flags.test(ISBLIND))
+	if (!rp.r_flags.test(RoomFlag::Gone) && !game().player.body.t_flags.test(CreatureFlag::Blind))
 		for (j = rp.r_pos.y; j < rp.r_pos.y + rp.r_max.y; j++)
 			for (k = rp.r_pos.x; k < rp.r_pos.x + rp.r_max.x; k++) {
 				ch = winat(j, k);
@@ -40,7 +40,7 @@ door_open(const Room &rp)
 						continue;
 					}
 					if (tp->t_oldch == ' ' && !rp.r_flags.test(RoomFlag::Dark)
-						&& !game().player.body.t_flags.test(ISBLIND))
+						&& !game().player.body.t_flags.test(CreatureFlag::Blind))
 							tp->t_oldch = game().level.at(j, k);
 				}
 			}
@@ -96,7 +96,7 @@ cansee(int y, int x)
 	std::optional<RoomRef> rer;
 	rogue::Player &player = game().player;
 
-	if (player.body.t_flags.test(ISBLIND))
+	if (player.body.t_flags.test(CreatureFlag::Blind))
 		return	false;
 	if (distance_sq({x, y}, player.body.t_pos) < LAMPDIST)
 		return	true;
@@ -142,7 +142,7 @@ enter_room(Coord cp)
 	}
 	const Room &rp = level.room(*in);
 	door_open(rp);
-	if (!rp.r_flags.test(RoomFlag::Dark) && !game().player.body.t_flags.test(ISBLIND) && !rp.r_flags.test(RoomFlag::Maze))
+	if (!rp.r_flags.test(RoomFlag::Dark) && !game().player.body.t_flags.test(CreatureFlag::Blind) && !rp.r_flags.test(RoomFlag::Maze))
 		for (y = rp.r_pos.y; y < rp.r_max.y + rp.r_pos.y; y++) {
 			for (x = rp.r_pos.x; x < rp.r_max.x + rp.r_pos.x; x++) {
 				/*
@@ -174,7 +174,7 @@ leave_room(Coord cp)
 
 	const Room &rp = game().level.room(*player.body.t_room);
 	player.body.t_room = game().level.passage_at(cp);
-	floor = (rp.r_flags.test(RoomFlag::Dark) && !player.body.t_flags.test(ISBLIND)) ? ' ' : FLOOR;
+	floor = (rp.r_flags.test(RoomFlag::Dark) && !player.body.t_flags.test(CreatureFlag::Blind)) ? ' ' : FLOOR;
 	if (rp.r_flags.test(RoomFlag::Maze))
 		floor = PASSAGE;
 	for (y = rp.r_pos.y + 1; y < rp.r_max.y + rp.r_pos.y - 1; y++)
@@ -196,7 +196,7 @@ leave_room(Coord cp)
 				 */
 				if (is_monster(ch))
 				{
-					if (player.body.t_flags.test(SEEMONST)) {
+					if (player.body.t_flags.test(CreatureFlag::SeeMonst)) {
 						display().draw_tile({x, y}, ch, TileStyle::Inverse);
 						break;
 					} else
@@ -242,11 +242,11 @@ teleport()
 	}
 	display().draw_tile(player.body.t_pos, PLAYER);
 	/*
-	 * turn off ISHELD in case teleportation was done while fighting
+	 * turn off Held in case teleportation was done while fighting
 	 * a Fungi
 	 */
-	if (player.body.t_flags.test(ISHELD)) {
-		player.body.t_flags.unset(ISHELD);
+	if (player.body.t_flags.test(CreatureFlag::Held)) {
+		player.body.t_flags.unset(CreatureFlag::Held);
 		f_restor();
 	}
 	player.no_move = 0;
@@ -256,11 +256,11 @@ teleport()
 	/*
 	 * Teleportation can be a confusing experience
 	 */
-	if (player.body.t_flags.test(ISHUH))
+	if (player.body.t_flags.test(CreatureFlag::Confused))
 		lengthen(Event::Unconfuse, rnd(4)+2);
 	else
 		fuse(Event::Unconfuse, rnd(4)+2);
-	player.body.t_flags.set(ISHUH);
+	player.body.t_flags.set(CreatureFlag::Confused);
 }
 
 }  // namespace rogue::world

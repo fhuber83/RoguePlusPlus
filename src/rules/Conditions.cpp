@@ -16,7 +16,7 @@ namespace rogue::rules {
 void
 unconfuse()
 {
-	game().player.body.t_flags.unset(ISHUH);
+	game().player.body.t_flags.unset(CreatureFlag::Confused);
 	msg("you feel less confused now");
 }
 
@@ -30,9 +30,9 @@ unsee()
 	Maybe<Creature> th;
 
 	for (th = game().level.monsters.first(); th; th = game().level.monsters.after(*th))
-		if (th->t_flags.test(ISINVIS) && see_monst(*th) && th->t_oldch != '@')
+		if (th->t_flags.test(CreatureFlag::Invisible) && see_monst(*th) && th->t_oldch != '@')
 			display().draw_tile(th->t_pos, th->t_oldch);
-	game().player.body.t_flags.unset(CANSEE);
+	game().player.body.t_flags.unset(CreatureFlag::SeeInvisible);
 }
 
 /*
@@ -44,10 +44,10 @@ sight()
 {
 	rogue::Player &player = game().player;
 
-	if (player.body.t_flags.test(ISBLIND))
+	if (player.body.t_flags.test(CreatureFlag::Blind))
 	{
 		extinguish(Event::Sight);
-		player.body.t_flags.unset(ISBLIND);
+		player.body.t_flags.unset(CreatureFlag::Blind);
 		if (!game().level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone))
 			enter_room(player.body.t_pos);
 		msg("the veil of darkness lifts");
@@ -61,7 +61,7 @@ sight()
 void
 nohaste()
 {
-	game().player.body.t_flags.unset(ISHASTE);
+	game().player.body.t_flags.unset(CreatureFlag::Hasted);
 	msg("you feel yourself slowing down");
 }
 

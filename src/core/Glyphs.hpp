@@ -6,6 +6,8 @@
 
 #pragma once
 
+namespace rogue {
+
 /*
  * Don't change the constants, since they are used for sizes in many
  * places in the program. 80 and 25 are also hard coded in many places.
@@ -13,6 +15,8 @@
 inline constexpr int MAXSTR = 80;	/* maximum length of strings */
 inline constexpr int MAXLINES = 25;	/* maximum number of screen lines used */
 inline constexpr int MAXCOLS = 80;	/* maximum number of screen columns used */
+// The last line of the map: the line above the status line
+inline constexpr int maxrow = MAXLINES - 2;
 
 // The key a control character is typed with: ctrl('R') is ^R
 consteval unsigned char
@@ -84,3 +88,5 @@ inline constexpr unsigned char DVLEFT = 0xb9;
 inline constexpr unsigned char DVRIGHT = 0xcc;
 
 inline constexpr unsigned char ESCAPE = 27;
+
+}  // namespace rogue

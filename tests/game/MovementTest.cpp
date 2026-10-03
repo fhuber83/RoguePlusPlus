@@ -13,7 +13,7 @@ protected:
 		level = rogue::Level();
 		std::ranges::fill(level.map, ' ');
 		for (Coord c : {Coord{10, 5}, Coord{11, 5}, Coord{12, 5}, Coord{12, 6}, Coord{12, 7}, Coord{12, 8}}) {
-			level.at(c) = PASSAGE;
+			level.at(c) = rogue::PASSAGE;
 			level.flags_at(c).set(MapFlag::Passage | MapFlag::Real);
 		}
 		rogue::Player &player = game().player;
@@ -79,7 +79,7 @@ TEST_F(Movement, RndmoveStaysOnThePassage)
 		for (int i = 0; i < 200; i++) {
 			const Coord to = rndmove(body);
 			EXPECT_LE(rogue::distance_sq(to, start), 2);
-			EXPECT_EQ(game().level.at(to), PASSAGE) << to.x << "," << to.y;
+			EXPECT_EQ(game().level.at(to), rogue::PASSAGE) << to.x << "," << to.y;
 		}
 	}
 }

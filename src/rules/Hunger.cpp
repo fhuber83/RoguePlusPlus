@@ -11,6 +11,14 @@
 
 namespace rogue::rules {
 
+namespace {
+
+constexpr int MORETIME = 150;		/* food left when he gets weak; twice that, hungry */
+constexpr int STOMACHSIZE = 2000;	/* food a stomach holds */
+constexpr int STARVETIME = 850;		/* how far below empty he starves */
+
+}  // namespace
+
 /*
  * eat:
  *	She wants to eat something, so let her try
@@ -84,7 +92,7 @@ stomach()
 		if (player.no_command || rnd(5) != 0)
 			return;
 		player.no_command += rnd(8) + 4;
-		player.body.t_flags.unset(ISRUN);
+		player.body.t_flags.unset(CreatureFlag::Running);
 		game().turn.running = false;
 		game().turn.count = 0;
 		player.hungry_state = 3;

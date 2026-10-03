@@ -19,7 +19,7 @@ constexpr int DRAGONSHOT = 5;	/* one chance in DRAGONSHOT that a dragon will fla
 
 namespace {
 
-coord ch_ret;			/* Where chasing takes	you */
+Coord ch_ret;			/* Where chasing takes	you */
 
 }  // namespace
 
@@ -35,10 +35,10 @@ runners()
 	rogue::Player &player = game().player;
 
 	for (tp = game().level.monsters.first(); tp; tp = game().level.monsters.after(*tp)) {
-		if (!tp->t_flags.test(ISHELD) && tp->t_flags.test(ISRUN)) {
+		if (!tp->t_flags.test(CreatureFlag::Held) && tp->t_flags.test(CreatureFlag::Running)) {
 			const CreatureId id = *game().pool.id_of(*tp);
 			dist = distance_sq(player.body.t_pos, tp->t_pos);
-			if	(!(tp->t_flags.test(ISSLOW) || (tp->t_type == 'S' && dist > 3)) || tp->t_turn)
+			if	(!(tp->t_flags.test(CreatureFlag::Slow) || (tp->t_type == 'S' && dist > 3)) || tp->t_turn)
 				do_chase(*tp);
 			/*
 			 * do_chase() can end in attack(), which removes tp from the
@@ -50,12 +50,12 @@ runners()
 			 */
 			if (!game().level.monsters.contains(id))
 				break;
-			if (tp->t_flags.test(ISHASTE))
+			if (tp->t_flags.test(CreatureFlag::Hasted))
 				do_chase(*tp);
 			if (!game().level.monsters.contains(id))
 				break;
 			dist = distance_sq(player.body.t_pos, tp->t_pos);
-			if (tp->t_flags.test(ISFLY) && dist > 3)
+			if (tp->t_flags.test(CreatureFlag::Flying) && dist > 3)
 				do_chase(*tp);
 			if (!game().level.monsters.contains(id))
 				break;
@@ -78,12 +78,12 @@ do_chase(Creature &th)
 	Maybe<Item> obj;
 	std::optional<RoomRef> oroom;
 	std::optional<RoomRef> rer, ree;	/* room of chaser, room of chasee */
-	coord target;				/* Temporary	destination for	chaser */
+	Coord target;				/* Temporary	destination for	chaser */
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 
 	rer	= th.t_room;		/* Find room of chaser */
-	if (th.t_flags.test(ISGREED) && level.room(*rer).r_goldval == 0)
+	if (th.t_flags.test(CreatureFlag::Greedy) && level.room(*rer).r_goldval == 0)
 		th.t_dest = Hero{};	/*	If gold	has been taken,	run after hero */
 	ree	= player.body.t_room;
 	if (th.t_dest != Destination(Hero{}))	/*	Find room of chasee */
@@ -131,7 +131,7 @@ do_chase(Creature &th)
 				 || abs(th.t_pos.y - player.body.t_pos.y) == abs(th.t_pos.x - player.body.t_pos.x))
 				&&	((dist=distance_sq(th.t_pos, player.body.t_pos)) > 2
 				 && dist <= BOLT_LENGTH	* BOLT_LENGTH)
-				&&	!th.t_flags.test(ISCANC) && rnd(DRAGONSHOT) == 0)
+				&&	!th.t_flags.test(CreatureFlag::Cancelled) && rnd(DRAGONSHOT) == 0)
 			{
 				game().turn.running = false;
 				game().turn.delta.y = sign(player.body.t_pos.y - th.t_pos.y);
@@ -176,7 +176,7 @@ do_chase(Creature &th)
 			   && level.map[INDEX(th.t_pos.y,th.t_pos.x)] == FLOOR)
 			display().draw_tile(th.t_pos, FLOOR);
 		else if (th.t_oldch == FLOOR && !cansee(th.t_pos.y, th.t_pos.x)
-				&& !player.body.t_flags.test(SEEMONST))
+				&& !player.body.t_flags.test(CreatureFlag::SeeMonst))
 			display().draw_tile(th.t_pos, ' ');
 		else
 			display().draw_tile(th.t_pos, th.t_oldch);
@@ -198,7 +198,7 @@ do_chase(Creature &th)
 		display().draw_tile(ch_ret, th.t_disguise,
 				level.flags_at(ch_ret).test(MapFlag::Passage) ? TileStyle::Inverse : TileStyle::Normal);
 	}
-	else if (player.body.t_flags.test(SEEMONST))
+	else if (player.body.t_flags.test(CreatureFlag::SeeMonst))
 	{
 		th.t_oldch = display().tile_at(ch_ret);
 		display().draw_tile(ch_ret, th.t_type, TileStyle::Inverse);
@@ -220,9 +220,9 @@ bool
 see_monst(const Creature &mp)
 {
 	rogue::Player &player = game().player;
-	if (player.body.t_flags.test(ISBLIND))
+	if (player.body.t_flags.test(CreatureFlag::Blind))
 		return	false;
-	if (mp.t_flags.test(ISINVIS) && !player.body.t_flags.test(CANSEE))
+	if (mp.t_flags.test(CreatureFlag::Invisible) && !player.body.t_flags.test(CreatureFlag::SeeInvisible))
 		return	false;
 	if (distance_sq(mp.t_pos, player.body.t_pos) >= LAMPDIST &&
 	  ((mp.t_room != player.body.t_room || game().level.room(*mp.t_room).r_flags.test(RoomFlag::Dark) ||
@@ -233,9 +233,9 @@ see_monst(const Creature &mp)
 	 * time, give the player a hint as to what that weapon is good for.
 	 */
 	if (player.weapon_item() && mp.t_type == player.weapon_item()->o_enemy
-	  && !player.weapon_item()->o_flags.test(DIDFLASH))
+	  && !player.weapon_item()->o_flags.test(ItemFlag::DidFlash))
 	{
-		player.weapon_item()->o_flags.set(DIDFLASH);
+		player.weapon_item()->o_flags.set(ItemFlag::DidFlash);
 		msg(flashmsg, w_names[player.weapon_item()->which<WeaponType>()], game().options.brief() ? "" : intense);
 	}
 	return true;
@@ -259,8 +259,8 @@ start_run(Coord runner)
 		/*
 		 *	Start the beastie running
 		 */
-		tp->t_flags.set(ISRUN);
-		tp->t_flags.unset(ISHELD);
+		tp->t_flags.set(CreatureFlag::Running);
+		tp->t_flags.unset(CreatureFlag::Held);
 		tp->t_dest	= find_dest(*tp);
 	}
 	else if constexpr (rogue::config::debug_checks)
@@ -289,7 +289,7 @@ chase(Creature &tp, Coord ee)
 	 * are slightly confused all of the	time, and bats are
 	 * quite confused all the time
 	 */
-	if ((tp.t_flags.test(ISHUH)	&& rnd(5) != 0)	|| (tp.t_type == 'P' && rnd(5)	== 0)
+	if ((tp.t_flags.test(CreatureFlag::Confused)	&& rnd(5) != 0)	|| (tp.t_type == 'P' && rnd(5)	== 0)
 		|| (tp.t_type	== 'B' && rnd(2) == 0))
 	{
 		/*
@@ -301,7 +301,7 @@ chase(Creature &tp, Coord ee)
 		 * Small chance that it will become un-confused
 		 */
 		if (rnd(30) ==	17)
-			tp.t_flags.unset(ISHUH);
+			tp.t_flags.unset(CreatureFlag::Confused);
 	}
 	/*
 	 * Otherwise, find the empty spot next to the chaser that is
@@ -413,7 +413,7 @@ find_dest(const Creature &tp)
 
 namespace {
 
-coord slimy;
+Coord slimy;
 
 bool	new_slime(Creature &tp);
 
@@ -445,7 +445,7 @@ new_slime(Creature &tp)
 	Maybe<Creature> ntp;
 
 	ret = false;
-	tp.t_flags.set(ISFLY);
+	tp.t_flags.set(CreatureFlag::Flying);
 	std::optional<Coord> sp = plop_monster((ty = tp.t_pos.y), (tx = tp.t_pos.x));
 	if (!sp) {
 		/*
@@ -455,7 +455,7 @@ new_slime(Creature &tp)
 		for (y = ty -1; y <= ty+1; y++)
 			for (x = tx-1; x <= tx+1; x++)
 				if (winat(y, x) == 'S' && (ntp = moat(y, x))) {
-					if (ntp->t_flags.test(ISFLY))
+					if (ntp->t_flags.test(CreatureFlag::Flying))
 						continue;				/* Already done this one */
 					if (new_slime(*ntp)) {
 						y = ty+2;
@@ -466,7 +466,7 @@ new_slime(Creature &tp)
 		ret = true;
 		slimy = *sp;
 	}
-	tp.t_flags.unset(ISFLY);
+	tp.t_flags.unset(CreatureFlag::Flying);
 	return ret;
 }
 

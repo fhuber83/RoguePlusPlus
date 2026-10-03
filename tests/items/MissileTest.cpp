@@ -11,7 +11,7 @@ protected:
 		for (int dy = -1; dy <= 1; dy++)
 			for (int dx = -1; dx <= 1; dx++) {
 				Coord next{hero.x + dx, hero.y + dy};
-				if ((dx || dy) && game().level.at(next) == FLOOR && !moat(next.y, next.x))
+				if ((dx || dy) && game().level.at(next) == rogue::FLOOR && !moat(next.y, next.x))
 					return {dx, dy};
 			}
 		ADD_FAILURE() << "the rogue has no floor next to him";

@@ -88,7 +88,7 @@ pr_scores(int newrank, const std::vector<ScoreEntry> &top10)
 			}
 		}
 		std::string &text = texts.emplace_back();
-		if (static_cast<int>(sc.name.size() + 10 + he_man[sc.experience-1].size()) < COLS)
+		if (static_cast<int>(sc.name.size() + 10 + he_man[sc.experience-1].size()) < MAXCOLS)
 		{
 			if (sc.experience > 1 && !sc.name.empty())
 				text = std::format(" \"{}\"", he_man[sc.experience - 1]);
@@ -210,7 +210,7 @@ death(char monst)
 		std::chrono::floor<std::chrono::days>(rogue::platform::local_time(rogue::platform::now()))}.year());
 	display().draw_tombstone(game().options.name, killname(monst, true), game().player.purse, year);
 	display().curtain_up();
-	display().write_at(LINES-1, 0, "");
+	display().write_at(MAXLINES-1, 0, "");
 	score(game().player.purse, 0, monst);
 	md_exit(EXIT_SUCCESS);
 }
@@ -258,7 +258,7 @@ total_winner()
 				default: break;
 			}
 			worth *= 3 * (obj->o_hplus + obj->o_dplus) + obj->o_count;
-			obj->o_flags.set(ISKNOW);
+			obj->o_flags.set(ItemFlag::Known);
 			break;
 		case ItemKind::Armor:
 			switch (obj->which<ArmorType>())
@@ -275,7 +275,7 @@ total_winner()
 			}
 			worth += (9 - obj->o_ac) * 100;
 			worth += (10 * (a_class[obj->which<ArmorType>()] - obj->o_ac));
-			obj->o_flags.set(ISKNOW);
+			obj->o_flags.set(ItemFlag::Known);
 			break;
 		case ItemKind::Scroll:
 			worth = items.s_magic[obj->which<Scroll>()].mi_worth;
@@ -301,17 +301,17 @@ total_winner()
 				else
 					worth = 10;
 			}
-			if (!obj->o_flags.test(ISKNOW))
+			if (!obj->o_flags.test(ItemFlag::Known))
 				worth /= 2;
-			obj->o_flags.set(ISKNOW);
+			obj->o_flags.set(ItemFlag::Known);
 			items.r_know[obj->which<Ring>()] = true;
 			break;
 		case ItemKind::Stick:
 			worth = items.ws_magic[obj->which<Stick>()].mi_worth;
 			worth += 20 * obj->charges();
-			if (!obj->o_flags.test(ISKNOW))
+			if (!obj->o_flags.test(ItemFlag::Known))
 				worth /= 2;
-			obj->o_flags.set(ISKNOW);
+			obj->o_flags.set(ItemFlag::Known);
 			items.ws_know[obj->which<Stick>()] = true;
 				break;
 			case ItemKind::Amulet:

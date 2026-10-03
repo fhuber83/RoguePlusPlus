@@ -30,6 +30,8 @@ struct Options;
 
 namespace persistence {
 
+inline constexpr std::string_view ENVFILE = "rogue.opt";	/* the options file */
+
 struct OptionSetting {
 	std::string label;	// lower case
 	std::string value;

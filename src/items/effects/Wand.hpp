@@ -10,9 +10,11 @@
 
 namespace rogue {
 
-class Item;
+struct Item;
 
 namespace items::effects {
+
+inline constexpr int BOLT_LENGTH = 6;	/* squares a bolt flies */
 
 /*
  * fix_stick:

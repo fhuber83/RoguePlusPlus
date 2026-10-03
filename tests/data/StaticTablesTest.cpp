@@ -15,11 +15,11 @@ TEST(StaticTables, EveryMonsterAttacks)
 // ISGREED ended up in the carry column.
 TEST(StaticTables, MonsterFlags)
 {
-	EXPECT_TRUE(monsters['B'-'A'].m_flags.test(ISFLY));
-	EXPECT_EQ(monsters['G'-'A'].m_flags, ISMEAN|ISFLY|ISREGEN);
+	EXPECT_TRUE(monsters['B'-'A'].m_flags.test(CreatureFlag::Flying));
+	EXPECT_EQ(monsters['G'-'A'].m_flags, CreatureFlag::Mean|CreatureFlag::Flying|CreatureFlag::Regen);
 	EXPECT_EQ(monsters['L'-'A'].m_carry, 64);
 	EXPECT_FALSE(monsters['L'-'A'].m_flags.any());
-	EXPECT_EQ(monsters['O'-'A'].m_flags, CreatureFlags(ISGREED));
+	EXPECT_EQ(monsters['O'-'A'].m_flags, CreatureFlags(CreatureFlag::Greedy));
 	EXPECT_EQ(monsters['P'-'A'].m_flags.bits(), 0x0010);
 }
 
@@ -33,7 +33,7 @@ TEST(StaticTables, HelpTables)
 		EXPECT_FALSE(line.h_desc.empty());
 	EXPECT_EQ(rogue::helpcoms.front().h_desc, "F1     list of commands");
 	EXPECT_EQ(rogue::helpcoms.back().h_desc, "D      list what has been discovered");
-	EXPECT_EQ(rogue::helpobjs.front().glyphs(), std::string({static_cast<char>(FLOOR), ':', ' '}));
+	EXPECT_EQ(rogue::helpobjs.front().glyphs(), std::string({static_cast<char>(rogue::FLOOR), ':', ' '}));
 	EXPECT_EQ(rogue::helpobjs.back().glyphs(), "A-Z: ");
 	EXPECT_EQ(rogue::helpobjs.back().h_desc, "26 different monsters");
 }

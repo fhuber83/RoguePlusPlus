@@ -74,7 +74,7 @@ do_zap()
 		/*
 		 * Reddy Kilowat wand.  Light up the room
 		 */
-		if (player.body.t_flags.test(ISBLIND))
+		if (player.body.t_flags.test(CreatureFlag::Blind))
 			msg("you feel a warm glow around you");
 		else
 		{
@@ -115,7 +115,7 @@ do_zap()
 	{
 		unsigned char monster, oldch;
 		int rm;
-		coord new_yx;
+		Coord new_yx;
 
 		y = player.body.t_pos.y;
 		x = player.body.t_pos.x;
@@ -130,7 +130,7 @@ do_zap()
 
 			omonst = monster = tp->t_type;
 			if (monster == 'F')
-				player.body.t_flags.unset(ISHELD);
+				player.body.t_flags.unset(CreatureFlag::Held);
 			if (which_one == Stick::Vorpal)
 			{
 				if (monster == obj->o_enemy)
@@ -162,8 +162,8 @@ do_zap()
 			}
 			else if (which_one == Stick::Cancellation)
 			{
-				tp->t_flags.set(ISCANC);
-				tp->t_flags.unset(ISINVIS|CANHUH);
+				tp->t_flags.set(CreatureFlag::Cancelled);
+				tp->t_flags.unset(CreatureFlag::Invisible|CreatureFlag::CanConfuse);
 				tp->t_disguise = tp->t_type;
 			}
 			else
@@ -181,7 +181,7 @@ do_zap()
 					tp->t_pos = new_yx;
 					if (see_monst(*tp))
 						display().draw_tile(tp->t_pos, tp->t_disguise);
-					else if (player.body.t_flags.test(SEEMONST))
+					else if (player.body.t_flags.test(CreatureFlag::SeeMonst))
 						display().draw_tile(tp->t_pos, tp->t_disguise, TileStyle::Inverse);
 				}
 				else /* it MUST BE at Stick::TeleportTo */
@@ -190,12 +190,12 @@ do_zap()
 					tp->t_pos.x = player.body.t_pos.x + turn.delta.x;
 				}
 				if (tp->t_type == 'F')
-					player.body.t_flags.unset(ISHELD);
+					player.body.t_flags.unset(CreatureFlag::Held);
 				if (tp->t_pos.y != y || tp->t_pos.x != x)
 					tp->t_oldch = display().tile_at(tp->t_pos);
 			}
 			tp->t_dest = Hero{};
-			tp->t_flags.set(ISRUN);
+			tp->t_flags.set(CreatureFlag::Running);
 		}
 	}
 		break;
@@ -208,7 +208,7 @@ do_zap()
 		bolt.o_hurldmg = "1d8";
 		bolt.o_hplus = 1000;
 		bolt.o_dplus = 1;
-		bolt.o_flags = ISMISL;
+		bolt.o_flags = ItemFlag::Missile;
 		if (player.weapon_item())
 			bolt.o_launch = launched_by(player.weapon_item()->which<WeaponType>());
 		do_motion(bolt, turn.delta.y, turn.delta.x);
@@ -249,17 +249,17 @@ do_zap()
 		{
 			if (which_one == Stick::HasteMonster)
 			{
-				if (tp->t_flags.test(ISSLOW))
-					tp->t_flags.unset(ISSLOW);
+				if (tp->t_flags.test(CreatureFlag::Slow))
+					tp->t_flags.unset(CreatureFlag::Slow);
 				else
-					tp->t_flags.set(ISHASTE);
+					tp->t_flags.set(CreatureFlag::Hasted);
 			}
 			else
 			{
-				if (tp->t_flags.test(ISHASTE))
-					tp->t_flags.unset(ISHASTE);
+				if (tp->t_flags.test(CreatureFlag::Hasted))
+					tp->t_flags.unset(CreatureFlag::Hasted);
 				else
-					tp->t_flags.set(ISSLOW);
+					tp->t_flags.set(CreatureFlag::Slow);
 				tp->t_turn = true;
 			}
 			turn.delta.y = y;
@@ -349,10 +349,10 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 	Maybe<Creature> tp;
 	bool hit_hero, used, changed;
 	int i, j;
-	coord pos;
+	Coord pos;
 	rogue::Player &player = game().player;
 	struct {
-		coord s_pos;
+		Coord s_pos;
 		unsigned char s_under;
 	} spotpos[BOLT_LENGTH*2];
 	Item bolt;
@@ -462,7 +462,7 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 std::string
 charge_str(const Item &obj)
 {
-	if (!obj.o_flags.test(ISKNOW))
+	if (!obj.o_flags.test(ItemFlag::Known))
 		return "";
 	return std::format(" [{} charges]", obj.charges());
 }

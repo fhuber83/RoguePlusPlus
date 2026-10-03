@@ -23,7 +23,7 @@ main(int argc, char **argv)
 	// Allow non-ASCII output in <curses.h>
 	setlocale(LC_ALL, "");
 
-	if (rogue::persistence::load_options(std::string(ENVFILE), game().options) == rogue::persistence::LoadResult::BadFormat)
+	if (rogue::persistence::load_options(std::string(rogue::persistence::ENVFILE), game().options) == rogue::persistence::LoadResult::BadFormat)
 		fatal("rogue.opt: incorrect file format\n");
 	/*
 	 * Parse the screen environment variable.  if the string starts with

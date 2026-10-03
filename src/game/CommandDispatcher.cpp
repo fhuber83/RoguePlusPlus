@@ -8,6 +8,13 @@
 
 namespace rogue {
 
+namespace {
+
+constexpr int REV = 1;		/* the version, 1.48 */
+constexpr int VER = 48;
+
+}  // namespace
+
 // Set by resume_saved_game() until the first command after a restore
 namespace {
 
@@ -33,7 +40,7 @@ command()
 	 * in, and the moves it had left.
 	 */
 	if (!resuming || turn.moves_left == 0)
-		turn.moves_left = player.body.t_flags.test(ISHASTE) ? rnd(2) + 2 : 1;
+		turn.moves_left = player.body.t_flags.test(CreatureFlag::Hasted) ? rnd(2) + 2 : 1;
 	for (; turn.moves_left > 0; turn.moves_left--) {
 		status();
 		if (player.no_command) {
@@ -163,7 +170,7 @@ get_prefix()
 		turn.fast_mode = false;
 	// Which commands a count repeats is in game/Command.cpp
 	if (command_of(retch) == Command::Move && turn.fast_mode && !turn.running) {
-		if (!game().player.body.t_flags.test(ISBLIND)) {
+		if (!game().player.body.t_flags.test(CreatureFlag::Blind)) {
 			turn.door_stop = true;
 			turn.first_move = true;
 		}
@@ -257,7 +264,7 @@ execcom()
 		case Command::Rest: doctor(); break;
 		case Command::IdentifyTrap:
 			if (get_dir()) {
-				coord lookat;
+				Coord lookat;
 
 				lookat.y = player.body.t_pos.y + turn.delta.y;
 				lookat.x = player.body.t_pos.x + turn.delta.x;

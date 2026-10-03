@@ -34,7 +34,7 @@ draw_maze(Room &rp)
 {
 	int y, x;
 	int psgcnt;
-	coord spos;
+	Coord spos;
 	rogue::Level &level = game().level;
 
 	maxx = maxy = 0;
@@ -187,7 +187,7 @@ splat(int y, int x)
 bool
 inrange(int y, int x)
 {
-	return y >= topy && y < topy + (maxrow + 1) / 3 && x >= topx && x < topx + COLS / 3;
+	return y >= topy && y < topy + (maxrow + 1) / 3 && x >= topx && x < topx + MAXCOLS / 3;
 }
 
 }  // namespace

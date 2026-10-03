@@ -123,7 +123,7 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 			player.body.flags.unset(CreatureFlag::CanConfuse);
 			msg("your hands stop glowing red");
 		}
-		if (tp->stats.s_hpt <= 0)
+		if (tp->stats.hp <= 0)
 			killed(*tp, true);
 		else if (did_huh && !player.body.flags.test(CreatureFlag::Blind))
 			msg("the {} appears confused", mname);
@@ -160,7 +160,7 @@ attack(Creature &mp)
 		mname = "it";
 	if (roll_em(mp, player.body, std::nullopt, false)) {
 		hit(mname, std::nullopt);
-		if (player.body.stats.s_hpt <= 0)
+		if (player.body.stats.hp <= 0)
 			death(mp.type);	/* Bye bye life ... */
 		if (!mp.flags.test(CreatureFlag::Cancelled))
 			switch (mp.type)
@@ -217,24 +217,24 @@ attack(Creature &mp)
 
 			if (mp.type == 'W')
 			{
-				if (player.body.stats.s_exp == 0)
+				if (player.body.stats.exp == 0)
 				death('W');		/* All levels gone */
-				if (--player.body.stats.s_lvl == 0)
+				if (--player.body.stats.level == 0)
 				{
-				player.body.stats.s_exp = 0;
-				player.body.stats.s_lvl = 1;
+				player.body.stats.exp = 0;
+				player.body.stats.level = 1;
 				}
 				else
-				player.body.stats.s_exp = e_levels[player.body.stats.s_lvl-1]+1;
+				player.body.stats.exp = e_levels[player.body.stats.level-1]+1;
 				fewer = roll(1, 10);
 			}
 			else
 				fewer = roll(1, 5);
-			player.body.stats.s_hpt -= fewer;
-			player.body.stats.s_maxhp -= fewer;
-			if (player.body.stats.s_hpt < 1)
-				player.body.stats.s_hpt = 1;
-			if (player.body.stats.s_maxhp < 1)
+			player.body.stats.hp -= fewer;
+			player.body.stats.max_hp -= fewer;
+			if (player.body.stats.hp < 1)
+				player.body.stats.hp = 1;
+			if (player.body.stats.max_hp < 1)
 				death(mp.type);
 			msg("you suddenly feel weaker");
 			}
@@ -308,8 +308,8 @@ attack(Creature &mp)
 	{
 	if (mp.type == 'F')
 	{
-		player.body.stats.s_hpt -= player.fung_hit;
-		if (player.body.stats.s_hpt <= 0)
+		player.body.stats.hp -= player.fung_hit;
+		if (player.body.stats.hp <= 0)
 		death(mp.type);	/* Bye bye life ... */
 	}
 	miss(mname, std::nullopt);
@@ -343,17 +343,17 @@ check_level()
 
 	int i = 0;
 	for (; e_levels[i] != 0; i++)
-	if (e_levels[i] > player.body.stats.s_exp)
+	if (e_levels[i] > player.body.stats.exp)
 		break;
 	i++;
-	int olevel = player.body.stats.s_lvl;
-	player.body.stats.s_lvl = i;
+	int olevel = player.body.stats.level;
+	player.body.stats.level = i;
 	if (i > olevel)
 	{
 		int add = roll(i - olevel, 10);
-		player.body.stats.s_maxhp += add;
-		if ((player.body.stats.s_hpt += add) > player.body.stats.s_maxhp)
-			player.body.stats.s_hpt = player.body.stats.s_maxhp;
+		player.body.stats.max_hp += add;
+		if ((player.body.stats.hp += add) > player.body.stats.max_hp)
+			player.body.stats.hp = player.body.stats.max_hp;
 		msg("and achieve the rank of \"{}\"", he_man[i-1]);
 	}
 }
@@ -377,7 +377,7 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 	if (!weap)
 	{
 		// every flytrap has the one growing attack
-		attacks = (thatt.type == 'F' && &thatt != &player.body) ? entities::flytrap_attacks(player.fung_hit) : att.s_dmg;
+		attacks = (thatt.type == 'F' && &thatt != &player.body) ? entities::flytrap_attacks(player.fung_hit) : att.damage;
 		dplus = 0;
 		hplus = 0;
 	}
@@ -434,7 +434,7 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 	 */
 	if (!thdef.flags.test(CreatureFlag::Running))
 		hplus += 4;
-	int def_arm = def.s_arm;
+	int def_arm = def.armor;
 	if (&def == &player.body.stats)
 	{
 		if (player.armor_item())
@@ -446,9 +446,9 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 	}
 	for (const rogue::Dice &attack : attacks)
 	{
-		if (swing(att.s_lvl, def_arm, hplus + str_plus(att.s_str)))
+		if (swing(att.level, def_arm, hplus + str_plus(att.str)))
 		{
-			int damage = dplus + attack.roll(rogue::rng()) + add_dam(att.s_str);
+			int damage = dplus + attack.roll(rogue::rng()) + add_dam(att.str);
 			/*
 			 * special goodies for the commercial version of rogue
 			 */
@@ -457,7 +457,7 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 				  * make it easier on level one
 				  */
 						damage = (damage+1) / 2;
-			def.s_hpt -= std::max(0, damage);
+			def.hp -= std::max(0, damage);
 			did_hit = true;
 		}
 	}
@@ -533,7 +533,7 @@ miss(Who er, Who ee)
 bool
 throw_against(int which, const Creature &tp)
 {
-	int need = 14 + which - tp.stats.s_lvl / 2;
+	int need = 14 + which - tp.stats.level / 2;
 	return (roll(1, 20) >= need);
 }
 
@@ -624,7 +624,7 @@ raise_level()
 {
 	rogue::Player &player = game().player;
 
-	player.body.stats.s_exp = e_levels[player.body.stats.s_lvl-1] + 1L;
+	player.body.stats.exp = e_levels[player.body.stats.level-1] + 1L;
 	check_level();
 }
 
@@ -710,7 +710,7 @@ killed(Creature &tp, bool pr)
 {
 	char type = tp.type;	// remove_monster() discards tp
 
-	game().player.body.stats.s_exp += tp.stats.s_exp;
+	game().player.body.stats.exp += tp.stats.exp;
 	/*
 	 * If the monster was a violet fungi, un-hold him
 	 */

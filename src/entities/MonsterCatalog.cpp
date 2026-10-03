@@ -34,7 +34,7 @@
 namespace rogue::entities {
 
 /*
- * A value the game never reads (was ___): s_hpt and s_maxhp of the monster
+ * A value the game never reads (was ___): hp and max_hp of the monster
  * templates, as each new monster rolls its hit points.
  */
 constexpr int NA = 1;
@@ -144,12 +144,12 @@ new_monster(Creature &tp, unsigned char type, Coord cp)
 	tp.under = '@';
 	tp.room = world::roomin(cp);
 	const MonsterKind &mp = monsters[tp.type-'A'];
-	tp.stats.s_lvl = mp.m_stats.s_lvl + lev_add;
-	tp.stats.s_maxhp = tp.stats.s_hpt = roll(tp.stats.s_lvl, 8);
-	tp.stats.s_arm = mp.m_stats.s_arm - lev_add;
-	tp.stats.s_dmg = mp.m_stats.s_dmg;
-	tp.stats.s_str = mp.m_stats.s_str;
-	tp.stats.s_exp = mp.m_stats.s_exp + lev_add * 10 + exp_add(tp);
+	tp.stats.level = mp.m_stats.level + lev_add;
+	tp.stats.max_hp = tp.stats.hp = roll(tp.stats.level, 8);
+	tp.stats.armor = mp.m_stats.armor - lev_add;
+	tp.stats.damage = mp.m_stats.damage;
+	tp.stats.str = mp.m_stats.str;
+	tp.stats.exp = mp.m_stats.exp + lev_add * 10 + exp_add(tp);
 	tp.flags = mp.m_flags;
 	tp.its_turn = true;
 	tp.pack.clear();
@@ -185,14 +185,14 @@ f_restor()
 /*
  * flytrap_attacks:
  *	Every venus flytrap's attack: the table's until one hits, then one die
- *	of one side per hit (was the f_damage buffer that all their s_dmg
+ *	of one side per hit (was the f_damage buffer that all their damage
  *	pointed at)
  */
 rogue::Attacks
 flytrap_attacks(int hits)
 {
 	if (hits == 0)
-		return monsters['F'-'A'].m_stats.s_dmg;
+		return monsters['F'-'A'].m_stats.damage;
 	return rogue::Attacks(rogue::Dice{hits, 1});
 }
 
@@ -205,10 +205,10 @@ namespace {
 int
 exp_add(const Creature &tp)
 {
-	int mod = tp.stats.s_lvl == 1 ? tp.stats.s_maxhp / 8 : tp.stats.s_maxhp / 6;
-	if (tp.stats.s_lvl > 9)
+	int mod = tp.stats.level == 1 ? tp.stats.max_hp / 8 : tp.stats.max_hp / 6;
+	if (tp.stats.level > 9)
 		mod *= 20;
-	else if (tp.stats.s_lvl > 6)
+	else if (tp.stats.level > 6)
 		mod *= 4;
 	return mod;
 }

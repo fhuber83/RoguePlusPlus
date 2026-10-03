@@ -14,13 +14,13 @@ using str_t = unsigned int;
  * monster's, and a kind of monster's to start with.
  */
 struct Stats {
-	str_t s_str;			/* Strength */
-	long s_exp;				/* Experience */
-	int s_lvl;			/* Level of mastery */
-	int s_arm;			/* Armor class */
-	int s_hpt;			/* Hit points */
-	Attacks s_dmg;		/* Damage done, per attack */
-	int s_maxhp;			/* Max hit points */
+	str_t str;			/* Strength */
+	long exp;				/* Experience */
+	int level;			/* Level of mastery */
+	int armor;			/* Armor class */
+	int hp;			/* Hit points */
+	Attacks damage;		/* Damage done, per attack */
+	int max_hp;			/* Max hit points */
 };
 
 }  // namespace rogue::entities

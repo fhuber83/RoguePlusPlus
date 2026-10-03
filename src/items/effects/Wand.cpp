@@ -124,7 +124,7 @@ do_zap()
 		 * evenly from the monsters in the room (or next to hero
 		 * if he is in a passage)
 		 */
-		if (player.body.stats.s_hpt < 2)
+		if (player.body.stats.hp < 2)
 		{
 			msg("you are too weak to use it");
 			return;
@@ -337,14 +337,14 @@ drain()
 		msg("you have a tingling feeling");
 		return;
 	}
-	player.body.stats.s_hpt /= 2;
-	cnt = player.body.stats.s_hpt / cnt + 1;
+	player.body.stats.hp /= 2;
+	cnt = player.body.stats.hp / cnt + 1;
 	/*
 	 * Now zot all of the monsters
 	 */
 	for (Creature &tp : drainee)
 	{
-		if ((tp.stats.s_hpt -= cnt) <= 0)
+		if ((tp.stats.hp -= cnt) <= 0)
 			rules::killed(tp, entities::see_monst(tp));
 		else
 			entities::start_run(tp.pos);
@@ -441,7 +441,7 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 							noterse(" from the Ice Monster"));
 						if (player.no_command < 20)
 							player.no_command += spread(7);
-					} else if ((player.body.stats.s_hpt -= roll(6, 6)) <= 0) {
+					} else if ((player.body.stats.hp -= roll(6, 6)) <= 0) {
 						if (by_hero)
 							death('b');
 						else

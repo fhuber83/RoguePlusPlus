@@ -27,14 +27,14 @@ chg_str(int amt)
 
 	if (amt == 0)
 		return;
-	add_str(player.body.stats.s_str, amt);
-	entities::str_t comp = player.body.stats.s_str;
+	add_str(player.body.stats.str, amt);
+	entities::str_t comp = player.body.stats.str;
 	if (player.wears(Hand::Left, Ring::AddStrength))
 		add_str(comp, -player.ring_item(Hand::Left)->ac);
 	if (player.wears(Hand::Right, Ring::AddStrength))
 		add_str(comp, -player.ring_item(Hand::Right)->ac);
-	if (comp > player.max_stats.s_str)
-		player.max_stats.s_str = comp;
+	if (comp > player.max_stats.str)
+		player.max_stats.str = comp;
 }
 
 /*

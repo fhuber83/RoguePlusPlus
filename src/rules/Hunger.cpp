@@ -76,7 +76,7 @@ eat()
 	else
 		if (rnd(100) > 70)
 		{
-			player.body.stats.s_exp++;
+			player.body.stats.exp++;
 			msg("yuk, this food tastes awful");
 			check_level();
 		}

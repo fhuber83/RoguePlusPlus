@@ -192,8 +192,8 @@ quaff()
 		break;
 	case Potion::Healing:
 		items.p_know[Potion::Healing] = true;
-		if ((player.body.stats.s_hpt += roll(player.body.stats.s_lvl, 4)) > player.body.stats.s_maxhp)
-			player.body.stats.s_hpt = ++player.body.stats.s_maxhp;
+		if ((player.body.stats.hp += roll(player.body.stats.level, 4)) > player.body.stats.max_hp)
+			player.body.stats.hp = ++player.body.stats.max_hp;
 		rules::sight();
 		msg("you begin to feel better");
 		break;
@@ -277,11 +277,11 @@ quaff()
 		break;
 	case Potion::ExtraHealing:
 		items.p_know[Potion::ExtraHealing] = true;
-		if ((player.body.stats.s_hpt += roll(player.body.stats.s_lvl, 8)) > player.body.stats.s_maxhp)
+		if ((player.body.stats.hp += roll(player.body.stats.level, 8)) > player.body.stats.max_hp)
 		{
-			if (player.body.stats.s_hpt > player.body.stats.s_maxhp + player.body.stats.s_lvl + 1)
-				++player.body.stats.s_maxhp;
-			player.body.stats.s_hpt = ++player.body.stats.s_maxhp;
+			if (player.body.stats.hp > player.body.stats.max_hp + player.body.stats.level + 1)
+				++player.body.stats.max_hp;
+			player.body.stats.hp = ++player.body.stats.max_hp;
 		}
 		rules::sight();
 		msg("you begin to feel much better");
@@ -293,15 +293,15 @@ quaff()
 		break;
 	case Potion::RestoreStrength:
 		if (player.wears(Hand::Left, Ring::AddStrength))
-			rules::add_str(player.body.stats.s_str, -player.ring_item(Hand::Left)->ac);
+			rules::add_str(player.body.stats.str, -player.ring_item(Hand::Left)->ac);
 		if (player.wears(Hand::Right, Ring::AddStrength))
-			rules::add_str(player.body.stats.s_str, -player.ring_item(Hand::Right)->ac);
-		if (player.body.stats.s_str < player.max_stats.s_str)
-			player.body.stats.s_str = player.max_stats.s_str;
+			rules::add_str(player.body.stats.str, -player.ring_item(Hand::Right)->ac);
+		if (player.body.stats.str < player.max_stats.str)
+			player.body.stats.str = player.max_stats.str;
 		if (player.wears(Hand::Left, Ring::AddStrength))
-			rules::add_str(player.body.stats.s_str, player.ring_item(Hand::Left)->ac);
+			rules::add_str(player.body.stats.str, player.ring_item(Hand::Left)->ac);
 		if (player.wears(Hand::Right, Ring::AddStrength))
-			rules::add_str(player.body.stats.s_str, player.ring_item(Hand::Right)->ac);
+			rules::add_str(player.body.stats.str, player.ring_item(Hand::Right)->ac);
 		msg("{}you feel warm all over",
 			noterse("hey, this tastes great.  It makes "));
 		break;
@@ -405,13 +405,13 @@ th_effect(const Item &obj, Creature &tp)
 		break;
 	case Potion::Healing:
 	case Potion::ExtraHealing:
-		if ((tp.stats.s_hpt += rnd(8)) > tp.stats.s_maxhp)
-		tp.stats.s_hpt = ++tp.stats.s_maxhp;
+		if ((tp.stats.hp += rnd(8)) > tp.stats.max_hp)
+		tp.stats.hp = ++tp.stats.max_hp;
 		break;
 	case Potion::RaiseLevel:
-		tp.stats.s_hpt += 8;
-		tp.stats.s_maxhp += 8;
-		tp.stats.s_lvl++;
+		tp.stats.hp += 8;
+		tp.stats.max_hp += 8;
+		tp.stats.level++;
 		break;
 	case Potion::Haste:
 		tp.flags.set(CreatureFlag::Hasted);

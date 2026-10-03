@@ -47,7 +47,7 @@ protected:
 	static void strengthen()
 	{
 		Player &player = game().player;
-		player.body.stats.s_hpt = player.body.stats.s_maxhp = 30000;
+		player.body.stats.hp = player.body.stats.max_hp = 30000;
 	}
 
 	// Where on the map glyph is, if anywhere
@@ -135,7 +135,7 @@ TEST_F(Play, FightToTheDeath)
 	game().options.score_file = file;
 	game().options.name = "Tester";
 	game().player.purse = 100;
-	game().player.body.stats.s_hpt = 1;
+	game().player.body.stats.hp = 1;
 
 	// The dragon goes on a free square next to him, and he walks into it
 	Coord hero = game().player.body.pos;

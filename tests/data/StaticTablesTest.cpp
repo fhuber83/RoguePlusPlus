@@ -15,7 +15,7 @@ namespace rogue {
 TEST(StaticTables, EveryMonsterAttacks)
 {
 	for (int i = 0; i < 26; i++)
-		EXPECT_FALSE(entities::monsters[i].m_stats.s_dmg.empty()) << entities::monsters[i].m_name;
+		EXPECT_FALSE(entities::monsters[i].m_stats.damage.empty()) << entities::monsters[i].m_name;
 }
 
 // The flag column keeps the original bits, including the leprechaun whose

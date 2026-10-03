@@ -89,9 +89,9 @@ be_trapped(Coord tc)
 			noterse("strange white "));
 		break;
 	case Trap::Arrow:
-		if (rules::swing(player.body.stats.s_lvl-1, player.body.stats.s_arm, 1)) {
-			player.body.stats.s_hpt -= roll(1, 6);
-			if (player.body.stats.s_hpt <= 0) {
+		if (rules::swing(player.body.stats.level-1, player.body.stats.armor, 1)) {
+			player.body.stats.hp -= roll(1, 6);
+			if (player.body.stats.hp <= 0) {
 				msg("an arrow killed you");
 				death('a');
 			} else
@@ -116,9 +116,9 @@ be_trapped(Coord tc)
 		player.was_trapped = rogue::Trapped::Teleported;
 		break;
 	case Trap::Dart:
-		if (rules::swing(player.body.stats.s_lvl+1, player.body.stats.s_arm, 1)) {
-			player.body.stats.s_hpt -= roll(1, 4);
-			if (player.body.stats.s_hpt <= 0) {
+		if (rules::swing(player.body.stats.level+1, player.body.stats.armor, 1)) {
+			player.body.stats.hp -= roll(1, 4);
+			if (player.body.stats.hp <= 0) {
 				msg("a poisoned dart killed you");
 				death('d');
 			}
@@ -148,7 +148,7 @@ descend(std::string_view mesg)
 	msg("{}", mesg);
 	if (!rules::save(rules::SaveThrow::Luck)) {
 		msg("you are damaged by the fall");
-		if ((game().player.body.stats.s_hpt -= roll(1,8)) <= 0)
+		if ((game().player.body.stats.hp -= roll(1,8)) <= 0)
 			death('f');
 	}
 }

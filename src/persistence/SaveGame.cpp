@@ -172,8 +172,8 @@ bool is_flytrap(const Game &g, const Creature &c)
 json stats_json(const entities::Stats &s, bool flytrap)
 {
 	return {
-		{"str", s.s_str}, {"exp", s.s_exp}, {"level", s.s_lvl}, {"armor", s.s_arm},
-		{"hp", s.s_hpt}, {"damage", flytrap ? flytrap_alias : attacks_json(s.s_dmg)}, {"max_hp", s.s_maxhp},
+		{"str", s.str}, {"exp", s.exp}, {"level", s.level}, {"armor", s.armor},
+		{"hp", s.hp}, {"damage", flytrap ? flytrap_alias : attacks_json(s.damage)}, {"max_hp", s.max_hp},
 	};
 }
 
@@ -586,17 +586,17 @@ Attacks attacks_of(const json &v, std::string_view what)
 entities::Stats stats_from(const json &j, bool flytrap)
 {
 	entities::Stats s{};
-	s.s_str = num<entities::str_t>(j, "str");
-	s.s_exp = num<long>(j, "exp");
-	s.s_lvl = num<int>(j, "level");
-	s.s_arm = num<int>(j, "armor");
-	s.s_hpt = num<int>(j, "hp");
+	s.str = num<entities::str_t>(j, "str");
+	s.exp = num<long>(j, "exp");
+	s.level = num<int>(j, "level");
+	s.armor = num<int>(j, "armor");
+	s.hp = num<int>(j, "hp");
 	const json &damage = field(j, "damage");
 	if (flytrap != (damage == flytrap_alias))
 		fail(flytrap ? "a venus flytrap's \"damage\" is not the flytrap alias"
 			: "only a venus flytrap's \"damage\" is the flytrap alias");
-	s.s_dmg = flytrap ? entities::monsters['F'-'A'].m_stats.s_dmg : attacks_of(damage, "\"damage\"");
-	s.s_maxhp = num<int>(j, "max_hp");
+	s.damage = flytrap ? entities::monsters['F'-'A'].m_stats.damage : attacks_of(damage, "\"damage\"");
+	s.max_hp = num<int>(j, "max_hp");
 	return s;
 }
 

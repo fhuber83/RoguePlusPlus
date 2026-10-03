@@ -55,6 +55,20 @@ TARGET_LINK_LIBRARIES(rogue_game PRIVATE nlohmann_json::nlohmann_json)
 # The wide-character curses API, for the only file that includes <curses.h>
 SET_SOURCE_FILES_PROPERTIES(src/ui/curses/CursesTerminal.cpp PROPERTIES COMPILE_DEFINITIONS NCURSES_WIDECHAR=1)
 
+# Every header stands alone: each one is compiled on its own, so a header that
+# needs another to be included first breaks the build
+FILE(GLOB_RECURSE ROGUE_HEADERS CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp")
+SET(ROGUE_HEADER_CHECKS)
+FOREACH(header ${ROGUE_HEADERS})
+	STRING(MAKE_C_IDENTIFIER "${header}" check)
+	SET(check "${CMAKE_CURRENT_BINARY_DIR}/header-check/${check}.cpp")
+	FILE(CONFIGURE OUTPUT "${check}" CONTENT "#include \"${header}\"\n")
+	LIST(APPEND ROGUE_HEADER_CHECKS "${check}")
+ENDFOREACH()
+ADD_LIBRARY(rogue_header_check OBJECT ${ROGUE_HEADER_CHECKS})
+TARGET_COMPILE_OPTIONS(rogue_header_check PRIVATE ${ROGUE_WARNINGS})
+TARGET_LINK_LIBRARIES(rogue_header_check PRIVATE rogue_game nlohmann_json::nlohmann_json)
+
 ADD_EXECUTABLE(rogue++ src/app/main.cpp)
 TARGET_COMPILE_OPTIONS(rogue++ PRIVATE ${ROGUE_WARNINGS})
 TARGET_LINK_LIBRARIES(rogue++ PRIVATE rogue_game)

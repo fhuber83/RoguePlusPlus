@@ -1,17 +1,16 @@
 #pragma once
 
-#include <format>
-#include <string_view>
-#include <utility>
-
 /*
  * The message line, and the prompts that wait for a key: messages are built
  * in game().message, shown through the display, and wait for Space at
  * "More" when a new one would cover one not yet read.
- *
- * Included by rogue.h after game/Game.hpp, since ifterse() reads the
- * options.
  */
+
+#include <format>
+#include <string_view>
+#include <utility>
+
+#include "game/Game.hpp"
 
 namespace rogue {
 

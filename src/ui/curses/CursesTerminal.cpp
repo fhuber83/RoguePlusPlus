@@ -14,7 +14,7 @@
 
 #include "core/Config.hpp"
 #include "ui/ScreenDisplay.hpp"
-#include "glyphs.h"
+#include "core/Glyphs.hpp"
 
 #include <curses.h>	// with NCURSES_WIDECHAR=1 (CMakeLists.txt)
 

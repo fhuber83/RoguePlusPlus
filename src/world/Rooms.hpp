@@ -3,11 +3,16 @@
 /*
  * Rooms at play time: entering and leaving one, which room a square is
  * in, and what the rogue can see from where it stands.
- *
- * Included by rogue.h after Coord and world/Room.hpp.
  */
 
+#include <optional>
+
+#include "core/Coord.hpp"
+#include "world/RoomRef.hpp"
+
 namespace rogue::world {
+
+inline constexpr int LAMPDIST = 3;	/* squared distance he sees in the dark (next to him) */
 
 struct Room;
 

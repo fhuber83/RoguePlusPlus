@@ -7,7 +7,16 @@
  * @(#)extern.c	5.2 (Berkeley) 6/16/82
  */
 
-#include "rogue.h"
+#include "game/Help.hpp"
+
+#include <array>
+#include <iterator>
+#include <span>
+
+#include "core/Glyphs.hpp"
+#include "game/Game.hpp"
+#include "game/Keyboard.hpp"
+#include "ui/Display.hpp"
 
 namespace rogue {
 
@@ -126,7 +135,7 @@ help(std::span<const HelpLine> lines)
 	bool isfull;
 	unsigned char answer = 0;
 
-	display().open_page();
+	ui::display().open_page();
 	for (int hcount = 0; hcount < std::ssize(lines) && answer != ESCAPE; hcount++)
 	{
 		const HelpLine &line = lines[hcount];
@@ -134,7 +143,7 @@ help(std::span<const HelpLine> lines)
 
 		isfull = false;
 		if ((hcount % (game().options.terse?23:46)) == 0)
-			display().clear_page();
+			ui::display().clear_page();
 		/*
 		 * determine row and column
 		 */
@@ -154,8 +163,8 @@ help(std::span<const HelpLine> lines)
 				 isfull = true;
 		}
 
-		display().write_at(hrow, hcol, line.glyphs());
-		display().write(line.h_desc);
+		ui::display().write_at(hrow, hcol, line.glyphs());
+		ui::display().write(line.h_desc);
 
 		/*
 		 * decide if we need print a continue type message
@@ -163,17 +172,17 @@ help(std::span<const HelpLine> lines)
 		if (last || isfull)
 		{
 			if (last)
-				display().write_at(24, 0, "--press space to continue--");
+				ui::display().write_at(24, 0, "--press space to continue--");
 			else if (game().options.terse)
-				display().write_at(24, 0, "--Space for more, Esc to continue--");
+				ui::display().write_at(24, 0, "--Space for more, Esc to continue--");
 			else
-				display().write_at(24, 0, "--Press space for more, Esc to continue--");
+				ui::display().write_at(24, 0, "--Press space for more, Esc to continue--");
 			do
 				answer = readchar();
 			while (answer != ' ' && answer != ESCAPE) ;
 		}
 	}
-	display().close_page();
+	ui::display().close_page();
 }
 
 }  // namespace rogue

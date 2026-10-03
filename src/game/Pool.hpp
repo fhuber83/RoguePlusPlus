@@ -3,14 +3,15 @@
 /*
  * Taking creatures and items from the pool (game().pool) and giving them
  * back.
- *
- * Included by rogue.h after game/Game.hpp (Pool, List, Maybe).
  */
+
+#include "core/Maybe.hpp"
+#include "entities/List.hpp"
 
 namespace rogue {
 
-class Item;
-class Creature;
+struct Item;
+struct Creature;
 
 /*
  * new_item, new_creature:

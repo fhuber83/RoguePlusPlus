@@ -5,9 +5,11 @@
  * string for the inventory name.
  */
 
+#include <string>
+
 namespace rogue {
 
-class Item;
+struct Item;
 enum class Hand;
 
 namespace items::effects {

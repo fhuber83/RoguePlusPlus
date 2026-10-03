@@ -1,8 +1,12 @@
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <string>
 
-#include "rogue.h"
+#include "game/Game.hpp"
+#include "game/Messages.hpp"
+
+namespace rogue {
 
 namespace {
 
@@ -14,8 +18,8 @@ protected:
 
 	static void reset()
 	{
-		game().message = rogue::MessageLine();
-		game().options = rogue::Options();
+		game().message = MessageLine();
+		game().options = Options();
 	}
 
 	static std::string text() { return game().message.text; }
@@ -68,7 +72,7 @@ TEST_F(Message, IfterseChoosesByExpert)
 {
 	ifterse("{} glows", "your {} glows for a moment", "mace");
 	EXPECT_EQ(text(), "Your mace glows for a moment");
-	game().message = rogue::MessageLine();
+	game().message = MessageLine();
 	game().options.expert = true;
 	ifterse("{} glows", "your {} glows for a moment", "mace");
 	EXPECT_EQ(text(), "Mace glows");
@@ -91,3 +95,5 @@ TEST_F(Message, AddmsgCutsToTheBuffer)
 	addmsg("{}", std::string(BUFSIZE + 20, 'x'));
 	EXPECT_EQ(text().size(), static_cast<std::size_t>(BUFSIZE - 1));
 }
+
+}  // namespace rogue

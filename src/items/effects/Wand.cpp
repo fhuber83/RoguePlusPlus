@@ -1,7 +1,36 @@
+#include "items/effects/Wand.hpp"
+
+#include <format>
 #include <functional>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
-#include "rogue.h"
+#include "core/Config.hpp"
+#include "core/Coord.hpp"
+#include "core/Glyphs.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Item.hpp"
+#include "entities/List.hpp"
+#include "entities/MonsterAI.hpp"
+#include "entities/MonsterCatalog.hpp"
+#include "game/Endings.hpp"
+#include "game/Game.hpp"
+#include "game/Messages.hpp"
+#include "items/Inventory.hpp"
+#include "items/ItemCatalog.hpp"
+#include "items/Kinds.hpp"
+#include "items/effects/Weapon.hpp"
+#include "rules/Combat.hpp"
+#include "ui/Display.hpp"
+#include "world/LevelGenerator.hpp"
+#include "world/Map.hpp"
+#include "world/Room.hpp"
+#include "world/RoomRef.hpp"
+#include "world/Rooms.hpp"
 
 namespace rogue::items::effects {
 
@@ -74,7 +103,7 @@ do_zap()
 		/*
 		 * Reddy Kilowat wand.  Light up the room
 		 */
-		if (player.body.t_flags.test(ISBLIND))
+		if (player.body.t_flags.test(CreatureFlag::Blind))
 			msg("you feel a warm glow around you");
 		else
 		{
@@ -90,7 +119,7 @@ do_zap()
 			/*
 			 * Light the room and put the player back up
 			 */
-			enter_room(player.body.t_pos);
+			world::enter_room(player.body.t_pos);
 		}
 		break;
 	case Stick::DrainLife:
@@ -115,29 +144,29 @@ do_zap()
 	{
 		unsigned char monster, oldch;
 		int rm;
-		coord new_yx;
+		Coord new_yx;
 
 		y = player.body.t_pos.y;
 		x = player.body.t_pos.x;
-		while (step_ok(winat(y, x)))
+		while (world::step_ok(world::winat(y, x)))
 		{
 			y += turn.delta.y;
 			x += turn.delta.x;
 		}
-		if ((tp = moat(y, x)))
+		if ((tp = entities::moat(y, x)))
 		{
 			unsigned char omonst;
 
 			omonst = monster = tp->t_type;
 			if (monster == 'F')
-				player.body.t_flags.unset(ISHELD);
+				player.body.t_flags.unset(CreatureFlag::Held);
 			if (which_one == Stick::Vorpal)
 			{
 				if (monster == obj->o_enemy)
 				{
 					msg("the {} vanishes in a puff of smoke",
-						monsters[monster-'A'].m_name);
-					killed(*tp, false);
+						entities::monsters[monster-'A'].m_name);
+					rules::killed(*tp, false);
 				}
 				else
 					msg("you hear a maniacal chuckle in the distance.");
@@ -148,41 +177,41 @@ do_zap()
 
 				pp = std::move(tp->t_pack);
 				game().level.monsters.remove(*tp);
-				if (see_monst(*tp))
-					display().draw_tile({x, y}, game().level.at(y, x));
+				if (entities::see_monst(*tp))
+					ui::display().draw_tile({x, y}, game().level.at(y, x));
 				oldch = tp->t_oldch;
 				turn.delta.y = y;
 				turn.delta.x = x;
-				new_monster(*tp, monster = rnd(26) + 'A', turn.delta);
-				if (see_monst(*tp))
-					display().draw_tile({x, y}, monster);
+				entities::new_monster(*tp, monster = rnd(26) + 'A', turn.delta);
+				if (entities::see_monst(*tp))
+					ui::display().draw_tile({x, y}, monster);
 				tp->t_oldch = oldch;
 				tp->t_pack = std::move(pp);
 				game().items.ws_know[Stick::Polymorph] |= (monster != omonst);
 			}
 			else if (which_one == Stick::Cancellation)
 			{
-				tp->t_flags.set(ISCANC);
-				tp->t_flags.unset(ISINVIS|CANHUH);
+				tp->t_flags.set(CreatureFlag::Cancelled);
+				tp->t_flags.unset(CreatureFlag::Invisible|CreatureFlag::CanConfuse);
 				tp->t_disguise = tp->t_type;
 			}
 			else
 			{
-				if (see_monst(*tp))
-					display().draw_tile({x, y}, tp->t_oldch);
+				if (entities::see_monst(*tp))
+					ui::display().draw_tile({x, y}, tp->t_oldch);
 				if (which_one == Stick::TeleportAway)
 				{
 					tp->t_oldch = '@';
 					do
 					{
-						rm = rnd_room();
+						rm = world::rnd_room();
 						new_yx = rnd_pos(game().level.rooms[rm]);
-					}  while (!(is_floor(winat(new_yx.y, new_yx.x))));
+					}  while (!(is_floor(world::winat(new_yx.y, new_yx.x))));
 					tp->t_pos = new_yx;
-					if (see_monst(*tp))
-						display().draw_tile(tp->t_pos, tp->t_disguise);
-					else if (player.body.t_flags.test(SEEMONST))
-						display().draw_tile(tp->t_pos, tp->t_disguise, TileStyle::Inverse);
+					if (entities::see_monst(*tp))
+						ui::display().draw_tile(tp->t_pos, tp->t_disguise);
+					else if (player.body.t_flags.test(CreatureFlag::SeeMonst))
+						ui::display().draw_tile(tp->t_pos, tp->t_disguise, ui::TileStyle::Inverse);
 				}
 				else /* it MUST BE at Stick::TeleportTo */
 				{
@@ -190,12 +219,12 @@ do_zap()
 					tp->t_pos.x = player.body.t_pos.x + turn.delta.x;
 				}
 				if (tp->t_type == 'F')
-					player.body.t_flags.unset(ISHELD);
+					player.body.t_flags.unset(CreatureFlag::Held);
 				if (tp->t_pos.y != y || tp->t_pos.x != x)
-					tp->t_oldch = display().tile_at(tp->t_pos);
+					tp->t_oldch = ui::display().tile_at(tp->t_pos);
 			}
 			tp->t_dest = Hero{};
-			tp->t_flags.set(ISRUN);
+			tp->t_flags.set(CreatureFlag::Running);
 		}
 	}
 		break;
@@ -208,11 +237,11 @@ do_zap()
 		bolt.o_hurldmg = "1d8";
 		bolt.o_hplus = 1000;
 		bolt.o_dplus = 1;
-		bolt.o_flags = ISMISL;
+		bolt.o_flags = ItemFlag::Missile;
 		if (player.weapon_item())
 			bolt.o_launch = launched_by(player.weapon_item()->which<WeaponType>());
 		do_motion(bolt, turn.delta.y, turn.delta.x);
-		if ((tp = moat(bolt.o_pos.y, bolt.o_pos.x)) && !save_throw(SaveThrow::Magic, *tp))
+		if ((tp = entities::moat(bolt.o_pos.y, bolt.o_pos.x)) && !rules::save_throw(rules::SaveThrow::Magic, *tp))
 			hit_monster(bolt.o_pos.y, bolt.o_pos.x, bolt);
 		else
 		msg("the missle vanishes with a puff of smoke");
@@ -221,7 +250,7 @@ do_zap()
 	case Stick::Striking:
 		turn.delta.y += player.body.t_pos.y;
 		turn.delta.x += player.body.t_pos.x;
-		if ((tp = moat(turn.delta.y, turn.delta.x)))
+		if ((tp = entities::moat(turn.delta.y, turn.delta.x)))
 		{
 			if (rnd(20) == 0)
 			{
@@ -233,38 +262,38 @@ do_zap()
 				obj->o_damage = "2d8";
 				obj->o_dplus = 4;
 			}
-			fight(turn.delta, tp->t_type, *obj, false);
+			rules::fight(turn.delta, tp->t_type, *obj, false);
 		}
 		break;
 	case Stick::HasteMonster:
 	case Stick::SlowMonster:
 		y = player.body.t_pos.y;
 		x = player.body.t_pos.x;
-		while (step_ok(winat(y, x)))
+		while (world::step_ok(world::winat(y, x)))
 		{
 			y += turn.delta.y;
 			x += turn.delta.x;
 		}
-		if ((tp = moat(y, x)))
+		if ((tp = entities::moat(y, x)))
 		{
 			if (which_one == Stick::HasteMonster)
 			{
-				if (tp->t_flags.test(ISSLOW))
-					tp->t_flags.unset(ISSLOW);
+				if (tp->t_flags.test(CreatureFlag::Slow))
+					tp->t_flags.unset(CreatureFlag::Slow);
 				else
-					tp->t_flags.set(ISHASTE);
+					tp->t_flags.set(CreatureFlag::Hasted);
 			}
 			else
 			{
-				if (tp->t_flags.test(ISHASTE))
-					tp->t_flags.unset(ISHASTE);
+				if (tp->t_flags.test(CreatureFlag::Hasted))
+					tp->t_flags.unset(CreatureFlag::Hasted);
 				else
-					tp->t_flags.set(ISSLOW);
+					tp->t_flags.set(CreatureFlag::Slow);
 				tp->t_turn = true;
 			}
 			turn.delta.y = y;
 			turn.delta.x = x;
-			start_run(turn.delta);
+			entities::start_run(turn.delta);
 		}
 		break;
 	case Stick::Lightning:
@@ -330,9 +359,9 @@ drain()
 	for (Creature &tp : drainee)
 	{
 		if ((tp.t_stats.s_hpt -= cnt) <= 0)
-			killed(tp, see_monst(tp));
+			rules::killed(tp, entities::see_monst(tp));
 		else
-			start_run(tp.t_pos);
+			entities::start_run(tp.t_pos);
 	}
 }
 
@@ -349,10 +378,10 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 	Maybe<Creature> tp;
 	bool hit_hero, used, changed;
 	int i, j;
-	coord pos;
+	Coord pos;
 	rogue::Player &player = game().player;
 	struct {
-		coord s_pos;
+		Coord s_pos;
 		unsigned char s_under;
 	} spotpos[BOLT_LENGTH*2];
 	Item bolt;
@@ -379,9 +408,9 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 	for (i = 0; i < BOLT_LENGTH && !used; i++) {
 		pos.y += dir.y;
 		pos.x += dir.x;
-		ch = winat(pos.y, pos.x);
+		ch = world::winat(pos.y, pos.x);
 		spotpos[i].s_pos = pos;
-		if ((spotpos[i].s_under = display().tile_at(pos)) == dirch)
+		if ((spotpos[i].s_under = ui::display().tile_at(pos)) == dirch)
 			spotpos[i].s_under = 0;
 		switch (ch) {
 		case DOOR:
@@ -401,31 +430,31 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 			msg("the {} bounces", name);
 			break;
 		default:
-			if (!hit_hero && (tp = moat(pos.y, pos.x))) {
+			if (!hit_hero && (tp = entities::moat(pos.y, pos.x))) {
 				hit_hero = true;
 				changed = !changed;
 				if (tp->t_oldch != '@')
 					tp->t_oldch = game().level.at(pos);
-				if (!save_throw(SaveThrow::Magic, *tp) || is_frost) {
+				if (!rules::save_throw(rules::SaveThrow::Magic, *tp) || is_frost) {
 					bolt.o_pos = pos;
 					used = true;
 					if (tp->t_type == 'D' && name == "flame")
 						msg("the flame bounces off the dragon");
 					else {
 						hit_monster(pos.y, pos.x, bolt);
-						if (display().tile_at(pos) != dirch)
-							spotpos[i].s_under = display().tile_at(pos);
+						if (ui::display().tile_at(pos) != dirch)
+							spotpos[i].s_under = ui::display().tile_at(pos);
 					}
 				} else if (ch != 'X' || tp->t_disguise == 'X') {
 					if (by_hero)
-						start_run(pos);
+						entities::start_run(pos);
 					msg("the {} whizzes past the {}",
-						name, monsters[ch-'A'].m_name);
+						name, entities::monsters[ch-'A'].m_name);
 				}
 			} else if (hit_hero && (pos == player.body.t_pos)) {
 				hit_hero = false;
 				changed = !changed;
-				if (!save(SaveThrow::Magic)) {
+				if (!rules::save(rules::SaveThrow::Magic)) {
 					if (is_frost) {
 						msg("You are frozen by a blast of frost{}.",
 							noterse(" from the Ice Monster"));
@@ -435,7 +464,7 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 						if (by_hero)
 							death('b');
 						else
-							death(moat(start.y, start.x)->t_type);
+							death(entities::moat(start.y, start.x)->t_type);
 					}
 					used = true;
 					if (!is_frost)
@@ -444,14 +473,14 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 					msg("the {} whizzes by you", name);
 			}
 			tick_pause();
-			display().draw_tile(pos, dirch, is_frost ? TileStyle::FrostBolt : TileStyle::Bolt);
+			ui::display().draw_tile(pos, dirch, is_frost ? ui::TileStyle::FrostBolt : ui::TileStyle::Bolt);
 			break;
 		}
 	}
 	for (j = 0; j < i; j++) {
 		tick_pause();
 		if (spotpos[j].s_under)
-			display().draw_tile(spotpos[j].s_pos, spotpos[j].s_under);
+			ui::display().draw_tile(spotpos[j].s_pos, spotpos[j].s_under);
 	}
 }
 
@@ -462,7 +491,7 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 std::string
 charge_str(const Item &obj)
 {
-	if (!obj.o_flags.test(ISKNOW))
+	if (!obj.o_flags.test(ItemFlag::Known))
 		return "";
 	return std::format(" [{} charges]", obj.charges());
 }

@@ -111,8 +111,7 @@ private:
 };
 
 /*
- * The scheduler of the game being played (game().scheduler). The legacy
- * names are brought into the global namespace by rogue.h.
+ * The scheduler of the game being played (game().scheduler).
  */
 void start_daemon(Event event);
 void fuse(Event event, int time);

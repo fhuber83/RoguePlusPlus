@@ -4,7 +4,19 @@
  * io.c		1.4		(A.I. Design) 12/10/84
  */
 
-#include "rogue.h"
+#include "game/Messages.hpp"
+
+#include <cstddef>
+#include <format>
+#include <string>
+#include <string_view>
+
+#include "core/Ascii.hpp"
+#include "core/Glyphs.hpp"
+#include "game/Game.hpp"
+#include "game/Keyboard.hpp"
+#include "ui/Display.hpp"
+#include "world/Look.hpp"
 
 namespace rogue {
 
@@ -55,7 +67,7 @@ endmsg()
 	if (message.remember)
 		message.last = message.text;
 	if (message.end) {
-		look(false);
+		world::look(false);
 		more_at(" More ", message.end);
 	}
 	/*
@@ -69,7 +81,6 @@ endmsg()
 	message.next_end = 0;
 }
 
-
 /*
  *  More:  tag the end of a line and wait for a space
  *  The prompt goes after the current message. Drawing is the display's
@@ -79,8 +90,6 @@ more(std::string_view msg)
 {
 	more_at(msg, game().message.end);
 }
-
-
 
 /*
  * add_msg:
@@ -115,7 +124,7 @@ putmsg(std::string_view msg)
 	do {
 		rogue::ui::display().draw_message(cur);
 		game().message.next_end = curlen = static_cast<int>(cur.size());
-		if (curlen > COLS) {
+		if (curlen > MAXCOLS) {
 			more_at(" Cont ", curlen);
 			/*
 			 * Go on after the last blank that the line showed, or after the
@@ -129,16 +138,16 @@ putmsg(std::string_view msg)
 				/*
 				 * If there are no blanks in line
 				 */
-				if (at >= static_cast<std::size_t>(COLS) && cur.data() == shown.data()) {
-					cur = shown.substr(COLS);
+				if (at >= static_cast<std::size_t>(MAXCOLS) && cur.data() == shown.data()) {
+					cur = shown.substr(MAXCOLS);
 					break;
 				}
-				if (at >= static_cast<std::size_t>(COLS) || cur.size() < static_cast<std::size_t>(COLS))
+				if (at >= static_cast<std::size_t>(MAXCOLS) || cur.size() < static_cast<std::size_t>(MAXCOLS))
 					break;
 				cur = shown.substr(at + 1);
 			}
 		}
-	} while (curlen > COLS);
+	} while (curlen > MAXCOLS);
 }
 
 /*
@@ -159,12 +168,12 @@ wait_for(unsigned char ch)
 void
 wait_msg(std::string_view msg)
 {
-	display().show_cursor(true);
-	display().write_at(LINES-1, 0,
+	ui::display().show_cursor(true);
+	ui::display().write_at(MAXLINES-1, 0,
 		!msg.empty() ? std::format("[Press Enter to {}]", msg) : "[Press Enter]");
 	flush_type();
 	wait_for('\n');
-	display().write_at(LINES-1, 0, "");
+	ui::display().write_at(MAXLINES-1, 0, "");
 }
 
 /*
@@ -197,7 +206,7 @@ str_attr(std::string_view str)
 				break;
 			ink = rogue::ui::Ink::Reverse;
 		}
-		display().write(str.substr(i, 1), ink);
+		ui::display().write(str.substr(i, 1), ink);
 	}
 }
 

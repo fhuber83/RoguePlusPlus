@@ -5,9 +5,38 @@
  * new_level.c	1.4 (A.I. Design) 12/13/84
  */
 
-#include "rogue.h"
+#include "world/LevelGenerator.hpp"
+
+#include <algorithm>
+
+#include "core/Coord.hpp"
+#include "core/Glyphs.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Item.hpp"
+#include "entities/MonsterCatalog.hpp"
+#include "game/Game.hpp"
+#include "game/Pool.hpp"
+#include "game/StatusLine.hpp"
+#include "items/ItemCatalog.hpp"
+#include "items/effects/Potion.hpp"
+#include "ui/Display.hpp"
+#include "world/Map.hpp"
+#include "world/MapFlags.hpp"
+#include "world/Maze.hpp"
+#include "world/Passages.hpp"
+#include "world/Room.hpp"
+#include "world/Rooms.hpp"
+#include "world/Trap.hpp"
 
 namespace rogue::world {
+
+namespace {
+
+constexpr int MAXOBJ = 9;	/* tries to put a thing on a level */
+constexpr int MAXTRAPS = 10;	/* traps on a level at most */
+
+}  // namespace
 
 constexpr int TREAS_ROOM = 20;	/* one chance in TREAS_ROOM for a treasure room */
 constexpr int MAXTREAS = 10;	/* maximum number of treasures in a treasure room */
@@ -27,11 +56,11 @@ new_level()
 	int rm, i;
 	Maybe<Creature> tp;
 	int index;
-	coord stairs;
+	Coord stairs;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 
-	player.body.t_flags.unset(ISHELD);	/* unhold when you go down just in case */
+	player.body.t_flags.unset(CreatureFlag::Held);	/* unhold when you go down just in case */
 	/*
 	 * Monsters only get displayed when you move
 	 * so start a level by having the poor guy rest
@@ -53,7 +82,7 @@ new_level()
 	/*
 	 * just in case we left some flytraps behind
 	 */
-	f_restor();
+	entities::f_restor();
 	/*
 	 * Throw away stuff left on the previous level (if anything)
 	 */
@@ -61,7 +90,7 @@ new_level()
 	do_rooms();				/* Draw rooms */
 	if (player.max_level > 1)
 	{
-		display().wipe();
+		ui::display().wipe();
 	}
 	status();
 	do_passages();			/* Draw passages */
@@ -101,15 +130,15 @@ new_level()
 		player.body.t_pos = rnd_pos(level.rooms[rm]);
 		index = INDEX(player.body.t_pos.y, player.body.t_pos.x);
 	} while (!(is_floor(level.map[index]) && level.flags[index].test(MapFlag::Real)
-				&& !moat(player.body.t_pos.y, player.body.t_pos.x)));
+				&& !entities::moat(player.body.t_pos.y, player.body.t_pos.x)));
 
 	game().message.end = 0;
 	enter_room(player.body.t_pos);
-	display().draw_tile(player.body.t_pos, PLAYER);
+	ui::display().draw_tile(player.body.t_pos, PLAYER);
 	player.old_pos = player.body.t_pos;
 	player.old_room = player.body.t_room;
-	if (player.body.t_flags.test(SEEMONST))
-		turn_see(false);
+	if (player.body.t_flags.test(CreatureFlag::SeeMonst))
+		items::effects::turn_see(false);
 }
 
 /*
@@ -139,7 +168,7 @@ put_things()
 	int i = 0;
 	Maybe<Item> cur;
 	int rm;
-	coord tp;
+	Coord tp;
 	rogue::Level &level = game().level;
 
 	/*
@@ -189,7 +218,7 @@ put_things()
 			/*
 			 * Pick a new object and link it in the list
 			 */
-			cur = new_thing();
+			cur = items::new_thing();
 			level.objects.push_front(*cur);
 			/*
 			 * Put it somewhere
@@ -221,7 +250,7 @@ treas_room()
 	Maybe<Item> obj;
 	rogue::Level &level = game().level;
 	int spots, num_monst;
-	coord mp;
+	Coord mp;
 
 	const Room &rp = level.rooms[rnd_room()];
 	spots = (rp.r_max.y - 2) * (rp.r_max.x - 2) - MINTREAS;
@@ -235,7 +264,7 @@ treas_room()
 			mp = rnd_pos(rp);
 			index = INDEX(mp.y, mp.x);
 		} while (!is_floor(level.map[index]));
-		obj = new_thing();
+		obj = items::new_thing();
 		obj->o_pos = mp;
 		level.objects.push_front(*obj);
 		level.map[index] = glyph_of(obj->o_type);
@@ -257,16 +286,16 @@ treas_room()
 		{
 			mp = rnd_pos(rp);
 			index = INDEX(mp.y, mp.x);
-			if (is_floor(level.map[index]) && !moat(mp.y, mp.x))
+			if (is_floor(level.map[index]) && !entities::moat(mp.y, mp.x))
 				break;
 		}
 		if (spots != MAXTRIES)
 		{
 			if ((tp = new_creature()))
 			{
-				new_monster(*tp, randmonster(false), mp);
-				tp->t_flags.set(ISMEAN);	/* no sloughers in THIS room */
-				give_pack(*tp);
+				entities::new_monster(*tp, entities::randmonster(false), mp);
+				tp->t_flags.set(CreatureFlag::Mean);	/* no sloughers in THIS room */
+				entities::give_pack(*tp);
 			}
 		}
 	}
@@ -300,9 +329,9 @@ do_rooms()
 	rogue::Level &level = game().level;
 	Maybe<Creature> tp;
 	int left_out;
-	coord top;
-	coord bsze;
-	coord mp;
+	Coord top;
+	Coord bsze;
+	Coord mp;
 	int endline;
 
 	endline = maxrow + 1;
@@ -310,7 +339,7 @@ do_rooms()
 	/*
 	 * bsze is the maximum room size
 	 */
-	bsze.x = COLS/3;
+	bsze.x = MAXCOLS/3;
 	bsze.y = endline/3;
 	/*
 	 * Clear things for a new level
@@ -361,7 +390,7 @@ do_rooms()
 				do {
 					rp.r_pos.x = top.x + rnd(bsze.x-2) + 1;
 					rp.r_pos.y = top.y + rnd(bsze.y-2) + 1;
-					rp.r_max.x = -COLS;
+					rp.r_max.x = -MAXCOLS;
 					rp.r_max.x = -endline;
 				} while (!(rp.r_pos.y > 0 && rp.r_pos.y < endline-1));
 			}
@@ -396,7 +425,7 @@ do_rooms()
 						break;
 				}
 				gold->o_pos = rp.r_gold;
-				gold->o_flags = ISMANY;
+				gold->o_flags = ItemFlag::Many;
 				gold->o_group = GOLDGRP;
 				gold->o_type = ItemKind::Gold;
 				level.objects.push_front(*gold);
@@ -414,8 +443,8 @@ do_rooms()
 					mp = rnd_pos(rp);
 					mch = winat(mp.y, mp.x);
 				} while (!is_floor(mch));
-				new_monster(*tp, randmonster(false), mp);
-				give_pack(*tp);
+				entities::new_monster(*tp, entities::randmonster(false), mp);
+				entities::give_pack(*tp);
 			}
 		}
 	}

@@ -7,7 +7,20 @@
  * misc.c	1.4		(A.I. Design)	12/14/84
  */
 
-#include "rogue.h"
+#include "game/PlayerCommands.hpp"
+
+#include <optional>
+#include <string>
+
+#include "core/Coord.hpp"
+#include "core/Glyphs.hpp"
+#include "entities/Creature.hpp"
+#include "game/Endings.hpp"
+#include "game/Game.hpp"
+#include "game/Keyboard.hpp"
+#include "game/Messages.hpp"
+#include "ui/Input.hpp"
+#include "world/LevelGenerator.hpp"
 
 namespace rogue {
 
@@ -34,7 +47,7 @@ get_dir()
 	while (!(dir = find_dir(ch)));
 	turn.delta = *dir;
 	msg("");
-	if (game().player.body.t_flags.test(ISHUH) && rnd(5) == 0)
+	if (game().player.body.t_flags.test(CreatureFlag::Confused) && rnd(5) == 0)
 		do {
 			turn.delta.y = rnd(3) - 1;
 			turn.delta.x = rnd(3) - 1;
@@ -75,7 +88,7 @@ d_level()
 		msg("I see no way down");
 	else {
 		game().level.depth++;
-		new_level();
+		world::new_level();
 	}
 }
 
@@ -93,7 +106,7 @@ u_level()
 			game().level.depth--;
 			if (game().level.depth == 0)
 				total_winner();
-			new_level();
+			world::new_level();
 			msg("you feel a wrenching sensation in your gut");
 		}
 		else
@@ -110,7 +123,7 @@ void
 do_macro(std::string &macro)
 {
 	msg("F9 was {}, enter new macro: ",macro);
-	if (auto line = input().read_line(rogue::Options::macro_length)) {
+	if (auto line = ui::input().read_line(rogue::Options::macro_length)) {
 		macro.clear();
 		for (char c : *line)
 			if (c != ctrl('F'))

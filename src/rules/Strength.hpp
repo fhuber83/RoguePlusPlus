@@ -3,9 +3,9 @@
 /*
  * The rogue's strength: changing it within its bounds, and keeping track of
  * the highest it has been.
- *
- * Included by rogue.h after the legacy types (str_t).
  */
+
+#include "entities/Stats.hpp"
 
 namespace rogue::rules {
 
@@ -20,6 +20,6 @@ void chg_str(int amt);
  * add_str:
  *	Add amt to a strength, keeping it between 3 and 31.
  */
-void add_str(str_t &sp, int amt);
+void add_str(entities::str_t &sp, int amt);
 
 }  // namespace rogue::rules

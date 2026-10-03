@@ -3,23 +3,52 @@
  * data segment to disk; see SaveGame.hpp for what is written instead.
  */
 
+#include "persistence/SaveGame.hpp"
+
+#include <array>
 #include <cstdio>
+#include <expected>
+#include <format>
 #include <fstream>
 #include <functional>
+#include <ios>
 #include <iterator>
+#include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
+#include <optional>
 #include <set>
 #include <span>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
+#include <variant>
 #include <vector>
 
-#include <nlohmann/json.hpp>
-
+#include "core/Coord.hpp"
+#include "core/Dice.hpp"
+#include "core/Glyphs.hpp"
+#include "core/KindTable.hpp"
+#include "core/Maybe.hpp"
+#include "core/Random.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Item.hpp"
+#include "entities/List.hpp"
+#include "entities/MonsterCatalog.hpp"
+#include "entities/Stats.hpp"
+#include "game/Game.hpp"
+#include "game/Id.hpp"
+#include "items/KindInfo.hpp"
+#include "items/Kinds.hpp"
+#include "items/effects/Weapon.hpp"
 #include "persistence/ByteText.hpp"
-#include "persistence/SaveGame.hpp"
-#include "rogue.h"
+#include "rules/Scheduler.hpp"
+#include "ui/Display.hpp"
+#include "world/Map.hpp"
+#include "world/MapFlags.hpp"
+#include "world/Room.hpp"
+#include "world/RoomRef.hpp"
 
 namespace rogue::persistence {
 
@@ -30,7 +59,7 @@ using json = nlohmann::ordered_json;	// keeps keys in the order written
 constexpr std::string_view format_name = "rogue++ save";
 constexpr int format_version = 1;
 
-static_assert(map_rows == maxrow - 1 && map_cols == COLS);
+static_assert(map_rows == maxrow - 1 && map_cols == MAXCOLS);
 
 /*
  * Every field of the game is saved. A field added to one of these types
@@ -48,8 +77,8 @@ static_assert(sizeof(MessageLine) == 80, "a MessageLine field was added or remov
 static_assert(sizeof(Options) == 264, "an Options field was added or removed: decide whether to save it");
 static_assert(sizeof(Creature) == 152, "a Creature field was added or removed: save it");
 static_assert(sizeof(Item) == 128, "an Item field was added or removed: save it");
-static_assert(sizeof(Room) == 132, "a room field was added or removed: save it");
-static_assert(sizeof(Stats) == 80, "a stats field was added or removed: save it");
+static_assert(sizeof(world::Room) == 132, "a room field was added or removed: save it");
+static_assert(sizeof(entities::Stats) == 80, "a stats field was added or removed: save it");
 #endif
 
 // A wrong or missing value while loading
@@ -80,7 +109,7 @@ json text_json(std::string_view text)
 	return bytes_to_utf8(text);
 }
 
-json coord_json(const coord &c)
+json coord_json(const Coord &c)
 {
 	return json::array({c.x, c.y});
 }
@@ -139,7 +168,7 @@ bool is_flytrap(const Game &g, const Creature &c)
 	return c.t_type == 'F' && &c != &g.player.body;
 }
 
-json stats_json(const Stats &s, bool flytrap)
+json stats_json(const entities::Stats &s, bool flytrap)
 {
 	return {
 		{"str", s.s_str}, {"exp", s.s_exp}, {"level", s.s_lvl}, {"armor", s.s_arm},
@@ -175,10 +204,10 @@ json item_json(const Item &o)
 	};
 }
 
-json room_json(const Room &r)
+json room_json(const world::Room &r)
 {
 	json exits = json::array();
-	for (const coord &c : r.r_exit)
+	for (const Coord &c : r.r_exit)
 		exits.push_back(coord_json(c));
 	return {
 		{"pos", coord_json(r.r_pos)}, {"size", coord_json(r.r_max)}, {"gold", coord_json(r.r_gold)},
@@ -202,8 +231,8 @@ json grid_json(const auto &grid)
 	json rows = json::array();
 	for (int y = 1; y < maxrow; y++) {
 		std::string row;
-		for (int x = 0; x < COLS; x++) {
-			unsigned char b = byte_of(grid[INDEX(y, x)]);
+		for (int x = 0; x < MAXCOLS; x++) {
+			unsigned char b = byte_of(grid[world::INDEX(y, x)]);
 			row += hex_digits[b >> 4];
 			row += hex_digits[b & 0xf];
 		}
@@ -212,10 +241,10 @@ json grid_json(const auto &grid)
 	return rows;
 }
 
-json odds_json(std::span<const KindInfo> items)
+json odds_json(std::span<const items::KindInfo> odds)
 {
 	json out = json::array();
-	for (const KindInfo &mi : items)
+	for (const items::KindInfo &mi : odds)
 		out.push_back(json::array({mi.mi_prob, mi.mi_worth}));
 	return out;
 }
@@ -307,7 +336,7 @@ json player_json(const Game &g)
 		{"has_amulet", p.has_amulet}, {"saw_amulet", p.saw_amulet},
 		{"max_level", p.max_level}, {"no_command", p.no_command}, {"no_move", p.no_move},
 		{"quiet", p.quiet}, {"fungus_hits", p.fung_hit},
-		{"flytrap_damage", flytrap_attacks(p.fung_hit).to_string()},
+		{"flytrap_damage", entities::flytrap_attacks(p.fung_hit).to_string()},
 		{"was_trapped", std::to_underlying(p.was_trapped)},
 		{"old_pos", coord_json(p.old_pos)}, {"old_room", room_ref(p.old_room)},
 	};
@@ -317,9 +346,9 @@ json level_json(const Game &g)
 {
 	const Level &l = g.level;
 	json rooms = json::array(), passages = json::array(), monsters = json::array();
-	for (const Room &r : l.rooms)
+	for (const world::Room &r : l.rooms)
 		rooms.push_back(room_json(r));
-	for (const Room &r : l.passages)
+	for (const world::Room &r : l.passages)
 		passages.push_back(room_json(r));
 	for (CreatureId id : l.monsters.ids())
 		monsters.push_back(g.pool.creatures.used(id.slot) ? id.slot : -1);
@@ -449,14 +478,14 @@ int whole(const json &v, std::string_view what)
 	return static_cast<int>(n);
 }
 
-coord to_coord(const json &v, std::string_view what)
+Coord to_coord(const json &v, std::string_view what)
 {
 	if (!v.is_array() || v.size() != 2)
 		fail(std::format("{} should be [x, y]", what));
-	return coord{whole(v[0], what), whole(v[1], what)};
+	return Coord{whole(v[0], what), whole(v[1], what)};
 }
 
-coord coord_of(const json &j, std::string_view key)
+Coord coord_of(const json &j, std::string_view key)
 {
 	return to_coord(field(j, key), key);
 }
@@ -549,10 +578,10 @@ Attacks attacks_of(const json &v, std::string_view what)
 	return *attacks;
 }
 
-Stats stats_from(const json &j, bool flytrap)
+entities::Stats stats_from(const json &j, bool flytrap)
 {
-	Stats s{};
-	s.s_str = num<str_t>(j, "str");
+	entities::Stats s{};
+	s.s_str = num<entities::str_t>(j, "str");
 	s.s_exp = num<long>(j, "exp");
 	s.s_lvl = num<int>(j, "level");
 	s.s_arm = num<int>(j, "armor");
@@ -561,7 +590,7 @@ Stats stats_from(const json &j, bool flytrap)
 	if (flytrap != (damage == flytrap_alias))
 		fail(flytrap ? "a venus flytrap's \"damage\" is not the flytrap alias"
 			: "only a venus flytrap's \"damage\" is the flytrap alias");
-	s.s_dmg = flytrap ? monsters['F'-'A'].m_stats.s_dmg : attacks_of(damage, "\"damage\"");
+	s.s_dmg = flytrap ? entities::monsters['F'-'A'].m_stats.s_dmg : attacks_of(damage, "\"damage\"");
 	s.s_maxhp = num<int>(j, "max_hp");
 	return s;
 }
@@ -612,7 +641,7 @@ void item_from(Item &o, const json &j)
 	o.o_group = num<int>(j, "group");
 }
 
-void room_from(Room &r, const json &j)
+void room_from(world::Room &r, const json &j)
 {
 	r.r_pos = coord_of(j, "pos");
 	r.r_max = coord_of(j, "size");
@@ -634,14 +663,14 @@ int hex_value(char c)
 	return -1;
 }
 
-// A row of COLS bytes as hex
+// A row of MAXCOLS bytes as hex
 std::vector<unsigned char> hex_row(const json &v, std::string_view what)
 {
-	if (!v.is_string() || v.get_ref<const std::string &>().size() != 2 * COLS)
-		fail(std::format("{} rows should be {} hex digits", what, 2 * COLS));
+	if (!v.is_string() || v.get_ref<const std::string &>().size() != 2 * MAXCOLS)
+		fail(std::format("{} rows should be {} hex digits", what, 2 * MAXCOLS));
 	const std::string &s = v.get_ref<const std::string &>();
 	std::vector<unsigned char> out;
-	for (int x = 0; x < COLS; x++) {
+	for (int x = 0; x < MAXCOLS; x++) {
 		int hi = hex_value(s[2 * x]), lo = hex_value(s[2 * x + 1]);
 		if (hi < 0 || lo < 0)
 			fail(std::format("{} rows should be hex digits", what));
@@ -655,22 +684,22 @@ void grid_from(auto &grid, const json &j, std::string_view key)
 	const json &rows = array_of(j, key, map_rows);
 	for (int y = 1; y < maxrow; y++) {
 		std::vector<unsigned char> row = hex_row(rows[y - 1], key);
-		for (int x = 0; x < COLS; x++)
-			set_byte(grid[INDEX(y, x)], row[x]);
+		for (int x = 0; x < MAXCOLS; x++)
+			set_byte(grid[world::INDEX(y, x)], row[x]);
 	}
 }
 
-void odds_from(std::span<KindInfo> items, const json &j, std::string_view key)
+void odds_from(std::span<items::KindInfo> odds, const json &j, std::string_view key)
 {
-	const json &list = array_of(j, key, items.size());
-	for (std::size_t i = 0; i < items.size(); i++) {
+	const json &list = array_of(j, key, odds.size());
+	for (std::size_t i = 0; i < odds.size(); i++) {
 		if (!list[i].is_array() || list[i].size() != 2)
 			fail(std::format("\"{}\" entries should be [odds, worth]", key));
-		items[i].mi_prob = whole(list[i][0], key);
+		odds[i].mi_prob = whole(list[i][0], key);
 		int worth = whole(list[i][1], key);
 		if (!std::in_range<short>(worth))
 			fail(std::format("\"{}\" is out of range", key));
-		items[i].mi_worth = static_cast<short>(worth);
+		odds[i].mi_worth = static_cast<short>(worth);
 	}
 }
 
@@ -780,11 +809,11 @@ void level_from(Game &g, const json &j)
 	l.depth = num<int>(j, "depth");
 	l.ntraps = num<int>(j, "traps");
 	l.no_food = num<int>(j, "no_food");
-	const json &rooms = array_of(j, "rooms", MAXROOMS);
-	for (int i = 0; i < MAXROOMS; i++)
+	const json &rooms = array_of(j, "rooms", world::MAXROOMS);
+	for (int i = 0; i < world::MAXROOMS; i++)
 		room_from(l.rooms[i], rooms[i]);
-	const json &passages = array_of(j, "passages", MAXPASS);
-	for (int i = 0; i < MAXPASS; i++)
+	const json &passages = array_of(j, "passages", world::MAXPASS);
+	for (int i = 0; i < world::MAXPASS; i++)
 		room_from(l.passages[i], passages[i]);
 	grid_from(l.map, j, "map");
 	grid_from(l.flags, j, "flags");
@@ -825,7 +854,7 @@ void player_from(Game &g, const json &j)
 	p.no_move = num<int>(j, "no_move");
 	p.quiet = num<int>(j, "quiet");
 	p.fung_hit = num<int>(j, "fungus_hits");
-	if (text_of(j, "flytrap_damage") != flytrap_attacks(p.fung_hit).to_string())
+	if (text_of(j, "flytrap_damage") != entities::flytrap_attacks(p.fung_hit).to_string())
 		fail("\"flytrap_damage\" does not follow from \"fungus_hits\"");
 	p.was_trapped = static_cast<Trapped>(num_in<unsigned char>(j, "was_trapped", 0, 2));
 	p.old_pos = coord_of(j, "old_pos");
@@ -917,7 +946,7 @@ void game_from(Game &g, MapView &view, const json &doc)
 	const json &message = field(doc, "message");
 	g.message.text = text_of(message, "text", BUFSIZE - 1);
 	g.message.last = text_of(message, "last", BUFSIZE - 1);
-	g.message.end = num_in<int>(message, "end", 0, COLS);
+	g.message.end = num_in<int>(message, "end", 0, MAXCOLS);
 	g.message.next_end = num_in<int>(message, "next_end", 0, BUFSIZE);
 	g.message.remember = flag(message, "remember");
 

@@ -5,17 +5,20 @@
 #include <filesystem>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
+#include "game/Game.hpp"
 #include "persistence/OptionsFile.hpp"
-#include "rogue.h"
 
-using rogue::persistence::LoadResult;
-using rogue::persistence::OptionSetting;
-using rogue::persistence::OptionsError;
-using rogue::persistence::apply_option;
-using rogue::persistence::load_options;
-using rogue::persistence::parse_options;
+namespace rogue {
+
+using persistence::LoadResult;
+using persistence::OptionSetting;
+using persistence::OptionsError;
+using persistence::apply_option;
+using persistence::load_options;
+using persistence::parse_options;
 
 namespace {
 
@@ -140,19 +143,19 @@ TEST(OptionsFile, NulWhereALabelStartsEndsTheFile)
 TEST(OptionsFile, LongValuesAreCut)
 {
 	std::string text = "macro=" + std::string(30, 'x') + "\n";
-	EXPECT_EQ(parsed(text), (Pairs{{"macro", std::string(rogue::persistence::max_option_value, 'x')}}));
+	EXPECT_EQ(parsed(text), (Pairs{{"macro", std::string(persistence::max_option_value, 'x')}}));
 }
 
 // Cut first, then a blank at the cut is dropped
 TEST(OptionsFile, BlankAtTheCutIsDropped)
 {
-	std::string kept(rogue::persistence::max_option_value - 1, 'x');
+	std::string kept(persistence::max_option_value - 1, 'x');
 	EXPECT_EQ(parsed("macro=" + kept + " yz\n"), (Pairs{{"macro", kept}}));
 }
 
 TEST(OptionsFile, ApplySetsEachOption)
 {
-	rogue::Options o;
+	Options o;
 	EXPECT_TRUE(apply_option(o, {"name", "Fred"}));
 	EXPECT_TRUE(apply_option(o, {"fruit", "fig"}));
 	EXPECT_TRUE(apply_option(o, {"macro", "ss"}));
@@ -173,7 +176,7 @@ TEST(OptionsFile, ApplySetsEachOption)
 
 TEST(OptionsFile, ApplyIgnoresUnknownLabels)
 {
-	rogue::Options o;
+	Options o;
 	EXPECT_FALSE(apply_option(o, {"nam", "Fred"}));
 	EXPECT_FALSE(apply_option(o, {"name ", "Fred"}));
 	EXPECT_EQ(o.name, "Rodney");
@@ -181,7 +184,7 @@ TEST(OptionsFile, ApplyIgnoresUnknownLabels)
 
 TEST(OptionsFile, ApplyCutsToTheOption)
 {
-	rogue::Options o;
+	Options o;
 	apply_option(o, {"fruit", "abcdefghijklmnopqrstuvwx"});
 	EXPECT_EQ(o.fruit, "abcdefghijklmnopqrstuvw");
 	apply_option(o, {"scorefile", "abcdefghijklmnopq"});
@@ -196,7 +199,7 @@ TEST(OptionsFile, LoadReadsAFile)
 {
 	TempFile file("rogue_options_test.opt", "# comment\nname = Optimus\nfruit=Kumquat\nmenu=sel\n"
 		"scorefile=my.scr\nfruit_is_not_a_label=x\nfruit=Durian\n");
-	rogue::Options o;
+	Options o;
 	EXPECT_EQ(load_options(file.path(), o), LoadResult::Loaded);
 	EXPECT_EQ(o.name, "Optimus");
 	EXPECT_EQ(o.fruit, "Durian");
@@ -207,7 +210,7 @@ TEST(OptionsFile, LoadReadsAFile)
 
 TEST(OptionsFile, LoadMissingFile)
 {
-	rogue::Options o;
+	Options o;
 	EXPECT_EQ(load_options("/nonexistent/rogue.opt", o), LoadResult::Missing);
 	EXPECT_EQ(o.name, "Rodney");
 }
@@ -215,7 +218,9 @@ TEST(OptionsFile, LoadMissingFile)
 TEST(OptionsFile, LoadBadFileChangesNothing)
 {
 	TempFile file("rogue_options_bad.opt", "name=Fred\njunk");
-	rogue::Options o;
+	Options o;
 	EXPECT_EQ(load_options(file.path(), o), LoadResult::BadFormat);
 	EXPECT_EQ(o.name, "Rodney");
 }
+
+}  // namespace rogue

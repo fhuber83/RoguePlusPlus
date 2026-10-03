@@ -1,12 +1,24 @@
 #include <gtest/gtest.h>
 
+#include <optional>
 #include <string>
 #include <vector>
 
+#include "core/Random.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Item.hpp"
+#include "game/Game.hpp"
+#include "game/Id.hpp"
+#include "game/NewGame.hpp"
+#include "game/Pool.hpp"
+#include "items/Kinds.hpp"
+#include "ui/Display.hpp"
 #include "ui/ScreenDisplay.hpp"
-#include "rogue.h"
+#include "world/LevelGenerator.hpp"
+#include "world/Room.hpp"
+#include "world/RoomRef.hpp"
 
-using rogue::pool_problems;
+namespace rogue {
 
 namespace {
 
@@ -18,11 +30,11 @@ protected:
 
 	static void reset()
 	{
-		game().pool = rogue::Pool();
-		game().level = rogue::Level();
-		game().player = rogue::Player();
-		game().items = rogue::Items();
-		game().turn = rogue::Turn();
+		game().pool = Pool();
+		game().level = Level();
+		game().player = Player();
+		game().items = Items();
+		game().turn = Turn();
 	}
 
 	static std::string problems()
@@ -71,7 +83,7 @@ TEST_F(PoolCheck, MonsterPacksCount)
 
 TEST_F(PoolCheck, WhatAMonsterIsAfter)
 {
-	rogue::Level &level = game().level;
+	Level &level = game().level;
 	Creature &tp = *new_creature();
 	level.monsters.push_front(tp);
 	Item &obj = *new_item();
@@ -83,7 +95,7 @@ TEST_F(PoolCheck, WhatAMonsterIsAfter)
 		tp.t_dest = dest;
 		EXPECT_EQ(problems(), "");
 	}
-	tp.t_dest = Gold{RoomRef::passage(MAXPASS)};
+	tp.t_dest = Gold{RoomRef::passage(world::MAXPASS)};
 	EXPECT_NE(problems(), "");
 	tp.t_dest = ItemId{MAXITEMS - 1};	// a free slot
 	EXPECT_NE(problems(), "");
@@ -99,11 +111,11 @@ TEST_F(PoolCheck, RoomsAreRoomsOrPassages)
 {
 	Creature &tp = *new_creature();
 	game().level.monsters.push_front(tp);
-	tp.t_room = RoomRef::passage(MAXPASS - 1);
+	tp.t_room = RoomRef::passage(world::MAXPASS - 1);
 	game().player.body.t_room = RoomRef::room(0);
-	game().player.old_room = RoomRef::room(MAXROOMS - 1);
+	game().player.old_room = RoomRef::room(world::MAXROOMS - 1);
 	EXPECT_EQ(problems(), "");
-	tp.t_room = RoomRef::room(MAXROOMS);
+	tp.t_room = RoomRef::room(world::MAXROOMS);
 	EXPECT_NE(problems(), "");
 	tp.t_room = std::nullopt;
 	game().player.old_room = RoomRef::passage(-1);
@@ -156,12 +168,12 @@ TEST_F(PoolCheck, TheCountIsRight)
 // New games and the levels below them start out consistent.
 TEST_F(PoolCheck, GeneratedLevels)
 {
-	auto &screen_display = dynamic_cast<rogue::ui::ScreenDisplay &>(display());
+	auto &screen_display = dynamic_cast<ui::ScreenDisplay &>(ui::display());
 	screen_display.set_animations(false);	// new_level() wipes the screen
 	int things = 0;
-	for (rogue::Random::Seed seed : {1u, 5u, 42u, 4242u}) {
+	for (Random::Seed seed : {1u, 5u, 42u, 4242u}) {
 		reset();
-		rogue::rng().reseed(seed);
+		rng().reseed(seed);
 		init_player();			// as main() sets up a game
 		init_things();
 		init_names();
@@ -170,7 +182,7 @@ TEST_F(PoolCheck, GeneratedLevels)
 		init_materials();
 		for (int depth = 1; depth <= 26; depth++) {
 			game().level.depth = depth;
-			new_level();
+			world::new_level();
 			EXPECT_EQ(problems(), "") << "seed " << seed << " depth " << depth;
 			things += game().pool.total;
 		}
@@ -178,3 +190,5 @@ TEST_F(PoolCheck, GeneratedLevels)
 	EXPECT_GT(things, 4 * 26 * 5);		// the levels do hold monsters and items
 	screen_display.set_animations(true);
 }
+
+}  // namespace rogue

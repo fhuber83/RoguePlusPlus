@@ -10,7 +10,7 @@ namespace rogue::entities {
 using str_t = unsigned int;
 
 /*
- * What a fighting being is made of (was Stats): the rogue's, a
+ * What a fighting being is made of (was struct stats): the rogue's, a
  * monster's, and a kind of monster's to start with.
  */
 struct Stats {

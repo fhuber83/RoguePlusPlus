@@ -1,6 +1,11 @@
 #include <gtest/gtest.h>
 
-#include "rogue.h"
+#include <optional>
+
+#include "core/Glyphs.hpp"
+#include "entities/Item.hpp"
+
+namespace rogue {
 
 // Every kind that can lie on the map shows as its glyph, and reads back.
 TEST(ItemKind, GlyphRoundTrip)
@@ -40,3 +45,5 @@ TEST(ItemFilter, Matches)
 	EXPECT_TRUE(ItemFilter::callable().is_callable());
 	EXPECT_FALSE(ItemFilter::callable().is(ItemKind::None));
 }
+
+}  // namespace rogue

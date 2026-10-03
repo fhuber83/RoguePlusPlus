@@ -4,7 +4,19 @@
  * passages.c	1.4 (A.I. Design)	12/14/84
  */
 
-#include "rogue.h"
+#include "world/Passages.hpp"
+
+#include <cstdlib>
+
+#include "core/Config.hpp"
+#include "core/Coord.hpp"
+#include "core/Glyphs.hpp"
+#include "core/Maybe.hpp"
+#include "game/Game.hpp"
+#include "game/Messages.hpp"
+#include "world/Map.hpp"
+#include "world/MapFlags.hpp"
+#include "world/Room.hpp"
 
 namespace rogue::world {
 
@@ -27,7 +39,7 @@ conn(int r1, int r2)
 	int rmt, rm;
 	int distance = 0, turn_spot, turn_distance;
 	int direc;
-	coord del, curr, turn_delta, spos, epos;
+	Coord del, curr, turn_delta, spos, epos;
 	rogue::Level &level = game().level;
 
 	if (r1 < r2) {
@@ -291,7 +303,6 @@ door(Room &rm, Coord cp)
 	xit = rm.r_nexits++;
 	rm.r_exit[xit] = cp;
 }
-
 
 /*
  * passnum:

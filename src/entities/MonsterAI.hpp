@@ -3,14 +3,17 @@
 /*
  * How monsters move: chasing the rogue or what they want, whether the rogue
  * can see them, and slimes dividing.
- *
- * Included by rogue.h after the legacy types (coord) and
- * entities/Creature.hpp (Creature).
  */
+
+#include <optional>
+
+#include "core/Coord.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
 
 namespace rogue {
 
-class Creature;
+struct Creature;
 
 namespace entities {
 

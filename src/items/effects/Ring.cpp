@@ -1,4 +1,21 @@
-#include "rogue.h"
+#include "items/effects/Ring.hpp"
+
+#include <optional>
+#include <string>
+
+#include "core/Glyphs.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Item.hpp"
+#include "entities/MonsterAI.hpp"
+#include "game/Game.hpp"
+#include "game/Keyboard.hpp"
+#include "game/Messages.hpp"
+#include "items/Identification.hpp"
+#include "items/Inventory.hpp"
+#include "items/Kinds.hpp"
+#include "items/effects/Potion.hpp"
+#include "items/effects/Weapon.hpp"
+#include "rules/Strength.hpp"
 
 namespace rogue::items::effects {
 
@@ -51,13 +68,13 @@ put_ring_on()
 	 */
 	switch (obj->which<Ring>()) {
 	case Ring::AddStrength:
-		chg_str(obj->o_ac);
+		rules::chg_str(obj->o_ac);
 		break;
 	case Ring::SeeInvisible:
 		invis_on();
 		break;
 	case Ring::AggravateMonster:
-		aggravate();
+		entities::aggravate();
 		break;
 	default:
 		break;
@@ -184,7 +201,7 @@ ring_eat(Hand hand)
 std::string
 ring_num(const Item &obj)
 {
-	if (!obj.o_flags.test(ISKNOW))
+	if (!obj.o_flags.test(ItemFlag::Known))
 		return "";
 	switch (obj.which<Ring>()) {
 	case Ring::Protection:

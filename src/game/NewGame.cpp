@@ -6,7 +6,28 @@
  * setup() and credits() come from mach_dep.c (1.4 (A.I. Design) 12/1/84).
  */
 
-#include "rogue.h"
+#include "game/NewGame.hpp"
+
+#include <array>
+#include <cstddef>
+#include <iterator>
+#include <span>
+#include <string>
+#include <string_view>
+
+#include "core/KindTable.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Item.hpp"
+#include "game/Game.hpp"
+#include "game/Pool.hpp"
+#include "items/Inventory.hpp"
+#include "items/ItemCatalog.hpp"
+#include "items/KindInfo.hpp"
+#include "items/Kinds.hpp"
+#include "items/effects/Weapon.hpp"
+#include "rules/Durations.hpp"
+#include "ui/Display.hpp"
+#include "ui/Input.hpp"
 
 namespace rogue {
 
@@ -159,16 +180,15 @@ constexpr std::size_t NMETAL = std::size(metal);
  */
 template <typename E>
 void
-accumulate_odds(KindTable<E, KindInfo> &table)
+accumulate_odds(KindTable<E, items::KindInfo> &table)
 {
 	int odds = 0;
 
-	for (KindInfo &mi : table)
+	for (items::KindInfo &mi : table)
 		mi.mi_prob = odds += mi.mi_prob;
 }
 
 }  // namespace
-
 
 /*
  * setup:
@@ -188,10 +208,10 @@ setup()
 void
 credits()
 {
-	display().draw_title();
-	if (auto name = input().read_line(Options::name_length); name && !name->empty())
+	ui::display().draw_title();
+	if (auto name = ui::input().read_line(Options::name_length); name && !name->empty())
 		game().options.name = *name;
-	display().end_title();
+	ui::display().end_title();
 }
 
 /*
@@ -203,7 +223,7 @@ init_player()
 {
 	Maybe<Item> obj;
 	game().player.body.t_stats = game().player.max_stats;
-	game().player.food_left = hunger_time();
+	game().player.food_left = rules::hunger_time();
 	/*
 	 * initialize things
 	 */
@@ -214,13 +234,13 @@ init_player()
 	obj = new_item();
 	obj->o_type = ItemKind::Weapon;
 	obj->set_which(WeaponType::Mace);
-	init_weapon(*obj, WeaponType::Mace);
+	items::effects::init_weapon(*obj, WeaponType::Mace);
 	obj->o_hplus = 1;
 	obj->o_dplus = 1;
-	obj->o_flags.set(ISKNOW);
+	obj->o_flags.set(ItemFlag::Known);
 	obj->o_count = 1;
 	obj->o_group = 0;
-	add_pack(*obj, true);
+	items::add_pack(*obj, true);
 	game().player.weapon = game().pool.id_of(obj);
 	/*
 	 * Now a +1 bow
@@ -228,36 +248,36 @@ init_player()
 	obj = new_item();
 	obj->o_type = ItemKind::Weapon;
 	obj->set_which(WeaponType::ShortBow);
-	init_weapon(*obj, WeaponType::ShortBow);
+	items::effects::init_weapon(*obj, WeaponType::ShortBow);
 	obj->o_hplus = 1;
 	obj->o_dplus = 0;
 	obj->o_count = 1;
 	obj->o_group = 0;
-	obj->o_flags.set(ISKNOW);
-	add_pack(*obj, true);
+	obj->o_flags.set(ItemFlag::Known);
+	items::add_pack(*obj, true);
 	/*
 	 * Now some arrows
 	 */
 	obj = new_item();
 	obj->o_type = ItemKind::Weapon;
 	obj->set_which(WeaponType::Arrow);
-	init_weapon(*obj, WeaponType::Arrow);
+	items::effects::init_weapon(*obj, WeaponType::Arrow);
 	obj->o_count = rnd(15) + 25;
 	obj->o_hplus = obj->o_dplus = 0;
-	obj->o_flags.set(ISKNOW);
-	add_pack(*obj, true);
+	obj->o_flags.set(ItemFlag::Known);
+	items::add_pack(*obj, true);
 	/*
 	 * And his suit of armor
 	 */
 	obj = new_item();
 	obj->o_type = ItemKind::Armor;
 	obj->set_which(ArmorType::RingMail);
-	obj->o_ac = a_class[ArmorType::RingMail] - 1;
-	obj->o_flags.set(ISKNOW);
+	obj->o_ac = items::a_class[ArmorType::RingMail] - 1;
+	obj->o_flags.set(ItemFlag::Known);
 	obj->o_count = 1;
 	obj->o_group = 0;
 	game().player.armor = game().pool.id_of(obj);
-	add_pack(*obj, true);
+	items::add_pack(*obj, true);
 	/*
 	 * Give him some food too
 	 */
@@ -266,7 +286,7 @@ init_player()
 	obj->o_count = 1;
 	obj->set_which(Food::Ration);
 	obj->o_group = 0;
-	add_pack(*obj, true);
+	items::add_pack(*obj, true);
 }
 
 /*
@@ -276,7 +296,7 @@ init_player()
 void
 init_things()
 {
-	std::span<KindInfo> things = game().items.things;
+	std::span<items::KindInfo> things = game().items.things;
 
 	for (std::size_t i = 1; i < things.size(); i++)
 		things[i].mi_prob += things[i-1].mi_prob;

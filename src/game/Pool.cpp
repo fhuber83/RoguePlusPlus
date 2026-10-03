@@ -5,7 +5,16 @@
  * list.c	1.4 (A.I. Design) 12/5/85
  */
 
-#include "rogue.h"
+#include "game/Pool.hpp"
+
+#include <optional>
+
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Item.hpp"
+#include "game/Game.hpp"
+#include "game/Id.hpp"
+#include "game/Slots.hpp"
 
 namespace rogue {
 

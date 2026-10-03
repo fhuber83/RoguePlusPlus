@@ -2,8 +2,6 @@
 
 /*
  * The passages between rooms, dug while a new level is made.
- *
- * Included by rogue.h after the legacy types.
  */
 
 namespace rogue::world {

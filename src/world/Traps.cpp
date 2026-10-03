@@ -7,7 +7,31 @@
  * move.c	1.4 (A.I. Design)	12/22/84
  */
 
-#include "rogue.h"
+#include "world/Traps.hpp"
+
+#include <string_view>
+#include <utility>
+
+#include "core/Coord.hpp"
+#include "core/Glyphs.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Item.hpp"
+#include "game/Endings.hpp"
+#include "game/Game.hpp"
+#include "game/Keyboard.hpp"
+#include "game/Messages.hpp"
+#include "game/Pool.hpp"
+#include "items/Kinds.hpp"
+#include "items/effects/Weapon.hpp"
+#include "rules/Combat.hpp"
+#include "rules/Durations.hpp"
+#include "rules/Strength.hpp"
+#include "ui/Display.hpp"
+#include "world/LevelGenerator.hpp"
+#include "world/Map.hpp"
+#include "world/Rooms.hpp"
+#include "world/Trap.hpp"
 
 namespace rogue::world {
 
@@ -57,17 +81,17 @@ be_trapped(Coord tc)
 		descend("you fell into a trap!");
 		break;
 	case Trap::Bear:
-		player.no_move += bear_time();
+		player.no_move += rules::bear_time();
 		msg("you are caught in a bear trap");
 		break;
 	case Trap::Sleep:
-		player.no_command += sleep_time();
-		player.body.t_flags.unset(ISRUN);
+		player.no_command += rules::sleep_time();
+		player.body.t_flags.unset(CreatureFlag::Running);
 		msg("a {}mist envelops you and you fall asleep",
 			noterse("strange white "));
 		break;
 	case Trap::Arrow:
-		if (swing(player.body.t_stats.s_lvl-1, player.body.t_stats.s_arm, 1)) {
+		if (rules::swing(player.body.t_stats.s_lvl-1, player.body.t_stats.s_arm, 1)) {
 			player.body.t_stats.s_hpt -= roll(1, 6);
 			if (player.body.t_stats.s_hpt <= 0) {
 				msg("an arrow killed you");
@@ -81,29 +105,29 @@ be_trapped(Coord tc)
 			if ((arrow = new_item())) {
 				arrow->o_type = ItemKind::Weapon;
 				arrow->set_which(WeaponType::Arrow);
-				init_weapon(*arrow, WeaponType::Arrow);
+				items::effects::init_weapon(*arrow, WeaponType::Arrow);
 				arrow->o_count = 1;
 				arrow->o_pos = player.body.t_pos;
-				fall(*arrow, false);
+				items::effects::fall(*arrow, false);
 			}
 			msg("an arrow shoots past you");
 		}
 		break;
 	case Trap::Teleport:
 		teleport();
-		display().draw_tile(tc, TRAP); /* since the hero's leaving, look()
+		ui::display().draw_tile(tc, TRAP); /* since the hero's leaving, look()
 						won't put it on for us */
 		player.was_trapped = rogue::Trapped::Teleported;
 		break;
 	case Trap::Dart:
-		if (swing(player.body.t_stats.s_lvl+1, player.body.t_stats.s_arm, 1)) {
+		if (rules::swing(player.body.t_stats.s_lvl+1, player.body.t_stats.s_arm, 1)) {
 			player.body.t_stats.s_hpt -= roll(1, 4);
 			if (player.body.t_stats.s_hpt <= 0) {
 				msg("a poisoned dart killed you");
 				death('d');
 			}
-			if (!player.wears(Ring::SustainStrength) && !save(SaveThrow::Poison))
-				chg_str(-1);
+			if (!player.wears(Ring::SustainStrength) && !rules::save(rules::SaveThrow::Poison))
+				rules::chg_str(-1);
 			msg("a dart just hit you in the shoulder");
 		} else
 			msg("a dart whizzes by your ear and vanishes");
@@ -126,7 +150,7 @@ descend(std::string_view mesg)
 	new_level();
 	msg("");
 	msg("{}", mesg);
-	if (!save(SaveThrow::Luck)) {
+	if (!rules::save(rules::SaveThrow::Luck)) {
 		msg("you are damaged by the fall");
 		if ((game().player.body.t_stats.s_hpt -= roll(1,8)) <= 0)
 			death('f');

@@ -3,14 +3,20 @@
 /*
  * Monsters: choosing which kind shows up, making one, wandering monsters,
  * waking one up, and finding the one on a square.
- *
- * Included by rogue.h after entities/Creature.hpp (Creature, CreatureFlags)
- * and entities/Stats.hpp (Stats).
  */
+
+#include <array>
+#include <string_view>
+
+#include "core/Coord.hpp"
+#include "core/Dice.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Stats.hpp"
 
 namespace rogue {
 
-class Creature;
+struct Creature;
 
 namespace entities {
 

@@ -1,6 +1,6 @@
 #include "game/Command.hpp"
 
-#include "glyphs.h"
+#include "core/Glyphs.hpp"
 
 namespace rogue {
 

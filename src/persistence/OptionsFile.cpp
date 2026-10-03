@@ -3,13 +3,22 @@
  * character-at-a-time parser this follows rule for rule.
  */
 
+#include "persistence/OptionsFile.hpp"
+
 #include <algorithm>
+#include <cstddef>
+#include <expected>
 #include <fstream>
+#include <ios>
 #include <iterator>
 #include <optional>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
-#include "rogue.h"
-#include "persistence/OptionsFile.hpp"
+#include "core/Ascii.hpp"
+#include "game/Game.hpp"
 
 namespace rogue::persistence {
 

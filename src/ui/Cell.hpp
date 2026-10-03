@@ -42,7 +42,7 @@ inline constexpr Style Standout{Color::Black, Color::LightGrey};
 
 /// One character cell of the text screen.
 struct Cell {
-	std::uint8_t ch = ' '; ///< glyph code (CP437, see glyphs.h)
+	std::uint8_t ch = ' '; ///< glyph code (CP437, see core/Glyphs.hpp)
 	Style style;
 	/// Drawn by the line/box routines. Terminals without the box-drawing
 	/// glyphs pick a different ASCII fallback for these (`=` instead of `-`).

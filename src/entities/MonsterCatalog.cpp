@@ -4,7 +4,32 @@
  * monsters.c	1.4 (A.I. Design)	12/14/84
  */
 
-#include "rogue.h"
+#include "entities/MonsterCatalog.hpp"
+
+#include <array>
+#include <optional>
+#include <string_view>
+
+#include "core/Coord.hpp"
+#include "core/Dice.hpp"
+#include "core/Glyphs.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
+#include "entities/MonsterAI.hpp"
+#include "entities/Stats.hpp"
+#include "game/Game.hpp"
+#include "game/Messages.hpp"
+#include "game/Pool.hpp"
+#include "items/ItemCatalog.hpp"
+#include "items/Kinds.hpp"
+#include "rules/Combat.hpp"
+#include "rules/Durations.hpp"
+#include "rules/Scheduler.hpp"
+#include "world/LevelGenerator.hpp"
+#include "world/Map.hpp"
+#include "world/Room.hpp"
+#include "world/RoomRef.hpp"
+#include "world/Rooms.hpp"
 
 namespace rogue::entities {
 
@@ -18,38 +43,38 @@ constexpr str_t XX = 10;
 
 const std::array<MonsterKind, 26> monsters = {{
 	/* Name		 CARRY	FLAG    str, exp, lvl, amr, hpt, dmg, maxhp */
-	{ "aquator",	0,	ISMEAN,	{ XX, 20,   5,   2, NA, "0d0/0d0", NA } },
-	{ "bat",	 	0,	ISFLY,	{ XX,  1,   1,   3, NA, "1d2", NA } },
+	{ "aquator",	0,	CreatureFlag::Mean,	{ XX, 20,   5,   2, NA, "0d0/0d0", NA } },
+	{ "bat",	 	0,	CreatureFlag::Flying,	{ XX,  1,   1,   3, NA, "1d2", NA } },
 	{ "centaur",	 15,	{},	{ XX, 25,   4,   4, NA, "1d6/1d6", NA } },
-	{ "dragon",	 100,	ISMEAN,	{ XX,6800, 10,  -1, NA, "1d8/1d8/3d10", NA } },
-	{ "emu",	 0,	ISMEAN,	{ XX,  2,   1,   7, NA, "1d2", NA } },
+	{ "dragon",	 100,	CreatureFlag::Mean,	{ XX,6800, 10,  -1, NA, "1d8/1d8/3d10", NA } },
+	{ "emu",	 0,	CreatureFlag::Mean,	{ XX,  2,   1,   7, NA, "1d2", NA } },
 		/* until one hits; then every flytrap does fung_hit d1, see flytrap_attacks() */
 		/* string with others, since it is written on in the program */
-	{ "venus flytrap",0,	ISMEAN,	{ XX, 80,   8,   3, NA, "0d0", NA } },
-	{ "griffin",	 20,	ISMEAN|ISFLY|ISREGEN,	{XX,2000, 13, 2,NA, "4d3/3d5/4d3", NA } },
-	{ "hobgoblin",	 0,	ISMEAN,	{ XX,  3,   1,   5, NA, "1d8", NA } },
-	{ "ice monster", 0,	ISMEAN,	{ XX,  15,   1,   9, NA, "1d2", NA } },
+	{ "venus flytrap",0,	CreatureFlag::Mean,	{ XX, 80,   8,   3, NA, "0d0", NA } },
+	{ "griffin",	 20,	CreatureFlag::Mean|CreatureFlag::Flying|CreatureFlag::Regen,	{XX,2000, 13, 2,NA, "4d3/3d5/4d3", NA } },
+	{ "hobgoblin",	 0,	CreatureFlag::Mean,	{ XX,  3,   1,   5, NA, "1d8", NA } },
+	{ "ice monster", 0,	CreatureFlag::Mean,	{ XX,  15,   1,   9, NA, "1d2", NA } },
 	{ "jabberwock",  70,	{},	{ XX,4000, 15,   6, NA, "2d12/2d4", NA } },
-	{ "kestral",	 0,	ISMEAN|ISFLY, { XX,  1,   1,   7, NA, "1d4", NA } },
+	{ "kestral",	 0,	CreatureFlag::Mean|CreatureFlag::Flying, { XX,  1,   1,   7, NA, "1d4", NA } },
 		/*
 		 * The original has ISGREED (0x40) in the CARRY column: leprechauns
 		 * carry something 64% of the time and are not greedy. Kept as is.
 		 */
 	{ "leprechaun",	 0x40,	{},	{ XX, 10,   3,   8, NA, "1d2", NA } },
-	{ "medusa",	 40,	ISMEAN,	{ XX,200,   8,   2, NA, "3d4/3d4/2d5", NA } },
+	{ "medusa",	 40,	CreatureFlag::Mean,	{ XX,200,   8,   2, NA, "3d4/3d4/2d5", NA } },
 	{ "nymph",	 100,	{},	{ XX, 37,   3,   9, NA, "0d0", NA } },
-	{ "orc",	 15,	ISGREED,{ XX,  5,   1,   6, NA, "1d8", NA } },
-	{ "phantom",	 0,ISINVIS,{ XX,120,   8,   3, NA, "4d4", NA } },
-	{ "quagga",	 30,	ISMEAN,	{ XX, 32,   3,   2, NA, "1d2/1d2/1d4", NA } },
-	{ "rattlesnake", 0,	ISMEAN,	{ XX,  9,   2,   3, NA, "1d6", NA } },
-	{ "slime",	 	 0,	ISMEAN,	{ XX,  1,   2,   8, NA, "1d3", NA } },
-	{ "troll",	 50,	ISREGEN|ISMEAN,{ XX, 120, 6, 4, NA, "1d8/1d8/2d6", NA } },
-	{ "ur-vile",	 0,	ISMEAN,	{ XX,190,   7,  -2, NA, "1d3/1d3/1d3/4d6", NA } },
-	{ "vampire",	 20,	ISREGEN|ISMEAN,{ XX,350,   8,   1, NA, "1d10", NA } },
+	{ "orc",	 15,	CreatureFlag::Greedy,{ XX,  5,   1,   6, NA, "1d8", NA } },
+	{ "phantom",	 0,CreatureFlag::Invisible,{ XX,120,   8,   3, NA, "4d4", NA } },
+	{ "quagga",	 30,	CreatureFlag::Mean,	{ XX, 32,   3,   2, NA, "1d2/1d2/1d4", NA } },
+	{ "rattlesnake", 0,	CreatureFlag::Mean,	{ XX,  9,   2,   3, NA, "1d6", NA } },
+	{ "slime",	 	 0,	CreatureFlag::Mean,	{ XX,  1,   2,   8, NA, "1d3", NA } },
+	{ "troll",	 50,	CreatureFlag::Regen|CreatureFlag::Mean,{ XX, 120, 6, 4, NA, "1d8/1d8/2d6", NA } },
+	{ "ur-vile",	 0,	CreatureFlag::Mean,	{ XX,190,   7,  -2, NA, "1d3/1d3/1d3/4d6", NA } },
+	{ "vampire",	 20,	CreatureFlag::Regen|CreatureFlag::Mean,{ XX,350,   8,   1, NA, "1d10", NA } },
 	{ "wraith",	 0,	{},	{ XX, 55,   5,   4, NA, "1d6", NA } },
 	{ "xeroc",30,	{},	{ XX,100,   7,   7, NA, "3d4", NA } },
 	{ "yeti",	 30,	{},	{ XX, 50,   4,   6, NA, "1d6/1d6", NA } },
-	{ "zombie",	 0,	ISMEAN,	{ XX,  6,   2,   8, NA, "1d8", NA } }
+	{ "zombie",	 0,	CreatureFlag::Mean,	{ XX,  6,   2,   8, NA, "1d8", NA } }
 }};
 
 namespace {
@@ -111,14 +136,14 @@ new_monster(Creature &tp, unsigned char type, Coord cp)
 {
 	int lev_add;
 
-	if ((lev_add = game().level.depth - AMULETLEVEL) < 0)
+	if ((lev_add = game().level.depth - world::AMULETLEVEL) < 0)
 		lev_add = 0;
 	game().level.monsters.push_front(tp);
 	tp.t_type = type;
 	tp.t_disguise = type;
 	tp.t_pos = cp;
 	tp.t_oldch = '@';
-	tp.t_room = roomin(cp);
+	tp.t_room = world::roomin(cp);
 	const MonsterKind &mp = monsters[tp.t_type-'A'];
 	tp.t_stats.s_lvl = mp.m_stats.s_lvl + lev_add;
 	tp.t_stats.s_maxhp = tp.t_stats.s_hpt = roll(tp.t_stats.s_lvl, 8);
@@ -205,7 +230,7 @@ wanderer()
 {
 	int i;
 	Maybe<Creature> tp;
-	coord cp;
+	Coord cp;
 	rogue::Player &player = game().player;
 
 	/*
@@ -214,11 +239,11 @@ wanderer()
 	if (!(tp = new_creature()))
 		return;
 	do {
-		i = rnd_room();
+		i = world::rnd_room();
 		if (RoomRef::room(i) == player.body.t_room)
 			continue;
 		cp = rnd_pos(game().level.rooms[i]);
-	} while (!(RoomRef::room(i) != player.body.t_room && step_ok(winat(cp.y, cp.x))));
+	} while (!(RoomRef::room(i) != player.body.t_room && world::step_ok(world::winat(cp.y, cp.x))));
 	new_monster(*tp, randmonster(true), cp);
 	start_run(tp->t_pos);
 }
@@ -242,25 +267,25 @@ wake_monster(int y, int x)
 	/*
 	 * Every time he sees mean monster, it might start chasing him
 	 */
-	if (!tp->t_flags.test(ISRUN) && rnd(3) != 0 && tp->t_flags.test(ISMEAN) && !tp->t_flags.test(ISHELD)
+	if (!tp->t_flags.test(CreatureFlag::Running) && rnd(3) != 0 && tp->t_flags.test(CreatureFlag::Mean) && !tp->t_flags.test(CreatureFlag::Held)
 		&& !player.wears(Ring::Stealth))
 	{
 		tp->t_dest = Hero{};
-		tp->t_flags.set(ISRUN);
+		tp->t_flags.set(CreatureFlag::Running);
 	}
-	if (ch == 'M' && !player.body.t_flags.test(ISBLIND) && !tp->t_flags.test(ISFOUND)
-		&& !tp->t_flags.test(ISCANC) && tp->t_flags.test(ISRUN))
+	if (ch == 'M' && !player.body.t_flags.test(CreatureFlag::Blind) && !tp->t_flags.test(CreatureFlag::Found)
+		&& !tp->t_flags.test(CreatureFlag::Cancelled) && tp->t_flags.test(CreatureFlag::Running))
 	{
 		rp = player.body.t_room;
 		dst = distance_sq({x, y}, player.body.t_pos);
-		if ((rp && !game().level.room(*rp).r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
-			tp->t_flags.set(ISFOUND);
-			if (!save(SaveThrow::Magic)) {
-				if (player.body.t_flags.test(ISHUH))
-					lengthen(Event::Unconfuse, rnd(20) + huh_duration());
+		if ((rp && !game().level.room(*rp).r_flags.test(RoomFlag::Dark)) || dst < world::LAMPDIST) {
+			tp->t_flags.set(CreatureFlag::Found);
+			if (!rules::save(rules::SaveThrow::Magic)) {
+				if (player.body.t_flags.test(CreatureFlag::Confused))
+					rules::lengthen(rules::Event::Unconfuse, rnd(20) + rules::huh_duration());
 				else
-					fuse(Event::Unconfuse, rnd(20) + huh_duration());
-				player.body.t_flags.set(ISHUH);
+					rules::fuse(rules::Event::Unconfuse, rnd(20) + rules::huh_duration());
+				player.body.t_flags.set(CreatureFlag::Confused);
 				msg("the medusa's gaze has confused you");
 			}
 		}
@@ -268,8 +293,8 @@ wake_monster(int y, int x)
 	/*
 	 * Let greedy ones guard gold
 	 */
-	if (tp->t_flags.test(ISGREED) && !tp->t_flags.test(ISRUN)) {
-		tp->t_flags.set(ISRUN);
+	if (tp->t_flags.test(CreatureFlag::Greedy) && !tp->t_flags.test(CreatureFlag::Running)) {
+		tp->t_flags.set(CreatureFlag::Running);
 		if (game().level.room(*player.body.t_room).r_goldval)
 			tp->t_dest = Gold{*player.body.t_room};
 		else
@@ -289,7 +314,7 @@ give_pack(Creature &tp)
 	 * check if we can allocate a new item
 	 */
 	if (game().pool.total < MAXITEMS && rnd(100) < monsters[tp.t_type-'A'].m_carry)
-		tp.t_pack.push_front(*new_thing());
+		tp.t_pack.push_front(*items::new_thing());
 }
 
 /*
@@ -309,7 +334,6 @@ pick_mons()
 		return 'M';
 	return vorp_mons[i];
 }
-
 
 /*
  * moat(x,y)

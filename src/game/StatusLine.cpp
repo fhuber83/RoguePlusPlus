@@ -4,7 +4,15 @@
  * io.c		1.4		(A.I. Design) 12/10/84
  */
 
-#include "rogue.h"
+#include "game/StatusLine.hpp"
+
+#include <bits/chrono.h>
+#include <chrono>
+
+#include "game/Game.hpp"
+#include "platform/Clock.hpp"
+#include "rules/Experience.hpp"
+#include "ui/Display.hpp"
 
 namespace rogue {
 
@@ -44,7 +52,7 @@ status()
 	st.str_max = player.max_stats.s_str;
 	st.gold = player.purse;
 	st.armor = armor_class(ac);
-	st.rank = he_man[player.body.t_stats.s_lvl-1];
+	st.rank = rules::he_man[player.body.t_stats.s_lvl-1];
 	st.hunger = player.hungry_state;
 	rogue::ui::display().draw_status(st);
 }
@@ -67,7 +75,7 @@ SIG2()
 	/*
 	 * Do not update while a page (inventory, discoveries, ...) is shown
 	 */
-	if (display().page_open())
+	if (ui::display().page_open())
 		return;
 	if (new_time - cur_time >= std::chrono::minutes(1))
 	{

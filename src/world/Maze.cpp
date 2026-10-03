@@ -5,7 +5,19 @@
  * maze.c	1.4		(A.I. Design)	12/14/84
  */
 
-#include "rogue.h"
+#include "world/Maze.hpp"
+
+#include <array>
+
+#include "core/Config.hpp"
+#include "core/Coord.hpp"
+#include "core/Glyphs.hpp"
+#include "game/Game.hpp"
+#include "game/Messages.hpp"
+#include "world/Map.hpp"
+#include "world/MapFlags.hpp"
+#include "world/Room.hpp"
+#include "world/Rooms.hpp"
 
 namespace rogue::world {
 
@@ -34,7 +46,7 @@ draw_maze(Room &rp)
 {
 	int y, x;
 	int psgcnt;
-	coord spos;
+	Coord spos;
 	rogue::Level &level = game().level;
 
 	maxx = maxy = 0;
@@ -124,7 +136,6 @@ con_frnt()
 	int choice[4];
 	int cnt = 0, y, x;
 
-
 	/*
 	 * Choose a random frontier
 	 */
@@ -187,7 +198,7 @@ splat(int y, int x)
 bool
 inrange(int y, int x)
 {
-	return y >= topy && y < topy + (maxrow + 1) / 3 && x >= topx && x < topx + COLS / 3;
+	return y >= topy && y < topy + (maxrow + 1) / 3 && x >= topx && x < topx + MAXCOLS / 3;
 }
 
 }  // namespace

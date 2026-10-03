@@ -1,4 +1,15 @@
-#include "rogue.h"
+#include "items/effects/Armor.hpp"
+
+#include <optional>
+#include <string>
+
+#include "core/Maybe.hpp"
+#include "entities/Item.hpp"
+#include "game/Game.hpp"
+#include "game/Messages.hpp"
+#include "items/Identification.hpp"
+#include "items/Inventory.hpp"
+#include "rules/Scheduler.hpp"
 
 namespace rogue::items::effects {
 
@@ -25,7 +36,7 @@ wear()
 		return;
 	}
 	waste_time();
-	obj->o_flags.set(ISKNOW);
+	obj->o_flags.set(ItemFlag::Known);
 	sp = inv_name(*obj, true);
 	game().player.armor = game().pool.id_of(obj);
 	msg("you are now wearing {}", sp);
@@ -58,8 +69,8 @@ take_off()
 void
 waste_time()
 {
-	do_daemons();
-	do_fuses();
+	rules::do_daemons();
+	rules::do_fuses();
 }
 
 }  // namespace rogue::items::effects

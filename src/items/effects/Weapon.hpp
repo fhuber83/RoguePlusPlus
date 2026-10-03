@@ -3,17 +3,22 @@
 /*
  * Weapons: throwing one, wielding one, and what happens to an item that
  * lands on the floor.
- *
- * Included by rogue.h after entities/Item.hpp (Item).
  */
+
+#include <string_view>
 
 #include "items/Kinds.hpp"
 
 namespace rogue {
 
-class Item;
+struct Item;
 
 namespace items::effects {
+
+// The flash of a vorpal weapon: when it is made, and when it first sees its enemy
+inline constexpr std::string_view intense = " of intense white light";
+// a std::format string for msg()
+inline constexpr std::string_view flashmsg = "your {} gives off a flash{}";
 
 /*
  * launched_by:

@@ -3,15 +3,16 @@
 /*
  * Combat: the rogue attacking a monster and a monster attacking him, saving
  * throws, killing a monster and gaining experience levels.
- *
- * Included by rogue.h after the legacy types (str_t), core/Maybe.hpp (Maybe)
- * and entities/Item.hpp (Item)/Creature.hpp (Creature).
  */
+
+#include "core/Coord.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Stats.hpp"
 
 namespace rogue {
 
-class Item;
-class Creature;
+struct Item;
+struct Creature;
 
 namespace rules {
 

@@ -14,7 +14,25 @@
  * Copyright (C) 1983 by Mel Sibony, Jon Lane (AI Design update for the IBMPC)
  */
 
-#include "rogue.h"
+#include "game/GameLoop.hpp"
+
+#include <format>
+#include <optional>
+#include <string>
+
+#include "core/Coord.hpp"
+#include "game/CommandDispatcher.hpp"
+#include "game/Endings.hpp"
+#include "game/Game.hpp"
+#include "game/Keyboard.hpp"
+#include "game/Messages.hpp"
+#include "game/NewGame.hpp"
+#include "game/StatusLine.hpp"
+#include "persistence/SaveCommands.hpp"
+#include "platform/Session.hpp"
+#include "ui/Display.hpp"
+#include "world/Look.hpp"
+#include "world/Rooms.hpp"
 
 namespace rogue {
 
@@ -27,7 +45,7 @@ namespace {
 void
 endit()
 {
-	fatal("Ok, if you want to exit that badly, I'll have to allow it\n");
+	platform::fatal("Ok, if you want to exit that badly, I'll have to allow it\n");
 }
 
 }  // namespace
@@ -44,12 +62,12 @@ playit(const std::optional<std::string> &sname)
 
 	if (sname) {
 		setup();			// first: the save has the terse and expert toggles
-		restore(*sname);
-		display().show_cursor(false);
+		persistence::restore(*sname);
+		ui::display().show_cursor(false);
 	} else {
 		player.old_pos.x = player.body.t_pos.x;
 		player.old_pos.y = player.body.t_pos.y;
-		player.old_room = roomin(player.body.t_pos);
+		player.old_room = world::roomin(player.body.t_pos);
 	}
 	while (game().playing)
 		command();			/* Command execution */
@@ -67,23 +85,23 @@ quit()
 	unsigned char answer;
 
 	game().message.end = 0;
-	here = display().write("");  // where the cursor was
-	display().clear_line(0);
+	here = ui::display().write("");  // where the cursor was
+	ui::display().clear_line(0);
 	if (!game().options.terse)
-		display().write_at(0, 0, "Do you wish to ");
+		ui::display().write_at(0, 0, "Do you wish to ");
 	str_attr("end your quest now (%Yes/%No) ?");
-	look(false);
+	world::look(false);
 	answer = readchar();
 	if (answer == 'y' || answer == 'Y') {
-		display().clear_page();
-		display().write_at(0, 0, std::format("You quit with {} gold pieces\n",
+		ui::display().clear_page();
+		ui::display().write_at(0, 0, std::format("You quit with {} gold pieces\n",
 			static_cast<unsigned>(game().player.purse)));
 		score(game().player.purse, 1, 0);
-		fatal("");
+		platform::fatal("");
 	} else {
-		display().clear_line(0);
+		ui::display().clear_line(0);
 		status();
-		display().write_at(here.y, here.x, "");
+		ui::display().write_at(here.y, here.x, "");
 		game().message.end = 0;
 		game().turn.count = 0;
 	}

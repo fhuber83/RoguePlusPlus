@@ -7,9 +7,32 @@
  * @(#)daemons.c	5.1 (Berkeley) 5/11/82
  */
 
-#include "rogue.h"
+#include "rules/Hunger.hpp"
+
+#include <optional>
+
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Item.hpp"
+#include "game/Endings.hpp"
+#include "game/Game.hpp"
+#include "game/Messages.hpp"
+#include "game/Pool.hpp"
+#include "items/Inventory.hpp"
+#include "items/Kinds.hpp"
+#include "items/effects/Ring.hpp"
+#include "rules/Combat.hpp"
+#include "rules/Durations.hpp"
 
 namespace rogue::rules {
+
+namespace {
+
+constexpr int MORETIME = 150;		/* food left when he gets weak; twice that, hungry */
+constexpr int STOMACHSIZE = 2000;	/* food a stomach holds */
+constexpr int STARVETIME = 850;		/* how far below empty he starves */
+
+}  // namespace
 
 /*
  * eat:
@@ -22,7 +45,7 @@ eat()
 	Food which;
 	rogue::Player &player = game().player;
 
-	if (!(obj = get_item("eat", ItemKind::Food)))
+	if (!(obj = items::get_item("eat", ItemKind::Food)))
 		return;
 	if (obj->o_type != ItemKind::Food)
 	{
@@ -84,7 +107,7 @@ stomach()
 		if (player.no_command || rnd(5) != 0)
 			return;
 		player.no_command += rnd(8) + 4;
-		player.body.t_flags.unset(ISRUN);
+		player.body.t_flags.unset(CreatureFlag::Running);
 		game().turn.running = false;
 		game().turn.count = 0;
 		player.hungry_state = 3;
@@ -97,7 +120,7 @@ stomach()
 		 * If you are in 40 column mode use food twice as fast
 		 * (e.g. 3-(80/40) = 1, 3-(40/40) = 2 : pretty gross huh?)
 		 */
-		deltafood = ring_eat(Hand::Left) + ring_eat(Hand::Right) + 1;
+		deltafood = items::effects::ring_eat(Hand::Left) + items::effects::ring_eat(Hand::Right) + 1;
 		if (game().options.terse)
 			deltafood *= 2;
 		player.food_left -= deltafood;

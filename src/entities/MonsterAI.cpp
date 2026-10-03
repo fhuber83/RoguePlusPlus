@@ -4,7 +4,36 @@
  * chase.c	1.32	(A.I. Design) 12/12/84
  */
 
-#include "rogue.h"
+#include "entities/MonsterAI.hpp"
+
+#include <algorithm>
+#include <cstdlib>
+#include <optional>
+
+#include "core/Config.hpp"
+#include "core/Coord.hpp"
+#include "core/Glyphs.hpp"
+#include "core/Math.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Item.hpp"
+#include "entities/MonsterCatalog.hpp"
+#include "game/Game.hpp"
+#include "game/Id.hpp"
+#include "game/Messages.hpp"
+#include "game/Movement.hpp"
+#include "game/Pool.hpp"
+#include "items/ItemCatalog.hpp"
+#include "items/Kinds.hpp"
+#include "items/effects/Wand.hpp"
+#include "items/effects/Weapon.hpp"
+#include "rules/Combat.hpp"
+#include "ui/Display.hpp"
+#include "world/Map.hpp"
+#include "world/MapFlags.hpp"
+#include "world/Room.hpp"
+#include "world/RoomRef.hpp"
+#include "world/Rooms.hpp"
 
 namespace rogue::entities {
 
@@ -19,7 +48,7 @@ constexpr int DRAGONSHOT = 5;	/* one chance in DRAGONSHOT that a dragon will fla
 
 namespace {
 
-coord ch_ret;			/* Where chasing takes	you */
+Coord ch_ret;			/* Where chasing takes	you */
 
 }  // namespace
 
@@ -35,10 +64,10 @@ runners()
 	rogue::Player &player = game().player;
 
 	for (tp = game().level.monsters.first(); tp; tp = game().level.monsters.after(*tp)) {
-		if (!tp->t_flags.test(ISHELD) && tp->t_flags.test(ISRUN)) {
+		if (!tp->t_flags.test(CreatureFlag::Held) && tp->t_flags.test(CreatureFlag::Running)) {
 			const CreatureId id = *game().pool.id_of(*tp);
 			dist = distance_sq(player.body.t_pos, tp->t_pos);
-			if	(!(tp->t_flags.test(ISSLOW) || (tp->t_type == 'S' && dist > 3)) || tp->t_turn)
+			if	(!(tp->t_flags.test(CreatureFlag::Slow) || (tp->t_type == 'S' && dist > 3)) || tp->t_turn)
 				do_chase(*tp);
 			/*
 			 * do_chase() can end in attack(), which removes tp from the
@@ -50,12 +79,12 @@ runners()
 			 */
 			if (!game().level.monsters.contains(id))
 				break;
-			if (tp->t_flags.test(ISHASTE))
+			if (tp->t_flags.test(CreatureFlag::Hasted))
 				do_chase(*tp);
 			if (!game().level.monsters.contains(id))
 				break;
 			dist = distance_sq(player.body.t_pos, tp->t_pos);
-			if (tp->t_flags.test(ISFLY) && dist > 3)
+			if (tp->t_flags.test(CreatureFlag::Flying) && dist > 3)
 				do_chase(*tp);
 			if (!game().level.monsters.contains(id))
 				break;
@@ -78,23 +107,22 @@ do_chase(Creature &th)
 	Maybe<Item> obj;
 	std::optional<RoomRef> oroom;
 	std::optional<RoomRef> rer, ree;	/* room of chaser, room of chasee */
-	coord target;				/* Temporary	destination for	chaser */
+	Coord target;				/* Temporary	destination for	chaser */
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 
 	rer	= th.t_room;		/* Find room of chaser */
-	if (th.t_flags.test(ISGREED) && level.room(*rer).r_goldval == 0)
+	if (th.t_flags.test(CreatureFlag::Greedy) && level.room(*rer).r_goldval == 0)
 		th.t_dest = Hero{};	/*	If gold	has been taken,	run after hero */
 	ree	= player.body.t_room;
 	if (th.t_dest != Destination(Hero{}))	/*	Find room of chasee */
-		ree = roomin(game().where(*th.t_dest));
+		ree = world::roomin(game().where(*th.t_dest));
 	if (!ree)
 		return;
 	/*
 	 * We don't	count doors as inside rooms for	this routine
 	 */
 	door = (level.at(th.t_pos) == DOOR);
-
 
 	/*
 	 * If the object of	our desire is in a different room,
@@ -104,7 +132,7 @@ do_chase(Creature &th)
 	for (;;) {
 		if (rer != ree && !level.room(*rer).r_flags.test(RoomFlag::Maze))
 		{
-			const Room &from = level.room(*rer);
+			const world::Room &from = level.room(*rer);
 			const Coord dest = game().where(*th.t_dest);
 
 			for (i	= 0; i < from.r_nexits;	i++) {	/*	loop through doors */
@@ -130,13 +158,13 @@ do_chase(Creature &th)
 				&&	(th.t_pos.y ==	player.body.t_pos.y || th.t_pos.x == player.body.t_pos.x
 				 || abs(th.t_pos.y - player.body.t_pos.y) == abs(th.t_pos.x - player.body.t_pos.x))
 				&&	((dist=distance_sq(th.t_pos, player.body.t_pos)) > 2
-				 && dist <= BOLT_LENGTH	* BOLT_LENGTH)
-				&&	!th.t_flags.test(ISCANC) && rnd(DRAGONSHOT) == 0)
+				 && dist <= items::effects::BOLT_LENGTH	* items::effects::BOLT_LENGTH)
+				&&	!th.t_flags.test(CreatureFlag::Cancelled) && rnd(DRAGONSHOT) == 0)
 			{
 				game().turn.running = false;
 				game().turn.delta.y = sign(player.body.t_pos.y - th.t_pos.y);
 				game().turn.delta.x = sign(player.body.t_pos.x - th.t_pos.x);
-				fire_bolt(th.t_pos, game().turn.delta, th.t_type == 'D' ? "flame" : "frost");
+				items::effects::fire_bolt(th.t_pos, game().turn.delta, th.t_type == 'D' ? "flame" : "frost");
 				return;
 			}
 		}
@@ -149,7 +177,7 @@ do_chase(Creature &th)
 	 */
 	chase(th, target);
 	if (ch_ret == player.body.t_pos) {
-		attack(th);
+		rules::attack(th);
 		return;
 	} else if (ch_ret == game().where(*th.t_dest)) {
 		for (obj = level.objects.first(); obj; obj = level.objects.after(*obj))
@@ -160,8 +188,8 @@ do_chase(Creature &th)
 				th.t_pack.push_front(*obj);
 				oldchar = level.at(obj->o_pos) =
 				level.room(*th.t_room).r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
-				if (cansee(obj->o_pos.y, obj->o_pos.x))
-					display().draw_tile(obj->o_pos, oldchar);
+				if (world::cansee(obj->o_pos.y, obj->o_pos.x))
+					ui::display().draw_tile(obj->o_pos, oldchar);
 				th.t_dest = find_dest(th);
 				break;
 			}
@@ -172,19 +200,19 @@ do_chase(Creature &th)
 	 * If the chasing thing moved, update the screen
 	 */
 	if (th.t_oldch != '@') {
-		if	(th.t_oldch ==	' ' && cansee(th.t_pos.y, th.t_pos.x)
-			   && level.map[INDEX(th.t_pos.y,th.t_pos.x)] == FLOOR)
-			display().draw_tile(th.t_pos, FLOOR);
-		else if (th.t_oldch == FLOOR && !cansee(th.t_pos.y, th.t_pos.x)
-				&& !player.body.t_flags.test(SEEMONST))
-			display().draw_tile(th.t_pos, ' ');
+		if	(th.t_oldch ==	' ' && world::cansee(th.t_pos.y, th.t_pos.x)
+			   && level.map[world::INDEX(th.t_pos.y,th.t_pos.x)] == FLOOR)
+			ui::display().draw_tile(th.t_pos, FLOOR);
+		else if (th.t_oldch == FLOOR && !world::cansee(th.t_pos.y, th.t_pos.x)
+				&& !player.body.t_flags.test(CreatureFlag::SeeMonst))
+			ui::display().draw_tile(th.t_pos, ' ');
 		else
-			display().draw_tile(th.t_pos, th.t_oldch);
+			ui::display().draw_tile(th.t_pos, th.t_oldch);
 	}
 	oroom = th.t_room;
 	if (!(ch_ret == th.t_pos))
 	{
-		if (!(th.t_room = roomin(ch_ret))) {
+		if (!(th.t_room = world::roomin(ch_ret))) {
 			th.t_room	= oroom;
 			return;
 		}
@@ -194,14 +222,14 @@ do_chase(Creature &th)
 	}
 
 	if (see_monst(th)) {
-		th.t_oldch = display().tile_at(ch_ret);
-		display().draw_tile(ch_ret, th.t_disguise,
-				level.flags_at(ch_ret).test(MapFlag::Passage) ? TileStyle::Inverse : TileStyle::Normal);
+		th.t_oldch = ui::display().tile_at(ch_ret);
+		ui::display().draw_tile(ch_ret, th.t_disguise,
+				level.flags_at(ch_ret).test(MapFlag::Passage) ? ui::TileStyle::Inverse : ui::TileStyle::Normal);
 	}
-	else if (player.body.t_flags.test(SEEMONST))
+	else if (player.body.t_flags.test(CreatureFlag::SeeMonst))
 	{
-		th.t_oldch = display().tile_at(ch_ret);
-		display().draw_tile(ch_ret, th.t_type, TileStyle::Inverse);
+		th.t_oldch = ui::display().tile_at(ch_ret);
+		ui::display().draw_tile(ch_ret, th.t_type, ui::TileStyle::Inverse);
 	}
 	else
 		th.t_oldch = '@';
@@ -220,11 +248,11 @@ bool
 see_monst(const Creature &mp)
 {
 	rogue::Player &player = game().player;
-	if (player.body.t_flags.test(ISBLIND))
+	if (player.body.t_flags.test(CreatureFlag::Blind))
 		return	false;
-	if (mp.t_flags.test(ISINVIS) && !player.body.t_flags.test(CANSEE))
+	if (mp.t_flags.test(CreatureFlag::Invisible) && !player.body.t_flags.test(CreatureFlag::SeeInvisible))
 		return	false;
-	if (distance_sq(mp.t_pos, player.body.t_pos) >= LAMPDIST &&
+	if (distance_sq(mp.t_pos, player.body.t_pos) >= world::LAMPDIST &&
 	  ((mp.t_room != player.body.t_room || game().level.room(*mp.t_room).r_flags.test(RoomFlag::Dark) ||
 	  game().level.room(*mp.t_room).r_flags.test(RoomFlag::Maze))))
 		return false;
@@ -233,10 +261,10 @@ see_monst(const Creature &mp)
 	 * time, give the player a hint as to what that weapon is good for.
 	 */
 	if (player.weapon_item() && mp.t_type == player.weapon_item()->o_enemy
-	  && !player.weapon_item()->o_flags.test(DIDFLASH))
+	  && !player.weapon_item()->o_flags.test(ItemFlag::DidFlash))
 	{
-		player.weapon_item()->o_flags.set(DIDFLASH);
-		msg(flashmsg, w_names[player.weapon_item()->which<WeaponType>()], game().options.brief() ? "" : intense);
+		player.weapon_item()->o_flags.set(ItemFlag::DidFlash);
+		msg(items::effects::flashmsg, items::w_names[player.weapon_item()->which<WeaponType>()], game().options.brief() ? "" : items::effects::intense);
 	}
 	return true;
 }
@@ -259,8 +287,8 @@ start_run(Coord runner)
 		/*
 		 *	Start the beastie running
 		 */
-		tp->t_flags.set(ISRUN);
-		tp->t_flags.unset(ISHELD);
+		tp->t_flags.set(CreatureFlag::Running);
+		tp->t_flags.unset(CreatureFlag::Held);
 		tp->t_dest	= find_dest(*tp);
 	}
 	else if constexpr (rogue::config::debug_checks)
@@ -289,7 +317,7 @@ chase(Creature &tp, Coord ee)
 	 * are slightly confused all of the	time, and bats are
 	 * quite confused all the time
 	 */
-	if ((tp.t_flags.test(ISHUH)	&& rnd(5) != 0)	|| (tp.t_type == 'P' && rnd(5)	== 0)
+	if ((tp.t_flags.test(CreatureFlag::Confused)	&& rnd(5) != 0)	|| (tp.t_type == 'P' && rnd(5)	== 0)
 		|| (tp.t_type	== 'B' && rnd(2) == 0))
 	{
 		/*
@@ -301,7 +329,7 @@ chase(Creature &tp, Coord ee)
 		 * Small chance that it will become un-confused
 		 */
 		if (rnd(30) ==	17)
-			tp.t_flags.unset(ISHUH);
+			tp.t_flags.unset(CreatureFlag::Confused);
 	}
 	/*
 	 * Otherwise, find the empty spot next to the chaser that is
@@ -325,10 +353,10 @@ chase(Creature &tp, Coord ee)
 			{
 				const Coord tryp = {x, y};
 
-				if (offmap(y,	x) || !diag_ok(er, tryp))
+				if (world::offmap(y,	x) || !world::diag_ok(er, tryp))
 					continue;
-				ch = winat(y,	x);
-				if (step_ok(ch))
+				ch = world::winat(y,	x);
+				if (world::step_ok(ch))
 				{
 					/*
 					 * If it is a scroll, it might be	a scare	monster	scroll
@@ -388,7 +416,7 @@ find_dest(const Creature &tp)
 	{
 	if (obj->o_type == ItemKind::Scroll && obj->which<Scroll>() == Scroll::ScareMonster)
 		continue;
-	if (roomin(obj->o_pos) == rp && rnd(100) < prob)
+	if (world::roomin(obj->o_pos) == rp && rnd(100) < prob)
 	{
 		// unless another monster is after it already
 		ItemId id = *game().pool.id_of(obj);
@@ -413,7 +441,7 @@ find_dest(const Creature &tp)
 
 namespace {
 
-coord slimy;
+Coord slimy;
 
 bool	new_slime(Creature &tp);
 
@@ -428,9 +456,9 @@ slime_split(Creature &tp)
 		return;
 	msg("The slime divides.  Ick!");
 	new_monster(*nslime, 'S', slimy);
-	if (cansee(slimy.y, slimy.x)) {
+	if (world::cansee(slimy.y, slimy.x)) {
 		nslime->t_oldch = game().level.at(slimy);
-		display().draw_tile(slimy, 'S');
+		ui::display().draw_tile(slimy, 'S');
 	}
 	start_run(slimy);
 }
@@ -445,7 +473,7 @@ new_slime(Creature &tp)
 	Maybe<Creature> ntp;
 
 	ret = false;
-	tp.t_flags.set(ISFLY);
+	tp.t_flags.set(CreatureFlag::Flying);
 	std::optional<Coord> sp = plop_monster((ty = tp.t_pos.y), (tx = tp.t_pos.x));
 	if (!sp) {
 		/*
@@ -454,8 +482,8 @@ new_slime(Creature &tp)
 		 */
 		for (y = ty -1; y <= ty+1; y++)
 			for (x = tx-1; x <= tx+1; x++)
-				if (winat(y, x) == 'S' && (ntp = moat(y, x))) {
-					if (ntp->t_flags.test(ISFLY))
+				if (world::winat(y, x) == 'S' && (ntp = moat(y, x))) {
+					if (ntp->t_flags.test(CreatureFlag::Flying))
 						continue;				/* Already done this one */
 					if (new_slime(*ntp)) {
 						y = ty+2;
@@ -466,7 +494,7 @@ new_slime(Creature &tp)
 		ret = true;
 		slimy = *sp;
 	}
-	tp.t_flags.unset(ISFLY);
+	tp.t_flags.unset(CreatureFlag::Flying);
 	return ret;
 }
 
@@ -495,13 +523,13 @@ plop_monster(int r, int c)
 			/*
 			 * Don't put a monster in top of the player.
 			 */
-			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || offmap(y,x))
+			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || world::offmap(y,x))
 				continue;
 			/*
 			 * Or anything else nasty
 			 */
-			if (step_ok(ch = winat(y, x))) {
-				if (ch == SCROLL && find_obj(y, x)->which<Scroll>() == Scroll::ScareMonster)
+			if (world::step_ok(ch = world::winat(y, x))) {
+				if (ch == SCROLL && world::find_obj(y, x)->which<Scroll>() == Scroll::ScareMonster)
 					continue;
 				/*
 				 * Get first available spot with 100% chance,

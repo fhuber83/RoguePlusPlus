@@ -5,7 +5,21 @@
  * (#)daemon.c	5.2 (Berkeley) 6/18/82
  */
 
-#include "rogue.h"
+#include "rules/Scheduler.hpp"
+
+#include <array>
+#include <optional>
+
+#include "core/Config.hpp"
+#include "core/Maybe.hpp"
+#include "entities/MonsterAI.hpp"
+#include "game/Game.hpp"
+#include "game/Messages.hpp"
+#include "items/effects/Potion.hpp"
+#include "rules/Conditions.hpp"
+#include "rules/Hunger.hpp"
+#include "rules/Regeneration.hpp"
+#include "rules/Wandering.hpp"
 
 namespace rogue::rules {
 
@@ -126,14 +140,14 @@ fire(Event event)
 	{
 		case Event::Doctor: doctor(); break;
 		case Event::Stomach: stomach(); break;
-		case Event::Runners: runners(); break;
+		case Event::Runners: entities::runners(); break;
 		case Event::Swander: swander(); break;
 		case Event::RollWander: rollwand(); break;
 		case Event::Unconfuse: unconfuse(); break;
 		case Event::Unsee: unsee(); break;
 		case Event::Sight: sight(); break;
 		case Event::NoHaste: nohaste(); break;
-		case Event::TurnSeeOff: turn_see(true); break;
+		case Event::TurnSeeOff: items::effects::turn_see(true); break;
 		case Event::None: break;
 	}
 }

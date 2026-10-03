@@ -1,8 +1,31 @@
+#include "items/effects/Weapon.hpp"
+
 #include <chrono>
+#include <format>
+#include <string>
 #include <thread>
 #include <variant>
 
-#include "rogue.h"
+#include "core/Coord.hpp"
+#include "core/Dice.hpp"
+#include "core/Glyphs.hpp"
+#include "core/KindTable.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Item.hpp"
+#include "entities/MonsterCatalog.hpp"
+#include "game/Game.hpp"
+#include "game/Messages.hpp"
+#include "game/Pool.hpp"
+#include "items/Identification.hpp"
+#include "items/Inventory.hpp"
+#include "items/ItemCatalog.hpp"
+#include "items/Kinds.hpp"
+#include "rules/Combat.hpp"
+#include "ui/Display.hpp"
+#include "world/Map.hpp"
+#include "world/MapFlags.hpp"
+#include "world/Rooms.hpp"
 
 namespace rogue::items::effects {
 
@@ -21,13 +44,13 @@ constexpr KindTable<WeaponType, init_weps> init_dam = {
 	{"2d4",	"1d3",	NONE,     {}},            	/* Mace */
 	{"3d4",	"1d2",	NONE,     {}},            	/* Long sword */
 	{"1d1",	"1d1",	NONE,     {}},            	/* Bow */
-	{"1d1",	"2d3",	launched_by(WeaponType::ShortBow), ISMANY|ISMISL},	/* Arrow */
-	{"1d6",	"1d4",	NONE,     ISMISL},       	/* Dagger */
+	{"1d1",	"2d3",	launched_by(WeaponType::ShortBow), ItemFlag::Many|ItemFlag::Missile},	/* Arrow */
+	{"1d6",	"1d4",	NONE,     ItemFlag::Missile},       	/* Dagger */
 	{"4d4",	"1d2",	NONE,     {}},            	/* 2h sword */
-	{"1d1",	"1d3",	NONE,     ISMANY|ISMISL},	/* Dart */
+	{"1d1",	"1d3",	NONE,     ItemFlag::Many|ItemFlag::Missile},	/* Dart */
 	{"1d1",	"1d1",	NONE,     {}},            	/* Crossbow */
-	{"1d2",	"2d5",	launched_by(WeaponType::Crossbow), ISMANY|ISMISL},	/* Crossbow bolt */
-	{"2d3",	"1d6",	NONE,     ISMISL}        	/* Spear */
+	{"1d2",	"2d5",	launched_by(WeaponType::Crossbow), ItemFlag::Many|ItemFlag::Missile},	/* Crossbow bolt */
+	{"2d3",	"1d6",	NONE,     ItemFlag::Missile}        	/* Spear */
 };
 
 }  // namespace
@@ -89,7 +112,7 @@ missile(int ydelta, int xdelta)
 	 * One that hits is used up. (The original forgot it, which kept
 	 * its slot taken for the rest of the game.)
 	 */
-	if (!moat(obj->o_pos.y, obj->o_pos.x)
+	if (!entities::moat(obj->o_pos.y, obj->o_pos.x)
 		|| !hit_monster(obj->o_pos.y, obj->o_pos.x, *obj))
 			fall(*obj, true);
 	else
@@ -117,22 +140,22 @@ do_motion(Item &obj, int ydelta, int xdelta)
 		/*
 		 * Erase the old one
 		 */
-		if (under != '@' && !(obj.o_pos == player.body.t_pos) && cansee(obj.o_pos.y, obj.o_pos.x))
-			display().draw_tile(obj.o_pos, under);
+		if (under != '@' && !(obj.o_pos == player.body.t_pos) && world::cansee(obj.o_pos.y, obj.o_pos.x))
+			ui::display().draw_tile(obj.o_pos, under);
 		/*
 		 * Get the new position
 		 */
 		obj.o_pos.y += ydelta;
 		obj.o_pos.x += xdelta;
 
-		if (step_ok(ch = winat(obj.o_pos.y, obj.o_pos.x)) && ch != DOOR) {
+		if (world::step_ok(ch = world::winat(obj.o_pos.y, obj.o_pos.x)) && ch != DOOR) {
 			/*
 			 * It hasn't hit anything yet, so display it
 			 * If it alright.
 			 */
-			if (cansee(obj.o_pos.y, obj.o_pos.x)) {
+			if (world::cansee(obj.o_pos.y, obj.o_pos.x)) {
 				under = game().level.at(obj.o_pos);
-				display().draw_tile(obj.o_pos, glyph_of(obj.o_type));
+				ui::display().draw_tile(obj.o_pos, glyph_of(obj.o_type));
 				tick_pause();
 			} else
 				under = '@';
@@ -182,17 +205,17 @@ fall(Item &obj, bool pr)
 	{
 		const Coord fpos = std::get<Coord>(landing);
 
-		index = INDEX(fpos.y, fpos.x);
+		index = world::INDEX(fpos.y, fpos.x);
 		level.map[index] = glyph_of(obj.o_type);
 		obj.o_pos = fpos;
-		if (cansee(fpos.y, fpos.x))
+		if (world::cansee(fpos.y, fpos.x))
 		{
-			display().draw_tile(fpos, glyph_of(obj.o_type),
+			ui::display().draw_tile(fpos, glyph_of(obj.o_type),
 					(level.flags_at(obj.o_pos).test(MapFlag::Passage) ||
 					 level.flags_at(obj.o_pos).test(MapFlag::Maze))
-						? TileStyle::Inverse : TileStyle::Normal);
-			if (moat(fpos.y,fpos.x))
-				moat(fpos.y,fpos.x)->t_oldch = glyph_of(obj.o_type);
+						? ui::TileStyle::Inverse : ui::TileStyle::Normal);
+			if (entities::moat(fpos.y,fpos.x))
+				entities::moat(fpos.y,fpos.x)->t_oldch = glyph_of(obj.o_type);
 		}
 		level.objects.push_front(obj);
 		return;
@@ -218,7 +241,7 @@ init_weapon(Item &weap, WeaponType type)
 	weap.o_hurldmg = iwp.iw_hrl;
 	weap.o_launch = iwp.iw_launch;
 	weap.o_flags = iwp.iw_flags;
-	if (weap.o_flags.test(ISMANY))
+	if (weap.o_flags.test(ItemFlag::Many))
 	{
 		weap.o_count = rnd(8) + 8;
 		weap.o_group = game().items.group++;
@@ -234,10 +257,10 @@ init_weapon(Item &weap, WeaponType type)
 bool
 hit_monster(int y, int x, Item &obj)
 {
-	Maybe<Creature> mo = moat(y, x);
+	Maybe<Creature> mo = entities::moat(y, x);
 
 	if (mo)
-		return fight({x, y}, mo->t_type, obj, true);
+		return rules::fight({x, y}, mo->t_type, obj, true);
 	return false;
 }
 
@@ -318,15 +341,15 @@ fallpos(const Item &obj)
 			 * put the object there, set it in the level list
 			 * and re-draw the room if he can see it
 			 */
-			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || offmap(y,x))
+			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || world::offmap(y,x))
 				continue;
 			if ((ch = game().level.at(y, x)) == FLOOR || ch == PASSAGE) {
 				if (rnd(++cnt) == 0)
 					newpos = {x, y};
 				continue;
 			}
-			if (step_ok(ch)
-				&& (onfloor = find_obj(y, x))
+			if (world::step_ok(ch)
+				&& (onfloor = world::find_obj(y, x))
 				&& onfloor->o_type == obj.o_type
 				&& onfloor->o_group
 				&& onfloor->o_group == obj.o_group)
@@ -347,7 +370,7 @@ fallpos(const Item &obj)
 void
 tick_pause()
 {
-	display().flush();
+	ui::display().flush();
 	std::this_thread::sleep_for(std::chrono::milliseconds(55));
 }
 

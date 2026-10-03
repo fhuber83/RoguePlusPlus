@@ -11,11 +11,20 @@
  * so a game can't be played on from the same save twice.
  */
 
+#include "persistence/SaveCommands.hpp"
+
 #include <cstdio>
 #include <string>
 
+#include "core/Glyphs.hpp"
+#include "game/CommandDispatcher.hpp"
+#include "game/Game.hpp"
+#include "game/Messages.hpp"
+#include "game/StatusLine.hpp"
 #include "persistence/SaveGame.hpp"
-#include "rogue.h"
+#include "platform/Session.hpp"
+#include "ui/Display.hpp"
+#include "ui/Input.hpp"
 
 namespace rogue::persistence {
 
@@ -28,7 +37,7 @@ map_view()
 	MapView view;
 	for (int r = 0; r < map_rows; r++)
 		for (int x = 0; x < map_cols; x++)
-			view[r][x] = {display().tile_at({x, r + 1}), display().tile_style_at({x, r + 1})};
+			view[r][x] = {ui::display().tile_at({x, r + 1}), ui::display().tile_style_at({x, r + 1})};
 	return view;
 }
 
@@ -44,7 +53,7 @@ save_game()
 {
 	game().turn.after = false;
 	msg("save file ({})? ", game().options.save_file);
-	auto file = input().read_line(MAXSTR - 1);
+	auto file = ui::input().read_line(MAXSTR - 1);
 	if (!file) {
 		msg("");
 		return;
@@ -59,7 +68,7 @@ save_game()
 		msg("can't save: {}", saved.error().detail);
 		return;
 	}
-	fatal("Saved the game in {}\n", *file);
+	platform::fatal("Saved the game in {}\n", *file);
 }
 
 /*
@@ -74,12 +83,12 @@ restore(const std::string &file)
 
 	platform::start_terminal(game().options.monochrome);
 	if (auto loaded = read_save(file, game(), view); !loaded)
-		fatal("Can't restore {}: {}\n", file, loaded.error().detail);
+		platform::fatal("Can't restore {}: {}\n", file, loaded.error().detail);
 	if (std::remove(file.c_str()) != 0)
-		fatal("Can't delete {} after restoring it, so the game is not restored\n", file);
+		platform::fatal("Can't delete {} after restoring it, so the game is not restored\n", file);
 	for (int r = 0; r < map_rows; r++)
 		for (int x = 0; x < map_cols; x++)
-			display().draw_tile({x, r + 1}, view[r][x].glyph, view[r][x].style);
+			ui::display().draw_tile({x, r + 1}, view[r][x].glyph, view[r][x].style);
 	status();
 	resume_saved_game();
 }

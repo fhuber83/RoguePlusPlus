@@ -3,13 +3,15 @@
 /*
  * Naming and display of items: the inventory string for one item, and the
  * "discovered" screen listing what the player has identified so far.
- *
- * Included by rogue.h after entities/Item.hpp (Item).
  */
+
+#include <optional>
+#include <string>
+#include <string_view>
 
 namespace rogue {
 
-class Item;
+struct Item;
 
 namespace items {
 

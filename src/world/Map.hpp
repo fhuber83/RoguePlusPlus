@@ -1,18 +1,15 @@
 #pragma once
 
+/*
+ * The squares of the level map: where a square is kept, whether it is on
+ * the map, and what stands, lies or can be stepped on there.
+ */
+
 #include "core/Maybe.hpp"
 
 namespace rogue {
 struct Item;
 }
-
-/*
- * The squares of the level map: where a square is kept, whether it is on
- * the map, and what stands, lies or can be stepped on there.
- *
- * Game.hpp includes this for INDEX(); the rest of the game gets it through
- * rogue.h.
- */
 
 namespace rogue::world {
 

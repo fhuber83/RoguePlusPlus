@@ -11,7 +11,6 @@
 
 #include "core/Coord.hpp"
 #include "core/Glyphs.hpp"
-#include "core/KindTable.hpp"
 #include "core/Maybe.hpp"
 #include "entities/Creature.hpp"
 #include "entities/Item.hpp"

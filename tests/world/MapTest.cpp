@@ -1,12 +1,19 @@
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <set>
 
-#include "rogue.h"
+#include "core/Glyphs.hpp"
+#include "game/Game.hpp"
+#include "world/Map.hpp"
+#include "world/Trap.hpp"
+#include "world/Traps.hpp"
 
-using rogue::world::INDEX;
-using rogue::world::offmap;
-using rogue::world::step_ok;
+namespace rogue {
+
+using world::INDEX;
+using world::offmap;
+using world::step_ok;
 
 // The map covers rows 1 to maxrow - 1 of every column
 TEST(Map, OffmapIsOutsideTheRowsAndColumns)
@@ -27,7 +34,7 @@ TEST(Map, IndexIsOneToOneOverTheMap)
 		for (int x = 0; x < MAXCOLS; x++) {
 			const int i = INDEX(y, x);
 			ASSERT_GE(i, 0);
-			ASSERT_LT(i, static_cast<int>(std::size(rogue::Level{}.map)));
+			ASSERT_LT(i, static_cast<int>(std::size(Level{}.map)));
 			seen.insert(i);
 		}
 	EXPECT_EQ(seen.size(), static_cast<std::size_t>((maxrow - 1) * MAXCOLS));
@@ -35,9 +42,9 @@ TEST(Map, IndexIsOneToOneOverTheMap)
 
 TEST(Map, StepOkOnFloorsNotWallsOrMonsters)
 {
-	for (unsigned char ch : {rogue::FLOOR, rogue::PASSAGE, rogue::DOOR, rogue::STAIRS, rogue::TRAP, rogue::GOLD, rogue::POTION})
+	for (unsigned char ch : {FLOOR, PASSAGE, DOOR, STAIRS, TRAP, GOLD, POTION})
 		EXPECT_TRUE(step_ok(ch)) << int(ch);
-	for (unsigned char ch : {static_cast<unsigned char>(' '), rogue::VWALL, rogue::HWALL, rogue::ULWALL, rogue::URWALL, rogue::LLWALL, rogue::LRWALL})
+	for (unsigned char ch : {static_cast<unsigned char>(' '), VWALL, HWALL, ULWALL, URWALL, LLWALL, LRWALL})
 		EXPECT_FALSE(step_ok(ch)) << int(ch);
 	for (unsigned char ch = 'A'; ch <= 'Z'; ch++)
 		EXPECT_FALSE(step_ok(ch)) << ch;
@@ -45,10 +52,12 @@ TEST(Map, StepOkOnFloorsNotWallsOrMonsters)
 
 TEST(Map, TrapNames)
 {
-	EXPECT_EQ(rogue::world::tr_name(rogue::Trap::Door), "a trapdoor");
-	EXPECT_EQ(rogue::world::tr_name(rogue::Trap::Arrow), "an arrow trap");
-	EXPECT_EQ(rogue::world::tr_name(rogue::Trap::Sleep), "a sleeping gas trap");
-	EXPECT_EQ(rogue::world::tr_name(rogue::Trap::Bear), "a beartrap");
-	EXPECT_EQ(rogue::world::tr_name(rogue::Trap::Teleport), "a teleport trap");
-	EXPECT_EQ(rogue::world::tr_name(rogue::Trap::Dart), "a poison dart trap");
+	EXPECT_EQ(world::tr_name(Trap::Door), "a trapdoor");
+	EXPECT_EQ(world::tr_name(Trap::Arrow), "an arrow trap");
+	EXPECT_EQ(world::tr_name(Trap::Sleep), "a sleeping gas trap");
+	EXPECT_EQ(world::tr_name(Trap::Bear), "a beartrap");
+	EXPECT_EQ(world::tr_name(Trap::Teleport), "a teleport trap");
+	EXPECT_EQ(world::tr_name(Trap::Dart), "a poison dart trap");
 }
+
+}  // namespace rogue

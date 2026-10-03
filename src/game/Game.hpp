@@ -311,5 +311,3 @@ inline int roll(int number, int sides) { return rng().roll(number, sides); }
 inline int spread(int nm) { return rng().spread(nm); }
 
 }  // namespace rogue
-
-using rogue::game;

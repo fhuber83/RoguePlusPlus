@@ -1,6 +1,11 @@
 #include <gtest/gtest.h>
 
-#include "rogue.h"
+#include <optional>
+
+#include "core/Glyphs.hpp"
+#include "entities/Item.hpp"
+
+namespace rogue {
 
 // Every kind that can lie on the map shows as its glyph, and reads back.
 TEST(ItemKind, GlyphRoundTrip)
@@ -14,15 +19,15 @@ TEST(ItemKind, GlyphRoundTrip)
 // The glyphs are still the CP437 codes the map and help screen use.
 TEST(ItemKind, Glyphs)
 {
-	EXPECT_EQ(glyph_of(ItemKind::Potion), rogue::POTION);
-	EXPECT_EQ(glyph_of(ItemKind::Gold), rogue::GOLD);
+	EXPECT_EQ(glyph_of(ItemKind::Potion), POTION);
+	EXPECT_EQ(glyph_of(ItemKind::Gold), GOLD);
 	EXPECT_EQ(glyph_of(ItemKind::Missile), '*');
 }
 
 TEST(ItemKind, OtherGlyphsAreNoItems)
 {
-	EXPECT_EQ(kind_of_glyph(rogue::FLOOR), std::nullopt);
-	EXPECT_EQ(kind_of_glyph(rogue::STAIRS), std::nullopt);
+	EXPECT_EQ(kind_of_glyph(FLOOR), std::nullopt);
+	EXPECT_EQ(kind_of_glyph(STAIRS), std::nullopt);
 	EXPECT_EQ(kind_of_glyph('*'), std::nullopt);
 	EXPECT_EQ(kind_of_glyph('A'), std::nullopt);
 }
@@ -40,3 +45,5 @@ TEST(ItemFilter, Matches)
 	EXPECT_TRUE(ItemFilter::callable().is_callable());
 	EXPECT_FALSE(ItemFilter::callable().is(ItemKind::None));
 }
+
+}  // namespace rogue

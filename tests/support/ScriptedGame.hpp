@@ -8,12 +8,18 @@
 #include <gtest/gtest.h>
 
 #include <deque>
+#include <optional>
 #include <string>
 
+#include "game/Game.hpp"
+#include "game/NewGame.hpp"
+#include "rules/Scheduler.hpp"
+#include "ui/Cell.hpp"
+#include "ui/Display.hpp"
 #include "ui/Screen.hpp"
 #include "ui/ScreenDisplay.hpp"
 #include "ui/Terminal.hpp"
-#include "rogue.h"
+#include "world/LevelGenerator.hpp"
 
 namespace rogue::test {
 
@@ -52,7 +58,7 @@ protected:
 		init_stones();
 		init_materials();
 		game().level.depth = 1;
-		new_level();
+		world::new_level();
 		game().options.menu = "off";	// ask for the letter, no inventory page
 	}
 	void TearDown() override
@@ -64,7 +70,7 @@ protected:
 
 	static ui::ScreenDisplay &screen_display()
 	{
-		return dynamic_cast<ui::ScreenDisplay &>(display());
+		return dynamic_cast<ui::ScreenDisplay &>(ui::display());
 	}
 
 	static void reset()

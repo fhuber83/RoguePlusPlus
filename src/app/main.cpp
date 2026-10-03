@@ -8,23 +8,39 @@
  *   rogue++ -d <seed>         play the dungeon generated from <seed>
  */
 
+#include <clocale>
 #include <cstdlib>
+#include <optional>
+#include <string>
 
+#include "core/Random.hpp"
+#include "game/Endings.hpp"
+#include "game/Game.hpp"
+#include "game/GameLoop.hpp"
+#include "game/Messages.hpp"
+#include "game/NewGame.hpp"
 #include "persistence/OptionsFile.hpp"
-#include "rogue.h"
+#include "platform/Session.hpp"
+#include "rules/Durations.hpp"
+#include "rules/Scheduler.hpp"
+#include "ui/Display.hpp"
+#include "world/LevelGenerator.hpp"
+
+namespace rogue {
+namespace {
 
 int
-main(int argc, char **argv)
+run(int argc, char **argv)
 {
 	char *curarg;
 	std::optional<std::string> savfile;
-	rogue::Random::Seed seed = rogue::Random::from_clock();
+	Random::Seed seed = Random::from_clock();
 
 	// Allow non-ASCII output in <curses.h>
 	setlocale(LC_ALL, "");
 
-	if (rogue::persistence::load_options(std::string(rogue::persistence::ENVFILE), game().options) == rogue::persistence::LoadResult::BadFormat)
-		fatal("rogue.opt: incorrect file format\n");
+	if (persistence::load_options(std::string(persistence::ENVFILE), game().options) == persistence::LoadResult::BadFormat)
+		platform::fatal("rogue.opt: incorrect file format\n");
 	/*
 	 * Parse the screen environment variable.  if the string starts with
 	 * "bw", then we force black and white mode.
@@ -41,16 +57,16 @@ main(int argc, char **argv)
 					 savfile = game().options.save_file;
 					 break;
 				case 's': case 'S':
-					rogue::platform::start_terminal(game().options.monochrome);
+					platform::start_terminal(game().options.monochrome);
 					game().noscore = true;
 					score(0,0,0);
-					fatal("");
+					platform::fatal("");
 					break;
 				case 'd': case 'D':
 					if (argc < 2)
-						fatal("-d requires a seed\n");
+						platform::fatal("-d requires a seed\n");
 					--argc;
-					seed = static_cast<rogue::Random::Seed>(std::strtoul(*(++argv), nullptr, 0));
+					seed = static_cast<Random::Seed>(std::strtoul(*(++argv), nullptr, 0));
 					break;
 			}
 		}
@@ -58,8 +74,8 @@ main(int argc, char **argv)
 			savfile = curarg;
 	}
 	if (!savfile) {
-		rogue::rng().reseed(seed);
-		rogue::platform::start_terminal(game().options.monochrome);
+		rng().reseed(seed);
+		platform::start_terminal(game().options.monochrome);
 		credits();
 
 		init_player();			/* Set up initial player stats */
@@ -69,18 +85,27 @@ main(int argc, char **argv)
 		init_stones();			/* Set up stone settings of rings */
 		init_materials();			/* Set up materials of wands */
 		setup();
-		display().curtain_down();
-		new_level();			/* Draw current level */
+		ui::display().curtain_down();
+		world::new_level();			/* Draw current level */
 		/*
 		 * Start up daemons and fuses
 		 */
-		start_daemon(Event::Doctor);
-		fuse(Event::Swander, wander_time());
-		start_daemon(Event::Stomach);
-		start_daemon(Event::Runners);
+		rules::start_daemon(rules::Event::Doctor);
+		rules::fuse(rules::Event::Swander, rules::wander_time());
+		rules::start_daemon(rules::Event::Stomach);
+		rules::start_daemon(rules::Event::Runners);
 		msg("Hello {}{}.", game().options.name, noterse(".  Welcome to the Dungeons of Doom"));
-		display().curtain_up();
+		ui::display().curtain_up();
 	}
 	playit(savfile);
 	return 0;
+}
+
+}  // namespace
+}  // namespace rogue
+
+int
+main(int argc, char **argv)
+{
+	return rogue::run(argc, argv);
 }

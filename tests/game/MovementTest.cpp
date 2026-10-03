@@ -1,22 +1,26 @@
 #include "../support/ScriptedGame.hpp"
 
+#include "game/Movement.hpp"
+
+namespace rogue {
+
 namespace {
 
 // A level of nothing but one passage, shaped like an L:
 //	(y 5, x 10..12), then down (y 6..8, x 12)
-class Movement : public rogue::test::ScriptedGame {
+class Movement : public test::ScriptedGame {
 protected:
 	void SetUp() override
 	{
 		ScriptedGame::SetUp();
-		rogue::Level &level = game().level;
-		level = rogue::Level();
+		Level &level = game().level;
+		level = Level();
 		std::ranges::fill(level.map, ' ');
 		for (Coord c : {Coord{10, 5}, Coord{11, 5}, Coord{12, 5}, Coord{12, 6}, Coord{12, 7}, Coord{12, 8}}) {
-			level.at(c) = rogue::PASSAGE;
+			level.at(c) = PASSAGE;
 			level.flags_at(c).set(MapFlag::Passage | MapFlag::Real);
 		}
-		rogue::Player &player = game().player;
+		Player &player = game().player;
 		player.body.t_pos = player.old_pos = {10, 5};
 		player.body.t_room = RoomRef::passage(0);
 	}
@@ -34,8 +38,8 @@ protected:
 // Running along a passage follows it around a corner
 TEST_F(Movement, RunTurnsTheCornerOfAPassage)
 {
-	rogue::Player &player = game().player;
-	rogue::Turn &turn = game().turn;
+	Player &player = game().player;
+	Turn &turn = game().turn;
 
 	run('l', 0, 1);
 	EXPECT_EQ(player.body.t_pos, (Coord{11, 5}));
@@ -50,8 +54,8 @@ TEST_F(Movement, RunTurnsTheCornerOfAPassage)
 // At a dead end the run stops, and the move takes no turn
 TEST_F(Movement, RunStopsAtADeadEnd)
 {
-	rogue::Player &player = game().player;
-	rogue::Turn &turn = game().turn;
+	Player &player = game().player;
+	Turn &turn = game().turn;
 
 	player.body.t_pos = player.old_pos = {12, 8};
 	run('j', 1, 0);
@@ -73,13 +77,15 @@ TEST_F(Movement, WalkIntoAWallStaysPut)
 // nowhere
 TEST_F(Movement, RndmoveStaysOnThePassage)
 {
-	const rogue::Creature &body = game().player.body;
+	const Creature &body = game().player.body;
 	for (Coord start : {Coord{10, 5}, Coord{12, 5}, Coord{12, 7}}) {
 		game().player.body.t_pos = start;
 		for (int i = 0; i < 200; i++) {
 			const Coord to = rndmove(body);
-			EXPECT_LE(rogue::distance_sq(to, start), 2);
-			EXPECT_EQ(game().level.at(to), rogue::PASSAGE) << to.x << "," << to.y;
+			EXPECT_LE(distance_sq(to, start), 2);
+			EXPECT_EQ(game().level.at(to), PASSAGE) << to.x << "," << to.y;
 		}
 	}
 }
+
+}  // namespace rogue

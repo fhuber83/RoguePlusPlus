@@ -2,12 +2,16 @@
 
 #include <set>
 
+#include "game/CommandDispatcher.hpp"
+
+namespace rogue {
+
 namespace {
 
-using Haste = rogue::test::ScriptedGame;
+using Haste = test::ScriptedGame;
 
 // The keys one command() reads, each a search, which takes one move
-int moves_of_a_command(rogue::test::ScriptedTerminal &terminal)
+int moves_of_a_command(test::ScriptedTerminal &terminal)
 {
 	constexpr int typed = 10;
 	terminal.keys.assign(typed, 's');
@@ -38,3 +42,5 @@ TEST_F(Haste, TwoOrThreeMovesACommandWhenHasted)
 	EXPECT_EQ(seen, (std::set<int>{2, 3}));		// rolled for each command
 	EXPECT_EQ(game().turn.moves_left, 0);
 }
+
+}  // namespace rogue

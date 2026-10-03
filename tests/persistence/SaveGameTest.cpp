@@ -3,26 +3,45 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <optional>
 #include <regex>
 #include <string>
+#include <string_view>
 #include <vector>
 
+#include "core/Dice.hpp"
+#include "core/Maybe.hpp"
+#include "core/Random.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Item.hpp"
+#include "entities/MonsterCatalog.hpp"
+#include "game/Game.hpp"
+#include "game/NewGame.hpp"
+#include "game/Pool.hpp"
+#include "items/Kinds.hpp"
 #include "persistence/SaveGame.hpp"
+#include "rules/Combat.hpp"
+#include "rules/Scheduler.hpp"
+#include "ui/Display.hpp"
 #include "ui/ScreenDisplay.hpp"
-#include "rogue.h"
+#include "world/LevelGenerator.hpp"
+#include "world/Room.hpp"
+#include "world/RoomRef.hpp"
 
-using rogue::persistence::MapView;
-using rogue::persistence::SaveError;
-using rogue::persistence::format_save;
-using rogue::persistence::parse_save;
-using rogue::persistence::read_save;
-using rogue::persistence::write_save;
+namespace rogue {
+
+using persistence::MapView;
+using persistence::SaveError;
+using persistence::format_save;
+using persistence::parse_save;
+using persistence::read_save;
+using persistence::write_save;
 
 namespace {
 
-rogue::ui::ScreenDisplay &screen_display()
+ui::ScreenDisplay &screen_display()
 {
-	return dynamic_cast<rogue::ui::ScreenDisplay &>(display());
+	return dynamic_cast<ui::ScreenDisplay &>(ui::display());
 }
 
 // Each test starts from a new game, made the way main() makes one
@@ -40,33 +59,33 @@ protected:
 
 	static void reset()
 	{
-		game().pool = rogue::Pool();
-		game().level = rogue::Level();
-		game().player = rogue::Player();
-		game().items = rogue::Items();
-		game().scheduler = rogue::rules::Scheduler();
-		game().turn = rogue::Turn();
-		game().message = rogue::MessageLine();
-		game().options = rogue::Options();
+		game().pool = Pool();
+		game().level = Level();
+		game().player = Player();
+		game().items = Items();
+		game().scheduler = rules::Scheduler();
+		game().turn = Turn();
+		game().message = MessageLine();
+		game().options = Options();
 	}
 
-	static void new_game(rogue::Random::Seed seed, int depth)
+	static void new_game(Random::Seed seed, int depth)
 	{
 		reset();
-		rogue::rng().reseed(seed);
+		rng().reseed(seed);
 		init_player();
 		init_things();
 		init_names();
 		init_colors();
 		init_stones();
 		init_materials();
-		start_daemon(rogue::rules::Event::Doctor);
-		fuse(rogue::rules::Event::Swander, 70);
-		start_daemon(rogue::rules::Event::Stomach);
-		start_daemon(rogue::rules::Event::Runners);
+		start_daemon(rules::Event::Doctor);
+		fuse(rules::Event::Swander, 70);
+		start_daemon(rules::Event::Stomach);
+		start_daemon(rules::Event::Runners);
 		for (int d = 1; d <= depth; d++) {
 			game().level.depth = d;
-			new_level();
+			world::new_level();
 		}
 	}
 
@@ -74,9 +93,9 @@ protected:
 	static MapView view()
 	{
 		MapView v;
-		for (int r = 0; r < rogue::persistence::map_rows; r++)
-			for (int x = 0; x < rogue::persistence::map_cols; x++)
-				v[r][x] = {display().tile_at({x, r + 1}), display().tile_style_at({x, r + 1})};
+		for (int r = 0; r < persistence::map_rows; r++)
+			for (int x = 0; x < persistence::map_cols; x++)
+				v[r][x] = {ui::display().tile_at({x, r + 1}), ui::display().tile_style_at({x, r + 1})};
 		return v;
 	}
 
@@ -105,18 +124,18 @@ protected:
 	// Some state new games don't have yet
 	static void stir()
 	{
-		rogue::Game &g = game();
-		rogue::Player &p = g.player;
+		Game &g = game();
+		Player &p = g.player;
 		// A ring worn, a guess named, a fuse burning, a macro half typed
 		Item &ring = *new_item();
-		ring.o_type = rogue::ItemKind::Ring;
+		ring.o_type = ItemKind::Ring;
 		ring.set_which(Ring::Searching);
 		ring.o_damage = ring.o_hurldmg = "0d0";
 		p.body.t_pack.push_front(ring);
 		p.rings[Hand::Right] = g.pool.id_of(ring);
 		g.items.p_guess[Potion::Poison] = "fizzy";
 		g.items.p_know[Potion::SeeInvisible] = true;
-		fuse(rogue::rules::Event::Unconfuse, 9);
+		fuse(rules::Event::Unconfuse, 9);
 		g.options.macro = "sss";
 		g.turn.typeahead = "ss";
 		g.turn.last_item = p.weapon;
@@ -124,7 +143,7 @@ protected:
 		g.turn.moves_left = 2;	// saved in the second of a hasted rogue's three moves
 		g.message.last = "you feel a bite in your leg";
 		// Monsters after everything a monster can be after
-		rogue::Maybe<Item> floor = g.level.objects.first();
+		Maybe<Item> floor = g.level.objects.first();
 		int n = 0;
 		for (Creature &tp : g.level.monsters) {
 			switch (n++ % 4) {
@@ -147,7 +166,7 @@ protected:
 
 TEST_F(SaveGame, SaveLoadSaveIsIdentical)
 {
-	for (rogue::Random::Seed seed : {1u, 5u, 42u}) {
+	for (Random::Seed seed : {1u, 5u, 42u}) {
 		for (int depth : {1, 4, 13, 26}) {
 			new_game(seed, depth);
 			stir();
@@ -161,21 +180,21 @@ TEST_F(SaveGame, SaveLoadSaveIsIdentical)
 // Playing on from a restored game does what playing on without saving did.
 TEST_F(SaveGame, RestoredGamePlaysOnTheSame)
 {
-	for (rogue::Random::Seed seed : {1u, 5u, 42u, 4242u}) {
+	for (Random::Seed seed : {1u, 5u, 42u, 4242u}) {
 		new_game(seed, 12);
 		stir();
 		std::string text = save();
 
 		std::vector<int> rolls;
 		game().level.depth++;
-		new_level();
+		world::new_level();
 		for (int i = 0; i < 50; i++)
 			rolls.push_back(rnd(1000));
 		std::string played = save();
 
 		load(text);
 		game().level.depth++;
-		new_level();
+		world::new_level();
 		for (int i = 0; i < 50; i++)
 			EXPECT_EQ(rnd(1000), rolls[i]);
 		EXPECT_EQ(save(), played) << "seed " << seed;
@@ -188,37 +207,37 @@ TEST_F(SaveGame, PointersPointIntoTheGame)
 	stir();
 	std::string text = save();
 	load(text);
-	rogue::Game &g = game();
-	EXPECT_TRUE(rogue::pool_problems(g).empty());
+	Game &g = game();
+	EXPECT_TRUE(pool_problems(g).empty());
 	ASSERT_TRUE(g.player.ring_item(Hand::Right));
 	EXPECT_TRUE(g.player.body.t_pack.contains(*g.player.ring_item(Hand::Right)));
 	EXPECT_EQ(g.items.p_guess[Potion::Poison], "fizzy");
 	EXPECT_EQ(g.turn.typeahead, "ss");
 	EXPECT_EQ(g.turn.last_item, g.player.weapon);
-	EXPECT_EQ(g.scheduler.time_left(rogue::rules::Event::Unconfuse), 9);
+	EXPECT_EQ(g.scheduler.time_left(rules::Event::Unconfuse), 9);
 	int flytraps = 0;
 	for (const Creature &tp : g.level.monsters)
 		if (tp.t_type == 'F')
 			flytraps++;
 	EXPECT_GT(flytraps, 0);
 	EXPECT_EQ(g.player.fung_hit, 3);
-	EXPECT_EQ(flytrap_attacks(g.player.fung_hit), rogue::Attacks("3d1"));
+	EXPECT_EQ(entities::flytrap_attacks(g.player.fung_hit), Attacks("3d1"));
 }
 
 // Rooms and passages come back as the same RoomRef
 TEST_F(SaveGame, RoomLinksComeBack)
 {
 	new_game(42, 5);
-	rogue::Game &g = game();
-	rogue::Maybe<Creature> tp = g.level.monsters.first();
+	Game &g = game();
+	Maybe<Creature> tp = g.level.monsters.first();
 	ASSERT_TRUE(tp);
-	tp->t_room = RoomRef::passage(MAXPASS - 1);
-	g.player.old_room = RoomRef::room(MAXROOMS - 1);
+	tp->t_room = RoomRef::passage(world::MAXPASS - 1);
+	g.player.old_room = RoomRef::room(world::MAXROOMS - 1);
 	std::optional<RoomRef> here = g.player.body.t_room;
 	int slot = g.pool.id_of(*tp)->slot;
 	load(save());
-	EXPECT_EQ(g.pool.creatures.at(slot)->t_room, RoomRef::passage(MAXPASS - 1));
-	EXPECT_EQ(g.player.old_room, RoomRef::room(MAXROOMS - 1));
+	EXPECT_EQ(g.pool.creatures.at(slot)->t_room, RoomRef::passage(world::MAXPASS - 1));
+	EXPECT_EQ(g.player.old_room, RoomRef::room(world::MAXROOMS - 1));
 	EXPECT_EQ(g.player.body.t_room, here);
 	g.player.old_room = std::nullopt;
 	load(save());
@@ -229,8 +248,8 @@ TEST_F(SaveGame, TheScreenComesBack)
 {
 	new_game(5, 3);
 	MapView before = view();
-	before[3][7] = {'K', rogue::ui::TileStyle::Inverse};
-	before[21][79] = {0xfa, rogue::ui::TileStyle::FrostBolt};
+	before[3][7] = {'K', ui::TileStyle::Inverse};
+	before[21][79] = {0xfa, ui::TileStyle::FrostBolt};
 	std::string text = format_save(game(), before);
 	MapView after;
 	ASSERT_TRUE(parse_save(text, game(), after));
@@ -345,3 +364,5 @@ TEST_F(SaveGame, WriteAndRead)
 	EXPECT_EQ(read_save("/nonexistent/rogue.sav", game(), v).error().kind, SaveError::Kind::Unreadable);
 	EXPECT_FALSE(write_save("/nonexistent/dir/rogue.sav", game(), view()));
 }
+
+}  // namespace rogue

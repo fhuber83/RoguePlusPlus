@@ -1,8 +1,14 @@
 #include "../support/ScriptedGame.hpp"
 
+#include "entities/MonsterCatalog.hpp"
+#include "game/Pool.hpp"
+#include "items/effects/Weapon.hpp"
+
+namespace rogue {
+
 namespace {
 
-class Missile : public rogue::test::ScriptedGame {
+class Missile : public test::ScriptedGame {
 protected:
 	// A direction from the rogue with floor next to him
 	static Coord open_direction()
@@ -11,7 +17,7 @@ protected:
 		for (int dy = -1; dy <= 1; dy++)
 			for (int dx = -1; dx <= 1; dx++) {
 				Coord next{hero.x + dx, hero.y + dy};
-				if ((dx || dy) && game().level.at(next) == rogue::FLOOR && !moat(next.y, next.x))
+				if ((dx || dy) && game().level.at(next) == FLOOR && !entities::moat(next.y, next.x))
 					return {dx, dy};
 			}
 		ADD_FAILURE() << "the rogue has no floor next to him";
@@ -25,7 +31,7 @@ protected:
 	static Dagger give_dagger()
 	{
 		Item &dagger = *new_item();
-		init_weapon(dagger, WeaponType::Dagger);
+		items::effects::init_weapon(dagger, WeaponType::Dagger);
 		dagger.o_hplus = 100;
 		game().player.body.t_pack.push_front(dagger);
 		game().player.in_pack++;
@@ -48,11 +54,11 @@ TEST_F(Missile, AWeaponThatHitsIsUsedUp)
 	Coord hero = game().player.body.t_pos;
 	Coord target{hero.x + d.x, hero.y + d.y};
 	Creature &monster = *new_creature();
-	new_monster(monster, 'Z', target);
+	entities::new_monster(monster, 'Z', target);
 	Dagger dagger = give_dagger();
 
 	terminal.keys = {'a'};
-	missile(d.y, d.x);
+	items::effects::missile(d.y, d.x);
 
 	EXPECT_FALSE(in_use(dagger.id));
 	EXPECT_EQ(problems(), "");		// what save_game() checks before it saves
@@ -65,9 +71,11 @@ TEST_F(Missile, AWeaponThatMissesFalls)
 	Dagger dagger = give_dagger();
 
 	terminal.keys = {'a'};
-	missile(d.y, d.x);
+	items::effects::missile(d.y, d.x);
 
 	ASSERT_TRUE(in_use(dagger.id));
 	EXPECT_TRUE(game().level.objects.contains(dagger.id));
 	EXPECT_EQ(problems(), "");
 }
+
+}  // namespace rogue

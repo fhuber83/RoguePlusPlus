@@ -4,7 +4,32 @@
  * monsters.c	1.4 (A.I. Design)	12/14/84
  */
 
-#include "rogue.h"
+#include "entities/MonsterCatalog.hpp"
+
+#include <array>
+#include <optional>
+#include <string_view>
+
+#include "core/Coord.hpp"
+#include "core/Dice.hpp"
+#include "core/Glyphs.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
+#include "entities/MonsterAI.hpp"
+#include "entities/Stats.hpp"
+#include "game/Game.hpp"
+#include "game/Messages.hpp"
+#include "game/Pool.hpp"
+#include "items/ItemCatalog.hpp"
+#include "items/Kinds.hpp"
+#include "rules/Combat.hpp"
+#include "rules/Durations.hpp"
+#include "rules/Scheduler.hpp"
+#include "world/LevelGenerator.hpp"
+#include "world/Map.hpp"
+#include "world/Room.hpp"
+#include "world/RoomRef.hpp"
+#include "world/Rooms.hpp"
 
 namespace rogue::entities {
 
@@ -111,14 +136,14 @@ new_monster(Creature &tp, unsigned char type, Coord cp)
 {
 	int lev_add;
 
-	if ((lev_add = game().level.depth - AMULETLEVEL) < 0)
+	if ((lev_add = game().level.depth - world::AMULETLEVEL) < 0)
 		lev_add = 0;
 	game().level.monsters.push_front(tp);
 	tp.t_type = type;
 	tp.t_disguise = type;
 	tp.t_pos = cp;
 	tp.t_oldch = '@';
-	tp.t_room = roomin(cp);
+	tp.t_room = world::roomin(cp);
 	const MonsterKind &mp = monsters[tp.t_type-'A'];
 	tp.t_stats.s_lvl = mp.m_stats.s_lvl + lev_add;
 	tp.t_stats.s_maxhp = tp.t_stats.s_hpt = roll(tp.t_stats.s_lvl, 8);
@@ -214,11 +239,11 @@ wanderer()
 	if (!(tp = new_creature()))
 		return;
 	do {
-		i = rnd_room();
+		i = world::rnd_room();
 		if (RoomRef::room(i) == player.body.t_room)
 			continue;
 		cp = rnd_pos(game().level.rooms[i]);
-	} while (!(RoomRef::room(i) != player.body.t_room && step_ok(winat(cp.y, cp.x))));
+	} while (!(RoomRef::room(i) != player.body.t_room && world::step_ok(world::winat(cp.y, cp.x))));
 	new_monster(*tp, randmonster(true), cp);
 	start_run(tp->t_pos);
 }
@@ -253,13 +278,13 @@ wake_monster(int y, int x)
 	{
 		rp = player.body.t_room;
 		dst = distance_sq({x, y}, player.body.t_pos);
-		if ((rp && !game().level.room(*rp).r_flags.test(RoomFlag::Dark)) || dst < LAMPDIST) {
+		if ((rp && !game().level.room(*rp).r_flags.test(RoomFlag::Dark)) || dst < world::LAMPDIST) {
 			tp->t_flags.set(CreatureFlag::Found);
-			if (!save(SaveThrow::Magic)) {
+			if (!rules::save(rules::SaveThrow::Magic)) {
 				if (player.body.t_flags.test(CreatureFlag::Confused))
-					lengthen(Event::Unconfuse, rnd(20) + huh_duration());
+					rules::lengthen(rules::Event::Unconfuse, rnd(20) + rules::huh_duration());
 				else
-					fuse(Event::Unconfuse, rnd(20) + huh_duration());
+					rules::fuse(rules::Event::Unconfuse, rnd(20) + rules::huh_duration());
 				player.body.t_flags.set(CreatureFlag::Confused);
 				msg("the medusa's gaze has confused you");
 			}
@@ -289,7 +314,7 @@ give_pack(Creature &tp)
 	 * check if we can allocate a new item
 	 */
 	if (game().pool.total < MAXITEMS && rnd(100) < monsters[tp.t_type-'A'].m_carry)
-		tp.t_pack.push_front(*new_thing());
+		tp.t_pack.push_front(*items::new_thing());
 }
 
 /*
@@ -309,7 +334,6 @@ pick_mons()
 		return 'M';
 	return vorp_mons[i];
 }
-
 
 /*
  * moat(x,y)

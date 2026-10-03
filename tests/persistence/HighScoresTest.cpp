@@ -1,13 +1,11 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
-#include <cstdio>
 #include <cstring>
 #include <filesystem>
-#include <fstream>
-#include <iterator>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "persistence/HighScores.hpp"

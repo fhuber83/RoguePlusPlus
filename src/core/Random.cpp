@@ -1,7 +1,12 @@
 #include "core/Random.hpp"
 
 #include <chrono>
+#include <cstdint>
+#include <istream>
+#include <random>
 #include <sstream>
+#include <string>
+#include <string_view>
 
 namespace rogue {
 

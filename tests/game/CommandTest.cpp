@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 
 #include <string_view>
+#include <utility>
 
+#include "core/Coord.hpp"
 #include "game/Command.hpp"
 #include "game/PlayerCommands.hpp"
 

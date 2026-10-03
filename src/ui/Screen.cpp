@@ -1,5 +1,11 @@
 #include "ui/Screen.hpp"
 
+#include <cstdint>
+#include <string_view>
+
+#include "core/Maybe.hpp"
+#include "ui/Cell.hpp"
+#include "ui/Input.hpp"
 #include "ui/Terminal.hpp"
 
 namespace rogue::ui {

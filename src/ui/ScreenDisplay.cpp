@@ -1,10 +1,19 @@
 #include "ui/ScreenDisplay.hpp"
 
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <format>
+#include <span>
+#include <string>
+#include <string_view>
 #include <thread>
 
+#include "core/Coord.hpp"
 #include "core/Glyphs.hpp"
+#include "ui/Cell.hpp"
+#include "ui/Display.hpp"
+#include "ui/Screen.hpp"
 
 namespace rogue::ui {
 

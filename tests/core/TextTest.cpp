@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <string_view>
+
 #include "core/Text.hpp"
 
 using rogue::vowelstr;

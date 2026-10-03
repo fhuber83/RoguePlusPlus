@@ -6,6 +6,7 @@
 
 #include "platform/Clock.hpp"
 
+#include <chrono>
 #include <ctime>
 
 namespace rogue::platform {

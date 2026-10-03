@@ -8,6 +8,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <string_view>
 
 #include "core/Config.hpp"
 #include "ui/Display.hpp"

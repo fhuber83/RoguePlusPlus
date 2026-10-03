@@ -1,7 +1,16 @@
 #include "../support/ScriptedGame.hpp"
 
+#include <gtest/gtest.h>
+
+#include <optional>
+
+#include "core/Coord.hpp"
+#include "core/Glyphs.hpp"
 #include "entities/MonsterCatalog.hpp"
+#include "game/Game.hpp"
+#include "game/Id.hpp"
 #include "game/Pool.hpp"
+#include "items/Kinds.hpp"
 #include "items/effects/Weapon.hpp"
 
 namespace rogue {

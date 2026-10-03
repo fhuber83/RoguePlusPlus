@@ -4,7 +4,9 @@
 #include <optional>
 #include <vector>
 
+#include "core/Maybe.hpp"
 #include "entities/List.hpp"
+#include "game/Id.hpp"
 
 using rogue::List;
 

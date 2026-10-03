@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
 #include <cstdio>
-#include <cstring>
 #include <filesystem>
 #include <string>
 #include <string_view>

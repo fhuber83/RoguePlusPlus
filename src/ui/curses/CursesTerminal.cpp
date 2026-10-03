@@ -7,14 +7,21 @@
 #include "ui/curses/CursesTerminal.hpp"
 
 #include <array>
-#include <cstdlib>
+#include <cstdint>
+#include <expected>
 #include <format>
+#include <optional>
 #include <string>
 #include <utility>
 
+#include <stdlib.h>
+
 #include "core/Config.hpp"
-#include "ui/ScreenDisplay.hpp"
 #include "core/Glyphs.hpp"
+#include "ui/Cell.hpp"
+#include "ui/Input.hpp"
+#include "ui/Screen.hpp"
+#include "ui/ScreenDisplay.hpp"
 
 #include <curses.h>	// with NCURSES_WIDECHAR=1 (CMakeLists.txt)
 

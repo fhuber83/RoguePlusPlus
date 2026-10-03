@@ -1,7 +1,10 @@
 #include <gtest/gtest.h>
 
 #include <deque>
+#include <optional>
 
+#include "ui/Cell.hpp"
+#include "ui/Input.hpp"
 #include "ui/Screen.hpp"
 #include "ui/Terminal.hpp"
 

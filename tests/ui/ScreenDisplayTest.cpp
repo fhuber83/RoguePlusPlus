@@ -2,6 +2,10 @@
 
 #include <string>
 
+#include "core/Coord.hpp"
+#include "ui/Cell.hpp"
+#include "ui/Display.hpp"
+#include "ui/Screen.hpp"
 #include "ui/ScreenDisplay.hpp"
 
 using rogue::ui::Screen;

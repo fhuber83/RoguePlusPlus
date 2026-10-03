@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
 #include <optional>
-#include <vector>
 
 #include "core/KindTable.hpp"
 #include "core/Maybe.hpp"

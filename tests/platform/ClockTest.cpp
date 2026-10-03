@@ -1,9 +1,12 @@
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <cstdlib>
-#include <ctime>
 #include <optional>
 #include <string>
+
+#include <stdlib.h>
+#include <time.h>
 
 #include "platform/Clock.hpp"
 

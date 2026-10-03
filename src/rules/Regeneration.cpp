@@ -4,7 +4,10 @@
  * @(#)daemons.c	5.1 (Berkeley) 5/11/82
  */
 
-#include "rogue.h"
+#include "rules/Regeneration.hpp"
+
+#include "game/Game.hpp"
+#include "items/Kinds.hpp"
 
 namespace rogue::rules {
 

@@ -4,7 +4,42 @@
  * @(#)fight.c		1.43 (AI Design)		1/19/85
  */
 
-#include "rogue.h"
+#include "rules/Combat.hpp"
+
+#include <algorithm>
+#include <format>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <utility>
+
+#include "core/Ascii.hpp"
+#include "core/Coord.hpp"
+#include "core/Dice.hpp"
+#include "core/Glyphs.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Item.hpp"
+#include "entities/MonsterAI.hpp"
+#include "entities/MonsterCatalog.hpp"
+#include "entities/Stats.hpp"
+#include "game/Endings.hpp"
+#include "game/Game.hpp"
+#include "game/Keyboard.hpp"
+#include "game/Messages.hpp"
+#include "game/Pool.hpp"
+#include "game/StatusLine.hpp"
+#include "items/Identification.hpp"
+#include "items/ItemCatalog.hpp"
+#include "items/Kinds.hpp"
+#include "items/effects/Potion.hpp"
+#include "items/effects/Weapon.hpp"
+#include "rules/Experience.hpp"
+#include "rules/Strength.hpp"
+#include "ui/Display.hpp"
+#include "world/LevelGenerator.hpp"
+#include "world/Map.hpp"
+#include "world/Rooms.hpp"
 
 namespace rogue::rules {
 
@@ -24,8 +59,8 @@ void	hit(Who er, Who ee);
 void	miss(Who er, Who ee);
 void	thunk(const Item &weap, std::string_view mname, std::string_view does, std::string_view did);
 void	remove_monster(Coord mp, Creature &tp, bool waskill);
-int	str_plus(str_t str);
-int	add_dam(str_t str);
+int	str_plus(entities::str_t str);
+int	add_dam(entities::str_t str);
 
 }  // namespace
 
@@ -43,14 +78,14 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 	/*
 	 * Find the monster we want to fight
 	 */
-	if (!(tp = moat(mp.y, mp.x)))
+	if (!(tp = entities::moat(mp.y, mp.x)))
 		return false;
 	/*
 	 * Since we are fighting, things are not quiet so no healing takes
 	 * place.  Cancel any command counts so player can recover.
 	 */
 	game().turn.count = player.quiet = 0;
-	start_run(mp);
+	entities::start_run(mp);
 	/*
 	 * Let him know it was really a mimic (if it was one).
 	 */
@@ -60,7 +95,7 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 			return false;
 		msg("wait! That's a Xeroc!");
 	}
-	mname = monsters[mn-'A'].m_name;
+	mname = entities::monsters[mn-'A'].m_name;
 	if (player.body.t_flags.test(CreatureFlag::Blind))
 		mname = "it";
 	if (roll_em(player.body, *tp, weap, thrown)||(weap && weap->o_type == ItemKind::Potion)) {
@@ -72,7 +107,7 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 			hit(std::nullopt, mname);
 		// original missed null check for weap
 		if (weap && weap->o_type == ItemKind::Potion) {
-			th_effect(*weap, *tp);
+			items::effects::th_effect(*weap, *tp);
 			if (!thrown) {
 				if (weap->o_count > 1)
 					weap->o_count--;
@@ -100,7 +135,7 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 	else
 		miss(std::nullopt, mname);
 	if (tp->t_type == 'S' && rnd(100) > 25)
-		slime_split(*tp);
+		entities::slime_split(*tp);
 	return false;
 }
 
@@ -122,7 +157,7 @@ attack(Creature &mp)
 	game().turn.count = player.quiet = 0;
 	if (mp.t_type == 'X' && !player.body.t_flags.test(CreatureFlag::Blind))
 		mp.t_disguise = 'X';
-	mname = monsters[mp.t_type-'A'].m_name;
+	mname = entities::monsters[mp.t_type-'A'].m_name;
 	if (player.body.t_flags.test(CreatureFlag::Blind))
 		mname = "it";
 	if (roll_em(mp, player.body, std::nullopt, false)) {
@@ -221,9 +256,9 @@ attack(Creature &mp)
 			long lastpurse;
 
 			lastpurse = player.purse;
-			player.purse -= gold_calc();
+			player.purse -= world::gold_calc();
 			if (!save(SaveThrow::Magic))
-			player.purse -= gold_calc() + gold_calc() + gold_calc() + gold_calc();
+			player.purse -= world::gold_calc() + world::gold_calc() + world::gold_calc() + world::gold_calc();
 			if (player.purse < 0)
 			player.purse = 0;
 			remove_monster(mp.t_pos, mp, false);
@@ -257,13 +292,13 @@ attack(Creature &mp)
 
 					oc = steal->o_count--;
 					steal->o_count = 1;
-					msg(she_stole, inv_name(*steal, true));
+					msg(she_stole, items::inv_name(*steal, true));
 					steal->o_count = oc;
 				}
 				else
 				{
 					// inv_name() must run before discard() frees steal
-					std::string name = inv_name(*steal, true);
+					std::string name = items::inv_name(*steal, true);
 					player.body.t_pack.remove(*steal);
 					discard(*steal);
 					msg(she_stole, name);
@@ -345,12 +380,12 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 	int hplus;
 	int dplus;
 	int damage;
-	const Stats &att = thatt.t_stats;
-	Stats &def = thdef.t_stats;
+	const entities::Stats &att = thatt.t_stats;
+	entities::Stats &def = thdef.t_stats;
 	if (!weap)
 	{
 		// every flytrap has the one growing attack
-		attacks = (thatt.t_type == 'F' && &thatt != &player.body) ? flytrap_attacks(player.fung_hit) : att.s_dmg;
+		attacks = (thatt.t_type == 'F' && &thatt != &player.body) ? entities::flytrap_attacks(player.fung_hit) : att.s_dmg;
 		dplus = 0;
 		hplus = 0;
 	}
@@ -379,7 +414,7 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 		}
 		attacks = weap->o_damage;
 		if (hurl && weap->o_flags.test(ItemFlag::Missile) && player.weapon_item() &&
-			  launched_by(player.weapon_item()->which<WeaponType>()) == weap->o_launch)
+			  items::effects::launched_by(player.weapon_item()->which<WeaponType>()) == weap->o_launch)
 		{
 			attacks = weap->o_hurldmg;
 			hplus += player.weapon_item()->o_hplus;
@@ -487,7 +522,6 @@ miss(Who er, Who ee)
 {
 	std::string_view s = "";
 
-
 	addmsg("{}", prname(er, true));
 	switch (game().options.brief() ? 1 : rnd(4))
 	{
@@ -546,7 +580,7 @@ namespace {
  *	Compute bonus/penalties for strength on the "to hit" roll
  */
 int
-str_plus(str_t str)
+str_plus(entities::str_t str)
 {
 	int add = 4;
 
@@ -568,7 +602,7 @@ str_plus(str_t str)
  *	Compute additional damage done for exceptionally high or low strength
  */
 int
-add_dam(str_t str)
+add_dam(entities::str_t str)
 {
 	int add = 6;
 
@@ -614,7 +648,7 @@ void
 thunk(const Item &weap, std::string_view mname, std::string_view does, std::string_view did)
 {
 	if (weap.o_type == ItemKind::Weapon)
-		addmsg("the {} {} ", w_names[weap.which<WeaponType>()], does);
+		addmsg("the {} {} ", items::w_names[weap.which<WeaponType>()], does);
 	else
 		addmsg("you {} ", did);
 	if (game().player.body.t_flags.test(CreatureFlag::Blind))
@@ -631,7 +665,7 @@ void
 remove_monster(Coord mp, Creature &tp, bool waskill)
 {
 	Maybe<Item> obj, nexti;
-	TileStyle style;
+	ui::TileStyle style;
 
 	for (obj = tp.t_pack.first(); obj; obj = nexti)
 	{
@@ -639,15 +673,15 @@ remove_monster(Coord mp, Creature &tp, bool waskill)
 		obj->o_pos = tp.t_pos;
 		tp.t_pack.remove(*obj);
 		if (waskill)
-			fall(*obj, false);
+			items::effects::fall(*obj, false);
 		else
 			discard(*obj);
 	}
-	style = (game().level.map[INDEX(mp.y,mp.x)] == PASSAGE) ? TileStyle::Inverse : TileStyle::Normal;
-	if (tp.t_oldch == FLOOR && !cansee(mp.y, mp.x))
-		display().draw_tile(mp, ' ', style);
+	style = (game().level.map[world::INDEX(mp.y,mp.x)] == PASSAGE) ? ui::TileStyle::Inverse : ui::TileStyle::Normal;
+	if (tp.t_oldch == FLOOR && !world::cansee(mp.y, mp.x))
+		ui::display().draw_tile(mp, ' ', style);
 	else if (tp.t_oldch != '@')
-		display().draw_tile(mp, tp.t_oldch, style);
+		ui::display().draw_tile(mp, tp.t_oldch, style);
 	game().level.monsters.remove(tp);
 	discard(tp);
 }
@@ -664,7 +698,7 @@ is_magic(const Item &obj)
 	switch (obj.o_type)
 	{
 	case ItemKind::Armor:
-		return obj.o_ac != a_class[obj.which<ArmorType>()];
+		return obj.o_ac != items::a_class[obj.which<ArmorType>()];
 	case ItemKind::Weapon:
 		return obj.o_hplus != 0 || obj.o_dplus != 0;
 	case ItemKind::Potion:
@@ -696,7 +730,7 @@ killed(Creature &tp, bool pr)
 	{
 	case 'F':
 		game().player.body.t_flags.unset(CreatureFlag::Held);
-		f_restor();
+		entities::f_restor();
 		break;
 	case 'L':;
 		Maybe<Item> gold;
@@ -704,9 +738,9 @@ killed(Creature &tp, bool pr)
 		if (!(gold = new_item()))
 			return;
 		gold->o_type = ItemKind::Gold;
-		gold->gold_value() = gold_calc();
+		gold->gold_value() = world::gold_calc();
 		if (save(SaveThrow::Magic))
-			gold->gold_value() += gold_calc() + gold_calc() + gold_calc() + gold_calc();
+			gold->gold_value() += world::gold_calc() + world::gold_calc() + world::gold_calc() + world::gold_calc();
 		tp.t_pack.push_front(*gold);
 		break;
 	}
@@ -720,7 +754,7 @@ killed(Creature &tp, bool pr)
 	if (game().player.body.t_flags.test(CreatureFlag::Blind))
 		msg("it");
 	else
-		msg("the {}", monsters[type-'A'].m_name);
+		msg("the {}", entities::monsters[type-'A'].m_name);
 	}
 	/*
 	 * Do adjustments if he went up a level

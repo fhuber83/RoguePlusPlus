@@ -7,7 +7,11 @@
  * misc.c	1.4		(A.I. Design)	12/14/84
  */
 
-#include "rogue.h"
+#include "rules/Strength.hpp"
+
+#include "entities/Stats.hpp"
+#include "game/Game.hpp"
+#include "items/Kinds.hpp"
 
 namespace rogue::rules {
 
@@ -24,7 +28,7 @@ chg_str(int amt)
 	if (amt == 0)
 		return;
 	add_str(player.body.t_stats.s_str, amt);
-	str_t comp = player.body.t_stats.s_str;
+	entities::str_t comp = player.body.t_stats.s_str;
 	if (player.wears(Hand::Left, Ring::AddStrength))
 		add_str(comp, -player.ring_item(Hand::Left)->o_ac);
 	if (player.wears(Hand::Right, Ring::AddStrength))
@@ -38,7 +42,7 @@ chg_str(int amt)
  *	Perform the actual add, checking upper and lower bound
  */
 void
-add_str(str_t &sp, int amt)
+add_str(entities::str_t &sp, int amt)
 {
 	if ((sp += amt) < 3)
 		sp = 3;

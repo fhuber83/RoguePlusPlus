@@ -4,7 +4,12 @@
  * @(#)daemons.c	5.1 (Berkeley) 5/11/82
  */
 
-#include "rogue.h"
+#include "rules/Wandering.hpp"
+
+#include "entities/MonsterCatalog.hpp"
+#include "game/Game.hpp"
+#include "rules/Durations.hpp"
+#include "rules/Scheduler.hpp"
 
 namespace rogue::rules {
 
@@ -31,7 +36,7 @@ rollwand()
 	{
 		if (roll(1, 6) == 4)
 		{
-			wanderer();
+			entities::wanderer();
 			extinguish(Event::RollWander);
 			fuse(Event::Swander, wander_time());
 		}

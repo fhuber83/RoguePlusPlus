@@ -1,3 +1,5 @@
+#include "../support/ScriptedGame.hpp"
+
 #include <gtest/gtest.h>
 
 #include <cstdio>
@@ -39,80 +41,9 @@ using persistence::write_save;
 
 namespace {
 
-ui::ScreenDisplay &screen_display()
-{
-	return dynamic_cast<ui::ScreenDisplay &>(ui::display());
-}
-
 // Each test starts from a new game, made the way main() makes one
-class SaveGame : public ::testing::Test {
+class SaveGame : public test::ScriptedGame {
 protected:
-	void SetUp() override
-	{
-		screen_display().set_animations(false);
-	}
-	void TearDown() override
-	{
-		reset();
-		screen_display().set_animations(true);
-	}
-
-	static void reset()
-	{
-		game().pool = Pool();
-		game().level = Level();
-		game().player = Player();
-		game().items = Items();
-		game().scheduler = rules::Scheduler();
-		game().turn = Turn();
-		game().message = MessageLine();
-		game().options = Options();
-	}
-
-	static void new_game(Random::Seed seed, int depth)
-	{
-		reset();
-		rng().reseed(seed);
-		init_player();
-		init_things();
-		init_names();
-		init_colors();
-		init_stones();
-		init_materials();
-		start_daemon(rules::Event::Doctor);
-		fuse(rules::Event::Swander, 70);
-		start_daemon(rules::Event::Stomach);
-		start_daemon(rules::Event::Runners);
-		for (int d = 1; d <= depth; d++) {
-			game().level.depth = d;
-			world::new_level();
-		}
-	}
-
-	// The map as the screen shows it
-	static MapView view()
-	{
-		MapView v;
-		for (int r = 0; r < persistence::map_rows; r++)
-			for (int x = 0; x < persistence::map_cols; x++)
-				v[r][x] = {ui::display().tile_at({x, r + 1}), ui::display().tile_style_at({x, r + 1})};
-		return v;
-	}
-
-	static std::string save()
-	{
-		return format_save(game(), view());
-	}
-
-	// Load text into game(), failing the test if it doesn't load
-	static MapView load(const std::string &text)
-	{
-		MapView v;
-		auto loaded = parse_save(text, game(), v);
-		EXPECT_TRUE(loaded) << (loaded ? "" : loaded.error().detail);
-		return v;
-	}
-
 	static SaveError::Kind load_error(const std::string &text)
 	{
 		MapView v;

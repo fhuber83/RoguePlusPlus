@@ -47,7 +47,7 @@ get_dir()
 	while (!(dir = find_dir(ch)));
 	turn.delta = *dir;
 	msg("");
-	if (game().player.body.t_flags.test(CreatureFlag::Confused) && rnd(5) == 0)
+	if (game().player.body.is(CreatureFlag::Confused) && rnd(5) == 0)
 		do {
 			turn.delta.y = rnd(3) - 1;
 			turn.delta.x = rnd(3) - 1;
@@ -84,7 +84,7 @@ d_level()
 {
 	rogue::Player &player = game().player;
 
-	if (game().level.at(player.body.t_pos) != STAIRS)
+	if (game().level.at(player.body.pos) != STAIRS)
 		msg("I see no way down");
 	else {
 		game().level.depth++;
@@ -101,7 +101,7 @@ u_level()
 {
 	rogue::Player &player = game().player;
 
-	if (game().level.at(player.body.t_pos) == STAIRS)
+	if (game().level.at(player.body.pos) == STAIRS)
 		if (player.has_amulet) {
 			game().level.depth--;
 			if (game().level.depth == 0)

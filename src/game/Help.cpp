@@ -163,7 +163,7 @@ help(std::span<const HelpLine> lines)
 		}
 
 		ui::display().write_at(hrow, hcol, line.glyphs());
-		ui::display().write(line.h_desc);
+		ui::display().write(line.desc);
 
 		/*
 		 * decide if we need print a continue type message

@@ -22,7 +22,7 @@
 #include "persistence/HighScores.hpp"
 #include "persistence/SaveGame.hpp"
 #include "ui/Display.hpp"
-#include "world/Map.hpp"
+#include "world/Level.hpp"
 
 /*
  * Whole games played through command() on the headless display: what the
@@ -47,7 +47,7 @@ protected:
 	static void strengthen()
 	{
 		Player &player = game().player;
-		player.body.t_stats.s_hpt = player.body.t_stats.s_maxhp = 30000;
+		player.body.stats.hp = player.body.stats.max_hp = 30000;
 	}
 
 	// Where on the map glyph is, if anywhere
@@ -115,13 +115,13 @@ TEST_F(Play, DownTheStairs)
 		for (int depth = 2; depth <= 8; depth++) {
 			std::optional<Coord> stairs = find(STAIRS);
 			ASSERT_TRUE(stairs) << "seed " << seed << " depth " << depth;
-			game().player.body.t_pos = *stairs;
+			game().player.body.pos = *stairs;
 			play(">");
 			EXPECT_EQ(game().level.depth, depth);
 			EXPECT_EQ(game().player.max_level, depth);
 			EXPECT_EQ(problems(), "");
 			EXPECT_TRUE(row(MAXLINES - 2).starts_with(std::format("Level:{:<4}", depth))) << row(MAXLINES - 2);
-			EXPECT_EQ(ui::display().tile_at(game().player.body.t_pos), PLAYER);
+			EXPECT_EQ(ui::display().tile_at(game().player.body.pos), PLAYER);
 		}
 	}
 }
@@ -135,15 +135,15 @@ TEST_F(Play, FightToTheDeath)
 	game().options.score_file = file;
 	game().options.name = "Tester";
 	game().player.purse = 100;
-	game().player.body.t_stats.s_hpt = 1;
+	game().player.body.stats.hp = 1;
 
 	// The dragon goes on a free square next to him, and he walks into it
-	Coord hero = game().player.body.t_pos;
+	Coord hero = game().player.body.pos;
 	std::optional<Coord> beside;
 	char toward = 0;
 	for (auto [key, delta] : {std::pair{'l', Coord{1, 0}}, {'h', Coord{-1, 0}}, {'j', Coord{0, 1}}, {'k', Coord{0, -1}}}) {
 		Coord at = hero + delta;
-		if (!beside && world::step_ok(world::winat(at.y, at.x))) {
+		if (!beside && step_ok(game().level.seen_at(at))) {
 			beside = at;
 			toward = key;
 		}
@@ -178,7 +178,7 @@ TEST_F(Play, RestoredGamePlaysOnLikeTheUnsavedOne)
 			new_game(seed);
 			strengthen();
 			if (seed % 2)
-				game().player.body.t_flags.set(CreatureFlag::Hasted);
+				game().player.body.flags.set(CreatureFlag::Hasted);
 		};
 		start();
 		play(before + after);

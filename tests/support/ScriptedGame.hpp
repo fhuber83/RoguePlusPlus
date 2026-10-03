@@ -112,7 +112,7 @@ protected:
 	static void reset()
 	{
 		game().pool = Pool();
-		game().level = Level();
+		game().level = world::Level();
 		game().player = Player();
 		game().items = Items();
 		game().scheduler = rules::Scheduler();

@@ -13,8 +13,6 @@
 #include <functional>
 #include <ios>
 #include <iterator>
-#include <nlohmann/json.hpp>
-#include <nlohmann/json_fwd.hpp>
 #include <optional>
 #include <set>
 #include <span>
@@ -25,6 +23,9 @@
 #include <utility>
 #include <variant>
 #include <vector>
+
+#include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
 
 #include "core/Coord.hpp"
 #include "core/Dice.hpp"
@@ -39,13 +40,14 @@
 #include "entities/Stats.hpp"
 #include "game/Game.hpp"
 #include "game/Id.hpp"
+#include "game/MessageLine.hpp"
 #include "items/KindInfo.hpp"
 #include "items/Kinds.hpp"
 #include "items/effects/Weapon.hpp"
 #include "persistence/ByteText.hpp"
 #include "rules/Scheduler.hpp"
 #include "ui/Display.hpp"
-#include "world/Map.hpp"
+#include "world/Level.hpp"
 #include "world/MapFlags.hpp"
 #include "world/Room.hpp"
 #include "world/RoomRef.hpp"
@@ -69,7 +71,7 @@ static_assert(map_rows == maxrow - 1 && map_cols == MAXCOLS);
 #if defined(__x86_64__) && defined(__linux__)
 static_assert(sizeof(Game) == 18568, "a Game member was added or removed: save it");
 static_assert(sizeof(Player) == 328, "a Player field was added or removed: save it");
-static_assert(sizeof(Level) == 6488, "a Level field was added or removed: save it");
+static_assert(sizeof(world::Level) == 6488, "a Level field was added or removed: save it");
 static_assert(sizeof(Items) == 4808, "an Items field was added or removed: save it");
 static_assert(sizeof(Pool) == 1336, "a Pool field was added or removed: save it");
 static_assert(sizeof(Turn) == 88, "a Turn field was added or removed: save it");
@@ -165,14 +167,14 @@ const json flytrap_alias = {{"alias", "flytrap"}};
 // A monster that fights with the flytraps' growing attack
 bool is_flytrap(const Game &g, const Creature &c)
 {
-	return c.t_type == 'F' && &c != &g.player.body;
+	return c.type == 'F' && &c != &g.player.body;
 }
 
 json stats_json(const entities::Stats &s, bool flytrap)
 {
 	return {
-		{"str", s.s_str}, {"exp", s.s_exp}, {"level", s.s_lvl}, {"armor", s.s_arm},
-		{"hp", s.s_hpt}, {"damage", flytrap ? flytrap_alias : attacks_json(s.s_dmg)}, {"max_hp", s.s_maxhp},
+		{"str", s.str}, {"exp", s.exp}, {"level", s.level}, {"armor", s.armor},
+		{"hp", s.hp}, {"damage", flytrap ? flytrap_alias : attacks_json(s.damage)}, {"max_hp", s.max_hp},
 	};
 }
 
@@ -187,52 +189,52 @@ json item_list(const Game &g, const List<Item> &list)
 json creature_json(const Game &g, const Creature &c)
 {
 	return {
-		{"pos", coord_json(c.t_pos)}, {"turn", c.t_turn}, {"type", c.t_type},
-		{"disguise", c.t_disguise}, {"oldch", c.t_oldch}, {"dest", dest_ref(g, c.t_dest)},
-		{"flags", c.t_flags.bits()}, {"stats", stats_json(c.t_stats, is_flytrap(g, c))},
-		{"room", room_ref(c.t_room)}, {"pack", item_list(g, c.t_pack)},
+		{"pos", coord_json(c.pos)}, {"turn", c.its_turn}, {"type", c.type},
+		{"disguise", c.disguise}, {"oldch", c.under}, {"dest", dest_ref(g, c.dest)},
+		{"flags", c.flags.bits()}, {"stats", stats_json(c.stats, is_flytrap(g, c))},
+		{"room", room_ref(c.room)}, {"pack", item_list(g, c.pack)},
 	};
 }
 
 json item_json(const Item &o)
 {
 	return {
-		{"kind", static_cast<int>(o.o_type)}, {"pos", coord_json(o.o_pos)},
-		{"launch", o.o_launch}, {"damage", attacks_json(o.o_damage)}, {"hurl", attacks_json(o.o_hurldmg)},
-		{"count", o.o_count}, {"which", o.o_which}, {"hplus", o.o_hplus}, {"dplus", o.o_dplus},
-		{"ac", o.o_ac}, {"flags", o.o_flags.bits()}, {"enemy", o.o_enemy}, {"group", o.o_group},
+		{"kind", static_cast<int>(o.kind)}, {"pos", coord_json(o.pos)},
+		{"launch", o.launcher}, {"damage", attacks_json(o.damage)}, {"hurl", attacks_json(o.thrown_damage)},
+		{"count", o.count}, {"which", o.number}, {"hplus", o.hit_plus}, {"dplus", o.damage_plus},
+		{"ac", o.ac}, {"flags", o.flags.bits()}, {"enemy", o.enemy}, {"group", o.group},
 	};
 }
 
 json room_json(const world::Room &r)
 {
 	json exits = json::array();
-	for (const Coord &c : r.r_exit)
+	for (const Coord &c : r.exits)
 		exits.push_back(coord_json(c));
 	return {
-		{"pos", coord_json(r.r_pos)}, {"size", coord_json(r.r_max)}, {"gold", coord_json(r.r_gold)},
-		{"gold_value", r.r_goldval}, {"flags", r.r_flags.bits()}, {"exit_count", r.r_nexits},
+		{"pos", coord_json(r.pos)}, {"size", coord_json(r.size)}, {"gold", coord_json(r.gold)},
+		{"gold_value", r.gold_value}, {"flags", r.flags.bits()}, {"exit_count", r.nexits},
 		{"exits", std::move(exits)},
 	};
 }
 
 constexpr std::string_view hex_digits = "0123456789abcdef";
 
-// The map rows of a column-major level grid (see INDEX()), as hex
+// The map rows of a column-major level grid (see world::Level::index()), as hex
 // A grid is saved as its bytes: the map's glyphs, or the MapFlags' bits
 unsigned char byte_of(unsigned char cell) { return cell; }
 unsigned char byte_of(MapFlags cell) { return cell.bits(); }
 void set_byte(unsigned char &cell, unsigned char b) { cell = b; }
 void set_byte(MapFlags &cell, unsigned char b) { cell = MapFlags::from_bits(b); }
 
-// grid: Level::map or Level::flags
+// grid: world::Level::map or world::Level::flags
 json grid_json(const auto &grid)
 {
 	json rows = json::array();
 	for (int y = 1; y < maxrow; y++) {
 		std::string row;
 		for (int x = 0; x < MAXCOLS; x++) {
-			unsigned char b = byte_of(grid[world::INDEX(y, x)]);
+			unsigned char b = byte_of(grid[world::Level::index({x, y})]);
 			row += hex_digits[b >> 4];
 			row += hex_digits[b & 0xf];
 		}
@@ -245,7 +247,7 @@ json odds_json(std::span<const items::KindInfo> odds)
 {
 	json out = json::array();
 	for (const items::KindInfo &mi : odds)
-		out.push_back(json::array({mi.mi_prob, mi.mi_worth}));
+		out.push_back(json::array({mi.prob, mi.worth}));
 	return out;
 }
 
@@ -344,7 +346,7 @@ json player_json(const Game &g)
 
 json level_json(const Game &g)
 {
-	const Level &l = g.level;
+	const world::Level &l = g.level;
 	json rooms = json::array(), passages = json::array(), monsters = json::array();
 	for (const world::Room &r : l.rooms)
 		rooms.push_back(room_json(r));
@@ -540,7 +542,7 @@ std::optional<RoomRef> room_at(const json &v, std::string_view what)
 			ref = RoomRef::room(whole(v["room"], what));
 		else if (v.contains("passage"))
 			ref = RoomRef::passage(whole(v["passage"], what));
-		if (ref && Level::valid(*ref))
+		if (ref && world::Level::valid(*ref))
 			return ref;
 	}
 	fail(std::format("{} is not a room or passage", what));
@@ -563,7 +565,7 @@ std::optional<Destination> dest_at(Game &g, const json &v)
 			ItemId id = *g.pool.id_of(item);
 			return Destination{id};
 		}
-		if (gold && Level::valid(*gold))
+		if (gold && world::Level::valid(*gold))
 			return Gold{*gold};
 	}
 	fail("\"dest\" is not the hero, gold or an item");
@@ -585,17 +587,17 @@ Attacks attacks_of(const json &v, std::string_view what)
 entities::Stats stats_from(const json &j, bool flytrap)
 {
 	entities::Stats s{};
-	s.s_str = num<entities::str_t>(j, "str");
-	s.s_exp = num<long>(j, "exp");
-	s.s_lvl = num<int>(j, "level");
-	s.s_arm = num<int>(j, "armor");
-	s.s_hpt = num<int>(j, "hp");
+	s.str = num<entities::str_t>(j, "str");
+	s.exp = num<long>(j, "exp");
+	s.level = num<int>(j, "level");
+	s.armor = num<int>(j, "armor");
+	s.hp = num<int>(j, "hp");
 	const json &damage = field(j, "damage");
 	if (flytrap != (damage == flytrap_alias))
 		fail(flytrap ? "a venus flytrap's \"damage\" is not the flytrap alias"
 			: "only a venus flytrap's \"damage\" is the flytrap alias");
-	s.s_dmg = flytrap ? entities::monsters['F'-'A'].m_stats.s_dmg : attacks_of(damage, "\"damage\"");
-	s.s_maxhp = num<int>(j, "max_hp");
+	s.damage = flytrap ? entities::monsters['F'-'A'].stats.damage : attacks_of(damage, "\"damage\"");
+	s.max_hp = num<int>(j, "max_hp");
 	return s;
 }
 
@@ -616,46 +618,46 @@ void items_into(Game &g, List<Item> &list, const json &slots, std::string_view w
 
 void creature_from(Game &g, Creature &c, const json &j)
 {
-	c.t_pos = coord_of(j, "pos");
-	c.t_turn = num<char>(j, "turn");
-	c.t_type = num<char>(j, "type");
-	c.t_disguise = num<unsigned char>(j, "disguise");
-	c.t_oldch = num<unsigned char>(j, "oldch");
-	c.t_dest = dest_at(g, field(j, "dest"));
-	c.t_flags = CreatureFlags::from_bits(num<CreatureFlags::Bits>(j, "flags"));
-	c.t_stats = stats_from(field(j, "stats"), is_flytrap(g, c));
-	c.t_room = room_at(field(j, "room"), "\"room\"");
-	items_into(g, c.t_pack, field(j, "pack"), "\"pack\"");
+	c.pos = coord_of(j, "pos");
+	c.its_turn = num<char>(j, "turn");
+	c.type = num<char>(j, "type");
+	c.disguise = num<unsigned char>(j, "disguise");
+	c.under = num<unsigned char>(j, "oldch");
+	c.dest = dest_at(g, field(j, "dest"));
+	c.flags = CreatureFlags::from_bits(num<CreatureFlags::Bits>(j, "flags"));
+	c.stats = stats_from(field(j, "stats"), is_flytrap(g, c));
+	c.room = room_at(field(j, "room"), "\"room\"");
+	items_into(g, c.pack, field(j, "pack"), "\"pack\"");
 }
 
 void item_from(Item &o, const json &j)
 {
-	o.o_type = static_cast<ItemKind>(num_in<int>(j, "kind", 0, static_cast<int>(ItemKind::Missile)));
-	o.o_pos = coord_of(j, "pos");
-	o.o_launch = num<char>(j, "launch");
-	o.o_damage = attacks_of(field(j, "damage"), "\"damage\"");
-	o.o_hurldmg = attacks_of(field(j, "hurl"), "\"hurl\"");
-	o.o_count = num<int>(j, "count");
-	o.o_which = num<int>(j, "which");
-	o.o_hplus = num<int>(j, "hplus");
-	o.o_dplus = num<int>(j, "dplus");
-	o.o_ac = num<short>(j, "ac");
-	o.o_flags = ItemFlags::from_bits(num<ItemFlags::Bits>(j, "flags"));
-	o.o_enemy = num<char>(j, "enemy");
-	o.o_group = num<int>(j, "group");
+	o.kind = static_cast<ItemKind>(num_in<int>(j, "kind", 0, static_cast<int>(ItemKind::Missile)));
+	o.pos = coord_of(j, "pos");
+	o.launcher = num<char>(j, "launch");
+	o.damage = attacks_of(field(j, "damage"), "\"damage\"");
+	o.thrown_damage = attacks_of(field(j, "hurl"), "\"hurl\"");
+	o.count = num<int>(j, "count");
+	o.number = num<int>(j, "which");
+	o.hit_plus = num<int>(j, "hplus");
+	o.damage_plus = num<int>(j, "dplus");
+	o.ac = num<short>(j, "ac");
+	o.flags = ItemFlags::from_bits(num<ItemFlags::Bits>(j, "flags"));
+	o.enemy = num<char>(j, "enemy");
+	o.group = num<int>(j, "group");
 }
 
 void room_from(world::Room &r, const json &j)
 {
-	r.r_pos = coord_of(j, "pos");
-	r.r_max = coord_of(j, "size");
-	r.r_gold = coord_of(j, "gold");
-	r.r_goldval = num<int>(j, "gold_value");
-	r.r_flags = RoomFlags::from_bits(num<RoomFlags::Bits>(j, "flags"));
-	r.r_nexits = num_in<int>(j, "exit_count", 0, std::size(r.r_exit));
-	const json &exits = array_of(j, "exits", std::size(r.r_exit));
-	for (std::size_t i = 0; i < std::size(r.r_exit); i++)
-		r.r_exit[i] = to_coord(exits[i], "\"exits\"");
+	r.pos = coord_of(j, "pos");
+	r.size = coord_of(j, "size");
+	r.gold = coord_of(j, "gold");
+	r.gold_value = num<int>(j, "gold_value");
+	r.flags = RoomFlags::from_bits(num<RoomFlags::Bits>(j, "flags"));
+	r.nexits = num_in<int>(j, "exit_count", 0, std::size(r.exits));
+	const json &exits = array_of(j, "exits", std::size(r.exits));
+	for (std::size_t i = 0; i < std::size(r.exits); i++)
+		r.exits[i] = to_coord(exits[i], "\"exits\"");
 }
 
 int hex_value(char c)
@@ -689,7 +691,7 @@ void grid_from(auto &grid, const json &j, std::string_view key)
 	for (int y = 1; y < maxrow; y++) {
 		std::vector<unsigned char> row = hex_row(rows[y - 1], key);
 		for (int x = 0; x < MAXCOLS; x++)
-			set_byte(grid[world::INDEX(y, x)], row[x]);
+			set_byte(grid[world::Level::index({x, y})], row[x]);
 	}
 }
 
@@ -699,11 +701,11 @@ void odds_from(std::span<items::KindInfo> odds, const json &j, std::string_view 
 	for (std::size_t i = 0; i < odds.size(); i++) {
 		if (!list[i].is_array() || list[i].size() != 2)
 			fail(std::format("\"{}\" entries should be [odds, worth]", key));
-		odds[i].mi_prob = whole(list[i][0], key);
+		odds[i].prob = whole(list[i][0], key);
 		int worth = whole(list[i][1], key);
 		if (!std::in_range<short>(worth))
 			fail(std::format("\"{}\" is out of range", key));
-		odds[i].mi_worth = static_cast<short>(worth);
+		odds[i].worth = static_cast<short>(worth);
 	}
 }
 
@@ -809,7 +811,7 @@ void pool_from(Game &g, const json &j)
 
 void level_from(Game &g, const json &j)
 {
-	Level &l = g.level;
+	world::Level &l = g.level;
 	l.depth = num<int>(j, "depth");
 	l.ntraps = num<int>(j, "traps");
 	l.no_food = num<int>(j, "no_food");
@@ -924,7 +926,7 @@ void game_from(Game &g, MapView &view, const json &doc)
 	g.options.expert = flag(options, "expert");
 
 	g.pool = Pool();
-	g.level = Level();
+	g.level = world::Level();
 	g.player = Player();
 	g.items = Items();
 	g.scheduler = rules::Scheduler();

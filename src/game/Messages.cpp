@@ -15,6 +15,7 @@
 #include "core/Glyphs.hpp"
 #include "game/Game.hpp"
 #include "game/Keyboard.hpp"
+#include "game/MessageLine.hpp"
 #include "ui/Display.hpp"
 #include "world/Look.hpp"
 
@@ -37,7 +38,7 @@ more_at(std::string_view msg, int col)
 }  // namespace
 
 void
-show_msg(std::string_view text)
+MessageLine::show(std::string_view text)
 {
 	/*
 	 * if the string is "", just clear the line
@@ -45,14 +46,14 @@ show_msg(std::string_view text)
 	if (text.empty())
 	{
 		rogue::ui::display().clear_message();
-		game().message.end = 0;
+		end = 0;
 		return;
 	}
 	/*
 	 * otherwise add to the message and flush it out
 	 */
-	add_msg(text);
-	endmsg();
+	add(text);
+	end_message();
 }
 
 /*
@@ -61,24 +62,23 @@ show_msg(std::string_view text)
  *	if it is up there with the -More-)
  */
 void
-endmsg()
+MessageLine::end_message()
 {
-	rogue::MessageLine &message = game().message;
-	if (message.remember)
-		message.last = message.text;
-	if (message.end) {
+	if (remember)
+		last = text;
+	if (end) {
 		world::look(false);
-		more_at(" More ", message.end);
+		more_at(" More ", end);
 	}
 	/*
 	 * All messages should start with uppercase, except ones that
 	 * start with a pack addressing character
 	 */
-	if (is_lower(message.text[0]) && message.text[1] != ')')
-		message.text[0] = to_upper(message.text[0]);
-	putmsg(message.text);
-	message.end = message.next_end;
-	message.next_end = 0;
+	if (is_lower(text[0]) && text[1] != ')')
+		text[0] = to_upper(text[0]);
+	put(text);
+	end = next_end;
+	next_end = 0;
 }
 
 /*
@@ -86,9 +86,9 @@ endmsg()
  *  The prompt goes after the current message. Drawing is the display's
  */
 void
-more(std::string_view msg)
+MessageLine::more(std::string_view prompt)
 {
-	more_at(msg, game().message.end);
+	more_at(prompt, end);
 }
 
 /*
@@ -96,18 +96,17 @@ more(std::string_view msg)
  *	Perform an add onto the message buffer, cut to fit
  */
 void
-add_msg(std::string_view text)
+MessageLine::add(std::string_view more_text)
 {
-	rogue::MessageLine &message = game().message;
-	std::size_t room = BUFSIZE - 1 - message.next_end;
+	std::size_t room = BUFSIZE - 1 - next_end;
 
 	// Written where the message being built ends; a shown one is kept till then
-	message.text.resize(message.next_end);
-	message.text += text.substr(0, room);
+	text.resize(next_end);
+	text += more_text.substr(0, room);
 	// A NUL ended the C string this was
-	if (std::size_t nul = message.text.find('\0'); nul != std::string::npos)
-		message.text.resize(nul);
-	message.next_end = static_cast<int>(message.text.size());
+	if (std::size_t nul = text.find('\0'); nul != std::string::npos)
+		text.resize(nul);
+	next_end = static_cast<int>(text.size());
 }
 
 /*
@@ -116,14 +115,14 @@ add_msg(std::string_view text)
  *  scroll msg sideways until he has read it all
  */
 void
-putmsg(std::string_view msg)
+MessageLine::put(std::string_view msg)
 {
 	std::string_view cur = msg;		/* what is left to show */
 	int curlen;
 
 	do {
 		rogue::ui::display().draw_message(cur);
-		game().message.next_end = curlen = static_cast<int>(cur.size());
+		next_end = curlen = static_cast<int>(cur.size());
 		if (curlen > MAXCOLS) {
 			more_at(" Cont ", curlen);
 			/*
@@ -149,6 +148,12 @@ putmsg(std::string_view msg)
 		}
 	} while (curlen > MAXCOLS);
 }
+
+void show_msg(std::string_view text) { game().message.show(text); }
+void add_msg(std::string_view text) { game().message.add(text); }
+void endmsg() { game().message.end_message(); }
+void more(std::string_view prompt) { game().message.more(prompt); }
+void putmsg(std::string_view text) { game().message.put(text); }
 
 /*
  * wait_for

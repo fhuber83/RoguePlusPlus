@@ -15,7 +15,6 @@
 #include "items/Kinds.hpp"
 #include "items/effects/Potion.hpp"
 #include "items/effects/Weapon.hpp"
-#include "rules/Strength.hpp"
 
 namespace rogue::items::effects {
 
@@ -38,7 +37,7 @@ put_ring_on()
 	/*
 	 * Make certain that it is somethings that we want to wear
 	 */
-	if (obj->o_type != ItemKind::Ring) {
+	if (obj->kind != ItemKind::Ring) {
 		msg("you can't put that on your finger");
 		return false;
 	}
@@ -68,7 +67,7 @@ put_ring_on()
 	 */
 	switch (obj->which<Ring>()) {
 	case Ring::AddStrength:
-		rules::chg_str(obj->o_ac);
+		player.change_strength(obj->ac);
 		break;
 	case Ring::SeeInvisible:
 		invis_on();
@@ -161,52 +160,20 @@ gethand()
 }  // namespace
 
 /*
- * ring_eat:
- *	How much food does this ring use up?
- */
-int
-ring_eat(Hand hand)
-{
-	if (!game().player.ring_item(hand))
-		return 0;
-	switch (game().player.ring_item(hand)->which<Ring>()) {
-	case Ring::Regeneration:
-		return 2;
-	case Ring::SustainStrength:
-	case Ring::MaintainArmor:
-	case Ring::Protection:
-	case Ring::AddStrength:
-	case Ring::Stealth:
-		return 1;
-	case Ring::Searching:
-		return(rnd(5)==0);
-	case Ring::Dexterity:
-	case Ring::IncreaseDamage:
-		return (rnd(3) == 0);
-	case Ring::SlowDigestion:
-		return -rnd(2);
-	case Ring::SeeInvisible:
-		return (rnd(5) == 0);
-	default:
-		return 0;
-	}
-}
-
-/*
  * ring_num:
  *	Print ring bonuses
  */
 std::string
 ring_num(const Item &obj)
 {
-	if (!obj.o_flags.test(ItemFlag::Known))
+	if (!obj.is(ItemFlag::Known))
 		return "";
 	switch (obj.which<Ring>()) {
 	case Ring::Protection:
 	case Ring::AddStrength:
 	case Ring::IncreaseDamage:
 	case Ring::Dexterity:
-		return " " + num(obj.o_ac, 0, RING);
+		return " " + num(obj.ac, 0, RING);
 	default:
 		return "";
 	}

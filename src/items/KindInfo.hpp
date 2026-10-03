@@ -13,9 +13,9 @@ inline constexpr int NUMTHINGS = 7;	/* number of kinds of things to find */
  * odds; init_*() make the game's copies cumulative.
  */
 struct KindInfo {
-	std::string_view mi_name;
-	int mi_prob;
-	short mi_worth;
+	std::string_view name;
+	int prob;
+	short worth;
 };
 
 }  // namespace rogue::items

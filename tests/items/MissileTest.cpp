@@ -22,11 +22,11 @@ protected:
 	// A direction from the rogue with floor next to him
 	static Coord open_direction()
 	{
-		Coord hero = game().player.body.t_pos;
+		Coord hero = game().player.body.pos;
 		for (int dy = -1; dy <= 1; dy++)
 			for (int dx = -1; dx <= 1; dx++) {
 				Coord next{hero.x + dx, hero.y + dy};
-				if ((dx || dy) && game().level.at(next) == FLOOR && !entities::moat(next.y, next.x))
+				if ((dx || dy) && game().level.at(next) == FLOOR && !game().level.monster_at(next))
 					return {dx, dy};
 			}
 		ADD_FAILURE() << "the rogue has no floor next to him";
@@ -41,8 +41,8 @@ protected:
 	{
 		Item &dagger = *new_item();
 		items::effects::init_weapon(dagger, WeaponType::Dagger);
-		dagger.o_hplus = 100;
-		game().player.body.t_pack.push_front(dagger);
+		dagger.hit_plus = 100;
+		game().player.body.pack.push_front(dagger);
 		game().player.in_pack++;
 		return {*game().pool.id_of(dagger)};
 	}
@@ -60,7 +60,7 @@ protected:
 TEST_F(Missile, AWeaponThatHitsIsUsedUp)
 {
 	Coord d = open_direction();
-	Coord hero = game().player.body.t_pos;
+	Coord hero = game().player.body.pos;
 	Coord target{hero.x + d.x, hero.y + d.y};
 	Creature &monster = *new_creature();
 	entities::new_monster(monster, 'Z', target);

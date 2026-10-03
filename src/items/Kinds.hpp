@@ -3,7 +3,7 @@
 #include "core/KindTable.hpp"
 
 /*
- * Which potion, scroll, ring, ... an item is: its o_which, read with
+ * Which potion, scroll, ring, ... an item is: its number, read with
  * Item::which<E>(). The numbers are the original's (the old P_*, S_*, R_*,
  * WS_*, weapon and armor defines, named in the comments), and the order of
  * the tables they index.

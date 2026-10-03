@@ -19,7 +19,7 @@
 #include "items/Kinds.hpp"
 #include "rules/Combat.hpp"
 #include "ui/Display.hpp"
-#include "world/Map.hpp"
+#include "world/Level.hpp"
 #include "world/MapFlags.hpp"
 #include "world/Rooms.hpp"
 #include "world/Trap.hpp"
@@ -40,10 +40,10 @@ turn_corner()
 {
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
-	rogue::Level &level = game().level;
-	const Coord pos = player.body.t_pos;
+	world::Level &level = game().level;
+	const Coord pos = player.body.pos;
 
-	if (!turn.running || !level.room(*player.body.t_room).is_gone() || player.body.t_flags.test(CreatureFlag::Blind))
+	if (!turn.running || !level.room(*player.body.room).is_gone() || player.body.is(CreatureFlag::Blind))
 		return std::nullopt;
 	auto opens = [&](int y, int x) {
 		return level.flags_at(y, x).test(MapFlag::Passage) || level.at(y, x) == DOOR;
@@ -105,7 +105,7 @@ do_move(int dy, int dx)
 {
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	turn.first_move = false;
 	if (turn.bailout) {
@@ -123,10 +123,10 @@ do_move(int dy, int dx)
 	 * Do a confused move (maybe)
 	 */
 	Coord nh;
-	if (player.body.t_flags.test(CreatureFlag::Confused) && rnd(5) != 0)
+	if (player.body.is(CreatureFlag::Confused) && rnd(5) != 0)
 		nh = rndmove(player.body);
 	else
-		nh = player.body.t_pos + Coord{dx, dy};
+		nh = player.body.pos + Coord{dx, dy};
 
 	/*
 	 * Find the square he moves into. Off the map, into a wall or into
@@ -136,8 +136,8 @@ do_move(int dy, int dx)
 	unsigned char ch;
 	MapFlags fl;
 	for (;;) {
-		if (!world::offmap(nh.y, nh.x)) {
-			if (!world::diag_ok(player.body.t_pos, nh)) {
+		if (!world::Level::off_map(nh)) {
+			if (!level.diagonal_ok(player.body.pos, nh)) {
 				turn.after = false;
 				turn.running = false;
 				return;
@@ -146,20 +146,20 @@ do_move(int dy, int dx)
 			 * If you are running and the move does
 			 * not get you anywhere stop running
 			 */
-			if (turn.running && player.body.t_pos == nh)
+			if (turn.running && player.body.pos == nh)
 				turn.after = turn.running = false;
 			fl = level.flags_at(nh);
-			ch = world::winat(nh.y, nh.x);
+			ch = level.seen_at(nh);
 			/*
 			 * When the hero is on the door do not allow him
 			 * to run until he enters the room all the way
 			 */
-			if (level.at(player.body.t_pos) == DOOR && ch == FLOOR)
+			if (level.at(player.body.pos) == DOOR && ch == FLOOR)
 				turn.running = false;
 			if (!fl.test(MapFlag::Real) && ch == FLOOR) {
 				level.at(nh) = ch = TRAP;
 				level.flags_at(nh).set(MapFlag::Real);
-			} else if (player.body.t_flags.test(CreatureFlag::Held) && ch != 'F') {
+			} else if (player.body.is(CreatureFlag::Held) && ch != 'F') {
 				msg("you are being held");
 				return;
 			}
@@ -167,7 +167,7 @@ do_move(int dy, int dx)
 				break;
 		}
 		if (std::optional<Coord> dir = turn_corner()) {
-			nh = player.body.t_pos + *dir;
+			nh = player.body.pos + *dir;
 			continue;
 		}
 		turn.after = turn.running = false;
@@ -176,18 +176,18 @@ do_move(int dy, int dx)
 
 	// He steps onto nh
 	auto step = [&] {
-		ui::display().draw_tile(player.body.t_pos, level.at(player.body.t_pos));
+		ui::display().draw_tile(player.body.pos, level.at(player.body.pos));
 		if (fl.test(MapFlag::Passage) && (level.at(player.old_pos) == DOOR
 				|| level.flags_at(player.old_pos).test(MapFlag::Maze)))
 			world::leave_room(nh);
 		if (fl.test(MapFlag::Maze) && !level.flags_at(player.old_pos).test(MapFlag::Maze))
 			world::enter_room(nh);
-		player.body.t_pos = nh;
+		player.body.pos = nh;
 	};
 	switch (ch) {
 	case DOOR:
 		turn.running = false;
-		if (level.flags_at(player.body.t_pos).test(MapFlag::Passage))
+		if (level.flags_at(player.body.pos).test(MapFlag::Passage))
 			world::enter_room(nh);
 		step();
 		break;
@@ -201,12 +201,12 @@ do_move(int dy, int dx)
 		break;
 	case FLOOR:
 		if (!fl.test(MapFlag::Real))
-			world::be_trapped(player.body.t_pos);
+			world::be_trapped(player.body.pos);
 		step();
 		break;
 	default:
 		turn.running = false;
-		if (is_monster(ch) || entities::moat(nh.y, nh.x))
+		if (is_monster(ch) || level.monster_at(nh))
 			rules::fight(nh, ch, player.weapon_item(), false);
 		else {
 			if (ch != STAIRS)
@@ -220,24 +220,24 @@ do_move(int dy, int dx)
 Coord
 rndmove(const Creature &who)
 {
-	const int y = who.t_pos.y + rnd(3) - 1;
-	const int x = who.t_pos.x + rnd(3) - 1;
+	const int y = who.pos.y + rnd(3) - 1;
+	const int x = who.pos.x + rnd(3) - 1;
 	const Coord to = {x, y};
 
 	/*
 	 * Now check to see if that's a legal move.  If not, don't move.
 	 * (I.e., bump into the wall or whatever)
 	 */
-	if (to == who.t_pos)
+	if (to == who.pos)
 		return to;
-	if (world::offmap(y, x) || !world::diag_ok(who.t_pos, to))
-		return who.t_pos;
-	const unsigned char ch = world::winat(y, x);
-	if (!world::step_ok(ch))
-		return who.t_pos;
+	if (world::Level::off_map({x, y}) || !game().level.diagonal_ok(who.pos, to))
+		return who.pos;
+	const unsigned char ch = game().level.seen_at({x, y});
+	if (!step_ok(ch))
+		return who.pos;
 	if (ch == SCROLL)
-		if (Maybe<Item> obj = world::find_obj(y, x); obj && obj->which<Scroll>() == Scroll::ScareMonster)
-			return who.t_pos;
+		if (Maybe<Item> obj = game().level.object_at({x, y}); obj && obj->which<Scroll>() == Scroll::ScareMonster)
+			return who.pos;
 	return to;
 }
 

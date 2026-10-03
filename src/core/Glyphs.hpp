@@ -89,4 +89,23 @@ inline constexpr unsigned char DVRIGHT = 0xcc;
 
 inline constexpr unsigned char ESCAPE = 27;
 
+// Whether a square showing ch can be stepped on: not a wall, not blank,
+// not a monster
+constexpr bool
+step_ok(unsigned char ch)
+{
+	switch (ch) {
+	case ' ':
+	case VWALL:
+	case HWALL:
+	case ULWALL:
+	case URWALL:
+	case LLWALL:
+	case LRWALL:
+		return false;
+	default:
+		return !is_monster(ch);
+	}
+}
+
 }  // namespace rogue

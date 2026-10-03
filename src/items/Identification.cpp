@@ -51,17 +51,17 @@ inv_name(const Item &obj, bool drop)
 	rogue::Items &items = game().items;
 	bool brief = game().options.brief();
 
-	switch (obj.o_type)
+	switch (obj.kind)
 	{
 	case ItemKind::Scroll: {
 		Scroll which = obj.which<Scroll>();
 
-		if (obj.o_count == 1)
+		if (obj.count == 1)
 			name = "A scroll ";
 		else
-			name = std::format("{} scrolls ", obj.o_count);
+			name = std::format("{} scrolls ", obj.count);
 		if (items.s_know[which])
-			name += std::format("of {}", items.s_magic[which].mi_name);
+			name += std::format("of {}", items.s_magic[which].name);
 		else if (!items.s_guess[which].empty())
 			name += std::format("called {}", items.s_guess[which]);
 		else if (brief)
@@ -73,69 +73,69 @@ inv_name(const Item &obj, bool drop)
 	case ItemKind::Potion: {
 		Potion which = obj.which<Potion>();
 
-		if (obj.o_count == 1)
+		if (obj.count == 1)
 			name = "A potion ";
 		else
-			name = std::format("{} potions ", obj.o_count);
+			name = std::format("{} potions ", obj.count);
 		if (items.p_know[which])
-			name += brief ? std::format("of {}", items.p_magic[which].mi_name)
-				: std::format("of {}({})", items.p_magic[which].mi_name, items.p_colors[which]);
+			name += brief ? std::format("of {}", items.p_magic[which].name)
+				: std::format("of {}({})", items.p_magic[which].name, items.p_colors[which]);
 		else if (!items.p_guess[which].empty())
 			name += brief ? std::format("called {}", items.p_guess[which])
 				: std::format("called {}({})", items.p_guess[which], items.p_colors[which]);
-		else if (obj.o_count == 1)
+		else if (obj.count == 1)
 			name = std::format("A{} {} potion", vowelstr(items.p_colors[which]),
 				items.p_colors[which]);
 		else
-			name = std::format("{} {} potions", obj.o_count, items.p_colors[which]);
+			name = std::format("{} {} potions", obj.count, items.p_colors[which]);
 		break;
 	}
 	case ItemKind::Food: {
 		Food which = obj.which<Food>();
 
 		if (which == Food::Fruit)
-			if (obj.o_count == 1)
+			if (obj.count == 1)
 				name = std::format("A{} {}", vowelstr(game().options.fruit),
 					game().options.fruit);
 			else
-				name = std::format("{} {}s", obj.o_count,
+				name = std::format("{} {}s", obj.count,
 					game().options.fruit);
 		else
-			if (obj.o_count == 1)
+			if (obj.count == 1)
 				name = "Some food";
 			else
-				name = std::format("{} rations of food", obj.o_count);
+				name = std::format("{} rations of food", obj.count);
 		break;
 	}
 	case ItemKind::Weapon: {
 		WeaponType which = obj.which<WeaponType>();
 
-		if (obj.o_count > 1)
-			name = std::format("{} ", obj.o_count);
+		if (obj.count > 1)
+			name = std::format("{} ", obj.count);
 		else
 			name = std::format("A{} ", vowelstr(w_names[which]));
-		if (obj.o_flags.test(ItemFlag::Known))
-			name += std::format("{} {}", items::effects::num(obj.o_hplus, obj.o_dplus, WEAPON),
+		if (obj.is(ItemFlag::Known))
+			name += std::format("{} {}", items::effects::num(obj.hit_plus, obj.damage_plus, WEAPON),
 				w_names[which]);
 		else
 			name += w_names[which];
-		if (obj.o_count > 1)
+		if (obj.count > 1)
 			name += "s";
-		if (obj.o_enemy && obj.o_flags.test(ItemFlag::Revealed))
-			name += std::format(" of {} slaying", entities::monsters[obj.o_enemy-'A'].m_name);
+		if (obj.enemy && obj.is(ItemFlag::Revealed))
+			name += std::format(" of {} slaying", entities::monsters[obj.enemy-'A'].name);
 		break;
 	}
 	case ItemKind::Armor: {
 		ArmorType which = obj.which<ArmorType>();
 
-		if (!obj.o_flags.test(ItemFlag::Known))
+		if (!obj.is(ItemFlag::Known))
 			name = a_names[which];
 		else if (brief)
-			name = std::format("{} {}", items::effects::num(a_class[which] - obj.o_ac, 0, ARMOR),
+			name = std::format("{} {}", items::effects::num(a_class[which] - obj.ac, 0, ARMOR),
 				a_names[which]);
 		else
-			name = std::format("{} {} [armor class {}]", items::effects::num(a_class[which] - obj.o_ac, 0, ARMOR),
-				a_names[which], -(obj.o_ac-11));
+			name = std::format("{} {} [armor class {}]", items::effects::num(a_class[which] - obj.ac, 0, ARMOR),
+				a_names[which], -(obj.ac-11));
 		break;
 	}
 	case ItemKind::Amulet:
@@ -146,8 +146,8 @@ inv_name(const Item &obj, bool drop)
 
 		name = std::format("A{} {} ", vowelstr(items.ws_type[which]), items.ws_type[which]);
 		if (items.ws_know[which])
-			name += brief ? std::format("of {}{}", items.ws_magic[which].mi_name, items::effects::charge_str(obj))
-				: std::format("of {}{}({})", items.ws_magic[which].mi_name,
+			name += brief ? std::format("of {}{}", items.ws_magic[which].name, items::effects::charge_str(obj))
+				: std::format("of {}{}({})", items.ws_magic[which].name,
 					items::effects::charge_str(obj), items.ws_made[which]);
 		else if (!items.ws_guess[which].empty())
 			name += brief ? std::format("called {}", items.ws_guess[which])
@@ -166,9 +166,9 @@ inv_name(const Item &obj, bool drop)
 		Ring which = obj.which<Ring>();
 
 		if (items.r_know[which])
-			name = brief ? std::format("A{} ring of {}", items::effects::ring_num(obj), items.r_magic[which].mi_name)
+			name = brief ? std::format("A{} ring of {}", items::effects::ring_num(obj), items.r_magic[which].name)
 				: std::format("A{} ring of {}({})", items::effects::ring_num(obj),
-					items.r_magic[which].mi_name, items.r_stones[which]);
+					items.r_magic[which].name, items.r_stones[which]);
 		else if (!items.r_guess[which].empty())
 			name = brief ? std::format("A ring called {}", items.r_guess[which])
 				: std::format("A ring called {}({})", items.r_guess[which], items.r_stones[which]);
@@ -179,12 +179,12 @@ inv_name(const Item &obj, bool drop)
 	}
 	default:	// the other kinds of item: nothing, except to the checks
 		if constexpr (rogue::config::debug_checks) {
-			if (obj.o_type == ItemKind::Gold)
-				name = std::format("Gold at {},{}", obj.o_pos.y, obj.o_pos.x);
+			if (obj.kind == ItemKind::Gold)
+				name = std::format("Gold at {},{}", obj.pos.y, obj.pos.x);
 			else {
-				debug("Picked up someting bizzare {}", io_unctrl(glyph_of(obj.o_type)));
-				name = std::format("Something bizarre {}({})", static_cast<char>(glyph_of(obj.o_type)),
-					static_cast<int>(obj.o_type));
+				debug("Picked up someting bizzare {}", io_unctrl(glyph_of(obj.kind)));
+				name = std::format("Something bizarre {}({})", static_cast<char>(glyph_of(obj.kind)),
+					static_cast<int>(obj.kind));
 			}
 		}
 		break;
@@ -267,14 +267,14 @@ print_disc(ItemKind type, Pager &page)
 		break;
 	}
 	set_order(std::span(order).first(maxnum));
-	obj.o_count = 1;
-	obj.o_flags.reset();
+	obj.count = 1;
+	obj.flags.reset();
 	int num_found = 0;
 	for (int i = 0; i < maxnum; i++)
 		if (know[order[i]] || !guess[order[i]].empty())
 		{
-			obj.o_type = type;
-			obj.o_which = order[i];
+			obj.kind = type;
+			obj.number = order[i];
 			page.add_line("", inv_name(obj, false));
 			num_found++;
 		}
@@ -414,37 +414,37 @@ call()
 	std::span<std::string> guess;
 	std::string_view elsewise;
 	std::span<const bool> know;
-	switch (obj->o_type)
+	switch (obj->kind)
 	{
 	case ItemKind::Ring:
 		guess = items.r_guess;
 		know = items.r_know;
-		elsewise = (!guess[obj->o_which].empty() ?
-			guess[obj->o_which] : items.r_stones[obj->which<Ring>()]);
+		elsewise = (!guess[obj->number].empty() ?
+			guess[obj->number] : items.r_stones[obj->which<Ring>()]);
 		break;
 	case ItemKind::Potion:
 		guess = items.p_guess;
 		know = items.p_know;
-		elsewise = (!guess[obj->o_which].empty() ?
-			guess[obj->o_which] : items.p_colors[obj->which<Potion>()]);
+		elsewise = (!guess[obj->number].empty() ?
+			guess[obj->number] : items.p_colors[obj->which<Potion>()]);
 		break;
 	case ItemKind::Scroll:
 		guess = items.s_guess;
 		know = items.s_know;
-		elsewise = (!guess[obj->o_which].empty() ?
-			guess[obj->o_which] : items.s_names[obj->which<Scroll>()]);
+		elsewise = (!guess[obj->number].empty() ?
+			guess[obj->number] : items.s_names[obj->which<Scroll>()]);
 		break;
 	case ItemKind::Stick:
 		guess = items.ws_guess;
 		know = items.ws_know;
-		elsewise = (!guess[obj->o_which].empty() ?
-			guess[obj->o_which] : items.ws_made[obj->which<Stick>()]);
+		elsewise = (!guess[obj->number].empty() ?
+			guess[obj->number] : items.ws_made[obj->which<Stick>()]);
 		break;
 	default:
 		msg("you can't call that anything");
 		return;
 	}
-	if (know[obj->o_which])
+	if (know[obj->number])
 	{
 		msg("that has already been identified");
 		return;
@@ -452,7 +452,7 @@ call()
 	msg("Was called \"{}\"", elsewise);
 	msg("what do you want to call it? ");
 	if (auto name = ui::input().read_line(MAXNAME); name && !name->empty())
-		guess[obj->o_which] = *name;
+		guess[obj->number] = *name;
 	msg("");
 }
 
@@ -470,7 +470,7 @@ whatis()
 	Maybe<Item> obj;
 	rogue::Items &items = game().items;
 
-	if (game().player.body.t_pack.empty()) {
+	if (game().player.body.pack.empty()) {
 		msg("You don't have anything in your pack to identify");
 		return;
 	}
@@ -484,7 +484,7 @@ whatis()
 			break;
 	}
 
-	switch (obj->o_type) {
+	switch (obj->kind) {
 	case ItemKind::Scroll:
 		items.s_know[obj->which<Scroll>()] = true;
 		items.s_guess[obj->which<Scroll>()].clear();
@@ -495,16 +495,16 @@ whatis()
 		break;
 	case ItemKind::Stick:
 		items.ws_know[obj->which<Stick>()] = true;
-		obj->o_flags.set(ItemFlag::Known);
+		obj->flags.set(ItemFlag::Known);
 		items.ws_guess[obj->which<Stick>()].clear();
 		break;
 	case ItemKind::Weapon:
 	case ItemKind::Armor:
-		obj->o_flags.set(ItemFlag::Known);
+		obj->flags.set(ItemFlag::Known);
 		break;
 	case ItemKind::Ring:
 		items.r_know[obj->which<Ring>()] = true;
-		obj->o_flags.set(ItemFlag::Known);
+		obj->flags.set(ItemFlag::Known);
 		items.r_guess[obj->which<Ring>()].clear();
 		break;
 	default:	// the other kinds of item: nothing
@@ -514,8 +514,8 @@ whatis()
 	 * If it is vorpally enchanted, then reveal what type of monster it is
 	 * vorpally enchanted against
 	 */
-	if (obj->o_enemy)
-		obj->o_flags.set(ItemFlag::Revealed);
+	if (obj->enemy)
+		obj->flags.set(ItemFlag::Revealed);
 	msg("{}", inv_name(*obj, false));
 }
 

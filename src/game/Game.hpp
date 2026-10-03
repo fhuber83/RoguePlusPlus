@@ -19,11 +19,12 @@
 #include "entities/List.hpp"
 #include "entities/Stats.hpp"
 #include "game/Id.hpp"
+#include "game/MessageLine.hpp"
 #include "game/Slots.hpp"
 #include "items/KindInfo.hpp"
 #include "items/Kinds.hpp"
 #include "rules/Scheduler.hpp"
-#include "world/Map.hpp"
+#include "world/Level.hpp"
 #include "world/MapFlags.hpp"
 #include "world/Room.hpp"
 #include "world/RoomRef.hpp"
@@ -54,20 +55,6 @@ struct Options {
 
 	// Leave out the flavour text of messages
 	bool brief() const { return terse || expert; }
-};
-
-/*
- * The message line: the message being built, the one shown and the last one
- * kept for ^R.
- */
-inline constexpr int BUFSIZE = 128;	/* the longest message, with its end */
-
-struct MessageLine {
-	std::string text;				/* msgbuf: the message being built, at most BUFSIZE - 1 */
-	std::string last;				/* huh: the last message printed */
-	int end = 0;					/* mpos: where the shown message ends, 0 if none */
-	int next_end = 0;				/* newpos: where the message being built ends */
-	bool remember = true;			/* save_msg: keep the message for ^R */
 };
 
 /*
@@ -142,54 +129,16 @@ struct Player {
 	bool wears(Hand hand, Ring ring) const;
 	// Whether he wears this ring on either hand (was ISWEARING)
 	bool wears(Ring ring) const { return wears(Hand::Left, ring) || wears(Hand::Right, ring); }
-};
 
-/*
- * The level the rogue is on: its map, rooms, passages, and what lies and
- * lives on it.
- */
-struct Level {
-	int depth = 1;					/* level: what level rogue is on */
-	int ntraps = 0;					/* Number of traps on this level */
-	int no_food = 0;				/* Number of levels without food */
-	std::array<world::Room, world::MAXROOMS> rooms = {};	/* One for each room -- A level */
-	std::array<world::Room, world::MAXPASS> passages = {};	/* One for each passage */
-	/*
-	 * What is at each square, and its MapFlags. Index them with INDEX(y, x),
-	 * or use at()/flags_at().
-	 */
-	unsigned char map[(MAXLINES-3)*MAXCOLS] = {};	/* _level */
-	MapFlags flags[(MAXLINES-3)*MAXCOLS] = {};	/* _flags */
-	List<Item> objects;				/* lvl_obj: list of objects on this level */
-	List<Creature> monsters;		/* mlist: list of monsters on the level */
-
-	// Passages are dark rooms that are gone. The original table left the
-	// 13th one lit by mistake.
-	Level()
-	{
-		for (auto &p : passages)
-			p.r_flags = RoomFlag::Gone | RoomFlag::Dark;
-	}
-
-	// What is at a square (was chat())
-	unsigned char &at(int y, int x) { return map[world::INDEX(y, x)]; }
-	unsigned char &at(Coord pos) { return at(pos.y, pos.x); }
-	// A square's MapFlags (was flat())
-	MapFlags &flags_at(int y, int x) { return flags[world::INDEX(y, x)]; }
-	MapFlags &flags_at(Coord pos) { return flags_at(pos.y, pos.x); }
-	// The room or passage a RoomRef names
-	world::Room &room(RoomRef r) { return r.kind == RoomRef::Kind::Room ? rooms[r.index] : passages[r.index]; }
-	const world::Room &room(RoomRef r) const
-	{
-		return r.kind == RoomRef::Kind::Room ? rooms[r.index] : passages[r.index];
-	}
-	// Whether a RoomRef names one of this level's rooms or passages
-	static constexpr bool valid(RoomRef r)
-	{
-		return r.index >= 0 && r.index < (r.kind == RoomRef::Kind::Room ? world::MAXROOMS : world::MAXPASS);
-	}
-	// The passage a passage or maze square belongs to
-	RoomRef passage_at(Coord pos) { return RoomRef::passage(flags_at(pos).passage()); }
+	// Change his strength by amt, within its bounds, and remember the
+	// highest it has been without rings of strength (was game().player.change_strength())
+	void change_strength(int amt);
+	// The armor class the status line shows: his armor's, or his own
+	// without (rings of protection don't count, as they never did)
+	int armor_class() const;
+	// The food the ring on a hand costs this turn, rolled for some rings
+	// (was ring_eat())
+	int ring_food(Hand hand) const;
 };
 
 /*
@@ -226,17 +175,6 @@ struct Items {
 	Items();
 };
 
-// The pool's creatures and items, as Lists find them (entities/List.hpp)
-template <>
-struct ListPool<Item> {
-	static Item *at(ItemId id);
-	static std::optional<ItemId> id_of(const Item &obj);
-};
-template <>
-struct ListPool<Creature> {
-	static Creature *at(CreatureId id);
-	static std::optional<CreatureId> id_of(const Creature &tp);
-};
 
 /*
  * The creatures and items in play, made by new_creature() and new_item() and
@@ -269,7 +207,7 @@ struct Game {
 	Random random{Random::from_clock()};	/* All randomness, see rng() */
 	Options options;
 	Player player;
-	Level level;
+	world::Level level;
 	Items items;
 	Pool pool;
 	rules::Scheduler scheduler;		/* Daemons and fuses */
@@ -292,7 +230,7 @@ struct Game {
  * each item in use is in exactly one of the level's objects, the rogue's
  * pack or a monster's pack; each creature in use is on the level's monster
  * list once; worn items are in the pack; the item get_item() gave last is in
- * use; a monster's t_dest is the hero, a room's or passage's gold, or a floor
+ * use; a monster's dest is the hero, a room's or passage's gold, or a floor
  * item; rooms are rooms or passages; and the count of things in use is right.
  * Holds between commands, which is
  * when a game is saved.

@@ -26,10 +26,9 @@
 #include "items/effects/Weapon.hpp"
 #include "rules/Combat.hpp"
 #include "rules/Durations.hpp"
-#include "rules/Strength.hpp"
 #include "ui/Display.hpp"
+#include "world/Level.hpp"
 #include "world/LevelGenerator.hpp"
-#include "world/Map.hpp"
 #include "world/Rooms.hpp"
 #include "world/Trap.hpp"
 
@@ -70,7 +69,7 @@ be_trapped(Coord tc)
 	rogue::Player &player = game().player;
 
 	game().turn.count = game().turn.running = false;
-	int index = INDEX(tc.y, tc.x);
+	int index = Level::index(tc);
 	game().level.map[index] = TRAP;
 	Trap tr = game().level.flags[index].trap();
 	player.was_trapped = rogue::Trapped::Sprung;
@@ -84,14 +83,14 @@ be_trapped(Coord tc)
 		break;
 	case Trap::Sleep:
 		player.no_command += rules::sleep_time();
-		player.body.t_flags.unset(CreatureFlag::Running);
+		player.body.flags.unset(CreatureFlag::Running);
 		msg("a {}mist envelops you and you fall asleep",
 			noterse("strange white "));
 		break;
 	case Trap::Arrow:
-		if (rules::swing(player.body.t_stats.s_lvl-1, player.body.t_stats.s_arm, 1)) {
-			player.body.t_stats.s_hpt -= roll(1, 6);
-			if (player.body.t_stats.s_hpt <= 0) {
+		if (rules::swing(player.body.stats.level-1, player.body.stats.armor, 1)) {
+			player.body.stats.hp -= roll(1, 6);
+			if (player.body.stats.hp <= 0) {
 				msg("an arrow killed you");
 				death('a');
 			} else
@@ -99,11 +98,11 @@ be_trapped(Coord tc)
 		}
 		else {
 			if (Maybe<Item> arrow = new_item()) {
-				arrow->o_type = ItemKind::Weapon;
+				arrow->kind = ItemKind::Weapon;
 				arrow->set_which(WeaponType::Arrow);
 				items::effects::init_weapon(*arrow, WeaponType::Arrow);
-				arrow->o_count = 1;
-				arrow->o_pos = player.body.t_pos;
+				arrow->count = 1;
+				arrow->pos = player.body.pos;
 				items::effects::fall(*arrow, false);
 			}
 			msg("an arrow shoots past you");
@@ -116,14 +115,14 @@ be_trapped(Coord tc)
 		player.was_trapped = rogue::Trapped::Teleported;
 		break;
 	case Trap::Dart:
-		if (rules::swing(player.body.t_stats.s_lvl+1, player.body.t_stats.s_arm, 1)) {
-			player.body.t_stats.s_hpt -= roll(1, 4);
-			if (player.body.t_stats.s_hpt <= 0) {
+		if (rules::swing(player.body.stats.level+1, player.body.stats.armor, 1)) {
+			player.body.stats.hp -= roll(1, 4);
+			if (player.body.stats.hp <= 0) {
 				msg("a poisoned dart killed you");
 				death('d');
 			}
 			if (!player.wears(Ring::SustainStrength) && !rules::save(rules::SaveThrow::Poison))
-				rules::chg_str(-1);
+				player.change_strength(-1);
 			msg("a dart just hit you in the shoulder");
 		} else
 			msg("a dart whizzes by your ear and vanishes");
@@ -148,7 +147,7 @@ descend(std::string_view mesg)
 	msg("{}", mesg);
 	if (!rules::save(rules::SaveThrow::Luck)) {
 		msg("you are damaged by the fall");
-		if ((game().player.body.t_stats.s_hpt -= roll(1,8)) <= 0)
+		if ((game().player.body.stats.hp -= roll(1,8)) <= 0)
 			death('f');
 	}
 }

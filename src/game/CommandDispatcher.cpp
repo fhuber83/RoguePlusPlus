@@ -38,6 +38,7 @@
 #include "rules/Regeneration.hpp"
 #include "rules/Scheduler.hpp"
 #include "ui/Display.hpp"
+#include "world/Level.hpp"
 #include "world/Look.hpp"
 #include "world/Rooms.hpp"
 #include "world/Traps.hpp"
@@ -69,7 +70,7 @@ command()
 	 * in, and the moves it had left.
 	 */
 	if (!turn.resuming || turn.moves_left == 0)
-		turn.moves_left = player.body.t_flags.test(CreatureFlag::Hasted) ? rnd(2) + 2 : 1;
+		turn.moves_left = player.body.is(CreatureFlag::Hasted) ? rnd(2) + 2 : 1;
 	for (; turn.moves_left > 0; turn.moves_left--) {
 		status();
 		if (player.no_command) {
@@ -197,7 +198,7 @@ get_prefix()
 		turn.fast_mode = false;
 	// Which commands a count repeats is in game/Command.cpp
 	if (command_of(retch) == Command::Move && turn.fast_mode && !turn.running) {
-		if (!game().player.body.t_flags.test(CreatureFlag::Blind)) {
+		if (!game().player.body.is(CreatureFlag::Blind)) {
 			turn.door_stop = true;
 			turn.first_move = true;
 		}
@@ -229,7 +230,7 @@ execcom()
 {
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	do {
 		int ch = get_prefix();
@@ -251,7 +252,7 @@ execcom()
 				turn.after = false;
 			break;
 		case Command::Quit: quit(); break;
-		case Command::Inventory: items::inventory(player.body.t_pack, ItemFilter::all(), ""); break;
+		case Command::Inventory: items::inventory(player.body.pack, ItemFilter::all(), ""); break;
 		case Command::Drop: items::drop(); break;
 		case Command::Quaff: items::effects::quaff(); break;
 		case Command::Read: items::effects::read_scroll(); break;
@@ -290,7 +291,7 @@ execcom()
 		case Command::Rest: rules::doctor(); break;
 		case Command::IdentifyTrap:
 			if (get_dir()) {
-				Coord lookat = player.body.t_pos + turn.delta;
+				Coord lookat = player.body.pos + turn.delta;
 				if (level.at(lookat) != TRAP)
 					msg("no trap there.");
 				else

@@ -19,7 +19,7 @@
 #include "game/Game.hpp"
 #include "game/Messages.hpp"
 #include "ui/Display.hpp"
-#include "world/Map.hpp"
+#include "world/Level.hpp"
 #include "world/MapFlags.hpp"
 #include "world/Room.hpp"
 #include "world/RoomRef.hpp"
@@ -36,26 +36,26 @@ look(bool wakeup)
 {
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
-	std::optional<RoomRef> rp = player.body.t_room;
-	MapFlags pfl = level.flags_at(player.body.t_pos);
-	unsigned char pch = level.at(player.body.t_pos);
+	std::optional<RoomRef> rp = player.body.room;
+	MapFlags pfl = level.flags_at(player.body.pos);
+	unsigned char pch = level.at(player.body.pos);
 	/*
 	 * if the hero has moved
 	 */
-	if (!(player.old_pos == player.body.t_pos)) {
-		if (!player.body.t_flags.test(CreatureFlag::Blind)) {
+	if (!(player.old_pos == player.body.pos)) {
+		if (!player.body.is(CreatureFlag::Blind)) {
 			for (int x = player.old_pos.x - 1; x <= (player.old_pos.x + 1); x++)
 				for (int y = player.old_pos.y - 1; y <= (player.old_pos.y + 1); y++) {
-					if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || offmap(y,x))
+					if ((y == player.body.pos.y && x == player.body.pos.x) || Level::off_map({x, y}))
 						continue;
 					unsigned char ch = ui::display().tile_at({x, y});
 					if (ch == FLOOR) {
-						if (level.room(*player.old_room).r_flags.test(RoomFlag::Dark) && !level.room(*player.old_room).r_flags.test(RoomFlag::Gone))
+						if (level.room(*player.old_room).flags.test(RoomFlag::Dark) && !level.room(*player.old_room).flags.test(RoomFlag::Gone))
 							ui::display().draw_tile({x, y}, ' ');
 					} else {
-						MapFlags &fp = level.flags[INDEX(y,x)];
+						MapFlags &fp = level.flags[Level::index({x, y})];
 						/*
 						 * if the maze or passage (that the hero is in!!)
 						 * needs to be redrawn (passages once draw always
@@ -68,30 +68,30 @@ look(bool wakeup)
 					}
 				}
 		}
-		player.old_pos = player.body.t_pos;
+		player.old_pos = player.body.pos;
 		player.old_room = rp;
 	}
-	int ey = player.body.t_pos.y + 1;
-	int ex = player.body.t_pos.x + 1;
-	int sx = player.body.t_pos.x - 1;
-	int sy = player.body.t_pos.y - 1;
+	int ey = player.body.pos.y + 1;
+	int ex = player.body.pos.x + 1;
+	int sx = player.body.pos.x - 1;
+	int sy = player.body.pos.y - 1;
 	int sumhero = 0, diffhero = 0;
 	if (turn.door_stop && !turn.first_move && turn.running) {
-		sumhero = player.body.t_pos.y + player.body.t_pos.x;
-		diffhero = player.body.t_pos.y - player.body.t_pos.x;
+		sumhero = player.body.pos.y + player.body.pos.x;
+		diffhero = player.body.pos.y - player.body.pos.x;
 	}
 	int passcount = 0;
 	for (int y = sy; y <= ey; y++)
 		if (y > 0 && y < maxrow) for (int x = sx; x <= ex; x++) {
 			if (x <= 0 || x >= MAXCOLS)
 				continue;
-			if (!player.body.t_flags.test(CreatureFlag::Blind)) {
-				if (y == player.body.t_pos.y && x == player.body.t_pos.x)
+			if (!player.body.is(CreatureFlag::Blind)) {
+				if (y == player.body.pos.y && x == player.body.pos.x)
 					continue;
-			} else if (y != player.body.t_pos.y || x != player.body.t_pos.x)
+			} else if (y != player.body.pos.y || x != player.body.pos.x)
 				continue;
 
-			int index = INDEX(y, x);
+			int index = Level::index({x, y});
 			/*
 			 * THIS REPLICATES THE moat() MACRO.  IF MOAT IS CHANGED,
 			 * THIS MUST BE CHANGED ALSO ?? What does this really mean ??
@@ -119,19 +119,19 @@ look(bool wakeup)
 					continue;
 			}
 
-			if (Maybe<Creature> tp = entities::moat(y,x)) {
-				if (player.body.t_flags.test(CreatureFlag::SeeMonst) && tp->t_flags.test(CreatureFlag::Invisible)) {
+			if (Maybe<Creature> tp = level.monster_at({x, y})) {
+				if (player.body.is(CreatureFlag::SeeMonst) && tp->is(CreatureFlag::Invisible)) {
 					if (turn.door_stop && !turn.first_move)
 						turn.running = false;
 					continue;
 				} else {
 					if (wakeup)
 						entities::wake_monster(y, x);
-					if (tp->t_oldch != ' ' ||
-						(!level.room(*rp).r_flags.test(RoomFlag::Dark) && !player.body.t_flags.test(CreatureFlag::Blind)))
-							tp->t_oldch = level.map[index];
+					if (tp->under != ' ' ||
+						(!level.room(*rp).flags.test(RoomFlag::Dark) && !player.body.is(CreatureFlag::Blind)))
+							tp->under = level.map[index];
 					if (entities::see_monst(*tp))
-						ch = tp->t_disguise;
+						ch = tp->disguise;
 				}
 			}
 
@@ -180,11 +180,11 @@ look(bool wakeup)
 				}
 				switch (ch) {
 				case DOOR:
-					if (x == player.body.t_pos.x || y == player.body.t_pos.y)
+					if (x == player.body.pos.x || y == player.body.pos.y)
 						turn.running = false;
 					break;
 				case PASSAGE:
-					if (x == player.body.t_pos.x || y == player.body.t_pos.y)
+					if (x == player.body.pos.x || y == player.body.pos.y)
 						passcount++;
 					break;
 				case FLOOR:
@@ -204,9 +204,9 @@ look(bool wakeup)
 		}
 	if (turn.door_stop && !turn.first_move && passcount > 1)
 		turn.running = false;
-	ui::display().draw_tile(player.body.t_pos, PLAYER,
-			(level.flags_at(player.body.t_pos).test(MapFlag::Passage) || (player.was_trapped == rogue::Trapped::Teleported)
-					|| level.flags_at(player.body.t_pos).test(MapFlag::Maze))
+	ui::display().draw_tile(player.body.pos, PLAYER,
+			(level.flags_at(player.body.pos).test(MapFlag::Passage) || (player.was_trapped == rogue::Trapped::Teleported)
+					|| level.flags_at(player.body.pos).test(MapFlag::Maze))
 				? ui::TileStyle::Inverse : ui::TileStyle::Normal);
 	if (player.was_trapped != rogue::Trapped::None) {
 		ui::display().bell();
@@ -222,16 +222,16 @@ void
 search()
 {
 	rogue::Player &player = game().player;
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
-	if (player.body.t_flags.test(CreatureFlag::Blind))
+	if (player.body.is(CreatureFlag::Blind))
 		return;
-	int ey = player.body.t_pos.y + 1;
-	int ex = player.body.t_pos.x + 1;
-	for (int y = player.body.t_pos.y - 1; y <= ey; y++)
-		for (int x = player.body.t_pos.x - 1; x <= ex; x++)
+	int ey = player.body.pos.y + 1;
+	int ex = player.body.pos.x + 1;
+	for (int y = player.body.pos.y - 1; y <= ey; y++)
+		for (int x = player.body.pos.x - 1; x <= ex; x++)
 		{
-			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || offmap(y, x))
+			if ((y == player.body.pos.y && x == player.body.pos.x) || Level::off_map({x, y}))
 				continue;
 			MapFlags &fp = level.flags_at(y, x);
 			if (!fp.test(MapFlag::Real))

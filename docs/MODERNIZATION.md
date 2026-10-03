@@ -441,6 +441,15 @@ Bugs of the original that phases 10 to 12 kept on purpose, fixed here because fi
   - What is left: `game()`'s and `ui::screen()`'s instances (phase 17), `SaveGame`'s interned texts (they live as long as the game by design, see 8.3) and `CursesTerminal`'s settings (16.5).
 - **15.6 Range-for over lists the walk doesn't change.** 21 `first()`/`after()` walks are range-for loops over references, the pack letters of `inventory()`, `pack_obj()`, `pack_char()` and `total_winner()` counted in the body; the nymph's choice asks `refers_to()`; `chase()` looks for a scroll with `find_obj()`, the same first object on the square. Five walks stay, each with a comment saying why: `runners()` (a monster can vanish in its turn), `do_chase()` and `remove_monster()` (the body takes the entry out), and `add_pack()`'s two (the entry is used after the loop).
 - Verified: `rogue_tests` passes (227 tests), also under ASan/UBSan, and the default, Release and checks (`ROGUE_DEBUG_CHECKS`, `ROGUE_ASCII`) builds have no warnings; `tools/check-includes.sh` reports nothing. Replays of the phase's end against `main` (phase 14's end), with the ASan/UBSan build: 12 seeds × 600 keys and 8 dives × 300 keys, all 40 final screens identical, no sanitizer reports; the differing frames are the clock and level wipes caught at another frame (in the dives, and twice in the slower ASan build's random play, a build a level ahead for a few keys). The resume check matches for all 7 games alive at the save, on this tree and its ASan build but for one wipe frame of seed 7, which 13.5 and 13.6 show too. A replay of 15.1 to 15.4 alone gave the same.
+## Types with behaviour (done)
+
+- **16.1 The level's squares are `Level`'s.** `struct Level` moves from `game/Game.hpp` to `world/Level.hpp` as `world::Level`, the world's type next to `world::Room`. The functions that ask about a square are its members and take a `Coord`: `INDEX()` is `index()` and `offmap()` `off_map()` (both static), `winat()` `seen_at()`, `find_obj()` `object_at()`, `moat()` `monster_at()` (from `entities/MonsterCatalog`; the plan didn't name it, but `seen_at()` needs it and it only reads the level), `diag_ok()` `diagonal_ok()`, and `room_at()` is `roomin()`'s search. `roomin()` stays as a wrapper for what it adds, the `bailout` when a square is in no room. `step_ok()` judges a glyph, not a square, and joins `is_floor()` in `core/Glyphs.hpp`. `world/Map` is gone; `MapTest` is `LevelTest`, with tests of the new members. The calls were rewritten by a script that passes a `Coord` the caller already has (`seen_at(tp.pos)`) and builds one otherwise (`seen_at({x, y})`).
+- **16.2 Plain member names, and questions asked of one thing.** Settled with the open question: every struct's prefix goes, one commit per struct (16.2a to f): `Creature`'s `t_` (`t_turn` is `its_turn`, `t_oldch` `under`), `Item`'s `o_` (`o_type` is `kind`, `o_which` `number`, since `which<E>()` is taken, `o_hurldmg` `thrown_damage`, `o_hplus`/`o_dplus` `hit_plus`/`damage_plus`), `Stats`' `s_` (`s_lvl` is `level`, `s_hpt` `hp`), `Room`'s `r_` (`r_max` is `size`, `r_exit` `exits`), `MonsterKind`'s `m_`, `KindInfo`'s `mi_`, `HelpLine`'s `h_` and the stones' `st_`. The `Items` tables keep `s_`, `p_`, `r_` and `ws_`, which say which kind of item a table is for. The save file's keys were plain names already, so it doesn't change. 16.2g: a creature's or item's flag is asked with `is()` (`tp.is(CreatureFlag::Blind)`) and still set and cleared through `flags`; `is_magic()` is `Item::is_magic()` (`entities/Item.cpp`). The `ListPool` specializations moved from `game/Game.hpp` into `entities/List.hpp`: a file that walked a list without naming anything of `Game.hpp` compiled only by accident, and `tools/check-includes.sh --fix` broke it by taking the include away.
+- **16.3 What is the rogue's own is `Player`'s.** `chg_str()` is `Player::change_strength()`, the status line's armor class `Player::armor_class()`, and `ring_eat()` `Player::ring_food(Hand)`. `stomach()` asks the left hand first: it added the two calls in one expression, whose order C++ leaves open, and the build called the left one first (both can roll). `add_str()` only clamps a strength and joins `str_t` in `entities/Stats.hpp`; `rules/Strength` is gone. A test found that `str_t` is unsigned, as in the original, so a strength taken below 0 wraps and ends at 31; play never takes that much.
+- **16.4 `MessageLine` shows its messages.** `MessageLine` moves to `game/MessageLine.hpp`, with `BUFSIZE`, and gains `show()`, `add()`, `end_message()`, `more()` and `put()`, the bodies of `show_msg()`, `add_msg()`, `endmsg()`, `more()` and `putmsg()`. Those free functions forward to `game().message`, so their callers didn't change; phase 17 passes the message line instead. The prompts that aren't the message line's (`wait_for()`, `wait_msg()`, `str_attr()`, `noterse()`) stay free functions.
+- **16.5 `CursesTerminal` keeps its settings.** Its wanted size, number of colors, colour choices and key mask are private members instead of file-scope variables. The helpers that used them stay file-local, since they use curses types that the header must not show, and take what they need as parameters (`define_keys()` and `init_colors()` return the mask and the number of colors).
+- `tools/replay/make-trees.sh` patches the stairs check whether it says `t_pos` or `pos`.
+- Verified: `rogue_tests` passes (233 tests; new: `LevelTest`'s member tests, `PlayerTest`, `Stats.AddStrKeepsItsBounds`), also under ASan/UBSan; the default, Release and checks builds have no warnings, and `tools/check-includes.sh` reports nothing. Replays of the phase's end against `main` (phase 15's end), with the ASan/UBSan build: 12 seeds × 600 keys and 8 dives × 300 keys, all 40 final screens identical, no sanitizer reports; the differing frames are the clock and level wipes caught at another frame (in the dives, a build a level ahead for a few keys). The resume check matches for all 7 games alive at the save, on this tree and its ASan build.
 ## Where things stand after phase 9
 
 Measured on `main` after PR #8 (2026-09-26), with `grep` over `src/`. Counts include the uses inside `#ifdef WIZARD`/`DEBUG` blocks.
@@ -471,21 +480,22 @@ What that means for the plan:
 
 ## Target architecture
 
-As it stands after phase 13; phase 14 replaces `rogue.h` and `glyphs.h` with includes of these modules.
+As it stands after phase 16.
 
 ```
 src/
   app/          main.cpp: arguments, seeding, starting or restoring a game
-  core/         Coord, Random, Dice/Attacks, Flags, KindTable, Maybe, Ascii, Math, Text, Config
-  world/        Level map (Map, MapFlags), Room/RoomRef, Rooms (play time), Look, Traps,
+  core/         Coord, Random, Dice/Attacks, Flags, KindTable, Maybe, Ascii, Math, Text, Config,
+                Glyphs
+  world/        Level (the map and its squares), MapFlags, Room/RoomRef, Rooms (play time), Look, Traps,
                 LevelGenerator, Passages, Maze
   entities/     Creature, Item, List, Stats, MonsterCatalog (monsters[]), MonsterAI (chase, slime)
   items/        Kinds, KindInfo, ItemCatalog (tables, new_thing), Identification (names, guesses),
                 Inventory (pack); effects/: Potion, Scroll, Wand, Ring, Armor, Weapon
   rules/        Combat, Scheduler (daemons + fuses), Hunger, Regeneration, Wandering,
-                Conditions (fuses that end a condition), Strength, Experience
+                Conditions (fuses that end a condition), Durations, Experience
   game/         Game (all state of one game), Pool/Slots/Id, Command + CommandDispatcher,
-                GameLoop, Movement, PlayerCommands, Messages, StatusLine, Keyboard, Help,
+                GameLoop, Movement, PlayerCommands, MessageLine + Messages, StatusLine, Keyboard, Help,
                 NewGame, Endings
   ui/           Display + Input interfaces, Screen grid, ScreenDisplay/ScreenInput, Keys;
                 curses/ (the only file that includes <curses.h>)
@@ -597,12 +607,12 @@ Each phase is a series of small commits that each build and play.
     5. *Done:* No file-scope state in game code: `ch_ret` and `slimy` (`entities/MonsterAI.cpp`), `pnum` (`world/Passages.cpp`) and `line_cnt` (`items/Identification.cpp`) become locals, parameters or return values; `resuming` (`game/CommandDispatcher.cpp`) moves into `game().turn`, where a save keeps it like the rest of the turn. (`CursesTerminal.cpp`'s settings belong to the terminal, phase 16.)
     6. *Done:* `first()`/`after()` walks (28) that don't take their entry out of the list become range-for loops; the ones that do stay, with a comment saying why.
     - Verified by replays against phase 14's end, with the ASan/UBSan build, and the resume check.
-16. **Types with behaviour.** The game is still free functions over plain structs. Where a function's job is one type's, it becomes that type's member; what reads several parts of the game stays a free function of its module. Steps, from the bottom up:
-    1. `Level`: the map functions of `world/Map` (`INDEX()`, `offmap()`, `winat()`, `step_ok()`, `find_obj()`) and the geometry of `world/Rooms` that only reads the level (`roomin()`, `diag_ok()`) become members (`level.index(pos)`, `level.room_at(pos)`), taking a `Coord` where they took `y, x`.
-    2. `Creature` and `Item`: the questions asked of one thing become members (`creature.is(CreatureFlag::Blind)` instead of `t_flags.test(...)` where it reads better, `item.is_magic()`, `item.is_current()` asked of the player instead). The `t_*`/`o_*` member names get plain names (`t_pos` → `pos`, `o_count` → `count`), one commit per struct; the save file's keys are written by hand and don't change.
-    3. `Player`: what is the rogue's own (strength within its bounds, `armor_class()`, the rings' food cost, the weapon and armor worn) moves from `rules/` and `items/` into `Player` members.
-    4. The message line: `game/Messages`' free functions and `MessageLine` become one class, `MessageLine`, whose `msg()` the free `msg()` forwards to, so callers don't change yet.
-    5. `CursesTerminal`'s file-scope settings become its members.
+16. **Types with behaviour** (*done*, see above). The game is still free functions over plain structs. Where a function's job is one type's, it becomes that type's member; what reads several parts of the game stays a free function of its module. Steps, from the bottom up:
+    1. *Done:* `Level`: the map functions of `world/Map` (`INDEX()`, `offmap()`, `winat()`, `step_ok()`, `find_obj()`) and the geometry of `world/Rooms` that only reads the level (`roomin()`, `diag_ok()`) become members (`level.index(pos)`, `level.room_at(pos)`), taking a `Coord` where they took `y, x`.
+    2. *Done:* `Creature` and `Item`: the questions asked of one thing become members (`creature.is(CreatureFlag::Blind)` instead of `t_flags.test(...)` where it reads better, `item.is_magic()`, `item.is_current()` asked of the player instead). The `t_*`/`o_*` member names get plain names (`t_pos` → `pos`, `o_count` → `count`), one commit per struct; the save file's keys are written by hand and don't change.
+    3. *Done:* `Player`: what is the rogue's own (strength within its bounds, `armor_class()`, the rings' food cost, the weapon and armor worn) moves from `rules/` and `items/` into `Player` members.
+    4. *Done:* The message line: `game/Messages`' free functions and `MessageLine` become one class, `MessageLine`, whose `msg()` the free `msg()` forwards to, so callers don't change yet.
+    5. *Done:* `CursesTerminal`'s file-scope settings become its members.
     - Verified by replays and the resume check, as phase 15; members are found by the compiler, so a step can't leave a caller behind.
 17. **Explicit game state.** `game()` is read 426 times (most in `items/Inventory.cpp`, `entities/MonsterAI.cpp`, `rules/Combat.cpp`). Functions take what they use as parameters instead: the narrowest part that suffices (`Level &`, `Player &`, `Random &`), and `Game &` only at the top (the dispatcher and the commands). Steps go module by module from the bottom (`world/`, then `entities/`, `rules/`, `items/`, `game/`), and at the end `game()` is called only by `app/main.cpp` and the tests' fixture. Before it starts, decide whether the display stays a global (`ui::display()`) or is held by `Game`, and whether `rng()` is passed or reached through the `Game` given.
     - Verified by replays and the resume check; tests can then make two games side by side, which the global makes impossible today.
@@ -611,7 +621,7 @@ Open questions, to settle before the phase that needs them:
 
 - **Fidelity:** the decisions allow the order of random calls to change. Phases 10 to 14 are meant to be pure refactors, so the plan keeps every replay identical. A step that can't do that stops and says so. *Settled for the known original bugs:* they are fixed together in the fidelity fixes between 12 and 13.
 - **Generation counters in handles (12.3):** *settled:* none (see 12.3).
-- **Names of the struct members (16.2):** the `t_*`/`o_*`/`s_*`/`r_*` prefixes come from C, where members shared one namespace. Plain names read better, but every use changes; to settle in 16.2 whether all go or only those of the types that get members.
+- **Names of the struct members (16.2):** *settled:* all prefixes go, but for the `Items` tables, where `s_`, `p_`, `r_` and `ws_` say which kind of item a table is for (see 16.2).
 - **Passing state (17):** narrow parameters (`Level &`) or `Game &` throughout; whether `ui::display()` and `rng()` stay global. To settle before 17 starts.
 - **One branch per phase:** each phase is one branch and one PR, with a commit per step, as phases 4 to 9 were.
 

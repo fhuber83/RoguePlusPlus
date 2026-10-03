@@ -27,12 +27,6 @@ void ring_on();
 void ring_off();
 
 /*
- * ring_eat:
- *	How much food does the ring on this hand use up?
- */
-int ring_eat(Hand hand);
-
-/*
  * ring_num:
  *	Print ring bonuses.
  */

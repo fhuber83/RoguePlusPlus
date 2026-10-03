@@ -6,8 +6,9 @@
 
 #include "game/StatusLine.hpp"
 
-#include <bits/chrono.h>
 #include <chrono>
+
+#include <bits/chrono.h>
 
 #include "game/Game.hpp"
 #include "platform/Clock.hpp"
@@ -15,17 +16,6 @@
 #include "ui/Display.hpp"
 
 namespace rogue {
-
-namespace {
-
-// The armor class the status line shows: the game's counts down from 11 (was AC())
-constexpr int
-armor_class(int ac)
-{
-	return -(ac - 11);
-}
-
-}  // namespace
 
 /*
  * status:
@@ -38,20 +28,15 @@ status()
 
 	SIG2();
 
-	/*
-	 * The armor class shown ignores rings of protection, as it always did
-	 */
-	int ac = player.armor_item() ? player.armor_item()->o_ac : player.body.t_stats.s_arm;
-
 	rogue::ui::Status st;
 	st.level = game().level.depth;
-	st.hp = player.body.t_stats.s_hpt;
-	st.hp_max = player.body.t_stats.s_maxhp;
-	st.str = player.body.t_stats.s_str;
-	st.str_max = player.max_stats.s_str;
+	st.hp = player.body.stats.hp;
+	st.hp_max = player.body.stats.max_hp;
+	st.str = player.body.stats.str;
+	st.str_max = player.max_stats.str;
 	st.gold = player.purse;
-	st.armor = armor_class(ac);
-	st.rank = rules::he_man[player.body.t_stats.s_lvl-1];
+	st.armor = player.armor_class();
+	st.rank = rules::he_man[player.body.stats.level-1];
 	st.hunger = player.hungry_state;
 	rogue::ui::display().draw_status(st);
 }

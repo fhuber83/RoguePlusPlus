@@ -35,10 +35,9 @@
 #include "items/effects/Potion.hpp"
 #include "items/effects/Weapon.hpp"
 #include "rules/Experience.hpp"
-#include "rules/Strength.hpp"
 #include "ui/Display.hpp"
+#include "world/Level.hpp"
 #include "world/LevelGenerator.hpp"
-#include "world/Map.hpp"
 #include "world/Rooms.hpp"
 
 namespace rogue::rules {
@@ -76,7 +75,7 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 	/*
 	 * Find the monster we want to fight
 	 */
-	Maybe<Creature> tp = entities::moat(mp.y, mp.x);
+	Maybe<Creature> tp = game().level.monster_at(mp);
 	if (!tp)
 		return false;
 	/*
@@ -88,16 +87,16 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 	/*
 	 * Let him know it was really a mimic (if it was one).
 	 */
-	if (tp->t_type == 'X' && tp->t_disguise != 'X' && !player.body.t_flags.test(CreatureFlag::Blind)) {
-		mn = tp->t_disguise = 'X';
+	if (tp->type == 'X' && tp->disguise != 'X' && !player.body.is(CreatureFlag::Blind)) {
+		mn = tp->disguise = 'X';
 		if (thrown)
 			return false;
 		msg("wait! That's a Xeroc!");
 	}
-	std::string_view mname = entities::monsters[mn-'A'].m_name;
-	if (player.body.t_flags.test(CreatureFlag::Blind))
+	std::string_view mname = entities::monsters[mn-'A'].name;
+	if (player.body.is(CreatureFlag::Blind))
 		mname = "it";
-	if (roll_em(player.body, *tp, weap, thrown)||(weap && weap->o_type == ItemKind::Potion)) {
+	if (roll_em(player.body, *tp, weap, thrown)||(weap && weap->kind == ItemKind::Potion)) {
 		bool did_huh = false;
 
 		if (thrown)
@@ -105,27 +104,27 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 		else
 			hit(std::nullopt, mname);
 		// original missed null check for weap
-		if (weap && weap->o_type == ItemKind::Potion) {
+		if (weap && weap->kind == ItemKind::Potion) {
 			items::effects::th_effect(*weap, *tp);
 			if (!thrown) {
-				if (weap->o_count > 1)
-					weap->o_count--;
+				if (weap->count > 1)
+					weap->count--;
 				else {
-					player.body.t_pack.remove(*weap);
+					player.body.pack.remove(*weap);
 					discard(*weap);
 				}
 				player.weapon = std::nullopt;
 			}
 		}
-		if (player.body.t_flags.test(CreatureFlag::CanConfuse)) {
+		if (player.body.is(CreatureFlag::CanConfuse)) {
 			did_huh = true;
-			tp->t_flags.set(CreatureFlag::Confused);
-			player.body.t_flags.unset(CreatureFlag::CanConfuse);
+			tp->flags.set(CreatureFlag::Confused);
+			player.body.flags.unset(CreatureFlag::CanConfuse);
 			msg("your hands stop glowing red");
 		}
-		if (tp->t_stats.s_hpt <= 0)
+		if (tp->stats.hp <= 0)
 			killed(*tp, true);
-		else if (did_huh && !player.body.t_flags.test(CreatureFlag::Blind))
+		else if (did_huh && !player.body.is(CreatureFlag::Blind))
 			msg("the {} appears confused", mname);
 		return true;
 	}
@@ -133,7 +132,7 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 		thunk(*weap, mname, "misses", "missed");
 	else
 		miss(std::nullopt, mname);
-	if (tp->t_type == 'S' && rnd(100) > 25)
+	if (tp->type == 'S' && rnd(100) > 25)
 		entities::slime_split(*tp);
 	return false;
 }
@@ -153,24 +152,24 @@ attack(Creature &mp)
 	 */
 	game().turn.running = false;
 	game().turn.count = player.quiet = 0;
-	if (mp.t_type == 'X' && !player.body.t_flags.test(CreatureFlag::Blind))
-		mp.t_disguise = 'X';
-	std::string_view mname = entities::monsters[mp.t_type-'A'].m_name;
-	if (player.body.t_flags.test(CreatureFlag::Blind))
+	if (mp.type == 'X' && !player.body.is(CreatureFlag::Blind))
+		mp.disguise = 'X';
+	std::string_view mname = entities::monsters[mp.type-'A'].name;
+	if (player.body.is(CreatureFlag::Blind))
 		mname = "it";
 	if (roll_em(mp, player.body, std::nullopt, false)) {
 		hit(mname, std::nullopt);
-		if (player.body.t_stats.s_hpt <= 0)
-			death(mp.t_type);	/* Bye bye life ... */
-		if (!mp.t_flags.test(CreatureFlag::Cancelled))
-			switch (mp.t_type)
+		if (player.body.stats.hp <= 0)
+			death(mp.type);	/* Bye bye life ... */
+		if (!mp.is(CreatureFlag::Cancelled))
+			switch (mp.type)
 		{
 		case 'A':
 			/*
 			 * If a rust monster hits, you lose armor, unless
 			 * that armor is leather or there is a magic ring
 			 */
-			if (player.armor_item() && player.armor_item()->o_ac < 9
+			if (player.armor_item() && player.armor_item()->ac < 9
 			  && player.armor_item()->which<ArmorType>() != ArmorType::Leather)
 			{
 				if (player.wears(Ring::MaintainArmor))
@@ -178,7 +177,7 @@ attack(Creature &mp)
 				else
 				{
 					msg("your armor weakens, oh my!");
-					player.armor_item()->o_ac++;
+					player.armor_item()->ac++;
 				}
 			}
 			break;
@@ -197,7 +196,7 @@ attack(Creature &mp)
 			{
 				if (!player.wears(Ring::SustainStrength))
 				{
-					chg_str(-1);
+					player.change_strength(-1);
 					msg("you feel a bite in your leg{}",
 						noterse(" and now feel weaker"));
 				}
@@ -211,31 +210,31 @@ attack(Creature &mp)
 			 * Wraiths might drain energy levels, and Vampires
 			 * can steal maximum hit points
 			 */
-			if (rnd(100) < (mp.t_type == 'W' ? 15 : 30))
+			if (rnd(100) < (mp.type == 'W' ? 15 : 30))
 			{
 			int fewer;
 
-			if (mp.t_type == 'W')
+			if (mp.type == 'W')
 			{
-				if (player.body.t_stats.s_exp == 0)
+				if (player.body.stats.exp == 0)
 				death('W');		/* All levels gone */
-				if (--player.body.t_stats.s_lvl == 0)
+				if (--player.body.stats.level == 0)
 				{
-				player.body.t_stats.s_exp = 0;
-				player.body.t_stats.s_lvl = 1;
+				player.body.stats.exp = 0;
+				player.body.stats.level = 1;
 				}
 				else
-				player.body.t_stats.s_exp = e_levels[player.body.t_stats.s_lvl-1]+1;
+				player.body.stats.exp = e_levels[player.body.stats.level-1]+1;
 				fewer = roll(1, 10);
 			}
 			else
 				fewer = roll(1, 5);
-			player.body.t_stats.s_hpt -= fewer;
-			player.body.t_stats.s_maxhp -= fewer;
-			if (player.body.t_stats.s_hpt < 1)
-				player.body.t_stats.s_hpt = 1;
-			if (player.body.t_stats.s_maxhp < 1)
-				death(mp.t_type);
+			player.body.stats.hp -= fewer;
+			player.body.stats.max_hp -= fewer;
+			if (player.body.stats.hp < 1)
+				player.body.stats.hp = 1;
+			if (player.body.stats.max_hp < 1)
+				death(mp.type);
 			msg("you suddenly feel weaker");
 			}
 			break;
@@ -243,7 +242,7 @@ attack(Creature &mp)
 			/*
 			 * Violet fungi stops the poor guy from moving
 			 */
-			player.body.t_flags.set(CreatureFlag::Held);
+			player.body.flags.set(CreatureFlag::Held);
 			++player.fung_hit;
 			break;
 		case 'L':
@@ -258,7 +257,7 @@ attack(Creature &mp)
 			player.purse -= world::gold_calc() + world::gold_calc() + world::gold_calc() + world::gold_calc();
 			if (player.purse < 0)
 			player.purse = 0;
-			remove_monster(mp.t_pos, mp, false);
+			remove_monster(mp.pos, mp, false);
 			if (player.purse != lastpurse)
 			msg("your purse feels lighter");
 		}
@@ -273,27 +272,27 @@ attack(Creature &mp)
 			 */
 			Maybe<Item> steal;
 			int nobj = 0;
-			for (Item &obj : player.body.t_pack)
+			for (Item &obj : player.body.pack)
 			if (!refers_to(player.armor_item(), obj) && !refers_to(player.weapon_item(), obj)
 				&& !refers_to(player.ring_item(Hand::Left), obj) && !refers_to(player.ring_item(Hand::Right), obj)
-				&& is_magic(obj) && rnd(++nobj) == 0)
+				&& obj.is_magic() && rnd(++nobj) == 0)
 				steal = obj;
 			if (steal)
 			{
-				remove_monster(mp.t_pos, mp, false);
+				remove_monster(mp.pos, mp, false);
 				player.in_pack--;
-				if (steal->o_count > 1 && steal->o_group == 0)
+				if (steal->count > 1 && steal->group == 0)
 				{
-					int oc = steal->o_count--;
-					steal->o_count = 1;
+					int oc = steal->count--;
+					steal->count = 1;
 					msg(she_stole, items::inv_name(*steal, true));
-					steal->o_count = oc;
+					steal->count = oc;
 				}
 				else
 				{
 					// inv_name() must run before discard() frees steal
 					std::string name = items::inv_name(*steal, true);
-					player.body.t_pack.remove(*steal);
+					player.body.pack.remove(*steal);
 					discard(*steal);
 					msg(she_stole, name);
 				}
@@ -304,13 +303,13 @@ attack(Creature &mp)
 			break;
 		}
 	}
-	else if (mp.t_type != 'I')
+	else if (mp.type != 'I')
 	{
-	if (mp.t_type == 'F')
+	if (mp.type == 'F')
 	{
-		player.body.t_stats.s_hpt -= player.fung_hit;
-		if (player.body.t_stats.s_hpt <= 0)
-		death(mp.t_type);	/* Bye bye life ... */
+		player.body.stats.hp -= player.fung_hit;
+		if (player.body.stats.hp <= 0)
+		death(mp.type);	/* Bye bye life ... */
 	}
 	miss(mname, std::nullopt);
 	}
@@ -343,17 +342,17 @@ check_level()
 
 	int i = 0;
 	for (; e_levels[i] != 0; i++)
-	if (e_levels[i] > player.body.t_stats.s_exp)
+	if (e_levels[i] > player.body.stats.exp)
 		break;
 	i++;
-	int olevel = player.body.t_stats.s_lvl;
-	player.body.t_stats.s_lvl = i;
+	int olevel = player.body.stats.level;
+	player.body.stats.level = i;
 	if (i > olevel)
 	{
 		int add = roll(i - olevel, 10);
-		player.body.t_stats.s_maxhp += add;
-		if ((player.body.t_stats.s_hpt += add) > player.body.t_stats.s_maxhp)
-			player.body.t_stats.s_hpt = player.body.t_stats.s_maxhp;
+		player.body.stats.max_hp += add;
+		if ((player.body.stats.hp += add) > player.body.stats.max_hp)
+			player.body.stats.hp = player.body.stats.max_hp;
 		msg("and achieve the rank of \"{}\"", he_man[i-1]);
 	}
 }
@@ -372,23 +371,23 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 	bool did_hit = false;
 	int hplus;
 	int dplus;
-	const entities::Stats &att = thatt.t_stats;
-	entities::Stats &def = thdef.t_stats;
+	const entities::Stats &att = thatt.stats;
+	entities::Stats &def = thdef.stats;
 	if (!weap)
 	{
 		// every flytrap has the one growing attack
-		attacks = (thatt.t_type == 'F' && &thatt != &player.body) ? entities::flytrap_attacks(player.fung_hit) : att.s_dmg;
+		attacks = (thatt.type == 'F' && &thatt != &player.body) ? entities::flytrap_attacks(player.fung_hit) : att.damage;
 		dplus = 0;
 		hplus = 0;
 	}
 	else
 	{
-		hplus = weap->o_hplus;
-		dplus = weap->o_dplus;
+		hplus = weap->hit_plus;
+		dplus = weap->damage_plus;
 		/*
 		 * Check for vorpally enchanted weapon
 		 */
-		if (thdef.t_type == weap->o_enemy)
+		if (thdef.type == weap->enemy)
 		{
 			hplus += 4;
 			dplus += 4;
@@ -396,30 +395,30 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 		if (weap == player.weapon_item())
 		{
 			if (player.wears(Hand::Left, Ring::IncreaseDamage))
-				dplus += player.ring_item(Hand::Left)->o_ac;
+				dplus += player.ring_item(Hand::Left)->ac;
 			else if (player.wears(Hand::Left, Ring::Dexterity))
-				hplus += player.ring_item(Hand::Left)->o_ac;
+				hplus += player.ring_item(Hand::Left)->ac;
 			if (player.wears(Hand::Right, Ring::IncreaseDamage))
-				dplus += player.ring_item(Hand::Right)->o_ac;
+				dplus += player.ring_item(Hand::Right)->ac;
 			else if (player.wears(Hand::Right, Ring::Dexterity))
-				hplus += player.ring_item(Hand::Right)->o_ac;
+				hplus += player.ring_item(Hand::Right)->ac;
 		}
-		attacks = weap->o_damage;
-		if (hurl && weap->o_flags.test(ItemFlag::Missile) && player.weapon_item() &&
-			  items::effects::launched_by(player.weapon_item()->which<WeaponType>()) == weap->o_launch)
+		attacks = weap->damage;
+		if (hurl && weap->is(ItemFlag::Missile) && player.weapon_item() &&
+			  items::effects::launched_by(player.weapon_item()->which<WeaponType>()) == weap->launcher)
 		{
-			attacks = weap->o_hurldmg;
-			hplus += player.weapon_item()->o_hplus;
-			dplus += player.weapon_item()->o_dplus;
+			attacks = weap->thrown_damage;
+			hplus += player.weapon_item()->hit_plus;
+			dplus += player.weapon_item()->damage_plus;
 		}
 		/*
 		 * Drain a staff of striking
 		 */
-		if (weap->o_type == ItemKind::Stick && weap->which<Stick>() == Stick::Striking
+		if (weap->kind == ItemKind::Stick && weap->which<Stick>() == Stick::Striking
 			&& --weap->charges() < 0)
 		{
-			attacks = weap->o_damage = "0d0";
-			weap->o_hplus = weap->o_dplus = 0;
+			attacks = weap->damage = "0d0";
+			weap->hit_plus = weap->damage_plus = 0;
 			weap->charges() = 0;
 		}
 	}
@@ -432,23 +431,23 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 	 * If the creature being attacked is not running (alseep or held)
 	 * then the attacker gets a plus four bonus to hit.
 	 */
-	if (!thdef.t_flags.test(CreatureFlag::Running))
+	if (!thdef.is(CreatureFlag::Running))
 		hplus += 4;
-	int def_arm = def.s_arm;
-	if (&def == &player.body.t_stats)
+	int def_arm = def.armor;
+	if (&def == &player.body.stats)
 	{
 		if (player.armor_item())
-			def_arm = player.armor_item()->o_ac;
+			def_arm = player.armor_item()->ac;
 		if (player.wears(Hand::Left, Ring::Protection))
-			def_arm -= player.ring_item(Hand::Left)->o_ac;
+			def_arm -= player.ring_item(Hand::Left)->ac;
 		if (player.wears(Hand::Right, Ring::Protection))
-			def_arm -= player.ring_item(Hand::Right)->o_ac;
+			def_arm -= player.ring_item(Hand::Right)->ac;
 	}
 	for (const rogue::Dice &attack : attacks)
 	{
-		if (swing(att.s_lvl, def_arm, hplus + str_plus(att.s_str)))
+		if (swing(att.level, def_arm, hplus + str_plus(att.str)))
 		{
-			int damage = dplus + attack.roll(rogue::rng()) + add_dam(att.s_str);
+			int damage = dplus + attack.roll(rogue::rng()) + add_dam(att.str);
 			/*
 			 * special goodies for the commercial version of rogue
 			 */
@@ -457,7 +456,7 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 				  * make it easier on level one
 				  */
 						damage = (damage+1) / 2;
-			def.s_hpt -= std::max(0, damage);
+			def.hp -= std::max(0, damage);
 			did_hit = true;
 		}
 	}
@@ -475,7 +474,7 @@ prname(Who who, bool upper)
 
 	if (!who)
 		name = "you";
-	else if (game().player.body.t_flags.test(CreatureFlag::Blind))
+	else if (game().player.body.is(CreatureFlag::Blind))
 		name = "it";
 	else
 		name = std::format("the {}", *who);
@@ -533,7 +532,7 @@ miss(Who er, Who ee)
 bool
 throw_against(int which, const Creature &tp)
 {
-	int need = 14 + which - tp.t_stats.s_lvl / 2;
+	int need = 14 + which - tp.stats.level / 2;
 	return (roll(1, 20) >= need);
 }
 
@@ -556,9 +555,9 @@ save(SaveThrow which)
 
 	if (which == SaveThrow::Magic) {
 		if (game().player.wears(Hand::Left, Ring::Protection))
-			against -= game().player.ring_item(Hand::Left)->o_ac;
+			against -= game().player.ring_item(Hand::Left)->ac;
 		if (game().player.wears(Hand::Right, Ring::Protection))
-			against -= game().player.ring_item(Hand::Right)->o_ac;
+			against -= game().player.ring_item(Hand::Right)->ac;
 	}
 	return throw_against(against, game().player.body);
 }
@@ -624,7 +623,7 @@ raise_level()
 {
 	rogue::Player &player = game().player;
 
-	player.body.t_stats.s_exp = e_levels[player.body.t_stats.s_lvl-1] + 1L;
+	player.body.stats.exp = e_levels[player.body.stats.level-1] + 1L;
 	check_level();
 }
 
@@ -637,11 +636,11 @@ namespace {
 void
 thunk(const Item &weap, std::string_view mname, std::string_view does, std::string_view did)
 {
-	if (weap.o_type == ItemKind::Weapon)
+	if (weap.kind == ItemKind::Weapon)
 		addmsg("the {} {} ", items::w_names[weap.which<WeaponType>()], does);
 	else
 		addmsg("you {} ", did);
-	if (game().player.body.t_flags.test(CreatureFlag::Blind))
+	if (game().player.body.is(CreatureFlag::Blind))
 		msg("it");
 	else
 		msg("the {}", mname);
@@ -655,51 +654,26 @@ void
 remove_monster(Coord mp, Creature &tp, bool waskill)
 {
 	// The next one is looked up first: the body takes obj out of the pack
-	for (Maybe<Item> obj = tp.t_pack.first(), nexti; obj; obj = nexti)
+	for (Maybe<Item> obj = tp.pack.first(), nexti; obj; obj = nexti)
 	{
-		nexti = tp.t_pack.after(*obj);
-		obj->o_pos = tp.t_pos;
-		tp.t_pack.remove(*obj);
+		nexti = tp.pack.after(*obj);
+		obj->pos = tp.pos;
+		tp.pack.remove(*obj);
 		if (waskill)
 			items::effects::fall(*obj, false);
 		else
 			discard(*obj);
 	}
-	ui::TileStyle style = (game().level.map[world::INDEX(mp.y,mp.x)] == PASSAGE) ? ui::TileStyle::Inverse : ui::TileStyle::Normal;
-	if (tp.t_oldch == FLOOR && !world::cansee(mp.y, mp.x))
+	ui::TileStyle style = (game().level.map[world::Level::index(mp)] == PASSAGE) ? ui::TileStyle::Inverse : ui::TileStyle::Normal;
+	if (tp.under == FLOOR && !world::cansee(mp.y, mp.x))
 		ui::display().draw_tile(mp, ' ', style);
-	else if (tp.t_oldch != '@')
-		ui::display().draw_tile(mp, tp.t_oldch, style);
+	else if (tp.under != '@')
+		ui::display().draw_tile(mp, tp.under, style);
 	game().level.monsters.remove(tp);
 	discard(tp);
 }
 
 }  // namespace
-
-/*
- * is_magic:
- *	Returns true if an object radiates magic
- */
-bool
-is_magic(const Item &obj)
-{
-	switch (obj.o_type)
-	{
-	case ItemKind::Armor:
-		return obj.o_ac != items::a_class[obj.which<ArmorType>()];
-	case ItemKind::Weapon:
-		return obj.o_hplus != 0 || obj.o_dplus != 0;
-	case ItemKind::Potion:
-	case ItemKind::Scroll:
-	case ItemKind::Stick:
-	case ItemKind::Ring:
-	case ItemKind::Amulet:
-		return true;
-	default:	// the other kinds of item: nothing
-		break;
-	}
-	return false;
-}
 
 /*
  * killed:
@@ -708,41 +682,41 @@ is_magic(const Item &obj)
 void
 killed(Creature &tp, bool pr)
 {
-	char type = tp.t_type;	// remove_monster() discards tp
+	char type = tp.type;	// remove_monster() discards tp
 
-	game().player.body.t_stats.s_exp += tp.t_stats.s_exp;
+	game().player.body.stats.exp += tp.stats.exp;
 	/*
 	 * If the monster was a violet fungi, un-hold him
 	 */
-	switch (tp.t_type)
+	switch (tp.type)
 	{
 	case 'F':
-		game().player.body.t_flags.unset(CreatureFlag::Held);
+		game().player.body.flags.unset(CreatureFlag::Held);
 		entities::f_restor();
 		break;
 	case 'L': {
 		Maybe<Item> gold = new_item();
 		if (!gold)
 			return;
-		gold->o_type = ItemKind::Gold;
+		gold->kind = ItemKind::Gold;
 		gold->gold_value() = world::gold_calc();
 		if (save(SaveThrow::Magic))
 			gold->gold_value() += world::gold_calc() + world::gold_calc() + world::gold_calc() + world::gold_calc();
-		tp.t_pack.push_front(*gold);
+		tp.pack.push_front(*gold);
 		break;
 	}
 	}
 	/*
 	 * Get rid of the monster.
 	 */
-	remove_monster(tp.t_pos, tp, true);
+	remove_monster(tp.pos, tp, true);
 	if (pr)
 	{
 	addmsg("you have defeated ");
-	if (game().player.body.t_flags.test(CreatureFlag::Blind))
+	if (game().player.body.is(CreatureFlag::Blind))
 		msg("it");
 	else
-		msg("the {}", entities::monsters[type-'A'].m_name);
+		msg("the {}", entities::monsters[type-'A'].name);
 	}
 	/*
 	 * Do adjustments if he went up a level

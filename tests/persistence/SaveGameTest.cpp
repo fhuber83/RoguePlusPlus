@@ -56,10 +56,10 @@ protected:
 		Player &p = g.player;
 		// A ring worn, a guess named, a fuse burning, a macro half typed
 		Item &ring = *new_item();
-		ring.o_type = ItemKind::Ring;
+		ring.kind = ItemKind::Ring;
 		ring.set_which(Ring::Searching);
-		ring.o_damage = ring.o_hurldmg = "0d0";
-		p.body.t_pack.push_front(ring);
+		ring.damage = ring.thrown_damage = "0d0";
+		p.body.pack.push_front(ring);
 		p.rings[Hand::Right] = g.pool.id_of(ring);
 		g.items.p_guess[Potion::Poison] = "fizzy";
 		g.items.p_know[Potion::SeeInvisible] = true;
@@ -75,15 +75,15 @@ protected:
 		int n = 0;
 		for (Creature &tp : g.level.monsters) {
 			switch (n++ % 4) {
-			case 0: tp.t_dest = Hero{}; break;
-			case 1: tp.t_dest = Gold{RoomRef::room(0)}; break;
+			case 0: tp.dest = Hero{}; break;
+			case 1: tp.dest = Gold{RoomRef::room(0)}; break;
 			case 2:
 				if (floor)
-					tp.t_dest = *g.pool.id_of(*floor);
+					tp.dest = *g.pool.id_of(*floor);
 				else
-					tp.t_dest = std::nullopt;
+					tp.dest = std::nullopt;
 				break;
-			case 3: tp.t_type = 'F'; break;	// a venus flytrap, whose attack grows
+			case 3: tp.type = 'F'; break;	// a venus flytrap, whose attack grows
 			}
 		}
 		p.fung_hit = 3;
@@ -138,14 +138,14 @@ TEST_F(SaveGame, PointersPointIntoTheGame)
 	Game &g = game();
 	EXPECT_TRUE(pool_problems(g).empty());
 	ASSERT_TRUE(g.player.ring_item(Hand::Right));
-	EXPECT_TRUE(g.player.body.t_pack.contains(*g.player.ring_item(Hand::Right)));
+	EXPECT_TRUE(g.player.body.pack.contains(*g.player.ring_item(Hand::Right)));
 	EXPECT_EQ(g.items.p_guess[Potion::Poison], "fizzy");
 	EXPECT_EQ(g.turn.typeahead, "ss");
 	EXPECT_EQ(g.turn.last_item, g.player.weapon);
 	EXPECT_EQ(g.scheduler.time_left(rules::Event::Unconfuse), 9);
 	int flytraps = 0;
 	for (const Creature &tp : g.level.monsters)
-		if (tp.t_type == 'F')
+		if (tp.type == 'F')
 			flytraps++;
 	EXPECT_GT(flytraps, 0);
 	EXPECT_EQ(g.player.fung_hit, 3);
@@ -159,14 +159,14 @@ TEST_F(SaveGame, RoomLinksComeBack)
 	Game &g = game();
 	Maybe<Creature> tp = g.level.monsters.first();
 	ASSERT_TRUE(tp);
-	tp->t_room = RoomRef::passage(world::MAXPASS - 1);
+	tp->room = RoomRef::passage(world::MAXPASS - 1);
 	g.player.old_room = RoomRef::room(world::MAXROOMS - 1);
-	std::optional<RoomRef> here = g.player.body.t_room;
+	std::optional<RoomRef> here = g.player.body.room;
 	int slot = g.pool.id_of(*tp)->slot;
 	load(save());
-	EXPECT_EQ(g.pool.creatures.at(slot)->t_room, RoomRef::passage(world::MAXPASS - 1));
+	EXPECT_EQ(g.pool.creatures.at(slot)->room, RoomRef::passage(world::MAXPASS - 1));
 	EXPECT_EQ(g.player.old_room, RoomRef::room(world::MAXROOMS - 1));
-	EXPECT_EQ(g.player.body.t_room, here);
+	EXPECT_EQ(g.player.body.room, here);
 	g.player.old_room = std::nullopt;
 	load(save());
 	EXPECT_EQ(g.player.old_room, std::nullopt);

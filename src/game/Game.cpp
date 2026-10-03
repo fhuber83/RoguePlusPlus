@@ -11,9 +11,11 @@
 #include "entities/Creature.hpp"
 #include "entities/Item.hpp"
 #include "entities/List.hpp"
+#include "entities/Stats.hpp"
 #include "game/Id.hpp"
 #include "items/ItemCatalog.hpp"
 #include "items/Kinds.hpp"
+#include "world/Level.hpp"
 
 namespace rogue {
 
@@ -32,7 +34,7 @@ pool_problems(const Game &g)
 	std::vector<std::string> problems;
 	auto problem = [&](std::string text) { problems.push_back(std::move(text)); };
 	const Pool &pool = g.pool;
-	const Level &level = g.level;
+	const world::Level &level = g.level;
 	int item_refs[MAXITEMS] = {};
 	int creature_refs[MAXITEMS] = {};
 
@@ -42,25 +44,25 @@ pool_problems(const Game &g)
 			item_refs[id.slot]++;
 	};
 	count_items(level.objects);
-	count_items(g.player.body.t_pack);
+	count_items(g.player.body.pack);
 	for (CreatureId id : level.monsters.ids()) {
 		int slot = id.slot;
 		creature_refs[slot]++;
 		Maybe<const Creature> tp = pool.creature(std::optional<CreatureId>(id));
 		if (!tp)
 			continue;
-		count_items(tp->t_pack);
+		count_items(tp->pack);
 
-		const std::optional<Destination> &dest = tp->t_dest;
+		const std::optional<Destination> &dest = tp->dest;
 		bool dest_ok = !dest || std::holds_alternative<Hero>(*dest)
-			|| (std::holds_alternative<Gold>(*dest) && Level::valid(std::get<Gold>(*dest).room));
+			|| (std::holds_alternative<Gold>(*dest) && world::Level::valid(std::get<Gold>(*dest).room));
 		if (dest && std::holds_alternative<ItemId>(*dest)) {
 			Maybe<Item> obj = pool.item(std::optional<ItemId>(std::get<ItemId>(*dest)));
 			dest_ok = obj && level.objects.contains(*obj);
 		}
 		if (!dest_ok)
 			problem("monster " + std::to_string(slot) + " is after something that isn't the hero, gold or a floor item");
-		if (tp->t_room && !Level::valid(*tp->t_room))
+		if (tp->room && !world::Level::valid(*tp->room))
 			problem("monster " + std::to_string(slot) + " is in a room that isn't one");
 	}
 
@@ -80,13 +82,13 @@ pool_problems(const Game &g)
 
 	const Player &player = g.player;
 	for (std::optional<ItemId> worn : {player.armor, player.weapon, player.rings[Hand::Left], player.rings[Hand::Right]})
-		if (worn && (!pool.item(worn) || !player.body.t_pack.contains(*pool.item(worn))))
+		if (worn && (!pool.item(worn) || !player.body.pack.contains(*pool.item(worn))))
 			problem("a worn item isn't in the pack");
 	if (g.turn.last_item && !pool.item(g.turn.last_item))
 		problem("the item picked last isn't in use");
-	if (player.body.t_room && !Level::valid(*player.body.t_room))
+	if (player.body.room && !world::Level::valid(*player.body.room))
 		problem("the rogue is in a room that isn't one");
-	if (player.old_room && !Level::valid(*player.old_room))
+	if (player.old_room && !world::Level::valid(*player.old_room))
 		problem("the rogue was in a room that isn't one");
 	return problems;
 }
@@ -94,10 +96,10 @@ pool_problems(const Game &g)
 Coord Game::where(const Destination &dest) const
 {
 	if (std::holds_alternative<Hero>(dest))
-		return player.body.t_pos;
+		return player.body.pos;
 	if (std::holds_alternative<Gold>(dest))
-		return level.room(std::get<Gold>(dest).room).r_gold;
-	return pool.item(std::get<ItemId>(dest)).o_pos;
+		return level.room(std::get<Gold>(dest).room).gold;
+	return pool.item(std::get<ItemId>(dest)).pos;
 }
 
 Item *ListPool<Item>::at(ItemId id) { return game().pool.items.find(id); }
@@ -113,6 +115,57 @@ bool Player::wears(Hand hand, Ring ring) const
 {
 	Maybe<Item> obj = ring_item(hand);
 	return obj && obj->which<Ring>() == ring;
+}
+
+void
+Player::change_strength(int amt)
+{
+	if (amt == 0)
+		return;
+	entities::add_str(body.stats.str, amt);
+	entities::str_t comp = body.stats.str;
+	if (wears(Hand::Left, Ring::AddStrength))
+		entities::add_str(comp, -ring_item(Hand::Left)->ac);
+	if (wears(Hand::Right, Ring::AddStrength))
+		entities::add_str(comp, -ring_item(Hand::Right)->ac);
+	if (comp > max_stats.str)
+		max_stats.str = comp;
+}
+
+int
+Player::armor_class() const
+{
+	// The game's armor class counts down from 11 (was AC())
+	int ac = armor_item() ? armor_item()->ac : body.stats.armor;
+	return -(ac - 11);
+}
+
+int
+Player::ring_food(Hand hand) const
+{
+	if (!ring_item(hand))
+		return 0;
+	switch (ring_item(hand)->which<Ring>()) {
+	case Ring::Regeneration:
+		return 2;
+	case Ring::SustainStrength:
+	case Ring::MaintainArmor:
+	case Ring::Protection:
+	case Ring::AddStrength:
+	case Ring::Stealth:
+		return 1;
+	case Ring::Searching:
+		return(rnd(5)==0);
+	case Ring::Dexterity:
+	case Ring::IncreaseDamage:
+		return (rnd(3) == 0);
+	case Ring::SlowDigestion:
+		return -rnd(2);
+	case Ring::SeeInvisible:
+		return (rnd(5) == 0);
+	default:
+		return 0;
+	}
 }
 
 Game &game()

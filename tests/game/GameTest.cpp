@@ -12,6 +12,7 @@
 #include "items/ItemCatalog.hpp"
 #include "items/KindInfo.hpp"
 #include "items/Kinds.hpp"
+#include "world/Level.hpp"
 #include "world/Room.hpp"
 
 namespace rogue {
@@ -46,24 +47,24 @@ TEST(Items, OddsAreCopiedPerGame)
 {
 	Items items;
 	for (Scroll s : kinds<Scroll>())
-		EXPECT_EQ(items.s_magic[s].mi_prob, items::s_magic_base[s].mi_prob);
+		EXPECT_EQ(items.s_magic[s].prob, items::s_magic_base[s].prob);
 	for (int i = 0; i < items::NUMTHINGS; i++)
-		EXPECT_EQ(items.things[i].mi_prob, items::things_base[i].mi_prob);
+		EXPECT_EQ(items.things[i].prob, items::things_base[i].prob);
 
 	game().items = {};
 	init_things();
-	EXPECT_EQ(game().items.things[items::NUMTHINGS-1].mi_prob, 100);
-	EXPECT_EQ(items::things_base[items::NUMTHINGS-1].mi_prob, 5);
+	EXPECT_EQ(game().items.things[items::NUMTHINGS-1].prob, 100);
+	EXPECT_EQ(items::things_base[items::NUMTHINGS-1].prob, 5);
 	game().items = {};
 }
 
 TEST(Level, PassagesAreGoneAndDark)
 {
-	Level level;
+	world::Level level;
 	for (const auto &p : level.passages) {
-		EXPECT_TRUE(p.r_flags.test(RoomFlag::Gone));
-		EXPECT_TRUE(p.r_flags.test(RoomFlag::Dark));
-		EXPECT_FALSE(p.r_flags.test(RoomFlag::Maze));
+		EXPECT_TRUE(p.flags.test(RoomFlag::Gone));
+		EXPECT_TRUE(p.flags.test(RoomFlag::Dark));
+		EXPECT_FALSE(p.flags.test(RoomFlag::Maze));
 	}
 	EXPECT_EQ(level.depth, 1);
 }
@@ -108,14 +109,14 @@ TEST(Pool, DiscardForgetsTheLastItemPicked)
 TEST(Pool, DiscardSendsMonstersAfterTheHero)
 {
 	game().pool = Pool();
-	game().level = Level();
+	game().level = world::Level();
 	Item &obj = *new_item();
 	Creature &mp = *new_creature();
 	game().level.monsters.push_front(mp);
-	mp.t_dest = *game().pool.id_of(obj);
+	mp.dest = *game().pool.id_of(obj);
 	discard(obj);
-	EXPECT_EQ(mp.t_dest, Destination(Hero{}));
-	game().level = Level();
+	EXPECT_EQ(mp.dest, Destination(Hero{}));
+	game().level = world::Level();
 	game().pool = Pool();
 }
 

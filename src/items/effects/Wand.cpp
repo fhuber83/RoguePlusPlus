@@ -26,8 +26,8 @@
 #include "items/effects/Weapon.hpp"
 #include "rules/Combat.hpp"
 #include "ui/Display.hpp"
+#include "world/Level.hpp"
 #include "world/LevelGenerator.hpp"
-#include "world/Map.hpp"
 #include "world/Room.hpp"
 #include "world/RoomRef.hpp"
 #include "world/Rooms.hpp"
@@ -42,18 +42,18 @@ void
 fix_stick(Item &cur)
 {
 	if (game().items.ws_type[cur.which<Stick>()] == "staff")
-		cur.o_damage = "2d3";
+		cur.damage = "2d3";
 	else
-		cur.o_damage = "1d1";
-	cur.o_hurldmg = "1d1";
+		cur.damage = "1d1";
+	cur.thrown_damage = "1d1";
 
 	cur.charges() = 3 + rnd(5);
 	switch (cur.which<Stick>())
 	{
 	case Stick::Striking:
-		cur.o_hplus = 100;
-		cur.o_dplus = 3;
-		cur.o_damage = "1d8";
+		cur.hit_plus = 100;
+		cur.damage_plus = 3;
+		cur.damage = "1d8";
 		break;
 	case Stick::Light:
 		cur.charges() = 10 + rnd(10);
@@ -77,9 +77,9 @@ do_zap()
 	if (!obj)
 		return;
 	Stick which_one = obj->which<Stick>();
-	if (obj->o_type != ItemKind::Stick)
+	if (obj->kind != ItemKind::Stick)
 	{
-		if (obj->o_enemy && obj->charges())
+		if (obj->enemy && obj->charges())
 			which_one = Stick::Vorpal;
 		else
 		{
@@ -99,23 +99,23 @@ do_zap()
 		/*
 		 * Reddy Kilowat wand.  Light up the room
 		 */
-		if (player.body.t_flags.test(CreatureFlag::Blind))
+		if (player.body.is(CreatureFlag::Blind))
 			msg("you feel a warm glow around you");
 		else
 		{
 			game().items.ws_know[Stick::Light] = true;
-			if (game().level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone))
+			if (game().level.room(*player.body.room).flags.test(RoomFlag::Gone))
 				msg("the corridor glows and then fades");
 			else
 				msg("the room is lit by a shimmering blue light");
 		}
-		if (!game().level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone))
+		if (!game().level.room(*player.body.room).flags.test(RoomFlag::Gone))
 		{
-			game().level.room(*player.body.t_room).r_flags.unset(RoomFlag::Dark);
+			game().level.room(*player.body.room).flags.unset(RoomFlag::Dark);
 			/*
 			 * Light the room and put the player back up
 			 */
-			world::enter_room(player.body.t_pos);
+			world::enter_room(player.body.pos);
 		}
 		break;
 	case Stick::DrainLife:
@@ -124,7 +124,7 @@ do_zap()
 		 * evenly from the monsters in the room (or next to hero
 		 * if he is in a passage)
 		 */
-		if (player.body.t_stats.s_hpt < 2)
+		if (player.body.stats.hp < 2)
 		{
 			msg("you are too weak to use it");
 			return;
@@ -138,25 +138,25 @@ do_zap()
 	case Stick::Cancellation:
 	case Stick::Vorpal:			/* Special case for vorpal weapon */
 	{
-		int y = player.body.t_pos.y;
-		int x = player.body.t_pos.x;
-		while (world::step_ok(world::winat(y, x)))
+		int y = player.body.pos.y;
+		int x = player.body.pos.x;
+		while (step_ok(game().level.seen_at({x, y})))
 		{
 			y += turn.delta.y;
 			x += turn.delta.x;
 		}
-		if (Maybe<Creature> tp = entities::moat(y, x))
+		if (Maybe<Creature> tp = game().level.monster_at({x, y}))
 		{
-			unsigned char monster = tp->t_type;
+			unsigned char monster = tp->type;
 			const unsigned char omonst = monster;
 			if (monster == 'F')
-				player.body.t_flags.unset(CreatureFlag::Held);
+				player.body.flags.unset(CreatureFlag::Held);
 			if (which_one == Stick::Vorpal)
 			{
-				if (monster == obj->o_enemy)
+				if (monster == obj->enemy)
 				{
 					msg("the {} vanishes in a puff of smoke",
-						entities::monsters[monster-'A'].m_name);
+						entities::monsters[monster-'A'].name);
 					rules::killed(*tp, false);
 				}
 				else
@@ -164,57 +164,57 @@ do_zap()
 			}
 			else if (which_one == Stick::Polymorph)
 			{
-				List<Item> pp = std::move(tp->t_pack);
+				List<Item> pp = std::move(tp->pack);
 				game().level.monsters.remove(*tp);
 				if (entities::see_monst(*tp))
 					ui::display().draw_tile({x, y}, game().level.at(y, x));
-				unsigned char oldch = tp->t_oldch;
+				unsigned char oldch = tp->under;
 				turn.delta.y = y;
 				turn.delta.x = x;
 				entities::new_monster(*tp, monster = rnd(26) + 'A', turn.delta);
 				if (entities::see_monst(*tp))
 					ui::display().draw_tile({x, y}, monster);
-				tp->t_oldch = oldch;
-				tp->t_pack = std::move(pp);
+				tp->under = oldch;
+				tp->pack = std::move(pp);
 				game().items.ws_know[Stick::Polymorph] |= (monster != omonst);
 			}
 			else if (which_one == Stick::Cancellation)
 			{
-				tp->t_flags.set(CreatureFlag::Cancelled);
-				tp->t_flags.unset(CreatureFlag::Invisible|CreatureFlag::CanConfuse);
-				tp->t_disguise = tp->t_type;
+				tp->flags.set(CreatureFlag::Cancelled);
+				tp->flags.unset(CreatureFlag::Invisible|CreatureFlag::CanConfuse);
+				tp->disguise = tp->type;
 			}
 			else
 			{
 				if (entities::see_monst(*tp))
-					ui::display().draw_tile({x, y}, tp->t_oldch);
+					ui::display().draw_tile({x, y}, tp->under);
 				if (which_one == Stick::TeleportAway)
 				{
-					tp->t_oldch = '@';
+					tp->under = '@';
 					Coord new_yx;
 					do
 					{
 						int rm = world::rnd_room();
 						new_yx = rnd_pos(game().level.rooms[rm]);
-					}  while (!(is_floor(world::winat(new_yx.y, new_yx.x))));
-					tp->t_pos = new_yx;
+					}  while (!(is_floor(game().level.seen_at(new_yx))));
+					tp->pos = new_yx;
 					if (entities::see_monst(*tp))
-						ui::display().draw_tile(tp->t_pos, tp->t_disguise);
-					else if (player.body.t_flags.test(CreatureFlag::SeeMonst))
-						ui::display().draw_tile(tp->t_pos, tp->t_disguise, ui::TileStyle::Inverse);
+						ui::display().draw_tile(tp->pos, tp->disguise);
+					else if (player.body.is(CreatureFlag::SeeMonst))
+						ui::display().draw_tile(tp->pos, tp->disguise, ui::TileStyle::Inverse);
 				}
 				else /* it MUST BE at Stick::TeleportTo */
 				{
-					tp->t_pos.y = player.body.t_pos.y + turn.delta.y;
-					tp->t_pos.x = player.body.t_pos.x + turn.delta.x;
+					tp->pos.y = player.body.pos.y + turn.delta.y;
+					tp->pos.x = player.body.pos.x + turn.delta.x;
 				}
-				if (tp->t_type == 'F')
-					player.body.t_flags.unset(CreatureFlag::Held);
-				if (tp->t_pos.y != y || tp->t_pos.x != x)
-					tp->t_oldch = ui::display().tile_at(tp->t_pos);
+				if (tp->type == 'F')
+					player.body.flags.unset(CreatureFlag::Held);
+				if (tp->pos.y != y || tp->pos.x != x)
+					tp->under = ui::display().tile_at(tp->pos);
 			}
-			tp->t_dest = Hero{};
-			tp->t_flags.set(CreatureFlag::Running);
+			tp->dest = Hero{};
+			tp->flags.set(CreatureFlag::Running);
 		}
 	}
 		break;
@@ -223,64 +223,64 @@ do_zap()
 		Item bolt;
 
 		game().items.ws_know[Stick::MagicMissile] = true;
-		bolt.o_type = ItemKind::Missile;
-		bolt.o_hurldmg = "1d8";
-		bolt.o_hplus = 1000;
-		bolt.o_dplus = 1;
-		bolt.o_flags = ItemFlag::Missile;
+		bolt.kind = ItemKind::Missile;
+		bolt.thrown_damage = "1d8";
+		bolt.hit_plus = 1000;
+		bolt.damage_plus = 1;
+		bolt.flags = ItemFlag::Missile;
 		if (player.weapon_item())
-			bolt.o_launch = launched_by(player.weapon_item()->which<WeaponType>());
+			bolt.launcher = launched_by(player.weapon_item()->which<WeaponType>());
 		do_motion(bolt, turn.delta.y, turn.delta.x);
-		Maybe<Creature> tp = entities::moat(bolt.o_pos.y, bolt.o_pos.x);
+		Maybe<Creature> tp = game().level.monster_at(bolt.pos);
 		if (tp && !rules::save_throw(rules::SaveThrow::Magic, *tp))
-			hit_monster(bolt.o_pos.y, bolt.o_pos.x, bolt);
+			hit_monster(bolt.pos.y, bolt.pos.x, bolt);
 		else
 		msg("the missle vanishes with a puff of smoke");
 	}
 		break;
 	case Stick::Striking:
-		turn.delta.y += player.body.t_pos.y;
-		turn.delta.x += player.body.t_pos.x;
-		if (Maybe<Creature> tp = entities::moat(turn.delta.y, turn.delta.x))
+		turn.delta.y += player.body.pos.y;
+		turn.delta.x += player.body.pos.x;
+		if (Maybe<Creature> tp = game().level.monster_at(turn.delta))
 		{
 			if (rnd(20) == 0)
 			{
-				obj->o_damage = "3d8";
-				obj->o_dplus = 9;
+				obj->damage = "3d8";
+				obj->damage_plus = 9;
 			}
 			else
 			{
-				obj->o_damage = "2d8";
-				obj->o_dplus = 4;
+				obj->damage = "2d8";
+				obj->damage_plus = 4;
 			}
-			rules::fight(turn.delta, tp->t_type, *obj, false);
+			rules::fight(turn.delta, tp->type, *obj, false);
 		}
 		break;
 	case Stick::HasteMonster:
 	case Stick::SlowMonster: {
-		int y = player.body.t_pos.y;
-		int x = player.body.t_pos.x;
-		while (world::step_ok(world::winat(y, x)))
+		int y = player.body.pos.y;
+		int x = player.body.pos.x;
+		while (step_ok(game().level.seen_at({x, y})))
 		{
 			y += turn.delta.y;
 			x += turn.delta.x;
 		}
-		if (Maybe<Creature> tp = entities::moat(y, x))
+		if (Maybe<Creature> tp = game().level.monster_at({x, y}))
 		{
 			if (which_one == Stick::HasteMonster)
 			{
-				if (tp->t_flags.test(CreatureFlag::Slow))
-					tp->t_flags.unset(CreatureFlag::Slow);
+				if (tp->is(CreatureFlag::Slow))
+					tp->flags.unset(CreatureFlag::Slow);
 				else
-					tp->t_flags.set(CreatureFlag::Hasted);
+					tp->flags.set(CreatureFlag::Hasted);
 			}
 			else
 			{
-				if (tp->t_flags.test(CreatureFlag::Hasted))
-					tp->t_flags.unset(CreatureFlag::Hasted);
+				if (tp->is(CreatureFlag::Hasted))
+					tp->flags.unset(CreatureFlag::Hasted);
 				else
-					tp->t_flags.set(CreatureFlag::Slow);
-				tp->t_turn = true;
+					tp->flags.set(CreatureFlag::Slow);
+				tp->its_turn = true;
 			}
 			turn.delta.y = y;
 			turn.delta.x = x;
@@ -293,7 +293,7 @@ do_zap()
 	case Stick::Cold: {
 		std::string_view name = which_one == Stick::Lightning ? "bolt"
 			: which_one == Stick::Fire ? "flame" : "ice";
-		fire_bolt(player.body.t_pos, turn.delta, name);
+		fire_bolt(player.body.pos, turn.delta, name);
 		game().items.ws_know[which_one] = true;
 		break;
 	}
@@ -314,22 +314,22 @@ void
 drain()
 {
 	rogue::Player &player = game().player;
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	/*
 	 * First cnt how many things we need to spread the hit points among
 	 */
 	std::optional<RoomRef> corp;
-	if (level.at(player.body.t_pos) == DOOR)
-		corp = level.passage_at(player.body.t_pos);
+	if (level.at(player.body.pos) == DOOR)
+		corp = level.passage_at(player.body.pos);
 	else
 		corp = std::nullopt;
-	bool inpass = level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone);
+	bool inpass = level.room(*player.body.room).flags.test(RoomFlag::Gone);
 	std::vector<std::reference_wrapper<Creature>> drainee;
 	for (Creature &mp : level.monsters)
-		if (mp.t_room == player.body.t_room || mp.t_room == corp ||
-			(inpass && level.at(mp.t_pos) == DOOR &&
-			level.passage_at(mp.t_pos) == player.body.t_room))
+		if (mp.room == player.body.room || mp.room == corp ||
+			(inpass && level.at(mp.pos) == DOOR &&
+			level.passage_at(mp.pos) == player.body.room))
 			drainee.push_back(mp);
 	int cnt = static_cast<int>(drainee.size());
 	if (cnt == 0)
@@ -337,17 +337,17 @@ drain()
 		msg("you have a tingling feeling");
 		return;
 	}
-	player.body.t_stats.s_hpt /= 2;
-	cnt = player.body.t_stats.s_hpt / cnt + 1;
+	player.body.stats.hp /= 2;
+	cnt = player.body.stats.hp / cnt + 1;
 	/*
 	 * Now zot all of the monsters
 	 */
 	for (Creature &tp : drainee)
 	{
-		if ((tp.t_stats.s_hpt -= cnt) <= 0)
+		if ((tp.stats.hp -= cnt) <= 0)
 			rules::killed(tp, entities::see_monst(tp));
 		else
-			entities::start_run(tp.t_pos);
+			entities::start_run(tp.pos);
 	}
 }
 
@@ -368,11 +368,11 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 	} spotpos[BOLT_LENGTH*2];
 	Item bolt;
 	const bool is_frost = (name == "frost");
-	bolt.o_type = ItemKind::Weapon;
+	bolt.kind = ItemKind::Weapon;
 	bolt.set_which(WeaponType::Flame);
-	bolt.o_damage = bolt.o_hurldmg = "6d6";
-	bolt.o_hplus = 30;
-	bolt.o_dplus = 0;
+	bolt.damage = bolt.thrown_damage = "6d6";
+	bolt.hit_plus = 30;
+	bolt.damage_plus = 0;
 	w_names[WeaponType::Flame] = name;
 	switch (dir.y + dir.x) {
 		case 0: dirch = '/'; break;
@@ -380,7 +380,7 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 		case 2: case -2: dirch = '\\';
 		break;
 	}
-	const bool by_hero = (start == player.body.t_pos);
+	const bool by_hero = (start == player.body.pos);
 	Coord pos = start;
 	bool hit_hero = !by_hero;
 	bool used = false;
@@ -389,7 +389,7 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 	for (; i < BOLT_LENGTH && !used; i++) {
 		pos.y += dir.y;
 		pos.x += dir.x;
-		unsigned char ch = world::winat(pos.y, pos.x);
+		unsigned char ch = game().level.seen_at(pos);
 		spotpos[i].s_pos = pos;
 		if ((spotpos[i].s_under = ui::display().tile_at(pos)) == dirch)
 			spotpos[i].s_under = 0;
@@ -411,28 +411,28 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 			msg("the {} bounces", name);
 			break;
 		default:
-			if (Maybe<Creature> tp = hit_hero ? Maybe<Creature>() : entities::moat(pos.y, pos.x)) {
+			if (Maybe<Creature> tp = hit_hero ? Maybe<Creature>() : game().level.monster_at(pos)) {
 				hit_hero = true;
 				changed = !changed;
-				if (tp->t_oldch != '@')
-					tp->t_oldch = game().level.at(pos);
+				if (tp->under != '@')
+					tp->under = game().level.at(pos);
 				if (!rules::save_throw(rules::SaveThrow::Magic, *tp) || is_frost) {
-					bolt.o_pos = pos;
+					bolt.pos = pos;
 					used = true;
-					if (tp->t_type == 'D' && name == "flame")
+					if (tp->type == 'D' && name == "flame")
 						msg("the flame bounces off the dragon");
 					else {
 						hit_monster(pos.y, pos.x, bolt);
 						if (ui::display().tile_at(pos) != dirch)
 							spotpos[i].s_under = ui::display().tile_at(pos);
 					}
-				} else if (ch != 'X' || tp->t_disguise == 'X') {
+				} else if (ch != 'X' || tp->disguise == 'X') {
 					if (by_hero)
 						entities::start_run(pos);
 					msg("the {} whizzes past the {}",
-						name, entities::monsters[ch-'A'].m_name);
+						name, entities::monsters[ch-'A'].name);
 				}
-			} else if (hit_hero && (pos == player.body.t_pos)) {
+			} else if (hit_hero && (pos == player.body.pos)) {
 				hit_hero = false;
 				changed = !changed;
 				if (!rules::save(rules::SaveThrow::Magic)) {
@@ -441,11 +441,11 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 							noterse(" from the Ice Monster"));
 						if (player.no_command < 20)
 							player.no_command += spread(7);
-					} else if ((player.body.t_stats.s_hpt -= roll(6, 6)) <= 0) {
+					} else if ((player.body.stats.hp -= roll(6, 6)) <= 0) {
 						if (by_hero)
 							death('b');
 						else
-							death(entities::moat(start.y, start.x)->t_type);
+							death(game().level.monster_at(start)->type);
 					}
 					used = true;
 					if (!is_frost)
@@ -472,7 +472,7 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 std::string
 charge_str(const Item &obj)
 {
-	if (!obj.o_flags.test(ItemFlag::Known))
+	if (!obj.is(ItemFlag::Known))
 		return "";
 	return std::format(" [{} charges]", obj.charges());
 }

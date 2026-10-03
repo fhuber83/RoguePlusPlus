@@ -46,7 +46,7 @@ eat()
 	Maybe<Item> obj = items::get_item("eat", ItemKind::Food);
 	if (!obj)
 		return;
-	if (obj->o_type != ItemKind::Food)
+	if (obj->kind != ItemKind::Food)
 	{
 		msg("ugh, you would get ill if you ate that");
 		return;
@@ -59,9 +59,9 @@ eat()
 	Food which = obj->which<Food>();
 	if (obj == player.weapon_item())
 		player.weapon = std::nullopt;
-	if (--obj->o_count < 1)
+	if (--obj->count < 1)
 	{
-		player.body.t_pack.remove(*obj);
+		player.body.pack.remove(*obj);
 		discard(*obj);
 	}
 	if (player.food_left < 0)
@@ -76,7 +76,7 @@ eat()
 	else
 		if (rnd(100) > 70)
 		{
-			player.body.t_stats.s_exp++;
+			player.body.stats.exp++;
 			msg("yuk, this food tastes awful");
 			check_level();
 		}
@@ -105,7 +105,7 @@ stomach()
 		if (player.no_command || rnd(5) != 0)
 			return;
 		player.no_command += rnd(8) + 4;
-		player.body.t_flags.unset(CreatureFlag::Running);
+		player.body.flags.unset(CreatureFlag::Running);
 		game().turn.running = false;
 		game().turn.count = 0;
 		player.hungry_state = 3;
@@ -118,7 +118,8 @@ stomach()
 		 * If you are in 40 column mode use food twice as fast
 		 * (e.g. 3-(80/40) = 1, 3-(40/40) = 2 : pretty gross huh?)
 		 */
-		int deltafood = items::effects::ring_eat(Hand::Left) + items::effects::ring_eat(Hand::Right) + 1;
+		int deltafood = player.ring_food(Hand::Left);	// the left hand first, as the build did
+		deltafood += player.ring_food(Hand::Right) + 1;
 		if (game().options.terse)
 			deltafood *= 2;
 		player.food_left -= deltafood;

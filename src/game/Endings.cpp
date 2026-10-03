@@ -8,7 +8,6 @@
 #include "game/Endings.hpp"
 
 #include <algorithm>
-#include <bits/chrono.h>
 #include <chrono>
 #include <cstddef>
 #include <cstdlib>
@@ -19,6 +18,8 @@
 #include <string_view>
 #include <utility>
 #include <vector>
+
+#include <bits/chrono.h>
 
 #include "core/Ascii.hpp"
 #include "core/Glyphs.hpp"
@@ -206,7 +207,7 @@ score(int amount, int flags, char monst)
 		his_score.gold = amount;
 		his_score.fate = flags ? flags : monst;
 		his_score.depth = game().player.max_level;
-		his_score.experience = game().player.body.t_stats.s_lvl;
+		his_score.experience = game().player.body.stats.level;
 		rank = add_score(top_ten ? *top_ten : unread, his_score);
 	}
 	// an unreadable file is left alone; an old binary one is rewritten as JSON
@@ -255,12 +256,12 @@ total_winner()
 	ui::display().write_at(0, 0, "   Worth  Item");
 	int oldpurse = player.purse;
 	unsigned char c = 'a';
-	for (Item &obj : player.body.t_pack)
+	for (Item &obj : player.body.pack)
 	{
-	switch (obj.o_type)
+	switch (obj.kind)
 	{
 		case ItemKind::Food:
-			worth = 2 * obj.o_count;
+			worth = 2 * obj.count;
 			break;
 		case ItemKind::Weapon:
 			switch (obj.which<WeaponType>())
@@ -278,8 +279,8 @@ total_winner()
 				break;
 				default: break;
 			}
-			worth *= 3 * (obj.o_hplus + obj.o_dplus) + obj.o_count;
-			obj.o_flags.set(ItemFlag::Known);
+			worth *= 3 * (obj.hit_plus + obj.damage_plus) + obj.count;
+			obj.flags.set(ItemFlag::Known);
 			break;
 		case ItemKind::Armor:
 			switch (obj.which<ArmorType>())
@@ -294,45 +295,45 @@ total_winner()
 				case ArmorType::PlateMail: worth = 150;
 				break;
 			}
-			worth += (9 - obj.o_ac) * 100;
-			worth += (10 * (items::a_class[obj.which<ArmorType>()] - obj.o_ac));
-			obj.o_flags.set(ItemFlag::Known);
+			worth += (9 - obj.ac) * 100;
+			worth += (10 * (items::a_class[obj.which<ArmorType>()] - obj.ac));
+			obj.flags.set(ItemFlag::Known);
 			break;
 		case ItemKind::Scroll:
-			worth = items.s_magic[obj.which<Scroll>()].mi_worth;
-			worth *= obj.o_count;
+			worth = items.s_magic[obj.which<Scroll>()].worth;
+			worth *= obj.count;
 			if (!items.s_know[obj.which<Scroll>()])
 				worth /= 2;
 			items.s_know[obj.which<Scroll>()] = true;
 			break;
 		case ItemKind::Potion:
-			worth = items.p_magic[obj.which<Potion>()].mi_worth;
-			worth *= obj.o_count;
+			worth = items.p_magic[obj.which<Potion>()].worth;
+			worth *= obj.count;
 			if (!items.p_know[obj.which<Potion>()])
 				worth /= 2;
 			items.p_know[obj.which<Potion>()] = true;
 			break;
 		case ItemKind::Ring:
-			worth = items.r_magic[obj.which<Ring>()].mi_worth;
+			worth = items.r_magic[obj.which<Ring>()].worth;
 			if (obj.which<Ring>() == Ring::AddStrength || obj.which<Ring>() == Ring::IncreaseDamage ||
 				obj.which<Ring>() == Ring::Protection || obj.which<Ring>() == Ring::Dexterity)
 			{
-				if (obj.o_ac > 0)
-					worth += obj.o_ac * 100;
+				if (obj.ac > 0)
+					worth += obj.ac * 100;
 				else
 					worth = 10;
 			}
-			if (!obj.o_flags.test(ItemFlag::Known))
+			if (!obj.is(ItemFlag::Known))
 				worth /= 2;
-			obj.o_flags.set(ItemFlag::Known);
+			obj.flags.set(ItemFlag::Known);
 			items.r_know[obj.which<Ring>()] = true;
 			break;
 		case ItemKind::Stick:
-			worth = items.ws_magic[obj.which<Stick>()].mi_worth;
+			worth = items.ws_magic[obj.which<Stick>()].worth;
 			worth += 20 * obj.charges();
-			if (!obj.o_flags.test(ItemFlag::Known))
+			if (!obj.is(ItemFlag::Known))
 				worth /= 2;
-			obj.o_flags.set(ItemFlag::Known);
+			obj.flags.set(ItemFlag::Known);
 			items.ws_know[obj.which<Stick>()] = true;
 				break;
 			case ItemKind::Amulet:
@@ -383,7 +384,7 @@ killname(unsigned char monst, bool doart)
 		break;
 	default:
 		if (is_monster(monst))
-			sp = entities::monsters[monst-'A'].m_name;
+			sp = entities::monsters[monst-'A'].name;
 		else
 		{
 			sp = "God";

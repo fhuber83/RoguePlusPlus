@@ -124,37 +124,43 @@ inline constexpr bool enable_flags<ItemFlag> = true;
 using ItemFlags = Flags<ItemFlag>;
 
 struct Item {
-	ItemKind o_type;			/* What kind of object it is */
-	Coord o_pos;				/* Where it lives on the screen */
-	char o_launch;				/* What you need to launch it */
-	rogue::Attacks o_damage;	/* Damage if used like sword */
-	rogue::Attacks o_hurldmg;	/* Damage if thrown */
-	int o_count;				/* Count for plural objects */
-	int o_which;				/* Which object of a type it is: use which<E>() */
-	int o_hplus;				/* Plusses to hit */
-	int o_dplus;				/* Plusses to damage */
-	short o_ac;					/* Armor class (charges(), gold_value()) */
-	ItemFlags o_flags;			/* Information about objects */
-	char o_enemy;				/* If it is enchanted, who it hates */
-	int o_group;				/* Group number for this object */
+	ItemKind kind;			/* What kind of object it is */
+	Coord pos;				/* Where it lives on the screen */
+	char launcher;				/* What you need to launch it */
+	rogue::Attacks damage;	/* Damage if used like sword */
+	rogue::Attacks thrown_damage;	/* Damage if thrown */
+	int count;				/* Count for plural objects */
+	int number;				/* Which object of a type it is: use which<E>() */
+	int hit_plus;				/* Plusses to hit */
+	int damage_plus;				/* Plusses to damage */
+	short ac;					/* Armor class (charges(), gold_value()) */
+	ItemFlags flags;			/* Information about objects */
+	char enemy;				/* If it is enchanted, who it hates */
+	int group;				/* Group number for this object */
 
 	/*
-	 * Which potion, scroll, weapon, ... it is (items/Kinds.hpp). o_which
-	 * holds the number, which the save file stores; the caller knows from
-	 * o_type which enum it is.
+	 * Which potion, scroll, weapon, ... it is (items/Kinds.hpp). The
+	 * member number holds it, as the save file stores it; the caller knows
+	 * from the item's kind which enum it is.
 	 */
 	template <typename E>
 		requires std::is_enum_v<E>
-	constexpr E which() const { return static_cast<E>(o_which); }
+	constexpr E which() const { return static_cast<E>(number); }
 	template <typename E>
 		requires std::is_enum_v<E>
-	constexpr void set_which(E kind) { o_which = std::to_underlying(kind); }
+	constexpr void set_which(E which) { number = std::to_underlying(which); }
 
-	// A stick's charges and gold's worth are kept in o_ac (were o_charges, o_goldval)
-	constexpr short &charges() { return o_ac; }
-	constexpr short charges() const { return o_ac; }
-	constexpr short &gold_value() { return o_ac; }
-	constexpr short gold_value() const { return o_ac; }
+	// A stick's charges and gold's worth are kept in ac (were o_charges, o_goldval)
+	constexpr short &charges() { return ac; }
+	constexpr short charges() const { return ac; }
+	constexpr short &gold_value() { return ac; }
+	constexpr short gold_value() const { return ac; }
+
+	// Whether a flag is set
+	constexpr bool is(ItemFlag flag) const { return flags.test(flag); }
+	// Whether it radiates magic: armor or a weapon enchanted either way,
+	// and every potion, scroll, stick, ring and the amulet (was is_magic())
+	bool is_magic() const;
 };
 
 }  // namespace rogue

@@ -33,6 +33,22 @@ public:
 
 private:
 	bool open_ = false;
+	// Terminal size we *want*, not necessarily what we will get
+	int want_lines_ = 0;
+	int want_cols_ = 0;
+	/*
+	 * Number of colors we're working with, regardless if terminal has more
+	 * colors available. Set by open():
+	 * -  0 for monochrome
+	 * -  8 for 8 basic colors (light versions will use BOLD text attribute)
+	 * - 16 if all 16 PC colors are directly indexable
+	 */
+	int colors_ = 0;
+	// if user allows us to redefine color palette to match original RGB
+	bool change_colors_ = true;
+	// if user wants to use default terminal foreground / background color
+	bool use_terminal_fgbg_ = true;
+	int key_mask_ = ~0;  // all bits until open() defines the keys
 };
 
 } // namespace rogue::ui

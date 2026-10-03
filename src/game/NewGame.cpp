@@ -74,8 +74,8 @@ constexpr std::string_view c_set = "bcdfghjklmnpqrstvwxyz";
 constexpr std::string_view v_set = "aeiou";
 
 struct Stone {
-	std::string_view st_name;
-	int st_value;
+	std::string_view name;
+	int value;
 };
 
 constexpr auto stones = std::to_array<Stone>({
@@ -185,7 +185,7 @@ accumulate_odds(KindTable<E, items::KindInfo> &table)
 	int odds = 0;
 
 	for (items::KindInfo &mi : table)
-		mi.mi_prob = odds += mi.mi_prob;
+		mi.prob = odds += mi.prob;
 }
 
 }  // namespace
@@ -221,7 +221,7 @@ credits()
 void
 init_player()
 {
-	game().player.body.t_stats = game().player.max_stats;
+	game().player.body.stats = game().player.max_stats;
 	game().player.food_left = rules::hunger_time();
 	/*
 	 * initialize things
@@ -231,60 +231,60 @@ init_player()
 	 * Give the rogue his weaponry.  First a mace.
 	 */
 	Maybe<Item> obj = new_item();
-	obj->o_type = ItemKind::Weapon;
+	obj->kind = ItemKind::Weapon;
 	obj->set_which(WeaponType::Mace);
 	items::effects::init_weapon(*obj, WeaponType::Mace);
-	obj->o_hplus = 1;
-	obj->o_dplus = 1;
-	obj->o_flags.set(ItemFlag::Known);
-	obj->o_count = 1;
-	obj->o_group = 0;
+	obj->hit_plus = 1;
+	obj->damage_plus = 1;
+	obj->flags.set(ItemFlag::Known);
+	obj->count = 1;
+	obj->group = 0;
 	items::add_pack(*obj, true);
 	game().player.weapon = game().pool.id_of(obj);
 	/*
 	 * Now a +1 bow
 	 */
 	obj = new_item();
-	obj->o_type = ItemKind::Weapon;
+	obj->kind = ItemKind::Weapon;
 	obj->set_which(WeaponType::ShortBow);
 	items::effects::init_weapon(*obj, WeaponType::ShortBow);
-	obj->o_hplus = 1;
-	obj->o_dplus = 0;
-	obj->o_count = 1;
-	obj->o_group = 0;
-	obj->o_flags.set(ItemFlag::Known);
+	obj->hit_plus = 1;
+	obj->damage_plus = 0;
+	obj->count = 1;
+	obj->group = 0;
+	obj->flags.set(ItemFlag::Known);
 	items::add_pack(*obj, true);
 	/*
 	 * Now some arrows
 	 */
 	obj = new_item();
-	obj->o_type = ItemKind::Weapon;
+	obj->kind = ItemKind::Weapon;
 	obj->set_which(WeaponType::Arrow);
 	items::effects::init_weapon(*obj, WeaponType::Arrow);
-	obj->o_count = rnd(15) + 25;
-	obj->o_hplus = obj->o_dplus = 0;
-	obj->o_flags.set(ItemFlag::Known);
+	obj->count = rnd(15) + 25;
+	obj->hit_plus = obj->damage_plus = 0;
+	obj->flags.set(ItemFlag::Known);
 	items::add_pack(*obj, true);
 	/*
 	 * And his suit of armor
 	 */
 	obj = new_item();
-	obj->o_type = ItemKind::Armor;
+	obj->kind = ItemKind::Armor;
 	obj->set_which(ArmorType::RingMail);
-	obj->o_ac = items::a_class[ArmorType::RingMail] - 1;
-	obj->o_flags.set(ItemFlag::Known);
-	obj->o_count = 1;
-	obj->o_group = 0;
+	obj->ac = items::a_class[ArmorType::RingMail] - 1;
+	obj->flags.set(ItemFlag::Known);
+	obj->count = 1;
+	obj->group = 0;
 	game().player.armor = game().pool.id_of(obj);
 	items::add_pack(*obj, true);
 	/*
 	 * Give him some food too
 	 */
 	obj = new_item();
-	obj->o_type = ItemKind::Food;
-	obj->o_count = 1;
+	obj->kind = ItemKind::Food;
+	obj->count = 1;
 	obj->set_which(Food::Ration);
-	obj->o_group = 0;
+	obj->group = 0;
 	items::add_pack(*obj, true);
 }
 
@@ -298,7 +298,7 @@ init_things()
 	std::span<items::KindInfo> things = game().items.things;
 
 	for (std::size_t i = 1; i < things.size(); i++)
-		things[i].mi_prob += things[i-1].mi_prob;
+		things[i].prob += things[i-1].prob;
 }
 
 /*
@@ -402,10 +402,10 @@ init_stones()
 			j = rnd(NSTONES);
 		while (used[j]);
 		used[j] = true;
-		items.r_stones[r] = stones[j].st_name;
+		items.r_stones[r] = stones[j].name;
 		items.r_know[r] = false;
 		items.r_guess[r].clear();
-		items.r_magic[r].mi_worth += stones[j].st_value;
+		items.r_magic[r].worth += stones[j].value;
 	}
 	accumulate_odds(items.r_magic);
 }

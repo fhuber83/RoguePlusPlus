@@ -13,6 +13,7 @@
 #include "items/Kinds.hpp"
 #include "ui/Display.hpp"
 #include "ui/ScreenDisplay.hpp"
+#include "world/Level.hpp"
 #include "world/LevelGenerator.hpp"
 #include "world/Room.hpp"
 #include "world/RoomRef.hpp"
@@ -30,7 +31,7 @@ protected:
 	static void reset()
 	{
 		game().pool = Pool();
-		game().level = Level();
+		game().level = world::Level();
 		game().player = Player();
 		game().items = Items();
 		game().turn = Turn();
@@ -62,7 +63,7 @@ TEST_F(PoolCheck, EachThingIsListedOnce)
 	game().level.monsters.push_front(tp);
 	EXPECT_EQ(problems(), "");
 
-	game().player.body.t_pack.push_front(obj);
+	game().player.body.pack.push_front(obj);
 	EXPECT_NE(problems(), "");		// on the floor and in the pack
 	game().level.objects.remove(obj);
 	EXPECT_EQ(problems(), "");
@@ -76,13 +77,13 @@ TEST_F(PoolCheck, MonsterPacksCount)
 	Creature &tp = *new_creature();
 	game().level.monsters.push_front(tp);
 	Item &obj = *new_item();
-	tp.t_pack.push_front(obj);
+	tp.pack.push_front(obj);
 	EXPECT_EQ(problems(), "");
 }
 
 TEST_F(PoolCheck, WhatAMonsterIsAfter)
 {
-	Level &level = game().level;
+	world::Level &level = game().level;
 	Creature &tp = *new_creature();
 	level.monsters.push_front(tp);
 	Item &obj = *new_item();
@@ -91,18 +92,18 @@ TEST_F(PoolCheck, WhatAMonsterIsAfter)
 	for (std::optional<Destination> dest : {std::optional<Destination>(), std::optional<Destination>(Hero{}),
 			std::optional<Destination>(Gold{RoomRef::room(3)}), std::optional<Destination>(Gold{RoomRef::passage(2)}),
 			std::optional<Destination>(*game().pool.id_of(obj))}) {
-		tp.t_dest = dest;
+		tp.dest = dest;
 		EXPECT_EQ(problems(), "");
 	}
-	tp.t_dest = Gold{RoomRef::passage(world::MAXPASS)};
+	tp.dest = Gold{RoomRef::passage(world::MAXPASS)};
 	EXPECT_NE(problems(), "");
-	tp.t_dest = ItemId{MAXITEMS - 1};	// a free slot
+	tp.dest = ItemId{MAXITEMS - 1};	// a free slot
 	EXPECT_NE(problems(), "");
 
 	// A carried item is not a destination
 	level.objects.remove(obj);
-	game().player.body.t_pack.push_front(obj);
-	tp.t_dest = *game().pool.id_of(obj);
+	game().player.body.pack.push_front(obj);
+	tp.dest = *game().pool.id_of(obj);
 	EXPECT_NE(problems(), "");
 }
 
@@ -110,13 +111,13 @@ TEST_F(PoolCheck, RoomsAreRoomsOrPassages)
 {
 	Creature &tp = *new_creature();
 	game().level.monsters.push_front(tp);
-	tp.t_room = RoomRef::passage(world::MAXPASS - 1);
-	game().player.body.t_room = RoomRef::room(0);
+	tp.room = RoomRef::passage(world::MAXPASS - 1);
+	game().player.body.room = RoomRef::room(0);
 	game().player.old_room = RoomRef::room(world::MAXROOMS - 1);
 	EXPECT_EQ(problems(), "");
-	tp.t_room = RoomRef::room(world::MAXROOMS);
+	tp.room = RoomRef::room(world::MAXROOMS);
 	EXPECT_NE(problems(), "");
-	tp.t_room = std::nullopt;
+	tp.room = std::nullopt;
 	game().player.old_room = RoomRef::passage(-1);
 	EXPECT_NE(problems(), "");
 }
@@ -128,7 +129,7 @@ TEST_F(PoolCheck, WornItemsAreInThePack)
 	game().player.rings[Hand::Right] = game().pool.id_of(obj);
 	EXPECT_NE(problems(), "");
 	game().level.objects.remove(obj);
-	game().player.body.t_pack.push_front(obj);
+	game().player.body.pack.push_front(obj);
 	EXPECT_EQ(problems(), "");
 }
 
@@ -137,7 +138,7 @@ TEST_F(PoolCheck, TheLastItemPickedIsInUse)
 	game().turn.last_item = ItemId{MAXITEMS - 1};	// a free slot
 	EXPECT_NE(problems(), "");
 	Item &obj = *new_item();
-	game().player.body.t_pack.push_front(obj);
+	game().player.body.pack.push_front(obj);
 	game().turn.last_item = game().pool.id_of(obj);
 	EXPECT_EQ(problems(), "");
 }

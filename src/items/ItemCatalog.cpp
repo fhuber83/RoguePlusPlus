@@ -202,11 +202,10 @@ pick_one(const KindTable<E, KindInfo> &table)
 Maybe<Item>
 new_thing()
 {
-	Maybe<Item> cur;
-	int k;
 	rogue::Items &items = game().items;
 
-	if (!(cur = new_item()))
+	Maybe<Item> cur = new_item();
+	if (!cur)
 		return std::nullopt;
 	cur->o_hplus = cur->o_dplus = 0;
 	cur->o_damage = cur->o_hurldmg = "0d0";
@@ -237,11 +236,12 @@ new_thing()
 		else
 			cur->set_which(Food::Fruit);
 		break;
-	case 3:
+	case 3: {
 		cur->o_type = ItemKind::Weapon;
 		cur->set_which(static_cast<WeaponType>(rnd(kind_count<WeaponType>)));
 		items::effects::init_weapon(*cur, cur->which<WeaponType>());
-		if ((k = rnd(100)) < 10)
+		int k = rnd(100);
+		if (k < 10)
 		{
 			cur->o_flags.set(ItemFlag::Cursed);
 			cur->o_hplus -= rnd(3) + 1;
@@ -249,11 +249,12 @@ new_thing()
 		else if (k < 15)
 			cur->o_hplus += rnd(3) + 1;
 		break;
+	}
 	case 4: {
 		std::optional<ArmorType> armor;
 
 		cur->o_type = ItemKind::Armor;
-		k = rnd(100);
+		int k = rnd(100);
 		for (ArmorType a : kinds<ArmorType>())
 			if (k < a_chances[a]) {
 				armor = a;

@@ -241,7 +241,7 @@ print_disc(ItemKind type)
 {
 	std::span<const bool> know;
 	std::span<const std::string> guess;
-	int i, maxnum = 0, num_found;
+	int maxnum = 0;
 	Item obj{};
 	std::array<short, std::max({kind_count<Scroll>, kind_count<Potion>, kind_count<Ring>, kind_count<Stick>})> order;
 	rogue::Items &items = game().items;
@@ -274,8 +274,8 @@ print_disc(ItemKind type)
 	set_order(std::span(order).first(maxnum));
 	obj.o_count = 1;
 	obj.o_flags.reset();
-	num_found = 0;
-	for (i = 0; i < maxnum; i++)
+	int num_found = 0;
+	for (int i = 0; i < maxnum; i++)
 		if (know[order[i]] || !guess[order[i]].empty())
 		{
 			obj.o_type = type;
@@ -294,19 +294,13 @@ print_disc(ItemKind type)
 void
 set_order(std::span<short> order)
 {
-	int i, r, t;
 	int numthings = static_cast<int>(order.size());
 
-	for (i = 0; i< numthings; i++)
+	for (int i = 0; i < numthings; i++)
 		order[i] = i;
 
-	for (i = numthings; i > 0; i--)
-	{
-		r = rnd(i);
-		t = order[i - 1];
-		order[i - 1] = order[r];
-		order[r] = t;
-	}
+	for (int i = numthings; i > 0; i--)
+		std::swap(order[i - 1], order[rnd(i)]);
 }
 
 }  // namespace
@@ -340,9 +334,7 @@ add_line(std::string_view use, std::optional<std::string_view> line)
 	}
 	if (line && !(line_cnt == 0 && line->empty()))
 	{
-		Coord end;
-
-		end = ui::display().write_at(line_cnt, 0, *line);
+		Coord end = ui::display().write_at(line_cnt, 0, *line);
 		/*
 		 * if the line wrapped but nothing was printed on this
 		 * line you might as well use it for the next item
@@ -360,9 +352,7 @@ add_line(std::string_view use, std::optional<std::string_view> line)
 unsigned char
 end_line(std::string_view use)
 {
-	int retchar;
-
-	retchar = add_line(use, std::nullopt);
+	int retchar = add_line(use, std::nullopt);
 	ui::display().close_page();
 	line_cnt = 0;
 	return(retchar);
@@ -418,18 +408,17 @@ call_it(bool know, std::string &guess)
 void
 call()
 {
-	Maybe<Item> obj;
-	std::span<std::string> guess;
-	std::string_view elsewise;
-	std::span<const bool> know;
 	rogue::Items &items = game().items;
 
-	obj = get_item("call", ItemFilter::callable());
+	Maybe<Item> obj = get_item("call", ItemFilter::callable());
 	/*
 	 * Make certain that it is somethings that we want to wear
 	 */
 	if (!obj)
 		return;
+	std::span<std::string> guess;
+	std::string_view elsewise;
+	std::span<const bool> know;
 	switch (obj->o_type)
 	{
 	case ItemKind::Ring:

@@ -20,16 +20,14 @@ namespace rogue::items::effects {
 void
 wear()
 {
-	Maybe<Item> obj;
-	std::string sp;
-
 	if (game().player.armor_item()) {
 		msg("you are already wearing some{}.",
 			noterse(".  You'll have to take it off first"));
 		game().turn.after = false;
 		return;
 	}
-	if (!(obj = get_item("wear", ItemKind::Armor)))
+	Maybe<Item> obj = get_item("wear", ItemKind::Armor);
+	if (!obj)
 		return;
 	if (obj->o_type != ItemKind::Armor) {
 		msg("you can't wear that");
@@ -37,7 +35,7 @@ wear()
 	}
 	waste_time();
 	obj->o_flags.set(ItemFlag::Known);
-	sp = inv_name(*obj, true);
+	std::string sp = inv_name(*obj, true);
 	game().player.armor = game().pool.id_of(obj);
 	msg("you are now wearing {}", sp);
 }
@@ -49,9 +47,8 @@ wear()
 void
 take_off()
 {
-	Maybe<Item> obj;
-
-	if (!(obj = game().player.armor_item())) {
+	Maybe<Item> obj = game().player.armor_item();
+	if (!obj) {
 		game().turn.after = false;
 		msg("you aren't wearing any armor");
 		return;

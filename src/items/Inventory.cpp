@@ -35,11 +35,10 @@ namespace {
 Maybe<Item>
 pack_obj(unsigned char ch)
 {
-	Maybe<Item> obj;
-	unsigned char och;
 	rogue::Player &player = game().player;
 
-	for (obj = player.body.t_pack.first(), och = 'a'; obj; obj = player.body.t_pack.after(*obj), och++)
+	unsigned char och = 'a';
+	for (Maybe<Item> obj = player.body.t_pack.first(); obj; obj = player.body.t_pack.after(*obj), och++)
 		if (ch == och)
 			return obj;
 	return std::nullopt;
@@ -53,7 +52,6 @@ pack_obj(unsigned char ch)
 void
 picked_up(Item &obj, bool silent)
 {
-	Maybe<Creature> mp;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 
@@ -61,7 +59,7 @@ picked_up(Item &obj, bool silent)
 	 * If this was the object of something's desire, that monster will
 	 * get mad and run at the hero
 	 */
-	for (mp = level.monsters.first(); mp; mp = level.monsters.after(*mp))
+	for (Maybe<Creature> mp = level.monsters.first(); mp; mp = level.monsters.after(*mp))
 	{
 		/*
 		 *  compiler bug: jll : 2-7-83
@@ -105,23 +103,13 @@ picked_up(Item &obj, bool silent)
 void
 add_pack(Maybe<Item> given, bool silent)
 {
-	Maybe<Item> obj, op, lp;
-	bool exact, from_floor;
-	unsigned char floor;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 
-	if (!given)
-	{
-		from_floor = true;
-		if (!(obj = world::find_obj(player.body.t_pos.y, player.body.t_pos.x)))
-			return;
-	}
-	else
-	{
-		from_floor = false;
-		obj = given;
-	}
+	const bool from_floor = !given;
+	Maybe<Item> obj = from_floor ? world::find_obj(player.body.t_pos.y, player.body.t_pos.x) : given;
+	if (!obj)
+		return;
 	/*
 	 * Link it into the pack.  Search the pack for a object of similar type
 	 * if there isn't one, stuff it at the beginning, if there is, look for one
@@ -138,10 +126,10 @@ add_pack(Maybe<Item> given, bool silent)
 	 *  init_player(), which happens before any room even exist. t_room is
 	 *  set in enter_room(), which is first called in new_level()
 	 */
-	floor = (player.body.t_room && game().level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone)) ? PASSAGE : FLOOR;
+	unsigned char floor = (player.body.t_room && game().level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone)) ? PASSAGE : FLOOR;
 	if (obj->o_group)
 	{
-		for (op = player.body.t_pack.first(); op; op = player.body.t_pack.after(*op))
+		for (Maybe<Item> op = player.body.t_pack.first(); op; op = player.body.t_pack.after(*op))
 		{
 			if (op->o_group == obj->o_group)
 			{
@@ -196,8 +184,9 @@ add_pack(Maybe<Item> given, bool silent)
 	/*
 	 * Search for an object of the same type
 	 */
-	exact = false;
-	for (op = player.body.t_pack.first(); op; op = player.body.t_pack.after(*op))
+	bool exact = false;
+	Maybe<Item> op = player.body.t_pack.first(), lp;
+	for (; op; op = player.body.t_pack.after(*op))
 		if (obj->o_type == op->o_type)
 			break;
 	if (!op)
@@ -261,12 +250,9 @@ add_pack(Maybe<Item> given, bool silent)
 unsigned char
 inventory(const List<Item> &list, ItemFilter type, std::string_view lstr)
 {
-	unsigned char ch;
-	Maybe<Item> obj;
-	int n_objs;
-
-	n_objs = 0;
-	for (ch = 'a', obj = list.first(); obj; ch++, obj = list.after(*obj))
+	int n_objs = 0;
+	unsigned char ch = 'a';
+	for (Maybe<Item> obj = list.first(); obj; ch++, obj = list.after(*obj))
 	{
 		/*
 		 * Don't print this one if:
@@ -299,17 +285,15 @@ inventory(const List<Item> &list, ItemFilter type, std::string_view lstr)
 void
 pick_up(unsigned char ch)
 {
-	Maybe<Item> obj;
 	rogue::Player &player = game().player;
 
 	switch (ch)
 	{
 	case GOLD:
 	{
-		Maybe<Creature> mp;
-
-		if (!(obj = world::find_obj(player.body.t_pos.y, player.body.t_pos.x)))
-		return;
+		Maybe<Item> obj = world::find_obj(player.body.t_pos.y, player.body.t_pos.x);
+		if (!obj)
+			return;
 		money(obj->gold_value());
 		/*
 		 * find_dest() can point a monster's t_dest straight at this gold's
@@ -317,7 +301,7 @@ pick_up(unsigned char ch)
 		 * discarded, same as add_pack()'s picked_up() redirect for other
 		 * floor items, so nothing is left pointing at a freed Item.
 		 */
-		for (mp = game().level.monsters.first(); mp; mp = game().level.monsters.after(*mp))
+		for (Maybe<Creature> mp = game().level.monsters.first(); mp; mp = game().level.monsters.after(*mp))
 			if (mp->t_dest && game().where(*mp->t_dest) == obj->o_pos)
 				mp->t_dest = Hero{};
 		game().level.objects.remove(*obj);
@@ -346,21 +330,18 @@ pick_up(unsigned char ch)
 Maybe<Item>
 get_item(std::string_view purpose, ItemFilter type)
 {
-	Maybe<Item> obj;
-	unsigned char ch;
 	rogue::Turn &turn = game().turn;
-	unsigned char gi_state;	/* get item sub state */
 	bool once_only = false;
 
 	if (((game().options.menu.starts_with("sel") && purpose != "eat"
 	  && purpose != "drop")) || game().options.menu == "on")
 		once_only = true;
 
-	gi_state = game().turn.again;
+	unsigned char gi_state = game().turn.again;	/* get item sub state */
 	if (game().player.body.t_pack.empty())
 		msg("you aren't carrying anything");
 	else {
-		ch = turn.last_item_key;
+		unsigned char ch = turn.last_item_key;
 		for (;;) {
 			/*
 			 * if we are doing something AGAIN, and the pack hasn't
@@ -400,7 +381,8 @@ get_item(std::string_view purpose, ItemFilter type)
 				msg("");
 				return std::nullopt;
 			}
-			if (!(obj = pack_obj(ch))) {
+			Maybe<Item> obj = pack_obj(ch);
+			if (!obj) {
 				int last = 'a' + static_cast<int>(game().player.body.t_pack.size()) - 1;
 				ifterse("range is 'a' to '{:c}'","please specify a letter between 'a' and '{:c}'", last);
 				continue;
@@ -429,12 +411,10 @@ get_item(std::string_view purpose, ItemFilter type)
 unsigned char
 pack_char(const Item &obj)
 {
-	Maybe<Item> item;
-	unsigned char c;
 	rogue::Player &player = game().player;
 
-	c = 'a';
-	for (item = player.body.t_pack.first(); item; item = player.body.t_pack.after(*item))
+	unsigned char c = 'a';
+	for (Maybe<Item> item = player.body.t_pack.first(); item; item = player.body.t_pack.after(*item))
 		if (refers_to(item, obj))
 			return c;
 		else
@@ -449,10 +429,9 @@ pack_char(const Item &obj)
 void
 money(int value)
 {
-	unsigned char floor;
 	rogue::Player &player = game().player;
 
-	floor = game().level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
+	unsigned char floor = game().level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
 	player.purse += value;
 	ui::display().draw_tile(player.body.t_pos, floor);
 	game().level.at(player.body.t_pos) = floor;
@@ -469,17 +448,16 @@ money(int value)
 void
 drop()
 {
-	unsigned char ch;
-	Maybe<Item> nobj, op;
 	rogue::Player &player = game().player;
 
-	ch = game().level.at(player.body.t_pos);
+	unsigned char ch = game().level.at(player.body.t_pos);
 	if (ch != FLOOR && ch != PASSAGE)
 	{
 		msg("there is something there already");
 		return;
 	}
-	if (!(op = get_item("drop", ItemFilter::all())))
+	Maybe<Item> op = get_item("drop", ItemFilter::all());
+	if (!op)
 		return;
 	if (!can_drop(*op))
 		return;
@@ -488,7 +466,8 @@ drop()
 	 */
 	if (op->o_count >= 2 && op->o_type != ItemKind::Weapon)
 	{
-		if (!(nobj = new_item()))
+		Maybe<Item> nobj = new_item();
+		if (!nobj)
 		{
 			msg("{}it appears to be stuck in your pack!",
 				noterse("can't drop it, "));

@@ -74,12 +74,11 @@ std::string	short_name(const Item &obj);
 void
 missile(int ydelta, int xdelta)
 {
-	Maybe<Item> obj, nitem;
-
 	/*
 	 * Get which thing we are hurling
 	 */
-	if (!(obj = get_item("throw", ItemKind::Weapon)))
+	Maybe<Item> obj = get_item("throw", ItemKind::Weapon);
+	if (!obj)
 		return;
 	if (!can_drop(*obj) || is_current(*obj))
 		return;
@@ -91,7 +90,8 @@ missile(int ydelta, int xdelta)
 	/*
 	 * here is a quick hack to check if we can get a new item
 	 */
-	if (obj->o_count >= 2 && !(nitem = new_item())) {
+	Maybe<Item> nitem = obj->o_count >= 2 ? new_item() : Maybe<Item>();
+	if (obj->o_count >= 2 && !nitem) {
 		obj->o_count = 1;
 		msg("something in your pack explodes!!!");
 	}
@@ -136,8 +136,6 @@ do_motion(Item &obj, int ydelta, int xdelta)
 	 */
 	obj.o_pos = player.body.t_pos;
 	for (;;) {
-		int ch;
-
 		/*
 		 * Erase the old one
 		 */
@@ -149,7 +147,8 @@ do_motion(Item &obj, int ydelta, int xdelta)
 		obj.o_pos.y += ydelta;
 		obj.o_pos.x += xdelta;
 
-		if (world::step_ok(ch = world::winat(obj.o_pos.y, obj.o_pos.x)) && ch != DOOR) {
+		int ch = world::winat(obj.o_pos.y, obj.o_pos.x);
+		if (world::step_ok(ch) && ch != DOOR) {
 			/*
 			 * It hasn't hit anything yet, so display it
 			 * If it alright.
@@ -198,7 +197,6 @@ short_name(const Item &obj)
 void
 fall(Item &obj, bool pr)
 {
-	int index;
 	rogue::Level &level = game().level;
 	Landing landing = fallpos(obj);
 
@@ -206,7 +204,7 @@ fall(Item &obj, bool pr)
 	{
 		const Coord fpos = std::get<Coord>(landing);
 
-		index = world::INDEX(fpos.y, fpos.x);
+		int index = world::INDEX(fpos.y, fpos.x);
 		level.map[index] = glyph_of(obj.o_type);
 		obj.o_pos = fpos;
 		if (world::cansee(fpos.y, fpos.x))
@@ -286,18 +284,17 @@ num(int n1, int n2, char type)
 void
 wield()
 {
-	Maybe<Item> obj, oweapon;
-	std::string sp;
 	rogue::Player &player = game().player;
 
-	oweapon = player.weapon_item();
+	Maybe<Item> oweapon = player.weapon_item();
 	if (oweapon && !can_drop(*oweapon))
 	{
 		player.weapon = game().pool.id_of(oweapon);
 		return;
 	}
 	player.weapon = game().pool.id_of(oweapon);
-	if (!(obj = get_item("wield", ItemKind::Weapon)))
+	Maybe<Item> obj = get_item("wield", ItemKind::Weapon);
+	if (!obj)
 	{
 		game().turn.after = false;
 		return;
@@ -315,7 +312,7 @@ wield()
 		return;
 	}
 
-	sp = inv_name(*obj, true);
+	std::string sp = inv_name(*obj, true);
 	player.weapon = game().pool.id_of(obj);
 	ifterse("now wielding {} ({:c})", "you are now wielding {} ({:c})",
 		sp, pack_char(*obj));
@@ -330,13 +327,12 @@ namespace {
 Landing
 fallpos(const Item &obj)
 {
-	int y, x, cnt = 0, ch;
+	int cnt = 0;
 	std::optional<Coord> newpos;	/* set with the first free square */
-	Maybe<Item> onfloor;
 	rogue::Player &player = game().player;
 
-	for (y = obj.o_pos.y - 1; y <= obj.o_pos.y + 1; y++) {
-		for (x = obj.o_pos.x - 1; x <= obj.o_pos.x + 1; x++) {
+	for (int y = obj.o_pos.y - 1; y <= obj.o_pos.y + 1; y++) {
+		for (int x = obj.o_pos.x - 1; x <= obj.o_pos.x + 1; x++) {
 			/*
 			 * check to make certain the spot is empty, if it is,
 			 * put the object there, set it in the level list
@@ -344,13 +340,16 @@ fallpos(const Item &obj)
 			 */
 			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || world::offmap(y,x))
 				continue;
-			if ((ch = game().level.at(y, x)) == FLOOR || ch == PASSAGE) {
+			int ch = game().level.at(y, x);
+			if (ch == FLOOR || ch == PASSAGE) {
 				if (rnd(++cnt) == 0)
 					newpos = {x, y};
 				continue;
 			}
-			if (world::step_ok(ch)
-				&& (onfloor = world::find_obj(y, x))
+			if (!world::step_ok(ch))
+				continue;
+			Maybe<Item> onfloor = world::find_obj(y, x);
+			if (onfloor
 				&& onfloor->o_type == obj.o_type
 				&& onfloor->o_group
 				&& onfloor->o_group == obj.o_group)

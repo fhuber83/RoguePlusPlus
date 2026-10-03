@@ -38,18 +38,12 @@ constexpr std::string_view in_dist = " in the distance";
 void
 read_scroll()
 {
-	Maybe<Item> obj;
-	int y, x;
-	unsigned char ch;
-	Maybe<Item> op;
-	Maybe<Creature> mo;
-	int index;
 	bool discardit = false;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 	rogue::Items &items = game().items;
 
-	obj = get_item("read", ItemKind::Scroll);
+	Maybe<Item> obj = get_item("read", ItemKind::Scroll);
 	if (!obj)
 		return;
 	if (obj->o_type != ItemKind::Scroll){
@@ -84,13 +78,14 @@ read_scroll()
 		 * from chasing after the hero.
 		 */
 
-		for (x = player.body.t_pos.x - 3; x <= player.body.t_pos.x + 3; x++)
+		for (int x = player.body.t_pos.x - 3; x <= player.body.t_pos.x + 3; x++)
 			if (x >= 0 && x < MAXCOLS)
-				for (y = player.body.t_pos.y - 3; y <= player.body.t_pos.y + 3; y++)
-					if ((y > 0 && y < maxrow) && (mo = entities::moat(y, x))) {
-						mo->t_flags.unset(CreatureFlag::Running);
-						mo->t_flags.set(CreatureFlag::Held);
-					}
+				for (int y = player.body.t_pos.y - 3; y <= player.body.t_pos.y + 3; y++)
+					if (y > 0 && y < maxrow)
+						if (Maybe<Creature> mo = entities::moat(y, x)) {
+							mo->t_flags.unset(CreatureFlag::Running);
+							mo->t_flags.set(CreatureFlag::Held);
+						}
 		break;
 	case Scroll::Sleep:
 		/*
@@ -105,7 +100,8 @@ read_scroll()
 		{
 		std::optional<Coord> mp = entities::plop_monster(player.body.t_pos.y, player.body.t_pos.x);
 
-		if (mp && (mo = new_creature()))
+		Maybe<Creature> mo = mp ? new_creature() : Maybe<Creature>();
+		if (mo)
 			entities::new_monster(*mo, entities::randmonster(false), *mp);
 		else
 			ifterse("you hear a faint cry of anguish",
@@ -131,10 +127,11 @@ read_scroll()
 		/*
 		 * Take all the things we want to keep hidden out of the window
 		 */
-		for (y = 1; y < maxrow; y++)
-			for (x = 0; x < MAXCOLS; x++) {
-				index = world::INDEX(y, x);
-				switch (ch = level.map[index])
+		for (int y = 1; y < maxrow; y++)
+			for (int x = 0; x < MAXCOLS; x++) {
+				int index = world::INDEX(y, x);
+				unsigned char ch = level.map[index];
+				switch (ch)
 				{
 				case VWALL:
 				case HWALL:
@@ -150,7 +147,7 @@ read_scroll()
 				case DOOR:
 				case PASSAGE:
 				case STAIRS:
-					if ((mo = entities::moat(y, x)))
+					if (Maybe<Creature> mo = entities::moat(y, x))
 						if (mo->t_oldch == ' ')
 							mo->t_oldch = ch;
 					break;
@@ -163,36 +160,35 @@ read_scroll()
 								? ui::TileStyle::Inverse : ui::TileStyle::Normal);
 			}
 		break;
-	case Scroll::FoodDetection:
+	case Scroll::FoodDetection: {
 		/*
 		 * Scroll of food detection
 		 */
-		ch = false;
-		for (op = level.objects.first(); op; op = level.objects.after(*op)) {
+		bool found = false;
+		for (Maybe<Item> op = level.objects.first(); op; op = level.objects.after(*op)) {
 			if (op->o_type == ItemKind::Food) {
-				ch = true;
+				found = true;
 				ui::display().draw_tile(op->o_pos, FOOD, ui::TileStyle::Inverse);
 			} else /* as a bonus this will detect amulets as well */
 			if (op->o_type == ItemKind::Amulet) {
-				ch = true;
+				found = true;
 				ui::display().draw_tile(op->o_pos, AMULET, ui::TileStyle::Inverse);
 			}
 		}
-		if (ch) {
+		if (found) {
 			items.s_know[Scroll::FoodDetection] = true;
 			msg("your nose tingles as you sense food");
 		} else
 			ifterse("you hear a growling noise close by","you hear a growling noise very close to you");
 		break;
+	}
 	case Scroll::Teleportation:
 		/*
 		 * Scroll of teleportation:
 		 * Make him dissapear and reappear
 		 */
 		{
-		std::optional<RoomRef> cur_room;
-
-		cur_room = player.body.t_room;
+		std::optional<RoomRef> cur_room = player.body.t_room;
 		world::teleport();
 		if (cur_room != player.body.t_room)
 			items.s_know[Scroll::Teleportation] = true;

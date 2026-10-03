@@ -329,7 +329,6 @@ passnum()
 void
 numpass(int y, int x)
 {
-	unsigned char ch;
 	rogue::Level &level = game().level;
 
 	if (offmap(y,x))
@@ -345,7 +344,8 @@ numpass(int y, int x)
 	 * check to see if it is a door or secret door, i.e., a new exit,
 	 * or a numerable type of place
 	 */
-	if ((ch = level.at(y, x)) == DOOR || (!fp.test(MapFlag::Real) && ch != FLOOR)) {
+	unsigned char ch = level.at(y, x);
+	if (ch == DOOR || (!fp.test(MapFlag::Real) && ch != FLOOR)) {
 		Room &rp = level.passages[pnum];
 		rp.r_exit[rp.r_nexits].y = y;
 		rp.r_exit[rp.r_nexits++].x = x;

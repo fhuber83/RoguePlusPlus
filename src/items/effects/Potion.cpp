@@ -9,6 +9,7 @@
 #include "entities/Item.hpp"
 #include "entities/MonsterAI.hpp"
 #include "entities/MonsterCatalog.hpp"
+#include "entities/Stats.hpp"
 #include "game/Game.hpp"
 #include "game/Messages.hpp"
 #include "game/Pool.hpp"
@@ -21,7 +22,6 @@
 #include "rules/Conditions.hpp"
 #include "rules/Durations.hpp"
 #include "rules/Scheduler.hpp"
-#include "rules/Strength.hpp"
 #include "ui/Display.hpp"
 #include "world/Look.hpp"
 
@@ -183,7 +183,7 @@ quaff()
 		items.p_know[Potion::Poison] = true;
 		if (!player.wears(Ring::SustainStrength))
 		{
-			rules::chg_str(-(rnd(3)+1));
+			player.change_strength(-(rnd(3)+1));
 			msg(sick, "very");
 		}
 		else
@@ -199,7 +199,7 @@ quaff()
 		break;
 	case Potion::GainStrength:
 		items.p_know[Potion::GainStrength] = true;
-		rules::chg_str(1);
+		player.change_strength(1);
 		msg("you feel stronger. What bulging muscles!");
 		break;
 	case Potion::MonsterDetection:
@@ -293,15 +293,15 @@ quaff()
 		break;
 	case Potion::RestoreStrength:
 		if (player.wears(Hand::Left, Ring::AddStrength))
-			rules::add_str(player.body.stats.str, -player.ring_item(Hand::Left)->ac);
+			entities::add_str(player.body.stats.str, -player.ring_item(Hand::Left)->ac);
 		if (player.wears(Hand::Right, Ring::AddStrength))
-			rules::add_str(player.body.stats.str, -player.ring_item(Hand::Right)->ac);
+			entities::add_str(player.body.stats.str, -player.ring_item(Hand::Right)->ac);
 		if (player.body.stats.str < player.max_stats.str)
 			player.body.stats.str = player.max_stats.str;
 		if (player.wears(Hand::Left, Ring::AddStrength))
-			rules::add_str(player.body.stats.str, player.ring_item(Hand::Left)->ac);
+			entities::add_str(player.body.stats.str, player.ring_item(Hand::Left)->ac);
 		if (player.wears(Hand::Right, Ring::AddStrength))
-			rules::add_str(player.body.stats.str, player.ring_item(Hand::Right)->ac);
+			entities::add_str(player.body.stats.str, player.ring_item(Hand::Right)->ac);
 		msg("{}you feel warm all over",
 			noterse("hey, this tastes great.  It makes "));
 		break;

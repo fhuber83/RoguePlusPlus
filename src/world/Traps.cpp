@@ -26,7 +26,6 @@
 #include "items/effects/Weapon.hpp"
 #include "rules/Combat.hpp"
 #include "rules/Durations.hpp"
-#include "rules/Strength.hpp"
 #include "ui/Display.hpp"
 #include "world/Level.hpp"
 #include "world/LevelGenerator.hpp"
@@ -123,7 +122,7 @@ be_trapped(Coord tc)
 				death('d');
 			}
 			if (!player.wears(Ring::SustainStrength) && !rules::save(rules::SaveThrow::Poison))
-				rules::chg_str(-1);
+				player.change_strength(-1);
 			msg("a dart just hit you in the shoulder");
 		} else
 			msg("a dart whizzes by your ear and vanishes");

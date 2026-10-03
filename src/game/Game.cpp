@@ -11,6 +11,7 @@
 #include "entities/Creature.hpp"
 #include "entities/Item.hpp"
 #include "entities/List.hpp"
+#include "entities/Stats.hpp"
 #include "game/Id.hpp"
 #include "items/ItemCatalog.hpp"
 #include "items/Kinds.hpp"
@@ -114,6 +115,57 @@ bool Player::wears(Hand hand, Ring ring) const
 {
 	Maybe<Item> obj = ring_item(hand);
 	return obj && obj->which<Ring>() == ring;
+}
+
+void
+Player::change_strength(int amt)
+{
+	if (amt == 0)
+		return;
+	entities::add_str(body.stats.str, amt);
+	entities::str_t comp = body.stats.str;
+	if (wears(Hand::Left, Ring::AddStrength))
+		entities::add_str(comp, -ring_item(Hand::Left)->ac);
+	if (wears(Hand::Right, Ring::AddStrength))
+		entities::add_str(comp, -ring_item(Hand::Right)->ac);
+	if (comp > max_stats.str)
+		max_stats.str = comp;
+}
+
+int
+Player::armor_class() const
+{
+	// The game's armor class counts down from 11 (was AC())
+	int ac = armor_item() ? armor_item()->ac : body.stats.armor;
+	return -(ac - 11);
+}
+
+int
+Player::ring_food(Hand hand) const
+{
+	if (!ring_item(hand))
+		return 0;
+	switch (ring_item(hand)->which<Ring>()) {
+	case Ring::Regeneration:
+		return 2;
+	case Ring::SustainStrength:
+	case Ring::MaintainArmor:
+	case Ring::Protection:
+	case Ring::AddStrength:
+	case Ring::Stealth:
+		return 1;
+	case Ring::Searching:
+		return(rnd(5)==0);
+	case Ring::Dexterity:
+	case Ring::IncreaseDamage:
+		return (rnd(3) == 0);
+	case Ring::SlowDigestion:
+		return -rnd(2);
+	case Ring::SeeInvisible:
+		return (rnd(5) == 0);
+	default:
+		return 0;
+	}
 }
 
 Game &game()

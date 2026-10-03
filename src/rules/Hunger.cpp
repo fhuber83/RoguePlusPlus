@@ -118,7 +118,8 @@ stomach()
 		 * If you are in 40 column mode use food twice as fast
 		 * (e.g. 3-(80/40) = 1, 3-(40/40) = 2 : pretty gross huh?)
 		 */
-		int deltafood = items::effects::ring_eat(Hand::Left) + items::effects::ring_eat(Hand::Right) + 1;
+		int deltafood = player.ring_food(Hand::Left);	// the left hand first, as the build did
+		deltafood += player.ring_food(Hand::Right) + 1;
 		if (game().options.terse)
 			deltafood *= 2;
 		player.food_left -= deltafood;

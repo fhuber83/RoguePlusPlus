@@ -142,6 +142,16 @@ struct Player {
 	bool wears(Hand hand, Ring ring) const;
 	// Whether he wears this ring on either hand (was ISWEARING)
 	bool wears(Ring ring) const { return wears(Hand::Left, ring) || wears(Hand::Right, ring); }
+
+	// Change his strength by amt, within its bounds, and remember the
+	// highest it has been without rings of strength (was game().player.change_strength())
+	void change_strength(int amt);
+	// The armor class the status line shows: his armor's, or his own
+	// without (rings of protection don't count, as they never did)
+	int armor_class() const;
+	// The food the ring on a hand costs this turn, rolled for some rings
+	// (was ring_eat())
+	int ring_food(Hand hand) const;
 };
 
 /*

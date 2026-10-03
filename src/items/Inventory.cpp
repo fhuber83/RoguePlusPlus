@@ -19,7 +19,6 @@
 #include "items/effects/Armor.hpp"
 #include "rules/Conditions.hpp"
 #include "rules/Scheduler.hpp"
-#include "rules/Strength.hpp"
 #include "ui/Display.hpp"
 #include "world/Level.hpp"
 #include "world/Room.hpp"
@@ -531,7 +530,7 @@ can_drop(const Item &op)
 		player.rings[hand] = std::nullopt;
 		switch (op.which<Ring>()) {
 		case Ring::AddStrength:
-			rules::chg_str(-op.ac);
+			player.change_strength(-op.ac);
 			break;
 		case Ring::SeeInvisible:
 			rules::unsee();

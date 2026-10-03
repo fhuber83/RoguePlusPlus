@@ -35,7 +35,6 @@
 #include "items/effects/Potion.hpp"
 #include "items/effects/Weapon.hpp"
 #include "rules/Experience.hpp"
-#include "rules/Strength.hpp"
 #include "ui/Display.hpp"
 #include "world/Level.hpp"
 #include "world/LevelGenerator.hpp"
@@ -197,7 +196,7 @@ attack(Creature &mp)
 			{
 				if (!player.wears(Ring::SustainStrength))
 				{
-					chg_str(-1);
+					player.change_strength(-1);
 					msg("you feel a bite in your leg{}",
 						noterse(" and now feel weaker"));
 				}

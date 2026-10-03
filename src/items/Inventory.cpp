@@ -38,9 +38,11 @@ pack_obj(unsigned char ch)
 	rogue::Player &player = game().player;
 
 	unsigned char och = 'a';
-	for (Maybe<Item> obj = player.body.t_pack.first(); obj; obj = player.body.t_pack.after(*obj), och++)
+	for (Item &obj : player.body.t_pack) {
 		if (ch == och)
 			return obj;
+		och++;
+	}
 	return std::nullopt;
 }
 
@@ -59,7 +61,7 @@ picked_up(Item &obj, bool silent)
 	 * If this was the object of something's desire, that monster will
 	 * get mad and run at the hero
 	 */
-	for (Maybe<Creature> mp = level.monsters.first(); mp; mp = level.monsters.after(*mp))
+	for (Creature &mp : level.monsters)
 	{
 		/*
 		 *  compiler bug: jll : 2-7-83
@@ -76,8 +78,8 @@ picked_up(Item &obj, bool silent)
 		 * be not chasing (sleeping, another room, Ice Monster, etc), so a
 		 * destination could possibly have never been assigned.
 		 */
-		if (mp->t_dest && game().where(*mp->t_dest) == obj.o_pos)
-			mp->t_dest = Hero{};
+		if (mp.t_dest && game().where(*mp.t_dest) == obj.o_pos)
+			mp.t_dest = Hero{};
 	}
 
 	if (obj.o_type == ItemKind::Amulet)
@@ -129,14 +131,14 @@ add_pack(Maybe<Item> given, bool silent)
 	unsigned char floor = (player.body.t_room && game().level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone)) ? PASSAGE : FLOOR;
 	if (obj->o_group)
 	{
-		for (Maybe<Item> op = player.body.t_pack.first(); op; op = player.body.t_pack.after(*op))
+		for (Item &op : player.body.t_pack)
 		{
-			if (op->o_group == obj->o_group)
+			if (op.o_group == obj->o_group)
 			{
 			/*
 			 * Put it in the pack and notify the user
 			 */
-				op->o_count += obj->o_count;
+				op.o_count += obj->o_count;
 				if (from_floor)
 				{
 					level.objects.remove(*obj);
@@ -144,7 +146,7 @@ add_pack(Maybe<Item> given, bool silent)
 					level.at(player.body.t_pos) = floor;
 				}
 				discard(*obj);
-				picked_up(*op, silent);
+				picked_up(op, silent);
 				return;
 			}
 		}
@@ -185,6 +187,7 @@ add_pack(Maybe<Item> given, bool silent)
 	 * Search for an object of the same type
 	 */
 	bool exact = false;
+	// Walks by first()/after(), since op (where to put it) is used after them
 	Maybe<Item> op = player.body.t_pack.first(), lp;
 	for (; op; op = player.body.t_pack.after(*op))
 		if (obj->o_type == op->o_type)
@@ -252,23 +255,24 @@ inventory(const List<Item> &list, ItemFilter type, std::string_view lstr)
 {
 	Pager page;
 	int n_objs = 0;
-	unsigned char ch = 'a';
-	for (Maybe<Item> obj = list.first(); obj; ch++, obj = list.after(*obj))
+	unsigned char next_letter = 'a';
+	for (Item &obj : list)
 	{
+		const unsigned char ch = next_letter++;	/* its pack letter */
 		/*
 		 * Don't print this one if:
 		 *	the type doesn't match the type we were passed AND
 		 *	it isn't a callable type AND
 		 *	it isn't a zappable weapon
 		 */
-		if (!type.is_all() && !type.is(obj->o_type) && !(type.is_callable() &&
-		  (obj->o_type == ItemKind::Scroll || obj->o_type == ItemKind::Potion ||
-		  obj->o_type == ItemKind::Ring || obj->o_type == ItemKind::Stick)) &&
-		  !(type.is(ItemKind::Weapon) && obj->o_type == ItemKind::Potion) &&
-		  !(type.is(ItemKind::Stick) && obj->o_enemy && obj->charges()))
+		if (!type.is_all() && !type.is(obj.o_type) && !(type.is_callable() &&
+		  (obj.o_type == ItemKind::Scroll || obj.o_type == ItemKind::Potion ||
+		  obj.o_type == ItemKind::Ring || obj.o_type == ItemKind::Stick)) &&
+		  !(type.is(ItemKind::Weapon) && obj.o_type == ItemKind::Potion) &&
+		  !(type.is(ItemKind::Stick) && obj.o_enemy && obj.charges()))
 			continue;
 		n_objs++;
-		page.add_line(lstr, std::format("{}) {}", static_cast<char>(ch), inv_name(*obj, false)));
+		page.add_line(lstr, std::format("{}) {}", static_cast<char>(ch), inv_name(obj, false)));
 	}
 	if (n_objs == 0)
 	{
@@ -302,9 +306,9 @@ pick_up(unsigned char ch)
 		 * discarded, same as add_pack()'s picked_up() redirect for other
 		 * floor items, so nothing is left pointing at a freed Item.
 		 */
-		for (Maybe<Creature> mp = game().level.monsters.first(); mp; mp = game().level.monsters.after(*mp))
-			if (mp->t_dest && game().where(*mp->t_dest) == obj->o_pos)
-				mp->t_dest = Hero{};
+		for (Creature &mp : game().level.monsters)
+			if (mp.t_dest && game().where(*mp.t_dest) == obj->o_pos)
+				mp.t_dest = Hero{};
 		game().level.objects.remove(*obj);
 		discard(*obj);
 		game().level.room(*player.body.t_room).r_goldval = 0;
@@ -415,11 +419,11 @@ pack_char(const Item &obj)
 	rogue::Player &player = game().player;
 
 	unsigned char c = 'a';
-	for (Maybe<Item> item = player.body.t_pack.first(); item; item = player.body.t_pack.after(*item))
-		if (refers_to(item, obj))
+	for (const Item &item : player.body.t_pack) {
+		if (&item == &obj)
 			return c;
-		else
-			c++;
+		c++;
+	}
 	return '?';
 }
 

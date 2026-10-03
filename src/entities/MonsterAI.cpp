@@ -169,6 +169,7 @@ do_chase(Creature &th)
 		rules::attack(th);
 		return;
 	} else if (ch_ret == game().where(*th.t_dest)) {
+		// A walk by first()/after(): the body takes obj out of the list
 		for (Maybe<Item> obj = level.objects.first(); obj; obj = level.objects.after(*obj))
 			if	(th.t_dest == Destination(*game().pool.id_of(obj))) {
 				level.objects.remove(*obj);
@@ -346,12 +347,7 @@ chase(Creature &tp, Coord ee)
 					 */
 					if (ch ==	SCROLL)
 					{
-						Maybe<Item> obj = game().level.objects.first();
-						for (; obj; obj = game().level.objects.after(*obj))
-						{
-							if (y ==	obj->o_pos.y &&	x == obj->o_pos.x)
-								break;
-						}
+						Maybe<Item> obj = world::find_obj(y, x);
 						if (obj && obj->which<Scroll>() == Scroll::ScareMonster)
 							continue;
 					}
@@ -394,11 +390,11 @@ find_dest(const Creature &tp)
 	|| see_monst(tp))
 		return Hero{};
 	std::optional<RoomRef> rp = tp.t_room;
-	for (Maybe<Item> obj = game().level.objects.first(); obj; obj = game().level.objects.after(*obj))
+	for (Item &obj : game().level.objects)
 	{
-	if (obj->o_type == ItemKind::Scroll && obj->which<Scroll>() == Scroll::ScareMonster)
+	if (obj.o_type == ItemKind::Scroll && obj.which<Scroll>() == Scroll::ScareMonster)
 		continue;
-	if (world::roomin(obj->o_pos) == rp && rnd(100) < prob)
+	if (world::roomin(obj.o_pos) == rp && rnd(100) < prob)
 	{
 		// unless another monster is after it already
 		ItemId id = *game().pool.id_of(obj);
@@ -532,8 +528,8 @@ plop_monster(int r, int c)
 void
 aggravate()
 {
-	for (Maybe<Creature> mi = game().level.monsters.first(); mi; mi = game().level.monsters.after(*mi))
-		start_run(mi->t_pos);
+	for (Creature &mi : game().level.monsters)
+		start_run(mi.t_pos);
 }
 
 }  // namespace rogue::entities

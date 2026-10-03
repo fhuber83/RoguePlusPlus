@@ -326,11 +326,11 @@ drain()
 		corp = std::nullopt;
 	bool inpass = level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone);
 	std::vector<std::reference_wrapper<Creature>> drainee;
-	for (Maybe<Creature> mp = level.monsters.first(); mp; mp = level.monsters.after(*mp))
-		if (mp->t_room == player.body.t_room || mp->t_room == corp ||
-			(inpass && level.at(mp->t_pos) == DOOR &&
-			level.passage_at(mp->t_pos) == player.body.t_room))
-			drainee.push_back(*mp);
+	for (Creature &mp : level.monsters)
+		if (mp.t_room == player.body.t_room || mp.t_room == corp ||
+			(inpass && level.at(mp.t_pos) == DOOR &&
+			level.passage_at(mp.t_pos) == player.body.t_room))
+			drainee.push_back(mp);
 	int cnt = static_cast<int>(drainee.size());
 	if (cnt == 0)
 	{

@@ -273,10 +273,10 @@ attack(Creature &mp)
 			 */
 			Maybe<Item> steal;
 			int nobj = 0;
-			for (Maybe<Item> obj = player.body.t_pack.first(); obj; obj = player.body.t_pack.after(*obj))
-			if (obj != player.armor_item() && obj != player.weapon_item()
-				&& obj != player.ring_item(Hand::Left) && obj != player.ring_item(Hand::Right)
-				&& is_magic(*obj) && rnd(++nobj) == 0)
+			for (Item &obj : player.body.t_pack)
+			if (!refers_to(player.armor_item(), obj) && !refers_to(player.weapon_item(), obj)
+				&& !refers_to(player.ring_item(Hand::Left), obj) && !refers_to(player.ring_item(Hand::Right), obj)
+				&& is_magic(obj) && rnd(++nobj) == 0)
 				steal = obj;
 			if (steal)
 			{
@@ -654,6 +654,7 @@ thunk(const Item &weap, std::string_view mname, std::string_view does, std::stri
 void
 remove_monster(Coord mp, Creature &tp, bool waskill)
 {
+	// The next one is looked up first: the body takes obj out of the pack
 	for (Maybe<Item> obj = tp.t_pack.first(), nexti; obj; obj = nexti)
 	{
 		nexti = tp.t_pack.after(*obj);

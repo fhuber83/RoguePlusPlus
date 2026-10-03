@@ -72,8 +72,8 @@ new_level()
 	/*
 	 * Free up the monsters on the last level
 	 */
-	for (Maybe<Creature> tp = level.monsters.first(); tp; tp = level.monsters.after(*tp))
-		list_free(tp->t_pack);
+	for (Creature &tp : level.monsters)
+		list_free(tp.t_pack);
 	list_free(level.monsters);
 	/*
 	 * just in case we left some flytraps behind

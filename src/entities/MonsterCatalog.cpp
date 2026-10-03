@@ -335,8 +335,8 @@ pick_mons()
 Maybe<Creature>
 moat(int my, int mx)
 {
-	for (Maybe<Creature> tp = game().level.monsters.first(); tp; tp = game().level.monsters.after(*tp))
-		if (tp->t_pos.x == mx  && tp->t_pos.y == my)
+	for (Creature &tp : game().level.monsters)
+		if (tp.t_pos.x == mx  && tp.t_pos.y == my)
 			return(tp);
 	return std::nullopt;
 }

@@ -165,14 +165,14 @@ read_scroll()
 		 * Scroll of food detection
 		 */
 		bool found = false;
-		for (Maybe<Item> op = level.objects.first(); op; op = level.objects.after(*op)) {
-			if (op->o_type == ItemKind::Food) {
+		for (Item &op : level.objects) {
+			if (op.o_type == ItemKind::Food) {
 				found = true;
-				ui::display().draw_tile(op->o_pos, FOOD, ui::TileStyle::Inverse);
+				ui::display().draw_tile(op.o_pos, FOOD, ui::TileStyle::Inverse);
 			} else /* as a bonus this will detect amulets as well */
-			if (op->o_type == ItemKind::Amulet) {
+			if (op.o_type == ItemKind::Amulet) {
 				found = true;
-				ui::display().draw_tile(op->o_pos, AMULET, ui::TileStyle::Inverse);
+				ui::display().draw_tile(op.o_pos, AMULET, ui::TileStyle::Inverse);
 			}
 		}
 		if (found) {

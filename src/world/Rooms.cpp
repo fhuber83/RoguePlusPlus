@@ -45,17 +45,13 @@ namespace {
 void
 door_open(const Room &rp)
 {
-	int j, k;
-	unsigned char ch;
-	Maybe<Creature> tp;
-
 	if (!rp.r_flags.test(RoomFlag::Gone) && !game().player.body.t_flags.test(CreatureFlag::Blind))
-		for (j = rp.r_pos.y; j < rp.r_pos.y + rp.r_max.y; j++)
-			for (k = rp.r_pos.x; k < rp.r_pos.x + rp.r_max.x; k++) {
-				ch = winat(j, k);
+		for (int j = rp.r_pos.y; j < rp.r_pos.y + rp.r_max.y; j++)
+			for (int k = rp.r_pos.x; k < rp.r_pos.x + rp.r_max.x; k++) {
+				unsigned char ch = winat(j, k);
 				/* move(j, k); Why do this,?????? */
 				if (is_monster(ch)) {
-					tp = entities::wake_monster(j, k);
+					Maybe<Creature> tp = entities::wake_monster(j, k);
 					if (!tp)
 					{
 						continue;
@@ -114,7 +110,6 @@ diag_ok(Coord sp, Coord ep)
 bool
 cansee(int y, int x)
 {
-	std::optional<RoomRef> rer;
 	rogue::Player &player = game().player;
 
 	if (player.body.t_flags.test(CreatureFlag::Blind))
@@ -125,7 +120,7 @@ cansee(int y, int x)
 	 * We can only see if the hero in the same room as
 	 * the coordinate and the room is lit or if	it is close.
 	 */
-	rer	= roomin({x, y});
+	std::optional<RoomRef> rer = roomin({x, y});
 	return (rer	== player.body.t_room && !game().level.room(*rer).r_flags.test(RoomFlag::Dark));
 }
 
@@ -136,11 +131,8 @@ cansee(int y, int x)
 Coord
 rnd_pos(const Room &rp)
 {
-	Coord cp;
-
-	cp.x = rp.r_pos.x + rnd(rp.r_max.x - 2) + 1;
-	cp.y = rp.r_pos.y + rnd(rp.r_max.y - 2) + 1;
-	return cp;
+	// a braced list is evaluated in order: x is drawn before y
+	return Coord{rp.r_pos.x + rnd(rp.r_max.x - 2) + 1, rp.r_pos.y + rnd(rp.r_max.y - 2) + 1};
 }
 
 /*
@@ -150,8 +142,6 @@ rnd_pos(const Room &rp)
 void
 enter_room(Coord cp)
 {
-	int y, x;
-	Maybe<Creature> tp;
 	rogue::Level &level = game().level;
 
 	const std::optional<RoomRef> in = game().player.body.t_room = roomin(cp);
@@ -164,13 +154,13 @@ enter_room(Coord cp)
 	const Room &rp = level.room(*in);
 	door_open(rp);
 	if (!rp.r_flags.test(RoomFlag::Dark) && !game().player.body.t_flags.test(CreatureFlag::Blind) && !rp.r_flags.test(RoomFlag::Maze))
-		for (y = rp.r_pos.y; y < rp.r_max.y + rp.r_pos.y; y++) {
-			for (x = rp.r_pos.x; x < rp.r_max.x + rp.r_pos.x; x++) {
+		for (int y = rp.r_pos.y; y < rp.r_max.y + rp.r_pos.y; y++) {
+			for (int x = rp.r_pos.x; x < rp.r_max.x + rp.r_pos.x; x++) {
 				/*
 				 * Displaying monsters is all handled in the
 				 * chase code now
 				 */
-				tp = entities::moat(y, x);
+				Maybe<Creature> tp = entities::moat(y, x);
 				if (!tp || !entities::see_monst(*tp))
 					ui::display().draw_tile({x, y}, level.at(y, x));
 				else {
@@ -188,19 +178,16 @@ enter_room(Coord cp)
 void
 leave_room(Coord cp)
 {
-	int y, x;
-	unsigned char floor;
-	unsigned char ch;
 	rogue::Player &player = game().player;
 
 	const Room &rp = game().level.room(*player.body.t_room);
 	player.body.t_room = game().level.passage_at(cp);
-	floor = (rp.r_flags.test(RoomFlag::Dark) && !player.body.t_flags.test(CreatureFlag::Blind)) ? ' ' : FLOOR;
+	unsigned char floor = (rp.r_flags.test(RoomFlag::Dark) && !player.body.t_flags.test(CreatureFlag::Blind)) ? ' ' : FLOOR;
 	if (rp.r_flags.test(RoomFlag::Maze))
 		floor = PASSAGE;
-	for (y = rp.r_pos.y + 1; y < rp.r_max.y + rp.r_pos.y - 1; y++)
-		for (x = rp.r_pos.x + 1; x < rp.r_max.x + rp.r_pos.x - 1; x++)
-			switch (ch = ui::display().tile_at({x, y})) {
+	for (int y = rp.r_pos.y + 1; y < rp.r_max.y + rp.r_pos.y - 1; y++)
+		for (int x = rp.r_pos.x + 1; x < rp.r_max.x + rp.r_pos.x - 1; x++)
+			switch (unsigned char ch = ui::display().tile_at({x, y})) {
 			case ' ':
 			case PASSAGE:
 			case TRAP:
@@ -240,11 +227,11 @@ leave_room(Coord cp)
 void
 teleport()
 {
-	int rm;
-	Coord c;
 	rogue::Player &player = game().player;
 
 	ui::display().draw_tile(player.body.t_pos, game().level.at(player.body.t_pos));
+	int rm;
+	Coord c;
 	do
 	{
 		rm = rnd_room();

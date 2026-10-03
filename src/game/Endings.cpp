@@ -22,7 +22,6 @@
 
 #include "core/Ascii.hpp"
 #include "core/Glyphs.hpp"
-#include "core/Maybe.hpp"
 #include "core/Text.hpp"
 #include "entities/Item.hpp"
 #include "entities/MonsterCatalog.hpp"
@@ -84,12 +83,11 @@ pr_scores(int newrank, const std::vector<ScoreEntry> &top10)
 	std::string dthstr;
 	std::vector<std::string> texts;
 	std::vector<ui::ScoreLine> lines;
-	std::optional<std::string_view> altmsg;
 
 	texts.reserve(top10.size());	// the lines point into them
 	for (const ScoreEntry &sc : top10)
 	{
-		altmsg.reset();
+		std::optional<std::string_view> altmsg;
 		if (sc.gold <= 0)
 			break;
 		if (sc.depth >= 26)
@@ -228,12 +226,10 @@ score(int amount, int flags, char monst)
 void
 death(char monst)
 {
-	int year;
-
 	game().player.purse -= game().player.purse / 10;
 
 	ui::display().curtain_down();
-	year = static_cast<int>(std::chrono::year_month_day{
+	int year = static_cast<int>(std::chrono::year_month_day{
 		std::chrono::floor<std::chrono::days>(rogue::platform::local_time(rogue::platform::now()))}.year());
 	ui::display().draw_tombstone(game().options.name, killname(monst, true), game().player.purse, year);
 	ui::display().curtain_up();
@@ -249,10 +245,7 @@ death(char monst)
 void
 total_winner()
 {
-	Maybe<Item> obj;
-	int worth = 0;
-	unsigned char c;
-	int oldpurse;
+	int worth = 0;	/* kept from one item to the next */
 	rogue::Items &items = game().items;
 	rogue::Player &player = game().player;
 
@@ -260,16 +253,17 @@ total_winner()
 	wait_for(' ');
 	ui::display().clear_page();
 	ui::display().write_at(0, 0, "   Worth  Item");
-	oldpurse = player.purse;
-	for (c = 'a', obj = player.body.t_pack.first(); obj; c++, obj = player.body.t_pack.after(*obj))
+	int oldpurse = player.purse;
+	unsigned char c = 'a';
+	for (Item &obj : player.body.t_pack)
 	{
-	switch (obj->o_type)
+	switch (obj.o_type)
 	{
 		case ItemKind::Food:
-			worth = 2 * obj->o_count;
+			worth = 2 * obj.o_count;
 			break;
 		case ItemKind::Weapon:
-			switch (obj->which<WeaponType>())
+			switch (obj.which<WeaponType>())
 			{
 				case WeaponType::Mace: worth = 8; break;
 				case WeaponType::LongSword: worth = 15; break;
@@ -284,11 +278,11 @@ total_winner()
 				break;
 				default: break;
 			}
-			worth *= 3 * (obj->o_hplus + obj->o_dplus) + obj->o_count;
-			obj->o_flags.set(ItemFlag::Known);
+			worth *= 3 * (obj.o_hplus + obj.o_dplus) + obj.o_count;
+			obj.o_flags.set(ItemFlag::Known);
 			break;
 		case ItemKind::Armor:
-			switch (obj->which<ArmorType>())
+			switch (obj.which<ArmorType>())
 			{
 				case ArmorType::Leather: worth = 20; break;
 				case ArmorType::RingMail: worth = 25; break;
@@ -300,46 +294,46 @@ total_winner()
 				case ArmorType::PlateMail: worth = 150;
 				break;
 			}
-			worth += (9 - obj->o_ac) * 100;
-			worth += (10 * (items::a_class[obj->which<ArmorType>()] - obj->o_ac));
-			obj->o_flags.set(ItemFlag::Known);
+			worth += (9 - obj.o_ac) * 100;
+			worth += (10 * (items::a_class[obj.which<ArmorType>()] - obj.o_ac));
+			obj.o_flags.set(ItemFlag::Known);
 			break;
 		case ItemKind::Scroll:
-			worth = items.s_magic[obj->which<Scroll>()].mi_worth;
-			worth *= obj->o_count;
-			if (!items.s_know[obj->which<Scroll>()])
+			worth = items.s_magic[obj.which<Scroll>()].mi_worth;
+			worth *= obj.o_count;
+			if (!items.s_know[obj.which<Scroll>()])
 				worth /= 2;
-			items.s_know[obj->which<Scroll>()] = true;
+			items.s_know[obj.which<Scroll>()] = true;
 			break;
 		case ItemKind::Potion:
-			worth = items.p_magic[obj->which<Potion>()].mi_worth;
-			worth *= obj->o_count;
-			if (!items.p_know[obj->which<Potion>()])
+			worth = items.p_magic[obj.which<Potion>()].mi_worth;
+			worth *= obj.o_count;
+			if (!items.p_know[obj.which<Potion>()])
 				worth /= 2;
-			items.p_know[obj->which<Potion>()] = true;
+			items.p_know[obj.which<Potion>()] = true;
 			break;
 		case ItemKind::Ring:
-			worth = items.r_magic[obj->which<Ring>()].mi_worth;
-			if (obj->which<Ring>() == Ring::AddStrength || obj->which<Ring>() == Ring::IncreaseDamage ||
-				obj->which<Ring>() == Ring::Protection || obj->which<Ring>() == Ring::Dexterity)
+			worth = items.r_magic[obj.which<Ring>()].mi_worth;
+			if (obj.which<Ring>() == Ring::AddStrength || obj.which<Ring>() == Ring::IncreaseDamage ||
+				obj.which<Ring>() == Ring::Protection || obj.which<Ring>() == Ring::Dexterity)
 			{
-				if (obj->o_ac > 0)
-					worth += obj->o_ac * 100;
+				if (obj.o_ac > 0)
+					worth += obj.o_ac * 100;
 				else
 					worth = 10;
 			}
-			if (!obj->o_flags.test(ItemFlag::Known))
+			if (!obj.o_flags.test(ItemFlag::Known))
 				worth /= 2;
-			obj->o_flags.set(ItemFlag::Known);
-			items.r_know[obj->which<Ring>()] = true;
+			obj.o_flags.set(ItemFlag::Known);
+			items.r_know[obj.which<Ring>()] = true;
 			break;
 		case ItemKind::Stick:
-			worth = items.ws_magic[obj->which<Stick>()].mi_worth;
-			worth += 20 * obj->charges();
-			if (!obj->o_flags.test(ItemFlag::Known))
+			worth = items.ws_magic[obj.which<Stick>()].mi_worth;
+			worth += 20 * obj.charges();
+			if (!obj.o_flags.test(ItemFlag::Known))
 				worth /= 2;
-			obj->o_flags.set(ItemFlag::Known);
-			items.ws_know[obj->which<Stick>()] = true;
+			obj.o_flags.set(ItemFlag::Known);
+			items.ws_know[obj.which<Stick>()] = true;
 				break;
 			case ItemKind::Amulet:
 			worth = 1000;
@@ -350,8 +344,9 @@ total_winner()
 	if (worth < 0)
 		worth = 0;
 	ui::display().write_at(c - 'a' + 1, 0,
-		std::format("{}) {:5}  {}", static_cast<char>(c), worth, items::inv_name(*obj, false)));
+		std::format("{}) {:5}  {}", static_cast<char>(c), worth, items::inv_name(obj, false)));
 	player.purse += worth;
+	c++;
 	}
 	ui::display().write_at(c - 'a' + 1, 0,
 		std::format("   {:5}  Gold Pieces          ", static_cast<unsigned>(oldpurse)));
@@ -367,9 +362,7 @@ std::string
 killname(unsigned char monst, bool doart)
 {
 	std::string_view sp;
-	bool article;
-
-	article = true;
+	bool article = true;
 	switch (monst)
 	{
 	case 'a':

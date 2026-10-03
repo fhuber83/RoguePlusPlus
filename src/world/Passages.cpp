@@ -6,6 +6,7 @@
 
 #include "world/Passages.hpp"
 
+#include <array>
 #include <cstdlib>
 
 #include "core/Config.hpp"
@@ -24,8 +25,15 @@ namespace {
 
 void	conn(int r1, int r2);
 void	door(Room &rm, Coord cp);
+// Numbering the passages: the number of the one being numbered, and
+// whether the next exit starts a new one
+struct Numbering {
+	int pnum = 0;
+	bool newpnum = false;
+};
+
 void	passnum();
-void	numpass(int y, int x);
+void	numpass(int y, int x, Numbering &num);
 void	psplat(int y, int x);
 
 /*
@@ -36,10 +44,10 @@ void
 conn(int r1, int r2)
 {
 	Maybe<Room> rpt;
-	int rmt, rm;
-	int distance = 0, turn_spot, turn_distance;
+	int rm;
+	int distance = 0, turn_distance;
 	int direc;
-	Coord del, curr, turn_delta, spos, epos;
+	Coord del, turn_delta, spos, epos;
 	rogue::Level &level = game().level;
 
 	if (r1 < r2) {
@@ -61,7 +69,7 @@ conn(int r1, int r2)
 	 * first drawing one down.
 	 */
 	if (direc == 'd') {
-		rmt = rm + 3;				/* room # of dest */
+		int rmt = rm + 3;			/* room # of dest */
 		rpt = level.rooms[rmt];			/* the destination room */
 		del.x = 0;				/* direction of move */
 		del.y = 1;
@@ -90,7 +98,7 @@ conn(int r1, int r2)
 		turn_delta.x = (spos.x < epos.x ? 1 : -1);
 		turn_distance = abs(spos.x - epos.x);	/* how far to turn */
 	} else if (direc == 'r') {			/* setup for moving right */
-		rmt = rm + 1;
+		int rmt = rm + 1;
 		rpt = level.rooms[rmt];
 		del.x = 1;
 		del.y = 0;
@@ -117,7 +125,7 @@ conn(int r1, int r2)
 	}
 	else if constexpr (rogue::config::debug_checks)
 		debug("error in connection tables");
-	turn_spot = rnd(distance-1) + 1;
+	int turn_spot = rnd(distance-1) + 1;
 	/*
 	 * Draw in the doors on either side of the passage or just put #'s
 	 * if the rooms are gone.
@@ -133,8 +141,7 @@ conn(int r1, int r2)
 	/*
 	 * Get ready to move...
 	 */
-	curr.x = spos.x;
-	curr.y = spos.y;
+	Coord curr = spos;
 	while (distance)
 	{
 	/*
@@ -178,52 +185,43 @@ conn(int r1, int r2)
 void
 do_passages()
 {
-	int i, j;
-	int roomcount;
-	static struct rdes
-	{
-	bool	conn[MAXROOMS];		/* possible to connect to room i? */
-	bool	isconn[MAXROOMS];	/* connection been made to room i? */
-	bool	ingraph;		/* this room in graph already? */
-	} rdes[MAXROOMS] = {
-	{ { 0, 1, 0, 1, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0 },
-	{ { 1, 0, 1, 0, 1, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0 },
-	{ { 0, 1, 0, 0, 0, 1, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0 },
-	{ { 1, 0, 0, 0, 1, 0, 1, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0 },
-	{ { 0, 1, 0, 1, 0, 1, 0, 1, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0 },
-	{ { 0, 0, 1, 0, 1, 0, 0, 0, 1 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0 },
-	{ { 0, 0, 0, 1, 0, 0, 0, 1, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0 },
-	{ { 0, 0, 0, 0, 1, 0, 1, 0, 1 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0 },
-	{ { 0, 0, 0, 0, 0, 1, 0, 1, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0 }
-	};
-	struct rdes *r1, *r2 = nullptr;
-
 	/*
-	 * reinitialize room graph description
+	 * Which rooms are next to each other, and so can be connected
 	 */
-	for (r1 = rdes; r1 < &rdes[MAXROOMS]; r1++)
-	{
-		for (j = 0; j < MAXROOMS; j++)
-			r1->isconn[j] = false;
-		r1->ingraph = false;
-	}
+	static constexpr std::array<std::array<bool, MAXROOMS>, MAXROOMS> next_to = {{
+		{ 0, 1, 0, 1, 0, 0, 0, 0, 0 },
+		{ 1, 0, 1, 0, 1, 0, 0, 0, 0 },
+		{ 0, 1, 0, 0, 0, 1, 0, 0, 0 },
+		{ 1, 0, 0, 0, 1, 0, 1, 0, 0 },
+		{ 0, 1, 0, 1, 0, 1, 0, 1, 0 },
+		{ 0, 0, 1, 0, 1, 0, 0, 0, 1 },
+		{ 0, 0, 0, 1, 0, 0, 0, 1, 0 },
+		{ 0, 0, 0, 0, 1, 0, 1, 0, 1 },
+		{ 0, 0, 0, 0, 0, 1, 0, 1, 0 },
+	}};
+	struct Graph {
+		std::array<bool, MAXROOMS> isconn{};	/* connection been made to room i? */
+		bool ingraph = false;			/* this room in graph already? */
+	};
+	std::array<Graph, MAXROOMS> rdes{};
 
 	/*
 	 * starting with one room, connect it to a random adjacent room and
 	 * then pick a new room to start with.
 	 */
-	roomcount = 1;
-	r1 = &rdes[rnd(MAXROOMS)];
-	r1->ingraph = true;
+	int roomcount = 1;
+	int r1 = rnd(MAXROOMS);
+	int r2 = 0;
+	rdes[r1].ingraph = true;
 	do
 	{
 		/*
 		 * find a room to connect with
 		 */
-		j = 0;
-		for (i = 0; i < MAXROOMS; i++)
-			if (r1->conn[i] && !rdes[i].ingraph && rnd(++j) == 0)
-				r2 = &rdes[i];
+		int j = 0;
+		for (int i = 0; i < MAXROOMS; i++)
+			if (next_to[r1][i] && !rdes[i].ingraph && rnd(++j) == 0)
+				r2 = i;
 		/*
 		 * if no adjacent rooms are outside the graph, pick a new room
 		 * to look from
@@ -231,8 +229,8 @@ do_passages()
 		if (j == 0)
 		{
 			do
-				r1 = &rdes[rnd(MAXROOMS)];
-			while (!r1->ingraph);
+				r1 = rnd(MAXROOMS);
+			while (!rdes[r1].ingraph);
 		}
 		/*
 		 * otherwise, connect new room to the graph, and draw a tunnel
@@ -240,12 +238,10 @@ do_passages()
 		 */
 		else
 		{
-			r2->ingraph = true;
-			i = r1 - rdes;
-			j = r2 - rdes;
-			conn(i, j);
-			r1->isconn[j] = true;
-			r2->isconn[i] = true;
+			rdes[r2].ingraph = true;
+			conn(r1, r2);
+			rdes[r1].isconn[r2] = true;
+			rdes[r2].isconn[r1] = true;
 			roomcount++;
 		}
 	} while (roomcount < MAXROOMS);
@@ -254,27 +250,25 @@ do_passages()
 	 * attempt to add passages to the graph a random number of times so
 	 * that there isn't always just one unique passage through it.
 	 */
-	for (roomcount = rnd(5); roomcount > 0; roomcount--)
+	for (int extra = rnd(5); extra > 0; extra--)
 	{
-		r1 = &rdes[rnd(MAXROOMS)];	/* a random room to look from */
+		r1 = rnd(MAXROOMS);	/* a random room to look from */
 		/*
 		 * find an adjacent room not already connected
 		 */
-		j = 0;
-		for (i = 0; i < MAXROOMS; i++)
-			if (r1->conn[i] && !r1->isconn[i] && rnd(++j) == 0)
-				r2 = &rdes[i];
+		int j = 0;
+		for (int i = 0; i < MAXROOMS; i++)
+			if (next_to[r1][i] && !rdes[r1].isconn[i] && rnd(++j) == 0)
+				r2 = i;
 		/*
 		 * if there is one, connect it and look for the next added
 		 * passage
 		 */
 		if (j != 0)
 		{
-			i = r1 - rdes;
-			j = r2 - rdes;
-			conn(i, j);
-			r1->isconn[j] = true;
-			r2->isconn[i] = true;
+			conn(r1, r2);
+			rdes[r1].isconn[r2] = true;
+			rdes[r2].isconn[r1] = true;
 		}
 	}
 	passnum();
@@ -290,9 +284,7 @@ namespace {
 void
 door(Room &rm, Coord cp)
 {
-	int index, xit;
-
-	index = INDEX(cp.y, cp.x);
+	int index = INDEX(cp.y, cp.x);
 	if (rnd(10) + 1 < game().level.depth && rnd(5) == 0)
 	{
 		game().level.map[index] = (cp.y == rm.r_pos.y || cp.y == rm.r_pos.y + rm.r_max.y - 1) ? HWALL : VWALL;
@@ -300,7 +292,7 @@ door(Room &rm, Coord cp)
 	}
 	else
 		game().level.map[index] = DOOR;
-	xit = rm.r_nexits++;
+	int xit = rm.r_nexits++;
 	rm.r_exit[xit] = cp;
 }
 
@@ -308,23 +300,17 @@ door(Room &rm, Coord cp)
  * passnum:
  *	Assign a number to each passageway
  */
-int pnum;
-unsigned char newpnum;
-
 void
 passnum()
 {
-	int i;
-
-	pnum = 0;
-	newpnum = false;
+	Numbering num;
 	for (Room &rp : game().level.passages)
 		rp.r_nexits = 0;
 	for (const Room &rp : game().level.rooms)
-		for (i = 0; i < rp.r_nexits; i++)
+		for (int i = 0; i < rp.r_nexits; i++)
 		{
-			newpnum++;
-			numpass(rp.r_exit[i].y, rp.r_exit[i].x);
+			num.newpnum = true;	/* was a count (newpnum++), only ever tested */
+			numpass(rp.r_exit[i].y, rp.r_exit[i].x, num);
 		}
 }
 /*
@@ -332,9 +318,8 @@ passnum()
  *	Number a passageway square and its brethren
  */
 void
-numpass(int y, int x)
+numpass(int y, int x, Numbering &num)
 {
-	unsigned char ch;
 	rogue::Level &level = game().level;
 
 	if (offmap(y,x))
@@ -342,36 +327,36 @@ numpass(int y, int x)
 	MapFlags &fp = level.flags_at(y, x);
 	if (fp.passage())
 		return;
-	if (newpnum) {
-		pnum++;
-		newpnum = false;
+	if (num.newpnum) {
+		num.pnum++;
+		num.newpnum = false;
 	}
 	/*
 	 * check to see if it is a door or secret door, i.e., a new exit,
 	 * or a numerable type of place
 	 */
-	if ((ch = level.at(y, x)) == DOOR || (!fp.test(MapFlag::Real) && ch != FLOOR)) {
-		Room &rp = level.passages[pnum];
+	unsigned char ch = level.at(y, x);
+	if (ch == DOOR || (!fp.test(MapFlag::Real) && ch != FLOOR)) {
+		Room &rp = level.passages[num.pnum];
 		rp.r_exit[rp.r_nexits].y = y;
 		rp.r_exit[rp.r_nexits++].x = x;
 	} else if (!fp.test(MapFlag::Passage))
 		return;
-	fp.set_passage(pnum);
+	fp.set_passage(num.pnum);
 	/*
 	 * recurse on the surrounding places
 	 */
-	numpass(y + 1, x);
-	numpass(y - 1, x);
-	numpass(y, x + 1);
-	numpass(y, x - 1);
+	numpass(y + 1, x, num);
+	numpass(y - 1, x, num);
+	numpass(y, x + 1, num);
+	numpass(y, x - 1, num);
 }
 
 void
 psplat(int y, int x)
 {
-	int idx;
-
-	game().level.map[idx = INDEX(y, x)] = PASSAGE;
+	int idx = INDEX(y, x);
+	game().level.map[idx] = PASSAGE;
 	game().level.flags[idx].set(MapFlag::Passage);
 }
 

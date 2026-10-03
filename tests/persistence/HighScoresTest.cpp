@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
-#include <cstdio>
-#include <cstring>
 #include <filesystem>
-#include <fstream>
-#include <iterator>
+#include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "persistence/HighScores.hpp"
@@ -34,14 +34,14 @@ ScoreEntry entry(std::string name, int gold, int fate = 'K')
 }
 
 // One record as rip.c's struct sc_ent was written to disk
-std::string legacy_record(const char *name, int rank, int gold, int fate, int level)
+std::string legacy_record(std::string_view name, int rank, int gold, int fate, int level)
 {
 	struct {
 		char sc_name[38];
 		std::int32_t sc_rank, sc_gold, sc_fate, sc_level;
 	} r;
-	std::memset(&r, 0x5a, sizeof r);	// uninitialized bytes after the name
-	std::strcpy(r.sc_name, name);
+	std::ranges::fill(std::as_writable_bytes(std::span(&r, 1)), std::byte{0x5a});	// uninitialized bytes after the name
+	r.sc_name[name.copy(r.sc_name, sizeof r.sc_name - 1)] = '\0';
 	r.sc_rank = rank;
 	r.sc_gold = gold;
 	r.sc_fate = fate;
@@ -60,7 +60,7 @@ bool is_bad_format(std::string_view bytes)
 	return !list && list.error() == ScoresError::BadFormat;
 }
 
-std::filesystem::path temp_path(const char *name)
+std::filesystem::path temp_path(std::string_view name)
 {
 	return std::filesystem::temp_directory_path() / name;
 }

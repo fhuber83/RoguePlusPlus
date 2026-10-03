@@ -81,17 +81,14 @@ playit(const std::optional<std::string> &sname)
 void
 quit()
 {
-	Coord here;
-	unsigned char answer;
-
 	game().message.end = 0;
-	here = ui::display().write("");  // where the cursor was
+	Coord here = ui::display().write("");  // where the cursor was
 	ui::display().clear_line(0);
 	if (!game().options.terse)
 		ui::display().write_at(0, 0, "Do you wish to ");
 	str_attr("end your quest now (%Yes/%No) ?");
 	world::look(false);
-	answer = readchar();
+	unsigned char answer = readchar();
 	if (answer == 'y' || answer == 'Y') {
 		ui::display().clear_page();
 		ui::display().write_at(0, 0, std::format("You quit with {} gold pieces\n",

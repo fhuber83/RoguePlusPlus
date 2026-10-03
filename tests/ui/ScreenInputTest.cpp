@@ -1,8 +1,13 @@
 #include <gtest/gtest.h>
 
 #include <deque>
+#include <initializer_list>
+#include <optional>
 #include <string>
 
+#include "ui/Cell.hpp"
+#include "ui/Input.hpp"
+#include "ui/Screen.hpp"
 #include "ui/ScreenInput.hpp"
 #include "ui/Terminal.hpp"
 

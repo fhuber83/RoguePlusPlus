@@ -2,7 +2,6 @@
 
 #include <optional>
 #include <string>
-#include <vector>
 
 #include "core/Random.hpp"
 #include "entities/Creature.hpp"

@@ -5,7 +5,6 @@
 
 #include "persistence/OptionsFile.hpp"
 
-#include <algorithm>
 #include <cstddef>
 #include <expected>
 #include <fstream>

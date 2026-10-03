@@ -32,13 +32,13 @@ namespace rogue {
 bool
 get_dir()
 {
-	int ch;
-	std::optional<Coord> dir;
 	rogue::Turn &turn = game().turn;
 
 	if (turn.again)
 		return true;
 	msg("which direction? ");
+	int ch;
+	std::optional<Coord> dir;
 	do
 		if ((ch = readchar()) == ESCAPE) {
 			msg("");

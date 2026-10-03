@@ -18,11 +18,10 @@ namespace rogue::rules {
 void
 doctor()
 {
-	int lv, ohp;
 	rogue::Player &player = game().player;
 
-	lv = player.body.t_stats.s_lvl;
-	ohp = player.body.t_stats.s_hpt;
+	int lv = player.body.t_stats.s_lvl;
+	int ohp = player.body.t_stats.s_hpt;
 	player.quiet++;
 	if (lv < 8)
 	{

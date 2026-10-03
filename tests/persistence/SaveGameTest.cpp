@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <optional>
@@ -18,14 +17,12 @@
 #include "entities/Item.hpp"
 #include "entities/MonsterCatalog.hpp"
 #include "game/Game.hpp"
-#include "game/NewGame.hpp"
 #include "game/Pool.hpp"
 #include "items/Kinds.hpp"
 #include "persistence/SaveGame.hpp"
 #include "rules/Combat.hpp"
 #include "rules/Scheduler.hpp"
 #include "ui/Display.hpp"
-#include "ui/ScreenDisplay.hpp"
 #include "world/LevelGenerator.hpp"
 #include "world/Room.hpp"
 #include "world/RoomRef.hpp"

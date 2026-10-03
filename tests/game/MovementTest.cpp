@@ -1,6 +1,15 @@
 #include "../support/ScriptedGame.hpp"
 
+#include <gtest/gtest.h>
+
+#include <algorithm>
+
+#include "core/Coord.hpp"
+#include "core/Glyphs.hpp"
+#include "game/Game.hpp"
 #include "game/Movement.hpp"
+#include "world/MapFlags.hpp"
+#include "world/RoomRef.hpp"
 
 namespace rogue {
 

@@ -1,7 +1,14 @@
 #include "ui/ScreenInput.hpp"
 
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <string>
+
 #include "core/Ascii.hpp"
-#include "ui/Terminal.hpp"
+#include "ui/Cell.hpp"
+#include "ui/Input.hpp"
+#include "ui/Screen.hpp"
 
 namespace rogue::ui {
 

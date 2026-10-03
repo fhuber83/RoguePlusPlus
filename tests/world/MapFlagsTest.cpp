@@ -3,6 +3,7 @@
 #include <type_traits>
 
 #include "world/MapFlags.hpp"
+#include "world/Trap.hpp"
 
 using rogue::MapFlag;
 using rogue::MapFlags;

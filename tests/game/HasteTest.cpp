@@ -1,8 +1,12 @@
 #include "../support/ScriptedGame.hpp"
 
+#include <gtest/gtest.h>
+
 #include <set>
 
+#include "entities/Creature.hpp"
 #include "game/CommandDispatcher.hpp"
+#include "game/Game.hpp"
 
 namespace rogue {
 

@@ -41,11 +41,10 @@ constexpr int STARVETIME = 850;		/* how far below empty he starves */
 void
 eat()
 {
-	Maybe<Item> obj;
-	Food which;
 	rogue::Player &player = game().player;
 
-	if (!(obj = items::get_item("eat", ItemKind::Food)))
+	Maybe<Item> obj = items::get_item("eat", ItemKind::Food);
+	if (!obj)
 		return;
 	if (obj->o_type != ItemKind::Food)
 	{
@@ -57,7 +56,7 @@ eat()
 	 * What it is, and whether it was wielded, are checked before the last
 	 * one is discarded. Both were after discard(), reading a freed item.
 	 */
-	which = obj->which<Food>();
+	Food which = obj->which<Food>();
 	if (obj == player.weapon_item())
 		player.weapon = std::nullopt;
 	if (--obj->o_count < 1)
@@ -94,7 +93,6 @@ eat()
 void
 stomach()
 {
-	int oldfood, deltafood;
 	rogue::Player &player = game().player;
 
 	if (player.food_left <= 0)
@@ -115,12 +113,12 @@ stomach()
 	}
 	else
 	{
-		oldfood = player.food_left;
+		int oldfood = player.food_left;
 		/*
 		 * If you are in 40 column mode use food twice as fast
 		 * (e.g. 3-(80/40) = 1, 3-(40/40) = 2 : pretty gross huh?)
 		 */
-		deltafood = items::effects::ring_eat(Hand::Left) + items::effects::ring_eat(Hand::Right) + 1;
+		int deltafood = items::effects::ring_eat(Hand::Left) + items::effects::ring_eat(Hand::Right) + 1;
 		if (game().options.terse)
 			deltafood *= 2;
 		player.food_left -= deltafood;

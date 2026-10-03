@@ -1,6 +1,7 @@
 #include "core/Dice.hpp"
 
 #include <format>
+#include <string>
 
 #include "core/Random.hpp"
 

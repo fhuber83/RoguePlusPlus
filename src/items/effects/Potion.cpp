@@ -141,13 +141,12 @@ goodch(const Item &obj)
 void
 quaff()
 {
-	Maybe<Item> obj;
-	Maybe<Creature> th;
 	bool discardit = false;
 	rogue::Player &player = game().player;
 	rogue::Items &items = game().items;
 
-	if (!(obj = get_item("quaff", ItemKind::Potion)))
+	Maybe<Item> obj = get_item("quaff", ItemKind::Potion);
+	if (!obj)
 		return;
 	/*
 	 * Make certain that it is somethings that we want to drink
@@ -225,27 +224,24 @@ quaff()
 		 */
 		if (!game().level.objects.empty())
 		{
-			Maybe<Item> tp;
-			bool show;
-
-			show = false;
-			for (tp = game().level.objects.first(); tp; tp = game().level.objects.after(*tp))
+			bool show = false;
+			for (Item &tp : game().level.objects)
 			{
-				if (rules::is_magic(*tp))
+				if (rules::is_magic(tp))
 				{
 					show = true;
-					ui::display().draw_tile(tp->o_pos, goodch(*tp));
+					ui::display().draw_tile(tp.o_pos, goodch(tp));
 					items.p_know[Potion::MagicDetection] = true;
 				}
 			}
-			for (th = game().level.monsters.first(); th; th = game().level.monsters.after(*th))
+			for (Creature &th : game().level.monsters)
 			{
-				for (tp = th->t_pack.first(); tp; tp = th->t_pack.after(*tp))
+				for (Item &tp : th.t_pack)
 				{
-					if (rules::is_magic(*tp))
+					if (rules::is_magic(tp))
 					{
 						show = true;
-						ui::display().draw_tile(th->t_pos, MAGIC);
+						ui::display().draw_tile(th.t_pos, MAGIC);
 						items.p_know[Potion::MagicDetection] = true;
 					}
 				}
@@ -352,13 +348,11 @@ quaff()
 void
 invis_on()
 {
-	Maybe<Creature> th;
-
 	game().player.body.t_flags.set(CreatureFlag::SeeInvisible);
-	for (th = game().level.monsters.first(); th; th = game().level.monsters.after(*th))
-	if (th->t_flags.test(CreatureFlag::Invisible) && entities::see_monst(*th))
+	for (Creature &th : game().level.monsters)
+	if (th.t_flags.test(CreatureFlag::Invisible) && entities::see_monst(th))
 	{
-		ui::display().draw_tile(th->t_pos, th->t_disguise);
+		ui::display().draw_tile(th.t_pos, th.t_disguise);
 	}
 }
 
@@ -369,22 +363,19 @@ invis_on()
 bool
 turn_see(bool turn_off)
 {
-	Maybe<Creature> mp;
-	bool can_see, add_new;
-	unsigned char was_there = ' ';
-
-	add_new = false;
-	for (mp = game().level.monsters.first(); mp; mp = game().level.monsters.after(*mp)) {
-		can_see = (entities::see_monst(*mp) || (was_there = ui::display().tile_at(mp->t_pos)) == mp->t_type);
+	unsigned char was_there = ' ';	/* kept from one monster to the next */
+	bool add_new = false;
+	for (Creature &mp : game().level.monsters) {
+		bool can_see = (entities::see_monst(mp) || (was_there = ui::display().tile_at(mp.t_pos)) == mp.t_type);
 		if (turn_off) {
-			if (!entities::see_monst(*mp) && mp->t_oldch != '@')
-				ui::display().draw_tile(mp->t_pos, mp->t_oldch);
+			if (!entities::see_monst(mp) && mp.t_oldch != '@')
+				ui::display().draw_tile(mp.t_pos, mp.t_oldch);
 		} else {
 			if (!can_see) {
-				mp->t_oldch = was_there;
+				mp.t_oldch = was_there;
 				add_new = true;
 			}
-			ui::display().draw_tile(mp->t_pos, mp->t_type,
+			ui::display().draw_tile(mp.t_pos, mp.t_type,
 					can_see ? ui::TileStyle::Normal : ui::TileStyle::Inverse);
 		}
 	}

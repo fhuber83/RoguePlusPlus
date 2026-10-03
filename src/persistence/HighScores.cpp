@@ -3,19 +3,28 @@
  * struct sc_ent records to disk as they were in memory.
  */
 
+#include "persistence/HighScores.hpp"
+
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <expected>
 #include <fstream>
+#include <functional>
+#include <ios>
 #include <iterator>
 #include <limits>
 #include <optional>
+#include <span>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 #include <nlohmann/json.hpp>
 
 #include "persistence/ByteText.hpp"
-#include "persistence/HighScores.hpp"
 
 namespace rogue::persistence {
 

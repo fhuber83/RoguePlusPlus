@@ -1,9 +1,12 @@
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <cstdlib>
-#include <ctime>
 #include <optional>
 #include <string>
+
+#include <stdlib.h>
+#include <time.h>
 
 #include "platform/Clock.hpp"
 
@@ -14,11 +17,11 @@ namespace {
 // Sets TZ (a POSIX rule, which needs no time zone database) while it lives.
 class ScopedTz {
 public:
-	explicit ScopedTz(const char *tz)
+	explicit ScopedTz(const std::string &tz)
 	{
 		if (const char *old = std::getenv("TZ"))
 			old_ = old;
-		setenv("TZ", tz, 1);
+		setenv("TZ", tz.c_str(), 1);
 		tzset();
 	}
 	~ScopedTz()

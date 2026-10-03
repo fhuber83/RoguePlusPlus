@@ -30,11 +30,10 @@ std::optional<Hand>	gethand();
 bool
 put_ring_on()
 {
-	Maybe<Item> obj;
-	std::optional<Hand> ring;
 	rogue::Player &player = game().player;
 
-	if (!(obj = get_item("put on", ItemKind::Ring)))
+	Maybe<Item> obj = get_item("put on", ItemKind::Ring);
+	if (!obj)
 		return false;
 	/*
 	 * Make certain that it is somethings that we want to wear
@@ -50,6 +49,7 @@ put_ring_on()
 	if (is_current(*obj))
 		return false;
 
+	std::optional<Hand> ring;
 	if (!player.ring_item(Hand::Left))
 		ring = Hand::Left;
 	if (!player.ring_item(Hand::Right))
@@ -105,10 +105,9 @@ ring_on()
 void
 ring_off()
 {
-	Hand ring;
-	Maybe<Item> obj;
-	char packchar;
 	rogue::Player &player = game().player;
+
+	Hand ring;
 
 	if (!player.ring_item(Hand::Left) && !player.ring_item(Hand::Right)) {
 		msg("you aren't wearing any rings");
@@ -123,13 +122,13 @@ ring_off()
 	else
 		return;
 	game().message.end = 0;
-	obj = player.ring_item(ring);
+	Maybe<Item> obj = player.ring_item(ring);
 	if (!obj) {
 		msg("not wearing such a ring");
 		game().turn.after = false;
 		return;
 	}
-	packchar = pack_char(*obj);
+	char packchar = pack_char(*obj);
 	if (can_drop(*obj))
 		msg("was wearing {}({:c})", inv_name(*obj, true), packchar);
 }
@@ -143,11 +142,10 @@ namespace {
 std::optional<Hand>
 gethand()
 {
-	int c;
-
 	for (;;) {
 		msg("left hand or right hand? ");
-		if ((c = readchar()) == ESCAPE)  {
+		int c = readchar();
+		if (c == ESCAPE)  {
 			game().turn.after = false;
 			return std::nullopt;
 		}

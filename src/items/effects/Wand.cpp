@@ -70,17 +70,13 @@ fix_stick(Item &cur)
 void
 do_zap()
 {
-	Maybe<Item> obj;
-	Maybe<Creature> tp;
-	int y, x;
-	std::string_view name;
-	Stick which_one;
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
 
-	if (!(obj = get_item("zap with", ItemKind::Stick)))
+	Maybe<Item> obj = get_item("zap with", ItemKind::Stick);
+	if (!obj)
 		return;
-	which_one = obj->which<Stick>();
+	Stick which_one = obj->which<Stick>();
 	if (obj->o_type != ItemKind::Stick)
 	{
 		if (obj->o_enemy && obj->charges())
@@ -142,22 +138,17 @@ do_zap()
 	case Stick::Cancellation:
 	case Stick::Vorpal:			/* Special case for vorpal weapon */
 	{
-		unsigned char monster, oldch;
-		int rm;
-		Coord new_yx;
-
-		y = player.body.t_pos.y;
-		x = player.body.t_pos.x;
+		int y = player.body.t_pos.y;
+		int x = player.body.t_pos.x;
 		while (world::step_ok(world::winat(y, x)))
 		{
 			y += turn.delta.y;
 			x += turn.delta.x;
 		}
-		if ((tp = entities::moat(y, x)))
+		if (Maybe<Creature> tp = entities::moat(y, x))
 		{
-			unsigned char omonst;
-
-			omonst = monster = tp->t_type;
+			unsigned char monster = tp->t_type;
+			const unsigned char omonst = monster;
 			if (monster == 'F')
 				player.body.t_flags.unset(CreatureFlag::Held);
 			if (which_one == Stick::Vorpal)
@@ -173,13 +164,11 @@ do_zap()
 			}
 			else if (which_one == Stick::Polymorph)
 			{
-				List<Item> pp;
-
-				pp = std::move(tp->t_pack);
+				List<Item> pp = std::move(tp->t_pack);
 				game().level.monsters.remove(*tp);
 				if (entities::see_monst(*tp))
 					ui::display().draw_tile({x, y}, game().level.at(y, x));
-				oldch = tp->t_oldch;
+				unsigned char oldch = tp->t_oldch;
 				turn.delta.y = y;
 				turn.delta.x = x;
 				entities::new_monster(*tp, monster = rnd(26) + 'A', turn.delta);
@@ -202,9 +191,10 @@ do_zap()
 				if (which_one == Stick::TeleportAway)
 				{
 					tp->t_oldch = '@';
+					Coord new_yx;
 					do
 					{
-						rm = world::rnd_room();
+						int rm = world::rnd_room();
 						new_yx = rnd_pos(game().level.rooms[rm]);
 					}  while (!(is_floor(world::winat(new_yx.y, new_yx.x))));
 					tp->t_pos = new_yx;
@@ -241,7 +231,8 @@ do_zap()
 		if (player.weapon_item())
 			bolt.o_launch = launched_by(player.weapon_item()->which<WeaponType>());
 		do_motion(bolt, turn.delta.y, turn.delta.x);
-		if ((tp = entities::moat(bolt.o_pos.y, bolt.o_pos.x)) && !rules::save_throw(rules::SaveThrow::Magic, *tp))
+		Maybe<Creature> tp = entities::moat(bolt.o_pos.y, bolt.o_pos.x);
+		if (tp && !rules::save_throw(rules::SaveThrow::Magic, *tp))
 			hit_monster(bolt.o_pos.y, bolt.o_pos.x, bolt);
 		else
 		msg("the missle vanishes with a puff of smoke");
@@ -250,7 +241,7 @@ do_zap()
 	case Stick::Striking:
 		turn.delta.y += player.body.t_pos.y;
 		turn.delta.x += player.body.t_pos.x;
-		if ((tp = entities::moat(turn.delta.y, turn.delta.x)))
+		if (Maybe<Creature> tp = entities::moat(turn.delta.y, turn.delta.x))
 		{
 			if (rnd(20) == 0)
 			{
@@ -266,15 +257,15 @@ do_zap()
 		}
 		break;
 	case Stick::HasteMonster:
-	case Stick::SlowMonster:
-		y = player.body.t_pos.y;
-		x = player.body.t_pos.x;
+	case Stick::SlowMonster: {
+		int y = player.body.t_pos.y;
+		int x = player.body.t_pos.x;
 		while (world::step_ok(world::winat(y, x)))
 		{
 			y += turn.delta.y;
 			x += turn.delta.x;
 		}
-		if ((tp = entities::moat(y, x)))
+		if (Maybe<Creature> tp = entities::moat(y, x))
 		{
 			if (which_one == Stick::HasteMonster)
 			{
@@ -296,18 +287,16 @@ do_zap()
 			entities::start_run(turn.delta);
 		}
 		break;
+	}
 	case Stick::Lightning:
 	case Stick::Fire:
-	case Stick::Cold:
-		if (which_one == Stick::Lightning)
-			name = "bolt";
-		else if (which_one == Stick::Fire)
-			name = "flame";
-		else
-			name = "ice";
+	case Stick::Cold: {
+		std::string_view name = which_one == Stick::Lightning ? "bolt"
+			: which_one == Stick::Fire ? "flame" : "ice";
 		fire_bolt(player.body.t_pos, turn.delta, name);
 		game().items.ws_know[which_one] = true;
 		break;
+	}
 	default:
 		if constexpr (rogue::config::debug_checks)
 			debug("what a bizarre schtick!");
@@ -324,29 +313,26 @@ do_zap()
 void
 drain()
 {
-	Maybe<Creature> mp;
-	int cnt;
-	std::optional<RoomRef> corp;
-	bool inpass;
-	std::vector<std::reference_wrapper<Creature>> drainee;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 
 	/*
 	 * First cnt how many things we need to spread the hit points among
 	 */
-	cnt = 0;
+	std::optional<RoomRef> corp;
 	if (level.at(player.body.t_pos) == DOOR)
 		corp = level.passage_at(player.body.t_pos);
 	else
 		corp = std::nullopt;
-	inpass = level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone);
-	for (mp = level.monsters.first(); mp; mp = level.monsters.after(*mp))
-		if (mp->t_room == player.body.t_room || mp->t_room == corp ||
-			(inpass && level.at(mp->t_pos) == DOOR &&
-			level.passage_at(mp->t_pos) == player.body.t_room))
-			drainee.push_back(*mp);
-	if ((cnt = static_cast<int>(drainee.size())) == 0)
+	bool inpass = level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone);
+	std::vector<std::reference_wrapper<Creature>> drainee;
+	for (Creature &mp : level.monsters)
+		if (mp.t_room == player.body.t_room || mp.t_room == corp ||
+			(inpass && level.at(mp.t_pos) == DOOR &&
+			level.passage_at(mp.t_pos) == player.body.t_room))
+			drainee.push_back(mp);
+	int cnt = static_cast<int>(drainee.size());
+	if (cnt == 0)
 	{
 		msg("you have a tingling feeling");
 		return;
@@ -374,20 +360,14 @@ drain()
 void
 fire_bolt(Coord start, Coord &dir, std::string_view name)
 {
-	unsigned char dirch = 0, ch;
-	Maybe<Creature> tp;
-	bool hit_hero, used, changed;
-	int i, j;
-	Coord pos;
+	unsigned char dirch = 0;
 	rogue::Player &player = game().player;
 	struct {
 		Coord s_pos;
 		unsigned char s_under;
 	} spotpos[BOLT_LENGTH*2];
 	Item bolt;
-	bool is_frost;
-
-	is_frost = (name == "frost");
+	const bool is_frost = (name == "frost");
 	bolt.o_type = ItemKind::Weapon;
 	bolt.set_which(WeaponType::Flame);
 	bolt.o_damage = bolt.o_hurldmg = "6d6";
@@ -401,14 +381,15 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 		break;
 	}
 	const bool by_hero = (start == player.body.t_pos);
-	pos = start;
-	hit_hero = !by_hero;
-	used = false;
-	changed = false;
-	for (i = 0; i < BOLT_LENGTH && !used; i++) {
+	Coord pos = start;
+	bool hit_hero = !by_hero;
+	bool used = false;
+	bool changed = false;
+	int i = 0;
+	for (; i < BOLT_LENGTH && !used; i++) {
 		pos.y += dir.y;
 		pos.x += dir.x;
-		ch = world::winat(pos.y, pos.x);
+		unsigned char ch = world::winat(pos.y, pos.x);
 		spotpos[i].s_pos = pos;
 		if ((spotpos[i].s_under = ui::display().tile_at(pos)) == dirch)
 			spotpos[i].s_under = 0;
@@ -430,7 +411,7 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 			msg("the {} bounces", name);
 			break;
 		default:
-			if (!hit_hero && (tp = entities::moat(pos.y, pos.x))) {
+			if (Maybe<Creature> tp = hit_hero ? Maybe<Creature>() : entities::moat(pos.y, pos.x)) {
 				hit_hero = true;
 				changed = !changed;
 				if (tp->t_oldch != '@')
@@ -477,7 +458,7 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 			break;
 		}
 	}
-	for (j = 0; j < i; j++) {
+	for (int j = 0; j < i; j++) {
 		tick_pause();
 		if (spotpos[j].s_under)
 			ui::display().draw_tile(spotpos[j].s_pos, spotpos[j].s_under);

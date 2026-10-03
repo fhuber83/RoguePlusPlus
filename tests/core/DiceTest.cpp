@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <string_view>
 #include <vector>
 
 #include "core/Dice.hpp"
@@ -17,7 +18,7 @@ TEST(Dice, ParsesSimpleExpression)
 
 TEST(Dice, RejectsMalformedExpressions)
 {
-	for (const char *text : {"", "d4", "2d", "2x4", "2d4x", "-1d4", "%%%d0", "2 d4"})
+	for (std::string_view text : {"", "d4", "2d", "2x4", "2d4x", "-1d4", "%%%d0", "2 d4"})
 		EXPECT_FALSE(Dice::parse(text).has_value()) << text;
 }
 
@@ -50,7 +51,7 @@ TEST(Attacks, ParsesAttackLists)
 
 TEST(Attacks, RejectsMalformedLists)
 {
-	for (const char *text : {"", "1d2/", "1d2/x", "/1d2", "1d1/1d1/1d1/1d1/1d1"})
+	for (std::string_view text : {"", "1d2/", "1d2/x", "/1d2", "1d1/1d1/1d1/1d1/1d1"})
 		EXPECT_FALSE(Attacks::parse(text).has_value()) << text;
 }
 
@@ -71,7 +72,7 @@ TEST(Attacks, NoneIsNotZeroDice)
 
 TEST(Attacks, TextRoundTrips)
 {
-	for (const char *text : {"0d0", "1d8", "1d2/1d5/1d5", "3d4/3d4/2d5/1d1", "10d10"})
+	for (std::string_view text : {"0d0", "1d8", "1d2/1d5/1d5", "3d4/3d4/2d5/1d1", "10d10"})
 		EXPECT_EQ(Attacks::parse(text)->to_string(), text);
 	EXPECT_EQ(Attacks().to_string(), "");
 }

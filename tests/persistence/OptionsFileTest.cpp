@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include <cstdio>
-#include <cstring>
 #include <filesystem>
+#include <fstream>
+#include <ios>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -44,15 +44,13 @@ bool is_bad_format(std::string_view text)
 // Writes text to a file in the temp directory and removes it again
 class TempFile {
 public:
-	TempFile(const char *name, std::string_view text)
+	TempFile(std::string_view name, std::string_view text)
 		: path_(std::filesystem::temp_directory_path() / name)
 	{
-		FILE *f = std::fopen(path_.c_str(), "wb");
-		std::fwrite(text.data(), 1, text.size(), f);
-		std::fclose(f);
+		std::ofstream(path_, std::ios::binary) << text;
 	}
 	~TempFile() { std::filesystem::remove(path_); }
-	const char *path() const { return path_.c_str(); }
+	std::string path() const { return path_.string(); }
 
 private:
 	std::filesystem::path path_;

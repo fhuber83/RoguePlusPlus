@@ -9,14 +9,19 @@
 #include <optional>
 #include <random>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "core/Coord.hpp"
 #include "core/Glyphs.hpp"
+#include "core/Random.hpp"
+#include "entities/Creature.hpp"
 #include "entities/MonsterCatalog.hpp"
+#include "game/Game.hpp"
 #include "game/Pool.hpp"
 #include "persistence/HighScores.hpp"
 #include "persistence/SaveGame.hpp"
+#include "ui/Display.hpp"
 #include "world/Map.hpp"
 
 /*

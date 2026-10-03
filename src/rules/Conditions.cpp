@@ -7,7 +7,6 @@
 
 #include "rules/Conditions.hpp"
 
-#include "core/Maybe.hpp"
 #include "entities/Creature.hpp"
 #include "entities/MonsterAI.hpp"
 #include "game/Game.hpp"
@@ -37,11 +36,9 @@ unconfuse()
 void
 unsee()
 {
-	Maybe<Creature> th;
-
-	for (th = game().level.monsters.first(); th; th = game().level.monsters.after(*th))
-		if (th->t_flags.test(CreatureFlag::Invisible) && entities::see_monst(*th) && th->t_oldch != '@')
-			ui::display().draw_tile(th->t_pos, th->t_oldch);
+	for (Creature &th : game().level.monsters)
+		if (th.t_flags.test(CreatureFlag::Invisible) && entities::see_monst(th) && th.t_oldch != '@')
+			ui::display().draw_tile(th.t_pos, th.t_oldch);
 	game().player.body.t_flags.unset(CreatureFlag::SeeInvisible);
 }
 

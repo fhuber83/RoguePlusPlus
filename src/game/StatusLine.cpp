@@ -34,8 +34,6 @@ armor_class(int ac)
 void
 status()
 {
-	rogue::ui::Status st;
-	int ac;
 	rogue::Player &player = game().player;
 
 	SIG2();
@@ -43,8 +41,9 @@ status()
 	/*
 	 * The armor class shown ignores rings of protection, as it always did
 	 */
-	ac = player.armor_item() ? player.armor_item()->o_ac : player.body.t_stats.s_arm;
+	int ac = player.armor_item() ? player.armor_item()->o_ac : player.body.t_stats.s_arm;
 
+	rogue::ui::Status st;
 	st.level = game().level.depth;
 	st.hp = player.body.t_stats.s_hpt;
 	st.hp_max = player.body.t_stats.s_maxhp;
@@ -67,9 +66,8 @@ status()
 void
 SIG2()
 {
-	static int bighand, littlehand;
+	// The minute the clock shows: the display's, not the game's (not saved)
 	static std::chrono::sys_seconds cur_time{};
-	bool showtime = false;
 	std::chrono::sys_seconds new_time = platform::now();
 
 	/*
@@ -81,14 +79,11 @@ SIG2()
 	{
 		std::chrono::local_seconds local = platform::local_time(new_time);
 		std::chrono::hh_mm_ss hms{local - std::chrono::floor<std::chrono::days>(local)};
-		bighand = hms.hours().count() % 12;
-		littlehand = hms.minutes().count();
+		int bighand = hms.hours().count() % 12;
+		int littlehand = hms.minutes().count();
 		cur_time = new_time - hms.seconds();
-		showtime = true;
-	}
-
-	if (showtime)
 		rogue::ui::display().draw_clock(bighand ? bighand : 12, littlehand);
+	}
 }
 
 }  // namespace rogue

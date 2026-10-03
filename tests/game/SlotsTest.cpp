@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <utility>
+
 #include "game/Slots.hpp"
 
 using rogue::Slots;

@@ -8,9 +8,18 @@
 
 #include "world/Level.hpp"
 
+#include <optional>
+
 #include "core/Config.hpp"
-#include "game/Game.hpp"
+#include "core/Coord.hpp"
+#include "core/Glyphs.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Item.hpp"
 #include "platform/Session.hpp"
+#include "world/MapFlags.hpp"
+#include "world/Room.hpp"
+#include "world/RoomRef.hpp"
 
 namespace rogue::world {
 

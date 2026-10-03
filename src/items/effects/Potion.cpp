@@ -37,7 +37,7 @@ bool
 add_haste(bool potion)
 {
 	rogue::Player &player = game().player;
-	if (player.body.flags.test(CreatureFlag::Hasted))
+	if (player.body.is(CreatureFlag::Hasted))
 	{
 		player.no_command += rnd(8);
 		player.body.flags.unset(CreatureFlag::Running);
@@ -65,7 +65,7 @@ goodch(const Item &obj)
 {
 	char ch = MAGIC;
 
-	if (obj.flags.test(ItemFlag::Cursed))
+	if (obj.is(ItemFlag::Cursed))
 		ch = BMAGIC;
 	switch (obj.kind) {
 	case ItemKind::Armor:
@@ -166,9 +166,9 @@ quaff()
 	{
 	case Potion::Confusion:
 		items.p_know[Potion::Confusion] = true;
-		if (!player.body.flags.test(CreatureFlag::Confused))
+		if (!player.body.is(CreatureFlag::Confused))
 			{
-			if (player.body.flags.test(CreatureFlag::Confused))
+			if (player.body.is(CreatureFlag::Confused))
 				rules::lengthen(rules::Event::Unconfuse, rnd(8)+rules::huh_duration());
 			else
 				rules::fuse(rules::Event::Unconfuse, rnd(8)+rules::huh_duration());
@@ -227,7 +227,7 @@ quaff()
 			bool show = false;
 			for (Item &tp : game().level.objects)
 			{
-				if (rules::is_magic(tp))
+				if (tp.is_magic())
 				{
 					show = true;
 					ui::display().draw_tile(tp.pos, goodch(tp));
@@ -238,7 +238,7 @@ quaff()
 			{
 				for (Item &tp : th.pack)
 				{
-					if (rules::is_magic(tp))
+					if (tp.is_magic())
 					{
 						show = true;
 						ui::display().draw_tile(th.pos, MAGIC);
@@ -262,7 +262,7 @@ quaff()
 		msg("you can't move");
 		break;
 	case Potion::SeeInvisible:
-		if (!player.body.flags.test(CreatureFlag::SeeInvisible)) {
+		if (!player.body.is(CreatureFlag::SeeInvisible)) {
 			fuse(rules::Event::Unsee, rules::see_duration());
 			world::look(false);
 			invis_on();
@@ -307,7 +307,7 @@ quaff()
 		break;
 	case Potion::Blindness:
 		items.p_know[Potion::Blindness] = true;
-		if (!player.body.flags.test(CreatureFlag::Blind))
+		if (!player.body.is(CreatureFlag::Blind))
 		{
 			player.body.flags.set(CreatureFlag::Blind);
 			fuse(rules::Event::Sight, rules::see_duration());
@@ -350,7 +350,7 @@ invis_on()
 {
 	game().player.body.flags.set(CreatureFlag::SeeInvisible);
 	for (Creature &th : game().level.monsters)
-	if (th.flags.test(CreatureFlag::Invisible) && entities::see_monst(th))
+	if (th.is(CreatureFlag::Invisible) && entities::see_monst(th))
 	{
 		ui::display().draw_tile(th.pos, th.disguise);
 	}

@@ -44,7 +44,7 @@ namespace {
 void
 door_open(const Room &rp)
 {
-	if (!rp.flags.test(RoomFlag::Gone) && !game().player.body.flags.test(CreatureFlag::Blind))
+	if (!rp.flags.test(RoomFlag::Gone) && !game().player.body.is(CreatureFlag::Blind))
 		for (int j = rp.pos.y; j < rp.pos.y + rp.size.y; j++)
 			for (int k = rp.pos.x; k < rp.pos.x + rp.size.x; k++) {
 				unsigned char ch = game().level.seen_at({k, j});
@@ -56,7 +56,7 @@ door_open(const Room &rp)
 						continue;
 					}
 					if (tp->under == ' ' && !rp.flags.test(RoomFlag::Dark)
-						&& !game().player.body.flags.test(CreatureFlag::Blind))
+						&& !game().player.body.is(CreatureFlag::Blind))
 							tp->under = game().level.at(j, k);
 				}
 			}
@@ -90,7 +90,7 @@ cansee(int y, int x)
 {
 	rogue::Player &player = game().player;
 
-	if (player.body.flags.test(CreatureFlag::Blind))
+	if (player.body.is(CreatureFlag::Blind))
 		return	false;
 	if (distance_sq({x, y}, player.body.pos) < LAMPDIST)
 		return	true;
@@ -131,7 +131,7 @@ enter_room(Coord cp)
 	}
 	const Room &rp = level.room(*in);
 	door_open(rp);
-	if (!rp.flags.test(RoomFlag::Dark) && !game().player.body.flags.test(CreatureFlag::Blind) && !rp.flags.test(RoomFlag::Maze))
+	if (!rp.flags.test(RoomFlag::Dark) && !game().player.body.is(CreatureFlag::Blind) && !rp.flags.test(RoomFlag::Maze))
 		for (int y = rp.pos.y; y < rp.size.y + rp.pos.y; y++) {
 			for (int x = rp.pos.x; x < rp.size.x + rp.pos.x; x++) {
 				/*
@@ -160,7 +160,7 @@ leave_room(Coord cp)
 
 	const Room &rp = game().level.room(*player.body.room);
 	player.body.room = game().level.passage_at(cp);
-	unsigned char floor = (rp.flags.test(RoomFlag::Dark) && !player.body.flags.test(CreatureFlag::Blind)) ? ' ' : FLOOR;
+	unsigned char floor = (rp.flags.test(RoomFlag::Dark) && !player.body.is(CreatureFlag::Blind)) ? ' ' : FLOOR;
 	if (rp.flags.test(RoomFlag::Maze))
 		floor = PASSAGE;
 	for (int y = rp.pos.y + 1; y < rp.size.y + rp.pos.y - 1; y++)
@@ -182,7 +182,7 @@ leave_room(Coord cp)
 				 */
 				if (is_monster(ch))
 				{
-					if (player.body.flags.test(CreatureFlag::SeeMonst)) {
+					if (player.body.is(CreatureFlag::SeeMonst)) {
 						ui::display().draw_tile({x, y}, ch, ui::TileStyle::Inverse);
 						break;
 					} else
@@ -231,7 +231,7 @@ teleport()
 	 * turn off Held in case teleportation was done while fighting
 	 * a Fungi
 	 */
-	if (player.body.flags.test(CreatureFlag::Held)) {
+	if (player.body.is(CreatureFlag::Held)) {
 		player.body.flags.unset(CreatureFlag::Held);
 		entities::f_restor();
 	}
@@ -242,7 +242,7 @@ teleport()
 	/*
 	 * Teleportation can be a confusing experience
 	 */
-	if (player.body.flags.test(CreatureFlag::Confused))
+	if (player.body.is(CreatureFlag::Confused))
 		rules::lengthen(rules::Event::Unconfuse, rnd(4)+2);
 	else
 		rules::fuse(rules::Event::Unconfuse, rnd(4)+2);

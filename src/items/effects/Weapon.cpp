@@ -240,7 +240,7 @@ init_weapon(Item &weap, WeaponType type)
 	weap.thrown_damage = iwp.iw_hrl;
 	weap.launcher = iwp.iw_launch;
 	weap.flags = iwp.iw_flags;
-	if (weap.flags.test(ItemFlag::Many))
+	if (weap.is(ItemFlag::Many))
 	{
 		weap.count = rnd(8) + 8;
 		weap.group = game().items.group++;

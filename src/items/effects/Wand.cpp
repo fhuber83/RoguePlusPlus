@@ -99,7 +99,7 @@ do_zap()
 		/*
 		 * Reddy Kilowat wand.  Light up the room
 		 */
-		if (player.body.flags.test(CreatureFlag::Blind))
+		if (player.body.is(CreatureFlag::Blind))
 			msg("you feel a warm glow around you");
 		else
 		{
@@ -200,7 +200,7 @@ do_zap()
 					tp->pos = new_yx;
 					if (entities::see_monst(*tp))
 						ui::display().draw_tile(tp->pos, tp->disguise);
-					else if (player.body.flags.test(CreatureFlag::SeeMonst))
+					else if (player.body.is(CreatureFlag::SeeMonst))
 						ui::display().draw_tile(tp->pos, tp->disguise, ui::TileStyle::Inverse);
 				}
 				else /* it MUST BE at Stick::TeleportTo */
@@ -269,14 +269,14 @@ do_zap()
 		{
 			if (which_one == Stick::HasteMonster)
 			{
-				if (tp->flags.test(CreatureFlag::Slow))
+				if (tp->is(CreatureFlag::Slow))
 					tp->flags.unset(CreatureFlag::Slow);
 				else
 					tp->flags.set(CreatureFlag::Hasted);
 			}
 			else
 			{
-				if (tp->flags.test(CreatureFlag::Hasted))
+				if (tp->is(CreatureFlag::Hasted))
 					tp->flags.unset(CreatureFlag::Hasted);
 				else
 					tp->flags.set(CreatureFlag::Slow);
@@ -472,7 +472,7 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 std::string
 charge_str(const Item &obj)
 {
-	if (!obj.flags.test(ItemFlag::Known))
+	if (!obj.is(ItemFlag::Known))
 		return "";
 	return std::format(" [{} charges]", obj.charges());
 }

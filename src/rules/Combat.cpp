@@ -88,14 +88,14 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 	/*
 	 * Let him know it was really a mimic (if it was one).
 	 */
-	if (tp->type == 'X' && tp->disguise != 'X' && !player.body.flags.test(CreatureFlag::Blind)) {
+	if (tp->type == 'X' && tp->disguise != 'X' && !player.body.is(CreatureFlag::Blind)) {
 		mn = tp->disguise = 'X';
 		if (thrown)
 			return false;
 		msg("wait! That's a Xeroc!");
 	}
 	std::string_view mname = entities::monsters[mn-'A'].name;
-	if (player.body.flags.test(CreatureFlag::Blind))
+	if (player.body.is(CreatureFlag::Blind))
 		mname = "it";
 	if (roll_em(player.body, *tp, weap, thrown)||(weap && weap->kind == ItemKind::Potion)) {
 		bool did_huh = false;
@@ -117,7 +117,7 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 				player.weapon = std::nullopt;
 			}
 		}
-		if (player.body.flags.test(CreatureFlag::CanConfuse)) {
+		if (player.body.is(CreatureFlag::CanConfuse)) {
 			did_huh = true;
 			tp->flags.set(CreatureFlag::Confused);
 			player.body.flags.unset(CreatureFlag::CanConfuse);
@@ -125,7 +125,7 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 		}
 		if (tp->stats.hp <= 0)
 			killed(*tp, true);
-		else if (did_huh && !player.body.flags.test(CreatureFlag::Blind))
+		else if (did_huh && !player.body.is(CreatureFlag::Blind))
 			msg("the {} appears confused", mname);
 		return true;
 	}
@@ -153,16 +153,16 @@ attack(Creature &mp)
 	 */
 	game().turn.running = false;
 	game().turn.count = player.quiet = 0;
-	if (mp.type == 'X' && !player.body.flags.test(CreatureFlag::Blind))
+	if (mp.type == 'X' && !player.body.is(CreatureFlag::Blind))
 		mp.disguise = 'X';
 	std::string_view mname = entities::monsters[mp.type-'A'].name;
-	if (player.body.flags.test(CreatureFlag::Blind))
+	if (player.body.is(CreatureFlag::Blind))
 		mname = "it";
 	if (roll_em(mp, player.body, std::nullopt, false)) {
 		hit(mname, std::nullopt);
 		if (player.body.stats.hp <= 0)
 			death(mp.type);	/* Bye bye life ... */
-		if (!mp.flags.test(CreatureFlag::Cancelled))
+		if (!mp.is(CreatureFlag::Cancelled))
 			switch (mp.type)
 		{
 		case 'A':
@@ -276,7 +276,7 @@ attack(Creature &mp)
 			for (Item &obj : player.body.pack)
 			if (!refers_to(player.armor_item(), obj) && !refers_to(player.weapon_item(), obj)
 				&& !refers_to(player.ring_item(Hand::Left), obj) && !refers_to(player.ring_item(Hand::Right), obj)
-				&& is_magic(obj) && rnd(++nobj) == 0)
+				&& obj.is_magic() && rnd(++nobj) == 0)
 				steal = obj;
 			if (steal)
 			{
@@ -405,7 +405,7 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 				hplus += player.ring_item(Hand::Right)->ac;
 		}
 		attacks = weap->damage;
-		if (hurl && weap->flags.test(ItemFlag::Missile) && player.weapon_item() &&
+		if (hurl && weap->is(ItemFlag::Missile) && player.weapon_item() &&
 			  items::effects::launched_by(player.weapon_item()->which<WeaponType>()) == weap->launcher)
 		{
 			attacks = weap->thrown_damage;
@@ -432,7 +432,7 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 	 * If the creature being attacked is not running (alseep or held)
 	 * then the attacker gets a plus four bonus to hit.
 	 */
-	if (!thdef.flags.test(CreatureFlag::Running))
+	if (!thdef.is(CreatureFlag::Running))
 		hplus += 4;
 	int def_arm = def.armor;
 	if (&def == &player.body.stats)
@@ -475,7 +475,7 @@ prname(Who who, bool upper)
 
 	if (!who)
 		name = "you";
-	else if (game().player.body.flags.test(CreatureFlag::Blind))
+	else if (game().player.body.is(CreatureFlag::Blind))
 		name = "it";
 	else
 		name = std::format("the {}", *who);
@@ -641,7 +641,7 @@ thunk(const Item &weap, std::string_view mname, std::string_view does, std::stri
 		addmsg("the {} {} ", items::w_names[weap.which<WeaponType>()], does);
 	else
 		addmsg("you {} ", did);
-	if (game().player.body.flags.test(CreatureFlag::Blind))
+	if (game().player.body.is(CreatureFlag::Blind))
 		msg("it");
 	else
 		msg("the {}", mname);
@@ -675,31 +675,6 @@ remove_monster(Coord mp, Creature &tp, bool waskill)
 }
 
 }  // namespace
-
-/*
- * is_magic:
- *	Returns true if an object radiates magic
- */
-bool
-is_magic(const Item &obj)
-{
-	switch (obj.kind)
-	{
-	case ItemKind::Armor:
-		return obj.ac != items::a_class[obj.which<ArmorType>()];
-	case ItemKind::Weapon:
-		return obj.hit_plus != 0 || obj.damage_plus != 0;
-	case ItemKind::Potion:
-	case ItemKind::Scroll:
-	case ItemKind::Stick:
-	case ItemKind::Ring:
-	case ItemKind::Amulet:
-		return true;
-	default:	// the other kinds of item: nothing
-		break;
-	}
-	return false;
-}
 
 /*
  * killed:
@@ -739,7 +714,7 @@ killed(Creature &tp, bool pr)
 	if (pr)
 	{
 	addmsg("you have defeated ");
-	if (game().player.body.flags.test(CreatureFlag::Blind))
+	if (game().player.body.is(CreatureFlag::Blind))
 		msg("it");
 	else
 		msg("the {}", entities::monsters[type-'A'].name);

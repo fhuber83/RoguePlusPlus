@@ -178,17 +178,6 @@ struct Items {
 	Items();
 };
 
-// The pool's creatures and items, as Lists find them (entities/List.hpp)
-template <>
-struct ListPool<Item> {
-	static Item *at(ItemId id);
-	static std::optional<ItemId> id_of(const Item &obj);
-};
-template <>
-struct ListPool<Creature> {
-	static Creature *at(CreatureId id);
-	static std::optional<CreatureId> id_of(const Creature &tp);
-};
 
 /*
  * The creatures and items in play, made by new_creature() and new_item() and

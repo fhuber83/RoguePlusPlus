@@ -155,6 +155,12 @@ struct Item {
 	constexpr short charges() const { return ac; }
 	constexpr short &gold_value() { return ac; }
 	constexpr short gold_value() const { return ac; }
+
+	// Whether a flag is set
+	constexpr bool is(ItemFlag flag) const { return flags.test(flag); }
+	// Whether it radiates magic: armor or a weapon enchanted either way,
+	// and every potion, scroll, stick, ring and the amulet (was is_magic())
+	bool is_magic() const;
 };
 
 }  // namespace rogue

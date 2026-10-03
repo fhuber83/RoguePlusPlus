@@ -114,21 +114,21 @@ inv_name(const Item &obj, bool drop)
 			name = std::format("{} ", obj.count);
 		else
 			name = std::format("A{} ", vowelstr(w_names[which]));
-		if (obj.flags.test(ItemFlag::Known))
+		if (obj.is(ItemFlag::Known))
 			name += std::format("{} {}", items::effects::num(obj.hit_plus, obj.damage_plus, WEAPON),
 				w_names[which]);
 		else
 			name += w_names[which];
 		if (obj.count > 1)
 			name += "s";
-		if (obj.enemy && obj.flags.test(ItemFlag::Revealed))
+		if (obj.enemy && obj.is(ItemFlag::Revealed))
 			name += std::format(" of {} slaying", entities::monsters[obj.enemy-'A'].name);
 		break;
 	}
 	case ItemKind::Armor: {
 		ArmorType which = obj.which<ArmorType>();
 
-		if (!obj.flags.test(ItemFlag::Known))
+		if (!obj.is(ItemFlag::Known))
 			name = a_names[which];
 		else if (brief)
 			name = std::format("{} {}", items::effects::num(a_class[which] - obj.ac, 0, ARMOR),

@@ -134,7 +134,7 @@ new_level()
 	ui::display().draw_tile(player.body.pos, PLAYER);
 	player.old_pos = player.body.pos;
 	player.old_room = player.body.room;
-	if (player.body.flags.test(CreatureFlag::SeeMonst))
+	if (player.body.is(CreatureFlag::SeeMonst))
 		items::effects::turn_see(false);
 }
 

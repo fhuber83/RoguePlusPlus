@@ -7,7 +7,6 @@
 #include "core/Glyphs.hpp"
 #include "core/Maybe.hpp"
 #include "entities/Item.hpp"
-#include "game/Game.hpp"	// IWYU pragma: keep (the lists find things through game().pool)
 #include "game/Pool.hpp"
 #include "world/Level.hpp"
 #include "world/MapFlags.hpp"

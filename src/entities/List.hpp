@@ -13,14 +13,26 @@ namespace rogue {
 
 /*
  * How a List finds the things its Ids name, specialized for each kind of
- * thing kept in lists (game/Game.hpp does it for the pool's creatures and
- * items):
+ * thing kept in lists:
  *
  *	static T *at(Id<T> id);			// the thing, nullptr for none
  *	static std::optional<Id<T>> id_of(const T &thing);	// nullopt for none
  */
 template <typename T>
 struct ListPool;
+
+// The pool's creatures and items (defined in game/Game.cpp, by game().pool),
+// declared here so that every user of a List sees them
+template <>
+struct ListPool<Item> {
+	static Item *at(ItemId id);
+	static std::optional<ItemId> id_of(const Item &obj);
+};
+template <>
+struct ListPool<Creature> {
+	static Creature *at(CreatureId id);
+	static std::optional<CreatureId> id_of(const Creature &tp);
+};
 
 /*
  * An ordered list of creatures or items, kept as Ids of things it does not

@@ -67,12 +67,6 @@ bool save_throw(SaveThrow which, const Creature &tp);
 bool save(SaveThrow which);
 
 /*
- * is_magic:
- *	Returns true if an object radiates magic.
- */
-bool is_magic(const Item &obj);
-
-/*
  * raise_level:
  *	The guy just magically went up a level.
  */

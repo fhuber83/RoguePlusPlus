@@ -69,6 +69,9 @@ struct Creature {
 	entities::Stats stats;		/* Physical description */
 	std::optional<RoomRef> room;	/* Current room for thing, if any */
 	List<Item> pack;			/* What the thing is carrying */
+
+	// Whether a flag is set
+	constexpr bool is(CreatureFlag flag) const { return flags.test(flag); }
 };
 
 }  // namespace rogue

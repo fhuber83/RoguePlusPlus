@@ -43,7 +43,7 @@ turn_corner()
 	world::Level &level = game().level;
 	const Coord pos = player.body.pos;
 
-	if (!turn.running || !level.room(*player.body.room).is_gone() || player.body.flags.test(CreatureFlag::Blind))
+	if (!turn.running || !level.room(*player.body.room).is_gone() || player.body.is(CreatureFlag::Blind))
 		return std::nullopt;
 	auto opens = [&](int y, int x) {
 		return level.flags_at(y, x).test(MapFlag::Passage) || level.at(y, x) == DOOR;
@@ -123,7 +123,7 @@ do_move(int dy, int dx)
 	 * Do a confused move (maybe)
 	 */
 	Coord nh;
-	if (player.body.flags.test(CreatureFlag::Confused) && rnd(5) != 0)
+	if (player.body.is(CreatureFlag::Confused) && rnd(5) != 0)
 		nh = rndmove(player.body);
 	else
 		nh = player.body.pos + Coord{dx, dy};
@@ -159,7 +159,7 @@ do_move(int dy, int dx)
 			if (!fl.test(MapFlag::Real) && ch == FLOOR) {
 				level.at(nh) = ch = TRAP;
 				level.flags_at(nh).set(MapFlag::Real);
-			} else if (player.body.flags.test(CreatureFlag::Held) && ch != 'F') {
+			} else if (player.body.is(CreatureFlag::Held) && ch != 'F') {
 				msg("you are being held");
 				return;
 			}

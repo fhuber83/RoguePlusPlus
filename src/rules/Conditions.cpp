@@ -37,7 +37,7 @@ void
 unsee()
 {
 	for (Creature &th : game().level.monsters)
-		if (th.flags.test(CreatureFlag::Invisible) && entities::see_monst(th) && th.under != '@')
+		if (th.is(CreatureFlag::Invisible) && entities::see_monst(th) && th.under != '@')
 			ui::display().draw_tile(th.pos, th.under);
 	game().player.body.flags.unset(CreatureFlag::SeeInvisible);
 }
@@ -51,7 +51,7 @@ sight()
 {
 	rogue::Player &player = game().player;
 
-	if (player.body.flags.test(CreatureFlag::Blind))
+	if (player.body.is(CreatureFlag::Blind))
 	{
 		extinguish(Event::Sight);
 		player.body.flags.unset(CreatureFlag::Blind);

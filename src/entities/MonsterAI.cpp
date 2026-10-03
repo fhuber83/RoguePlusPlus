@@ -56,10 +56,10 @@ runners()
 	rogue::Player &player = game().player;
 
 	for (Maybe<Creature> tp = game().level.monsters.first(); tp; tp = game().level.monsters.after(*tp)) {
-		if (!tp->flags.test(CreatureFlag::Held) && tp->flags.test(CreatureFlag::Running)) {
+		if (!tp->is(CreatureFlag::Held) && tp->is(CreatureFlag::Running)) {
 			const CreatureId id = *game().pool.id_of(*tp);
 			int dist = distance_sq(player.body.pos, tp->pos);
-			if	(!(tp->flags.test(CreatureFlag::Slow) || (tp->type == 'S' && dist > 3)) || tp->its_turn)
+			if	(!(tp->is(CreatureFlag::Slow) || (tp->type == 'S' && dist > 3)) || tp->its_turn)
 				do_chase(*tp);
 			/*
 			 * do_chase() can end in attack(), which removes tp from the
@@ -71,12 +71,12 @@ runners()
 			 */
 			if (!game().level.monsters.contains(id))
 				break;
-			if (tp->flags.test(CreatureFlag::Hasted))
+			if (tp->is(CreatureFlag::Hasted))
 				do_chase(*tp);
 			if (!game().level.monsters.contains(id))
 				break;
 			dist = distance_sq(player.body.pos, tp->pos);
-			if (tp->flags.test(CreatureFlag::Flying) && dist > 3)
+			if (tp->is(CreatureFlag::Flying) && dist > 3)
 				do_chase(*tp);
 			if (!game().level.monsters.contains(id))
 				break;
@@ -98,7 +98,7 @@ do_chase(Creature &th)
 	world::Level &level = game().level;
 
 	std::optional<RoomRef> rer = th.room;		/* Find room of chaser */
-	if (th.flags.test(CreatureFlag::Greedy) && level.room(*rer).gold_value == 0)
+	if (th.is(CreatureFlag::Greedy) && level.room(*rer).gold_value == 0)
 		th.dest = Hero{};	/*	If gold	has been taken,	run after hero */
 	std::optional<RoomRef> ree = player.body.room;	/* room of chasee */
 	if (th.dest != Destination(Hero{}))	/*	Find room of chasee */
@@ -148,7 +148,7 @@ do_chase(Creature &th)
 				 || abs(th.pos.y - player.body.pos.y) == abs(th.pos.x - player.body.pos.x))
 				&&	((dist=distance_sq(th.pos, player.body.pos)) > 2
 				 && dist <= items::effects::BOLT_LENGTH	* items::effects::BOLT_LENGTH)
-				&&	!th.flags.test(CreatureFlag::Cancelled) && rnd(DRAGONSHOT) == 0)
+				&&	!th.is(CreatureFlag::Cancelled) && rnd(DRAGONSHOT) == 0)
 			{
 				game().turn.running = false;
 				game().turn.delta.y = sign(player.body.pos.y - th.pos.y);
@@ -192,7 +192,7 @@ do_chase(Creature &th)
 			   && level.map[world::Level::index(th.pos)] == FLOOR)
 			ui::display().draw_tile(th.pos, FLOOR);
 		else if (th.under == FLOOR && !world::cansee(th.pos.y, th.pos.x)
-				&& !player.body.flags.test(CreatureFlag::SeeMonst))
+				&& !player.body.is(CreatureFlag::SeeMonst))
 			ui::display().draw_tile(th.pos, ' ');
 		else
 			ui::display().draw_tile(th.pos, th.under);
@@ -214,7 +214,7 @@ do_chase(Creature &th)
 		ui::display().draw_tile(ch_ret, th.disguise,
 				level.flags_at(ch_ret).test(MapFlag::Passage) ? ui::TileStyle::Inverse : ui::TileStyle::Normal);
 	}
-	else if (player.body.flags.test(CreatureFlag::SeeMonst))
+	else if (player.body.is(CreatureFlag::SeeMonst))
 	{
 		th.under = ui::display().tile_at(ch_ret);
 		ui::display().draw_tile(ch_ret, th.type, ui::TileStyle::Inverse);
@@ -236,9 +236,9 @@ bool
 see_monst(const Creature &mp)
 {
 	rogue::Player &player = game().player;
-	if (player.body.flags.test(CreatureFlag::Blind))
+	if (player.body.is(CreatureFlag::Blind))
 		return	false;
-	if (mp.flags.test(CreatureFlag::Invisible) && !player.body.flags.test(CreatureFlag::SeeInvisible))
+	if (mp.is(CreatureFlag::Invisible) && !player.body.is(CreatureFlag::SeeInvisible))
 		return	false;
 	if (distance_sq(mp.pos, player.body.pos) >= world::LAMPDIST &&
 	  ((mp.room != player.body.room || game().level.room(*mp.room).flags.test(RoomFlag::Dark) ||
@@ -249,7 +249,7 @@ see_monst(const Creature &mp)
 	 * time, give the player a hint as to what that weapon is good for.
 	 */
 	if (player.weapon_item() && mp.type == player.weapon_item()->enemy
-	  && !player.weapon_item()->flags.test(ItemFlag::DidFlash))
+	  && !player.weapon_item()->is(ItemFlag::DidFlash))
 	{
 		player.weapon_item()->flags.set(ItemFlag::DidFlash);
 		msg(items::effects::flashmsg, items::w_names[player.weapon_item()->which<WeaponType>()], game().options.brief() ? "" : items::effects::intense);
@@ -301,7 +301,7 @@ chase(Creature &tp, Coord ee)
 	 * are slightly confused all of the	time, and bats are
 	 * quite confused all the time
 	 */
-	if ((tp.flags.test(CreatureFlag::Confused)	&& rnd(5) != 0)	|| (tp.type == 'P' && rnd(5)	== 0)
+	if ((tp.is(CreatureFlag::Confused)	&& rnd(5) != 0)	|| (tp.type == 'P' && rnd(5)	== 0)
 		|| (tp.type	== 'B' && rnd(2) == 0))
 	{
 		/*
@@ -462,7 +462,7 @@ new_slime(Creature &tp)
 				if (game().level.seen_at({x, y}) != 'S')
 					continue;
 				Maybe<Creature> ntp = game().level.monster_at({x, y});
-				if (!ntp || ntp->flags.test(CreatureFlag::Flying))
+				if (!ntp || ntp->is(CreatureFlag::Flying))
 					continue;				/* none, or already done this one */
 				// One that divides there doesn't make this one divide
 				if (new_slime(*ntp)) {

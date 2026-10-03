@@ -8,7 +8,6 @@
 #include "game/Endings.hpp"
 
 #include <algorithm>
-#include <bits/chrono.h>
 #include <chrono>
 #include <cstddef>
 #include <cstdlib>
@@ -19,6 +18,8 @@
 #include <string_view>
 #include <utility>
 #include <vector>
+
+#include <bits/chrono.h>
 
 #include "core/Ascii.hpp"
 #include "core/Glyphs.hpp"
@@ -322,7 +323,7 @@ total_winner()
 				else
 					worth = 10;
 			}
-			if (!obj.flags.test(ItemFlag::Known))
+			if (!obj.is(ItemFlag::Known))
 				worth /= 2;
 			obj.flags.set(ItemFlag::Known);
 			items.r_know[obj.which<Ring>()] = true;
@@ -330,7 +331,7 @@ total_winner()
 		case ItemKind::Stick:
 			worth = items.ws_magic[obj.which<Stick>()].worth;
 			worth += 20 * obj.charges();
-			if (!obj.flags.test(ItemFlag::Known))
+			if (!obj.is(ItemFlag::Known))
 				worth /= 2;
 			obj.flags.set(ItemFlag::Known);
 			items.ws_know[obj.which<Stick>()] = true;

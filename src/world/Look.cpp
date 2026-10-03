@@ -45,7 +45,7 @@ look(bool wakeup)
 	 * if the hero has moved
 	 */
 	if (!(player.old_pos == player.body.pos)) {
-		if (!player.body.flags.test(CreatureFlag::Blind)) {
+		if (!player.body.is(CreatureFlag::Blind)) {
 			for (int x = player.old_pos.x - 1; x <= (player.old_pos.x + 1); x++)
 				for (int y = player.old_pos.y - 1; y <= (player.old_pos.y + 1); y++) {
 					if ((y == player.body.pos.y && x == player.body.pos.x) || Level::off_map({x, y}))
@@ -85,7 +85,7 @@ look(bool wakeup)
 		if (y > 0 && y < maxrow) for (int x = sx; x <= ex; x++) {
 			if (x <= 0 || x >= MAXCOLS)
 				continue;
-			if (!player.body.flags.test(CreatureFlag::Blind)) {
+			if (!player.body.is(CreatureFlag::Blind)) {
 				if (y == player.body.pos.y && x == player.body.pos.x)
 					continue;
 			} else if (y != player.body.pos.y || x != player.body.pos.x)
@@ -120,7 +120,7 @@ look(bool wakeup)
 			}
 
 			if (Maybe<Creature> tp = level.monster_at({x, y})) {
-				if (player.body.flags.test(CreatureFlag::SeeMonst) && tp->flags.test(CreatureFlag::Invisible)) {
+				if (player.body.is(CreatureFlag::SeeMonst) && tp->is(CreatureFlag::Invisible)) {
 					if (turn.door_stop && !turn.first_move)
 						turn.running = false;
 					continue;
@@ -128,7 +128,7 @@ look(bool wakeup)
 					if (wakeup)
 						entities::wake_monster(y, x);
 					if (tp->under != ' ' ||
-						(!level.room(*rp).flags.test(RoomFlag::Dark) && !player.body.flags.test(CreatureFlag::Blind)))
+						(!level.room(*rp).flags.test(RoomFlag::Dark) && !player.body.is(CreatureFlag::Blind)))
 							tp->under = level.map[index];
 					if (entities::see_monst(*tp))
 						ch = tp->disguise;
@@ -224,7 +224,7 @@ search()
 	rogue::Player &player = game().player;
 	world::Level &level = game().level;
 
-	if (player.body.flags.test(CreatureFlag::Blind))
+	if (player.body.is(CreatureFlag::Blind))
 		return;
 	int ey = player.body.pos.y + 1;
 	int ex = player.body.pos.x + 1;

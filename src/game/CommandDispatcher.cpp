@@ -70,7 +70,7 @@ command()
 	 * in, and the moves it had left.
 	 */
 	if (!turn.resuming || turn.moves_left == 0)
-		turn.moves_left = player.body.flags.test(CreatureFlag::Hasted) ? rnd(2) + 2 : 1;
+		turn.moves_left = player.body.is(CreatureFlag::Hasted) ? rnd(2) + 2 : 1;
 	for (; turn.moves_left > 0; turn.moves_left--) {
 		status();
 		if (player.no_command) {
@@ -198,7 +198,7 @@ get_prefix()
 		turn.fast_mode = false;
 	// Which commands a count repeats is in game/Command.cpp
 	if (command_of(retch) == Command::Move && turn.fast_mode && !turn.running) {
-		if (!game().player.body.flags.test(CreatureFlag::Blind)) {
+		if (!game().player.body.is(CreatureFlag::Blind)) {
 			turn.door_stop = true;
 			turn.first_move = true;
 		}

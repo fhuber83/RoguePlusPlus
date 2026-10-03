@@ -258,21 +258,21 @@ wake_monster(int y, int x)
 	/*
 	 * Every time he sees mean monster, it might start chasing him
 	 */
-	if (!tp->flags.test(CreatureFlag::Running) && rnd(3) != 0 && tp->flags.test(CreatureFlag::Mean) && !tp->flags.test(CreatureFlag::Held)
+	if (!tp->is(CreatureFlag::Running) && rnd(3) != 0 && tp->is(CreatureFlag::Mean) && !tp->is(CreatureFlag::Held)
 		&& !player.wears(Ring::Stealth))
 	{
 		tp->dest = Hero{};
 		tp->flags.set(CreatureFlag::Running);
 	}
-	if (ch == 'M' && !player.body.flags.test(CreatureFlag::Blind) && !tp->flags.test(CreatureFlag::Found)
-		&& !tp->flags.test(CreatureFlag::Cancelled) && tp->flags.test(CreatureFlag::Running))
+	if (ch == 'M' && !player.body.is(CreatureFlag::Blind) && !tp->is(CreatureFlag::Found)
+		&& !tp->is(CreatureFlag::Cancelled) && tp->is(CreatureFlag::Running))
 	{
 		std::optional<RoomRef> rp = player.body.room;
 		int dst = distance_sq({x, y}, player.body.pos);
 		if ((rp && !game().level.room(*rp).flags.test(RoomFlag::Dark)) || dst < world::LAMPDIST) {
 			tp->flags.set(CreatureFlag::Found);
 			if (!rules::save(rules::SaveThrow::Magic)) {
-				if (player.body.flags.test(CreatureFlag::Confused))
+				if (player.body.is(CreatureFlag::Confused))
 					rules::lengthen(rules::Event::Unconfuse, rnd(20) + rules::huh_duration());
 				else
 					rules::fuse(rules::Event::Unconfuse, rnd(20) + rules::huh_duration());
@@ -284,7 +284,7 @@ wake_monster(int y, int x)
 	/*
 	 * Let greedy ones guard gold
 	 */
-	if (tp->flags.test(CreatureFlag::Greedy) && !tp->flags.test(CreatureFlag::Running)) {
+	if (tp->is(CreatureFlag::Greedy) && !tp->is(CreatureFlag::Running)) {
 		tp->flags.set(CreatureFlag::Running);
 		if (game().level.room(*player.body.room).gold_value)
 			tp->dest = Gold{*player.body.room};

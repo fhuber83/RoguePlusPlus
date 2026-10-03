@@ -29,7 +29,7 @@
 #include "items/effects/Weapon.hpp"
 #include "rules/Combat.hpp"
 #include "ui/Display.hpp"
-#include "world/Map.hpp"
+#include "world/Level.hpp"
 #include "world/MapFlags.hpp"
 #include "world/Room.hpp"
 #include "world/RoomRef.hpp"
@@ -95,7 +95,7 @@ void
 do_chase(Creature &th)
 {
 	rogue::Player &player = game().player;
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	std::optional<RoomRef> rer = th.t_room;		/* Find room of chaser */
 	if (th.t_flags.test(CreatureFlag::Greedy) && level.room(*rer).r_goldval == 0)
@@ -189,7 +189,7 @@ do_chase(Creature &th)
 	 */
 	if (th.t_oldch != '@') {
 		if	(th.t_oldch ==	' ' && world::cansee(th.t_pos.y, th.t_pos.x)
-			   && level.map[world::INDEX(th.t_pos.y,th.t_pos.x)] == FLOOR)
+			   && level.map[world::Level::index(th.t_pos)] == FLOOR)
 			ui::display().draw_tile(th.t_pos, FLOOR);
 		else if (th.t_oldch == FLOOR && !world::cansee(th.t_pos.y, th.t_pos.x)
 				&& !player.body.t_flags.test(CreatureFlag::SeeMonst))
@@ -268,7 +268,7 @@ start_run(Coord runner)
 	/*
 	 * If we couldn't find him,	something is funny
 	 */
-	Maybe<Creature> tp = moat(runner.y, runner.x);
+	Maybe<Creature> tp = game().level.monster_at(runner);
 	if (tp) {
 		/*
 		 *	Start the beastie running
@@ -336,10 +336,10 @@ chase(Creature &tp, Coord ee)
 			{
 				const Coord tryp = {x, y};
 
-				if (world::offmap(y,	x) || !world::diag_ok(er, tryp))
+				if (world::Level::off_map({x, y}) || !game().level.diagonal_ok(er, tryp))
 					continue;
-				unsigned char ch = world::winat(y, x);
-				if (world::step_ok(ch))
+				unsigned char ch = game().level.seen_at({x, y});
+				if (step_ok(ch))
 				{
 					/*
 					 * If it is a scroll, it might be	a scare	monster	scroll
@@ -347,7 +347,7 @@ chase(Creature &tp, Coord ee)
 					 */
 					if (ch ==	SCROLL)
 					{
-						Maybe<Item> obj = world::find_obj(y, x);
+						Maybe<Item> obj = game().level.object_at({x, y});
 						if (obj && obj->which<Scroll>() == Scroll::ScareMonster)
 							continue;
 					}
@@ -459,9 +459,9 @@ new_slime(Creature &tp)
 		 */
 		for (int y = ty -1; y <= ty+1; y++)
 			for (int x = tx-1; x <= tx+1; x++) {
-				if (world::winat(y, x) != 'S')
+				if (game().level.seen_at({x, y}) != 'S')
 					continue;
-				Maybe<Creature> ntp = moat(y, x);
+				Maybe<Creature> ntp = game().level.monster_at({x, y});
 				if (!ntp || ntp->t_flags.test(CreatureFlag::Flying))
 					continue;				/* none, or already done this one */
 				// One that divides there doesn't make this one divide
@@ -500,14 +500,14 @@ plop_monster(int r, int c)
 			/*
 			 * Don't put a monster in top of the player.
 			 */
-			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || world::offmap(y,x))
+			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || world::Level::off_map({x, y}))
 				continue;
 			/*
 			 * Or anything else nasty
 			 */
-			unsigned char ch = world::winat(y, x);
-			if (world::step_ok(ch)) {
-				if (ch == SCROLL && world::find_obj(y, x)->which<Scroll>() == Scroll::ScareMonster)
+			unsigned char ch = game().level.seen_at({x, y});
+			if (step_ok(ch)) {
+				if (ch == SCROLL && game().level.object_at({x, y})->which<Scroll>() == Scroll::ScareMonster)
 					continue;
 				/*
 				 * Get first available spot with 100% chance,

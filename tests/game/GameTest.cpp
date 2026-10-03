@@ -12,6 +12,7 @@
 #include "items/ItemCatalog.hpp"
 #include "items/KindInfo.hpp"
 #include "items/Kinds.hpp"
+#include "world/Level.hpp"
 #include "world/Room.hpp"
 
 namespace rogue {
@@ -59,7 +60,7 @@ TEST(Items, OddsAreCopiedPerGame)
 
 TEST(Level, PassagesAreGoneAndDark)
 {
-	Level level;
+	world::Level level;
 	for (const auto &p : level.passages) {
 		EXPECT_TRUE(p.r_flags.test(RoomFlag::Gone));
 		EXPECT_TRUE(p.r_flags.test(RoomFlag::Dark));
@@ -108,14 +109,14 @@ TEST(Pool, DiscardForgetsTheLastItemPicked)
 TEST(Pool, DiscardSendsMonstersAfterTheHero)
 {
 	game().pool = Pool();
-	game().level = Level();
+	game().level = world::Level();
 	Item &obj = *new_item();
 	Creature &mp = *new_creature();
 	game().level.monsters.push_front(mp);
 	mp.t_dest = *game().pool.id_of(obj);
 	discard(obj);
 	EXPECT_EQ(mp.t_dest, Destination(Hero{}));
-	game().level = Level();
+	game().level = world::Level();
 	game().pool = Pool();
 }
 

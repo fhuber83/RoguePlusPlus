@@ -25,8 +25,8 @@
 #include "rules/Combat.hpp"
 #include "rules/Durations.hpp"
 #include "rules/Scheduler.hpp"
+#include "world/Level.hpp"
 #include "world/LevelGenerator.hpp"
-#include "world/Map.hpp"
 #include "world/Room.hpp"
 #include "world/RoomRef.hpp"
 #include "world/Rooms.hpp"
@@ -237,7 +237,7 @@ wanderer()
 		if (RoomRef::room(i) == player.body.t_room)
 			continue;
 		cp = rnd_pos(game().level.rooms[i]);
-	} while (!(RoomRef::room(i) != player.body.t_room && world::step_ok(world::winat(cp.y, cp.x))));
+	} while (!(RoomRef::room(i) != player.body.t_room && step_ok(game().level.seen_at(cp))));
 	new_monster(*tp, randmonster(true), cp);
 	start_run(tp->t_pos);
 }
@@ -251,7 +251,7 @@ wake_monster(int y, int x)
 {
 	rogue::Player &player = game().player;
 
-	Maybe<Creature> tp = moat(y, x);
+	Maybe<Creature> tp = game().level.monster_at({x, y});
 	if (!tp)
 		return tp;
 	unsigned char ch = tp->t_type;
@@ -324,21 +324,6 @@ pick_mons()
 	if (i < 0)
 		return 'M';
 	return vorp_mons[i];
-}
-
-/*
- * moat(x,y)
- *    returns pointer to monster at coordinate
- *	  if no monster there return null
- */
-
-Maybe<Creature>
-moat(int my, int mx)
-{
-	for (Creature &tp : game().level.monsters)
-		if (tp.t_pos.x == mx  && tp.t_pos.y == my)
-			return(tp);
-	return std::nullopt;
 }
 
 }  // namespace rogue::entities

@@ -15,7 +15,7 @@
 #include "core/Maybe.hpp"
 #include "game/Game.hpp"
 #include "game/Messages.hpp"
-#include "world/Map.hpp"
+#include "world/Level.hpp"
 #include "world/MapFlags.hpp"
 #include "world/Room.hpp"
 
@@ -48,7 +48,7 @@ conn(int r1, int r2)
 	int distance = 0, turn_distance;
 	int direc;
 	Coord del, turn_delta, spos, epos;
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	if (r1 < r2) {
 		rm = r1;
@@ -284,7 +284,7 @@ namespace {
 void
 door(Room &rm, Coord cp)
 {
-	int index = INDEX(cp.y, cp.x);
+	int index = Level::index(cp);
 	if (rnd(10) + 1 < game().level.depth && rnd(5) == 0)
 	{
 		game().level.map[index] = (cp.y == rm.r_pos.y || cp.y == rm.r_pos.y + rm.r_max.y - 1) ? HWALL : VWALL;
@@ -320,9 +320,9 @@ passnum()
 void
 numpass(int y, int x, Numbering &num)
 {
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
-	if (offmap(y,x))
+	if (Level::off_map({x, y}))
 		return;
 	MapFlags &fp = level.flags_at(y, x);
 	if (fp.passage())
@@ -355,7 +355,7 @@ numpass(int y, int x, Numbering &num)
 void
 psplat(int y, int x)
 {
-	int idx = INDEX(y, x);
+	int idx = Level::index({x, y});
 	game().level.map[idx] = PASSAGE;
 	game().level.flags[idx].set(MapFlag::Passage);
 }

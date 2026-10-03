@@ -23,7 +23,7 @@
 #include "items/KindInfo.hpp"
 #include "items/Kinds.hpp"
 #include "rules/Scheduler.hpp"
-#include "world/Map.hpp"
+#include "world/Level.hpp"
 #include "world/MapFlags.hpp"
 #include "world/Room.hpp"
 #include "world/RoomRef.hpp"
@@ -145,54 +145,6 @@ struct Player {
 };
 
 /*
- * The level the rogue is on: its map, rooms, passages, and what lies and
- * lives on it.
- */
-struct Level {
-	int depth = 1;					/* level: what level rogue is on */
-	int ntraps = 0;					/* Number of traps on this level */
-	int no_food = 0;				/* Number of levels without food */
-	std::array<world::Room, world::MAXROOMS> rooms = {};	/* One for each room -- A level */
-	std::array<world::Room, world::MAXPASS> passages = {};	/* One for each passage */
-	/*
-	 * What is at each square, and its MapFlags. Index them with INDEX(y, x),
-	 * or use at()/flags_at().
-	 */
-	unsigned char map[(MAXLINES-3)*MAXCOLS] = {};	/* _level */
-	MapFlags flags[(MAXLINES-3)*MAXCOLS] = {};	/* _flags */
-	List<Item> objects;				/* lvl_obj: list of objects on this level */
-	List<Creature> monsters;		/* mlist: list of monsters on the level */
-
-	// Passages are dark rooms that are gone. The original table left the
-	// 13th one lit by mistake.
-	Level()
-	{
-		for (auto &p : passages)
-			p.r_flags = RoomFlag::Gone | RoomFlag::Dark;
-	}
-
-	// What is at a square (was chat())
-	unsigned char &at(int y, int x) { return map[world::INDEX(y, x)]; }
-	unsigned char &at(Coord pos) { return at(pos.y, pos.x); }
-	// A square's MapFlags (was flat())
-	MapFlags &flags_at(int y, int x) { return flags[world::INDEX(y, x)]; }
-	MapFlags &flags_at(Coord pos) { return flags_at(pos.y, pos.x); }
-	// The room or passage a RoomRef names
-	world::Room &room(RoomRef r) { return r.kind == RoomRef::Kind::Room ? rooms[r.index] : passages[r.index]; }
-	const world::Room &room(RoomRef r) const
-	{
-		return r.kind == RoomRef::Kind::Room ? rooms[r.index] : passages[r.index];
-	}
-	// Whether a RoomRef names one of this level's rooms or passages
-	static constexpr bool valid(RoomRef r)
-	{
-		return r.index >= 0 && r.index < (r.kind == RoomRef::Kind::Room ? world::MAXROOMS : world::MAXPASS);
-	}
-	// The passage a passage or maze square belongs to
-	RoomRef passage_at(Coord pos) { return RoomRef::passage(flags_at(pos).passage()); }
-};
-
-/*
  * What there is to find in this game, how it looks, and what the rogue knows
  * about it.
  */
@@ -269,7 +221,7 @@ struct Game {
 	Random random{Random::from_clock()};	/* All randomness, see rng() */
 	Options options;
 	Player player;
-	Level level;
+	world::Level level;
 	Items items;
 	Pool pool;
 	rules::Scheduler scheduler;		/* Daemons and fuses */

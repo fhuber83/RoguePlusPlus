@@ -13,6 +13,7 @@
 #include "items/Kinds.hpp"
 #include "ui/Display.hpp"
 #include "ui/ScreenDisplay.hpp"
+#include "world/Level.hpp"
 #include "world/LevelGenerator.hpp"
 #include "world/Room.hpp"
 #include "world/RoomRef.hpp"
@@ -30,7 +31,7 @@ protected:
 	static void reset()
 	{
 		game().pool = Pool();
-		game().level = Level();
+		game().level = world::Level();
 		game().player = Player();
 		game().items = Items();
 		game().turn = Turn();
@@ -82,7 +83,7 @@ TEST_F(PoolCheck, MonsterPacksCount)
 
 TEST_F(PoolCheck, WhatAMonsterIsAfter)
 {
-	Level &level = game().level;
+	world::Level &level = game().level;
 	Creature &tp = *new_creature();
 	level.monsters.push_front(tp);
 	Item &obj = *new_item();

@@ -13,8 +13,6 @@
 #include <functional>
 #include <ios>
 #include <iterator>
-#include <nlohmann/json.hpp>
-#include <nlohmann/json_fwd.hpp>
 #include <optional>
 #include <set>
 #include <span>
@@ -25,6 +23,9 @@
 #include <utility>
 #include <variant>
 #include <vector>
+
+#include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
 
 #include "core/Coord.hpp"
 #include "core/Dice.hpp"
@@ -45,7 +46,7 @@
 #include "persistence/ByteText.hpp"
 #include "rules/Scheduler.hpp"
 #include "ui/Display.hpp"
-#include "world/Map.hpp"
+#include "world/Level.hpp"
 #include "world/MapFlags.hpp"
 #include "world/Room.hpp"
 #include "world/RoomRef.hpp"
@@ -69,7 +70,7 @@ static_assert(map_rows == maxrow - 1 && map_cols == MAXCOLS);
 #if defined(__x86_64__) && defined(__linux__)
 static_assert(sizeof(Game) == 18568, "a Game member was added or removed: save it");
 static_assert(sizeof(Player) == 328, "a Player field was added or removed: save it");
-static_assert(sizeof(Level) == 6488, "a Level field was added or removed: save it");
+static_assert(sizeof(world::Level) == 6488, "a Level field was added or removed: save it");
 static_assert(sizeof(Items) == 4808, "an Items field was added or removed: save it");
 static_assert(sizeof(Pool) == 1336, "a Pool field was added or removed: save it");
 static_assert(sizeof(Turn) == 88, "a Turn field was added or removed: save it");
@@ -218,21 +219,21 @@ json room_json(const world::Room &r)
 
 constexpr std::string_view hex_digits = "0123456789abcdef";
 
-// The map rows of a column-major level grid (see INDEX()), as hex
+// The map rows of a column-major level grid (see world::Level::index()), as hex
 // A grid is saved as its bytes: the map's glyphs, or the MapFlags' bits
 unsigned char byte_of(unsigned char cell) { return cell; }
 unsigned char byte_of(MapFlags cell) { return cell.bits(); }
 void set_byte(unsigned char &cell, unsigned char b) { cell = b; }
 void set_byte(MapFlags &cell, unsigned char b) { cell = MapFlags::from_bits(b); }
 
-// grid: Level::map or Level::flags
+// grid: world::Level::map or world::Level::flags
 json grid_json(const auto &grid)
 {
 	json rows = json::array();
 	for (int y = 1; y < maxrow; y++) {
 		std::string row;
 		for (int x = 0; x < MAXCOLS; x++) {
-			unsigned char b = byte_of(grid[world::INDEX(y, x)]);
+			unsigned char b = byte_of(grid[world::Level::index({x, y})]);
 			row += hex_digits[b >> 4];
 			row += hex_digits[b & 0xf];
 		}
@@ -344,7 +345,7 @@ json player_json(const Game &g)
 
 json level_json(const Game &g)
 {
-	const Level &l = g.level;
+	const world::Level &l = g.level;
 	json rooms = json::array(), passages = json::array(), monsters = json::array();
 	for (const world::Room &r : l.rooms)
 		rooms.push_back(room_json(r));
@@ -540,7 +541,7 @@ std::optional<RoomRef> room_at(const json &v, std::string_view what)
 			ref = RoomRef::room(whole(v["room"], what));
 		else if (v.contains("passage"))
 			ref = RoomRef::passage(whole(v["passage"], what));
-		if (ref && Level::valid(*ref))
+		if (ref && world::Level::valid(*ref))
 			return ref;
 	}
 	fail(std::format("{} is not a room or passage", what));
@@ -563,7 +564,7 @@ std::optional<Destination> dest_at(Game &g, const json &v)
 			ItemId id = *g.pool.id_of(item);
 			return Destination{id};
 		}
-		if (gold && Level::valid(*gold))
+		if (gold && world::Level::valid(*gold))
 			return Gold{*gold};
 	}
 	fail("\"dest\" is not the hero, gold or an item");
@@ -689,7 +690,7 @@ void grid_from(auto &grid, const json &j, std::string_view key)
 	for (int y = 1; y < maxrow; y++) {
 		std::vector<unsigned char> row = hex_row(rows[y - 1], key);
 		for (int x = 0; x < MAXCOLS; x++)
-			set_byte(grid[world::INDEX(y, x)], row[x]);
+			set_byte(grid[world::Level::index({x, y})], row[x]);
 	}
 }
 
@@ -809,7 +810,7 @@ void pool_from(Game &g, const json &j)
 
 void level_from(Game &g, const json &j)
 {
-	Level &l = g.level;
+	world::Level &l = g.level;
 	l.depth = num<int>(j, "depth");
 	l.ntraps = num<int>(j, "traps");
 	l.no_food = num<int>(j, "no_food");
@@ -924,7 +925,7 @@ void game_from(Game &g, MapView &view, const json &doc)
 	g.options.expert = flag(options, "expert");
 
 	g.pool = Pool();
-	g.level = Level();
+	g.level = world::Level();
 	g.player = Player();
 	g.items = Items();
 	g.scheduler = rules::Scheduler();

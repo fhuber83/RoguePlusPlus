@@ -38,6 +38,7 @@
 #include "rules/Regeneration.hpp"
 #include "rules/Scheduler.hpp"
 #include "ui/Display.hpp"
+#include "world/Level.hpp"
 #include "world/Look.hpp"
 #include "world/Rooms.hpp"
 #include "world/Traps.hpp"
@@ -229,7 +230,7 @@ execcom()
 {
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	do {
 		int ch = get_prefix();

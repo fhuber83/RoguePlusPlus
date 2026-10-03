@@ -24,12 +24,6 @@ struct Room;
 std::optional<RoomRef> roomin(Coord cp);
 
 /*
- * diag_ok:
- *	Check to see if the move is legal if it is diagonal.
- */
-bool diag_ok(Coord sp, Coord ep);
-
-/*
  * cansee:
  *	Returns true if the hero can see a certain coordinate.
  */

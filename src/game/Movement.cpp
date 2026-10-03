@@ -19,7 +19,7 @@
 #include "items/Kinds.hpp"
 #include "rules/Combat.hpp"
 #include "ui/Display.hpp"
-#include "world/Map.hpp"
+#include "world/Level.hpp"
 #include "world/MapFlags.hpp"
 #include "world/Rooms.hpp"
 #include "world/Trap.hpp"
@@ -40,7 +40,7 @@ turn_corner()
 {
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 	const Coord pos = player.body.t_pos;
 
 	if (!turn.running || !level.room(*player.body.t_room).is_gone() || player.body.t_flags.test(CreatureFlag::Blind))
@@ -105,7 +105,7 @@ do_move(int dy, int dx)
 {
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	turn.first_move = false;
 	if (turn.bailout) {
@@ -136,8 +136,8 @@ do_move(int dy, int dx)
 	unsigned char ch;
 	MapFlags fl;
 	for (;;) {
-		if (!world::offmap(nh.y, nh.x)) {
-			if (!world::diag_ok(player.body.t_pos, nh)) {
+		if (!world::Level::off_map(nh)) {
+			if (!level.diagonal_ok(player.body.t_pos, nh)) {
 				turn.after = false;
 				turn.running = false;
 				return;
@@ -149,7 +149,7 @@ do_move(int dy, int dx)
 			if (turn.running && player.body.t_pos == nh)
 				turn.after = turn.running = false;
 			fl = level.flags_at(nh);
-			ch = world::winat(nh.y, nh.x);
+			ch = level.seen_at(nh);
 			/*
 			 * When the hero is on the door do not allow him
 			 * to run until he enters the room all the way
@@ -206,7 +206,7 @@ do_move(int dy, int dx)
 		break;
 	default:
 		turn.running = false;
-		if (is_monster(ch) || entities::moat(nh.y, nh.x))
+		if (is_monster(ch) || level.monster_at(nh))
 			rules::fight(nh, ch, player.weapon_item(), false);
 		else {
 			if (ch != STAIRS)
@@ -230,13 +230,13 @@ rndmove(const Creature &who)
 	 */
 	if (to == who.t_pos)
 		return to;
-	if (world::offmap(y, x) || !world::diag_ok(who.t_pos, to))
+	if (world::Level::off_map({x, y}) || !game().level.diagonal_ok(who.t_pos, to))
 		return who.t_pos;
-	const unsigned char ch = world::winat(y, x);
-	if (!world::step_ok(ch))
+	const unsigned char ch = game().level.seen_at({x, y});
+	if (!step_ok(ch))
 		return who.t_pos;
 	if (ch == SCROLL)
-		if (Maybe<Item> obj = world::find_obj(y, x); obj && obj->which<Scroll>() == Scroll::ScareMonster)
+		if (Maybe<Item> obj = game().level.object_at({x, y}); obj && obj->which<Scroll>() == Scroll::ScareMonster)
 			return who.t_pos;
 	return to;
 }

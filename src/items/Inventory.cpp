@@ -21,7 +21,7 @@
 #include "rules/Scheduler.hpp"
 #include "rules/Strength.hpp"
 #include "ui/Display.hpp"
-#include "world/Map.hpp"
+#include "world/Level.hpp"
 #include "world/Room.hpp"
 
 namespace rogue::items {
@@ -55,7 +55,7 @@ void
 picked_up(Item &obj, bool silent)
 {
 	rogue::Player &player = game().player;
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	/*
 	 * If this was the object of something's desire, that monster will
@@ -106,10 +106,10 @@ void
 add_pack(Maybe<Item> given, bool silent)
 {
 	rogue::Player &player = game().player;
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	const bool from_floor = !given;
-	Maybe<Item> obj = from_floor ? world::find_obj(player.body.t_pos.y, player.body.t_pos.x) : given;
+	Maybe<Item> obj = from_floor ? level.object_at(player.body.t_pos) : given;
 	if (!obj)
 		return;
 	/*
@@ -128,7 +128,7 @@ add_pack(Maybe<Item> given, bool silent)
 	 *  init_player(), which happens before any room even exist. t_room is
 	 *  set in enter_room(), which is first called in new_level()
 	 */
-	unsigned char floor = (player.body.t_room && game().level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone)) ? PASSAGE : FLOOR;
+	unsigned char floor = (player.body.t_room && level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone)) ? PASSAGE : FLOOR;
 	if (obj->o_group)
 	{
 		for (Item &op : player.body.t_pack)
@@ -296,7 +296,7 @@ pick_up(unsigned char ch)
 	{
 	case GOLD:
 	{
-		Maybe<Item> obj = world::find_obj(player.body.t_pos.y, player.body.t_pos.x);
+		Maybe<Item> obj = game().level.object_at(player.body.t_pos);
 		if (!obj)
 			return;
 		money(obj->gold_value());

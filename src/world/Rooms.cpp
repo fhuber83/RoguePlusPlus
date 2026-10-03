@@ -2,8 +2,8 @@
  * Rooms at play time: entering and leaving one, which room a square is
  * in, and what the rogue can see from where it stands.
  *
- * rnd_pos(), enter_room() and leave_room() come from rooms.c; roomin(),
- * diag_ok() and cansee() from chase.c; door_open() from move.c.
+ * rnd_pos(), enter_room() and leave_room() come from rooms.c; roomin() and
+ * cansee() from chase.c; door_open() from move.c.
  *
  * rooms.c	1.4 (A.I. Design)	12/16/84
  * chase.c	1.32	(A.I. Design) 12/12/84
@@ -26,10 +26,9 @@
 #include "game/Messages.hpp"
 #include "rules/Scheduler.hpp"
 #include "ui/Display.hpp"
+#include "world/Level.hpp"
 #include "world/LevelGenerator.hpp"
 #include "world/Look.hpp"
-#include "world/Map.hpp"
-#include "world/MapFlags.hpp"
 #include "world/Room.hpp"
 #include "world/RoomRef.hpp"
 
@@ -48,7 +47,7 @@ door_open(const Room &rp)
 	if (!rp.r_flags.test(RoomFlag::Gone) && !game().player.body.t_flags.test(CreatureFlag::Blind))
 		for (int j = rp.r_pos.y; j < rp.r_pos.y + rp.r_max.y; j++)
 			for (int k = rp.r_pos.x; k < rp.r_pos.x + rp.r_max.x; k++) {
-				unsigned char ch = winat(j, k);
+				unsigned char ch = game().level.seen_at({k, j});
 				/* move(j, k); Why do this,?????? */
 				if (is_monster(ch)) {
 					Maybe<Creature> tp = entities::wake_monster(j, k);
@@ -73,34 +72,13 @@ door_open(const Room &rp)
 std::optional<RoomRef>
 roomin(Coord cp)
 {
-	rogue::Level &level = game().level;
-
-	for	(int i = 0; i < MAXROOMS; i++) {
-		const Room &r = level.rooms[i];
-		if (cp.x < r.r_pos.x + r.r_max.x && r.r_pos.x <= cp.x
-		 && cp.y < r.r_pos.y + r.r_max.y && r.r_pos.y <= cp.y)
-			return RoomRef::room(i);
+	std::optional<RoomRef> r = game().level.room_at(cp);
+	if (!r) {
+		if constexpr (rogue::config::debug_checks)
+			debug("in some bizarre place ({}, {})", cp.y, cp.x);
+		game().turn.bailout = true;
 	}
-	if (level.flags_at(cp).test(MapFlag::Passage))
-		return	level.passage_at(cp);
-	if constexpr (rogue::config::debug_checks)
-		debug("in some bizarre place ({}, {})", cp.y, cp.x);
-	game().turn.bailout = true;
-	return std::nullopt;
-}
-
-/*
- * diag_ok:
- *	Check to see	if the move is legal if	it is diagonal
- */
-bool
-diag_ok(Coord sp, Coord ep)
-{
-	rogue::Level &level = game().level;
-
-	if (ep.x == sp.x || ep.y	== sp.y)
-		return	true;
-	return (step_ok(level.at(ep.y, sp.x))	&& step_ok(level.at(sp.y, ep.x)));
+	return r;
 }
 
 /*
@@ -142,7 +120,7 @@ rnd_pos(const Room &rp)
 void
 enter_room(Coord cp)
 {
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	const std::optional<RoomRef> in = game().player.body.t_room = roomin(cp);
 	// roomin() sets bailout when it finds no room
@@ -160,7 +138,7 @@ enter_room(Coord cp)
 				 * Displaying monsters is all handled in the
 				 * chase code now
 				 */
-				Maybe<Creature> tp = entities::moat(y, x);
+				Maybe<Creature> tp = level.monster_at({x, y});
 				if (!tp || !entities::see_monst(*tp))
 					ui::display().draw_tile({x, y}, level.at(y, x));
 				else {
@@ -208,7 +186,7 @@ leave_room(Coord cp)
 						ui::display().draw_tile({x, y}, ch, ui::TileStyle::Inverse);
 						break;
 					} else
-						entities::moat(y, x)->t_oldch = '@';
+						game().level.monster_at({x, y})->t_oldch = '@';
 				}
 				ui::display().draw_tile({x, y}, floor);
 				break;
@@ -236,7 +214,7 @@ teleport()
 	{
 		rm = rnd_room();
 		c = rnd_pos(game().level.rooms[rm]);
-	} while (!(step_ok(winat(c.y, c.x))));
+	} while (!(step_ok(game().level.seen_at(c))));
 	if (RoomRef::room(rm) != player.body.t_room)
 	{
 		leave_room(player.body.t_pos);

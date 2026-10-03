@@ -22,7 +22,7 @@
 #include "persistence/HighScores.hpp"
 #include "persistence/SaveGame.hpp"
 #include "ui/Display.hpp"
-#include "world/Map.hpp"
+#include "world/Level.hpp"
 
 /*
  * Whole games played through command() on the headless display: what the
@@ -143,7 +143,7 @@ TEST_F(Play, FightToTheDeath)
 	char toward = 0;
 	for (auto [key, delta] : {std::pair{'l', Coord{1, 0}}, {'h', Coord{-1, 0}}, {'j', Coord{0, 1}}, {'k', Coord{0, -1}}}) {
 		Coord at = hero + delta;
-		if (!beside && world::step_ok(world::winat(at.y, at.x))) {
+		if (!beside && step_ok(game().level.seen_at(at))) {
 			beside = at;
 			toward = key;
 		}

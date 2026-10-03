@@ -24,7 +24,7 @@
 #include "items/Kinds.hpp"
 #include "rules/Combat.hpp"
 #include "ui/Display.hpp"
-#include "world/Map.hpp"
+#include "world/Level.hpp"
 #include "world/MapFlags.hpp"
 #include "world/Rooms.hpp"
 
@@ -113,7 +113,7 @@ missile(int ydelta, int xdelta)
 	 * One that hits is used up. (The original forgot it, which kept
 	 * its slot taken for the rest of the game.)
 	 */
-	if (!entities::moat(obj->o_pos.y, obj->o_pos.x)
+	if (!game().level.monster_at(obj->o_pos)
 		|| !hit_monster(obj->o_pos.y, obj->o_pos.x, *obj))
 			fall(*obj, true);
 	else
@@ -147,8 +147,8 @@ do_motion(Item &obj, int ydelta, int xdelta)
 		obj.o_pos.y += ydelta;
 		obj.o_pos.x += xdelta;
 
-		int ch = world::winat(obj.o_pos.y, obj.o_pos.x);
-		if (world::step_ok(ch) && ch != DOOR) {
+		int ch = game().level.seen_at(obj.o_pos);
+		if (step_ok(ch) && ch != DOOR) {
 			/*
 			 * It hasn't hit anything yet, so display it
 			 * If it alright.
@@ -197,14 +197,14 @@ short_name(const Item &obj)
 void
 fall(Item &obj, bool pr)
 {
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 	Landing landing = fallpos(obj);
 
 	if (std::holds_alternative<Coord>(landing))
 	{
 		const Coord fpos = std::get<Coord>(landing);
 
-		int index = world::INDEX(fpos.y, fpos.x);
+		int index = world::Level::index(fpos);
 		level.map[index] = glyph_of(obj.o_type);
 		obj.o_pos = fpos;
 		if (world::cansee(fpos.y, fpos.x))
@@ -213,8 +213,8 @@ fall(Item &obj, bool pr)
 					(level.flags_at(obj.o_pos).test(MapFlag::Passage) ||
 					 level.flags_at(obj.o_pos).test(MapFlag::Maze))
 						? ui::TileStyle::Inverse : ui::TileStyle::Normal);
-			if (entities::moat(fpos.y,fpos.x))
-				entities::moat(fpos.y,fpos.x)->t_oldch = glyph_of(obj.o_type);
+			if (level.monster_at(fpos))
+				level.monster_at(fpos)->t_oldch = glyph_of(obj.o_type);
 		}
 		level.objects.push_front(obj);
 		return;
@@ -256,7 +256,7 @@ init_weapon(Item &weap, WeaponType type)
 bool
 hit_monster(int y, int x, Item &obj)
 {
-	Maybe<Creature> mo = entities::moat(y, x);
+	Maybe<Creature> mo = game().level.monster_at({x, y});
 
 	if (mo)
 		return rules::fight({x, y}, mo->t_type, obj, true);
@@ -338,7 +338,7 @@ fallpos(const Item &obj)
 			 * put the object there, set it in the level list
 			 * and re-draw the room if he can see it
 			 */
-			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || world::offmap(y,x))
+			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || world::Level::off_map({x, y}))
 				continue;
 			int ch = game().level.at(y, x);
 			if (ch == FLOOR || ch == PASSAGE) {
@@ -346,9 +346,9 @@ fallpos(const Item &obj)
 					newpos = {x, y};
 				continue;
 			}
-			if (!world::step_ok(ch))
+			if (!step_ok(ch))
 				continue;
-			Maybe<Item> onfloor = world::find_obj(y, x);
+			Maybe<Item> onfloor = game().level.object_at({x, y});
 			if (onfloor
 				&& onfloor->o_type == obj.o_type
 				&& onfloor->o_group

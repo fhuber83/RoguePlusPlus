@@ -21,7 +21,7 @@
 #include "items/ItemCatalog.hpp"
 #include "items/effects/Potion.hpp"
 #include "ui/Display.hpp"
-#include "world/Map.hpp"
+#include "world/Level.hpp"
 #include "world/MapFlags.hpp"
 #include "world/Maze.hpp"
 #include "world/Passages.hpp"
@@ -54,7 +54,7 @@ void
 new_level()
 {
 	rogue::Player &player = game().player;
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	player.body.t_flags.unset(CreatureFlag::Held);	/* unhold when you go down just in case */
 	/*
@@ -100,7 +100,7 @@ new_level()
 	do {
 		int rm = rnd_room();
 		stairs = rnd_pos(level.rooms[rm]);
-		index = INDEX(stairs.y, stairs.x);
+		index = Level::index(stairs);
 	} while (!is_floor(level.map[index]));
 	level.map[index] = STAIRS;
 	/*
@@ -115,7 +115,7 @@ new_level()
 			do {
 				int rm = rnd_room();
 				stairs = rnd_pos(level.rooms[rm]);
-				index = INDEX(stairs.y, stairs.x);
+				index = Level::index(stairs);
 			} while (!is_floor(level.map[index]));
 			MapFlags &fp = level.flags[index];
 			fp.unset(MapFlag::Real);
@@ -125,9 +125,9 @@ new_level()
 	do {
 		int rm = rnd_room();
 		player.body.t_pos = rnd_pos(level.rooms[rm]);
-		index = INDEX(player.body.t_pos.y, player.body.t_pos.x);
+		index = Level::index(player.body.t_pos);
 	} while (!(is_floor(level.map[index]) && level.flags[index].test(MapFlag::Real)
-				&& !entities::moat(player.body.t_pos.y, player.body.t_pos.x)));
+				&& !level.monster_at(player.body.t_pos)));
 
 	game().message.end = 0;
 	enter_room(player.body.t_pos);
@@ -163,7 +163,7 @@ void
 put_things()
 {
 	int i = 0;
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	/*
 	 * Once you have found the amulet, the only way to get new stuff is
@@ -194,7 +194,7 @@ put_things()
 				do {
 					int rm = rnd_room();
 					tp = rnd_pos(level.rooms[rm]);
-				} while (!is_floor(winat(tp.y, tp.x)));
+				} while (!is_floor(level.seen_at(tp)));
 				level.at(tp) = AMULET;
 				cur->o_pos = tp;
 			}
@@ -241,7 +241,7 @@ namespace {
 void
 treas_room()
 {
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	const Room &rp = level.rooms[rnd_room()];
 	int spots = (rp.r_max.y - 2) * (rp.r_max.x - 2) - MINTREAS;
@@ -256,7 +256,7 @@ treas_room()
 		do
 		{
 			mp = rnd_pos(rp);
-			index = INDEX(mp.y, mp.x);
+			index = Level::index(mp);
 		} while (!is_floor(level.map[index]));
 		Maybe<Item> obj = items::new_thing();
 		obj->o_pos = mp;
@@ -280,8 +280,8 @@ treas_room()
 		for (spots = 0; spots < MAXTRIES; spots++)
 		{
 			mp = rnd_pos(rp);
-			int index = INDEX(mp.y, mp.x);
-			if (is_floor(level.map[index]) && !entities::moat(mp.y, mp.x))
+			int index = Level::index(mp);
+			if (is_floor(level.map[index]) && !level.monster_at(mp))
 				break;
 		}
 		if (spots != MAXTRIES)
@@ -320,7 +320,7 @@ void	horiz(const Room &rp, int starty);
 void
 do_rooms()
 {
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 	int endline = maxrow + 1;
 
 	/*
@@ -423,7 +423,7 @@ do_rooms()
 				unsigned char mch;
 				do {
 					mp = rnd_pos(rp);
-					mch = winat(mp.y, mp.x);
+					mch = level.seen_at(mp);
 				} while (!is_floor(mch));
 				entities::new_monster(*tp, entities::randmonster(false), mp);
 				entities::give_pack(*tp);
@@ -439,7 +439,7 @@ do_rooms()
 void
 draw_room(const Room &rp)
 {
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	/*
 	 * Here we draw normal rooms, one side at a time

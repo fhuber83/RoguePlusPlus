@@ -14,7 +14,7 @@
 #include "core/Glyphs.hpp"
 #include "game/Game.hpp"
 #include "game/Messages.hpp"
-#include "world/Map.hpp"
+#include "world/Level.hpp"
 #include "world/MapFlags.hpp"
 #include "world/Room.hpp"
 #include "world/Rooms.hpp"
@@ -53,7 +53,7 @@ struct MazeBuilder {
 void
 draw_maze(Room &rp)
 {
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	if (rp.r_pos.y == 0)
 		++rp.r_pos.y;
@@ -93,7 +93,7 @@ draw_maze(Room &rp)
 		int sh = 1;
 		for (Coord d : ld) {
 			int y = d.y + spos.y, x = d.x + spos.x;
-			if (!offmap(y, x) && level.at(y, x) == PASSAGE)
+			if (!Level::off_map({x, y}) && level.at(y, x) == PASSAGE)
 				psgcnt += sh;
 			sh <<= 1;
 		}
@@ -115,7 +115,7 @@ MazeBuilder::new_frontier(int y, int x)
 void
 MazeBuilder::add_frnt(int y, int x)
 {
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	if constexpr (rogue::config::debug_checks)
 		if (frcnt == MAXFRNT - 1)
@@ -186,7 +186,7 @@ MazeBuilder::maze_at(int y, int x) const
 void
 MazeBuilder::splat(int y, int x)
 {
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	level.at(y, x) = PASSAGE;
 	level.flags_at(y, x) = MapFlag::Maze | MapFlag::Real;

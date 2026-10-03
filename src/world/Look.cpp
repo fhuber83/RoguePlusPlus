@@ -19,7 +19,7 @@
 #include "game/Game.hpp"
 #include "game/Messages.hpp"
 #include "ui/Display.hpp"
-#include "world/Map.hpp"
+#include "world/Level.hpp"
 #include "world/MapFlags.hpp"
 #include "world/Room.hpp"
 #include "world/RoomRef.hpp"
@@ -36,7 +36,7 @@ look(bool wakeup)
 {
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	std::optional<RoomRef> rp = player.body.t_room;
 	MapFlags pfl = level.flags_at(player.body.t_pos);
@@ -48,14 +48,14 @@ look(bool wakeup)
 		if (!player.body.t_flags.test(CreatureFlag::Blind)) {
 			for (int x = player.old_pos.x - 1; x <= (player.old_pos.x + 1); x++)
 				for (int y = player.old_pos.y - 1; y <= (player.old_pos.y + 1); y++) {
-					if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || offmap(y,x))
+					if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || Level::off_map({x, y}))
 						continue;
 					unsigned char ch = ui::display().tile_at({x, y});
 					if (ch == FLOOR) {
 						if (level.room(*player.old_room).r_flags.test(RoomFlag::Dark) && !level.room(*player.old_room).r_flags.test(RoomFlag::Gone))
 							ui::display().draw_tile({x, y}, ' ');
 					} else {
-						MapFlags &fp = level.flags[INDEX(y,x)];
+						MapFlags &fp = level.flags[Level::index({x, y})];
 						/*
 						 * if the maze or passage (that the hero is in!!)
 						 * needs to be redrawn (passages once draw always
@@ -91,7 +91,7 @@ look(bool wakeup)
 			} else if (y != player.body.t_pos.y || x != player.body.t_pos.x)
 				continue;
 
-			int index = INDEX(y, x);
+			int index = Level::index({x, y});
 			/*
 			 * THIS REPLICATES THE moat() MACRO.  IF MOAT IS CHANGED,
 			 * THIS MUST BE CHANGED ALSO ?? What does this really mean ??
@@ -119,7 +119,7 @@ look(bool wakeup)
 					continue;
 			}
 
-			if (Maybe<Creature> tp = entities::moat(y,x)) {
+			if (Maybe<Creature> tp = level.monster_at({x, y})) {
 				if (player.body.t_flags.test(CreatureFlag::SeeMonst) && tp->t_flags.test(CreatureFlag::Invisible)) {
 					if (turn.door_stop && !turn.first_move)
 						turn.running = false;
@@ -222,7 +222,7 @@ void
 search()
 {
 	rogue::Player &player = game().player;
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	if (player.body.t_flags.test(CreatureFlag::Blind))
 		return;
@@ -231,7 +231,7 @@ search()
 	for (int y = player.body.t_pos.y - 1; y <= ey; y++)
 		for (int x = player.body.t_pos.x - 1; x <= ex; x++)
 		{
-			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || offmap(y, x))
+			if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || Level::off_map({x, y}))
 				continue;
 			MapFlags &fp = level.flags_at(y, x);
 			if (!fp.test(MapFlag::Real))

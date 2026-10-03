@@ -14,6 +14,7 @@
 #include "game/Id.hpp"
 #include "items/ItemCatalog.hpp"
 #include "items/Kinds.hpp"
+#include "world/Level.hpp"
 
 namespace rogue {
 
@@ -32,7 +33,7 @@ pool_problems(const Game &g)
 	std::vector<std::string> problems;
 	auto problem = [&](std::string text) { problems.push_back(std::move(text)); };
 	const Pool &pool = g.pool;
-	const Level &level = g.level;
+	const world::Level &level = g.level;
 	int item_refs[MAXITEMS] = {};
 	int creature_refs[MAXITEMS] = {};
 
@@ -53,14 +54,14 @@ pool_problems(const Game &g)
 
 		const std::optional<Destination> &dest = tp->t_dest;
 		bool dest_ok = !dest || std::holds_alternative<Hero>(*dest)
-			|| (std::holds_alternative<Gold>(*dest) && Level::valid(std::get<Gold>(*dest).room));
+			|| (std::holds_alternative<Gold>(*dest) && world::Level::valid(std::get<Gold>(*dest).room));
 		if (dest && std::holds_alternative<ItemId>(*dest)) {
 			Maybe<Item> obj = pool.item(std::optional<ItemId>(std::get<ItemId>(*dest)));
 			dest_ok = obj && level.objects.contains(*obj);
 		}
 		if (!dest_ok)
 			problem("monster " + std::to_string(slot) + " is after something that isn't the hero, gold or a floor item");
-		if (tp->t_room && !Level::valid(*tp->t_room))
+		if (tp->t_room && !world::Level::valid(*tp->t_room))
 			problem("monster " + std::to_string(slot) + " is in a room that isn't one");
 	}
 
@@ -84,9 +85,9 @@ pool_problems(const Game &g)
 			problem("a worn item isn't in the pack");
 	if (g.turn.last_item && !pool.item(g.turn.last_item))
 		problem("the item picked last isn't in use");
-	if (player.body.t_room && !Level::valid(*player.body.t_room))
+	if (player.body.t_room && !world::Level::valid(*player.body.t_room))
 		problem("the rogue is in a room that isn't one");
-	if (player.old_room && !Level::valid(*player.old_room))
+	if (player.old_room && !world::Level::valid(*player.old_room))
 		problem("the rogue was in a room that isn't one");
 	return problems;
 }

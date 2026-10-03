@@ -8,6 +8,7 @@
 #include "core/Glyphs.hpp"
 #include "game/Game.hpp"
 #include "game/Movement.hpp"
+#include "world/Level.hpp"
 #include "world/MapFlags.hpp"
 #include "world/RoomRef.hpp"
 
@@ -22,8 +23,8 @@ protected:
 	void SetUp() override
 	{
 		ScriptedGame::SetUp();
-		Level &level = game().level;
-		level = Level();
+		world::Level &level = game().level;
+		level = world::Level();
 		std::ranges::fill(level.map, ' ');
 		for (Coord c : {Coord{10, 5}, Coord{11, 5}, Coord{12, 5}, Coord{12, 6}, Coord{12, 7}, Coord{12, 8}}) {
 			level.at(c) = PASSAGE;

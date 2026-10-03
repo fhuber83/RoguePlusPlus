@@ -28,8 +28,8 @@
 #include "rules/Durations.hpp"
 #include "rules/Strength.hpp"
 #include "ui/Display.hpp"
+#include "world/Level.hpp"
 #include "world/LevelGenerator.hpp"
-#include "world/Map.hpp"
 #include "world/Rooms.hpp"
 #include "world/Trap.hpp"
 
@@ -70,7 +70,7 @@ be_trapped(Coord tc)
 	rogue::Player &player = game().player;
 
 	game().turn.count = game().turn.running = false;
-	int index = INDEX(tc.y, tc.x);
+	int index = Level::index(tc);
 	game().level.map[index] = TRAP;
 	Trap tr = game().level.flags[index].trap();
 	player.was_trapped = rogue::Trapped::Sprung;

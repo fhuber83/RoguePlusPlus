@@ -21,8 +21,8 @@
 #include "items/effects/Weapon.hpp"
 #include "rules/Durations.hpp"
 #include "ui/Display.hpp"
+#include "world/Level.hpp"
 #include "world/Look.hpp"
-#include "world/Map.hpp"
 #include "world/MapFlags.hpp"
 #include "world/RoomRef.hpp"
 #include "world/Rooms.hpp"
@@ -40,7 +40,7 @@ read_scroll()
 {
 	bool discardit = false;
 	rogue::Player &player = game().player;
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 	rogue::Items &items = game().items;
 
 	Maybe<Item> obj = get_item("read", ItemKind::Scroll);
@@ -82,7 +82,7 @@ read_scroll()
 			if (x >= 0 && x < MAXCOLS)
 				for (int y = player.body.t_pos.y - 3; y <= player.body.t_pos.y + 3; y++)
 					if (y > 0 && y < maxrow)
-						if (Maybe<Creature> mo = entities::moat(y, x)) {
+						if (Maybe<Creature> mo = level.monster_at({x, y})) {
 							mo->t_flags.unset(CreatureFlag::Running);
 							mo->t_flags.set(CreatureFlag::Held);
 						}
@@ -129,7 +129,7 @@ read_scroll()
 		 */
 		for (int y = 1; y < maxrow; y++)
 			for (int x = 0; x < MAXCOLS; x++) {
-				int index = world::INDEX(y, x);
+				int index = world::Level::index({x, y});
 				unsigned char ch = level.map[index];
 				switch (ch)
 				{
@@ -147,7 +147,7 @@ read_scroll()
 				case DOOR:
 				case PASSAGE:
 				case STAIRS:
-					if (Maybe<Creature> mo = entities::moat(y, x))
+					if (Maybe<Creature> mo = level.monster_at({x, y}))
 						if (mo->t_oldch == ' ')
 							mo->t_oldch = ch;
 					break;

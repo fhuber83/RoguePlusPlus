@@ -26,8 +26,8 @@
 #include "items/effects/Weapon.hpp"
 #include "rules/Combat.hpp"
 #include "ui/Display.hpp"
+#include "world/Level.hpp"
 #include "world/LevelGenerator.hpp"
-#include "world/Map.hpp"
 #include "world/Room.hpp"
 #include "world/RoomRef.hpp"
 #include "world/Rooms.hpp"
@@ -140,12 +140,12 @@ do_zap()
 	{
 		int y = player.body.t_pos.y;
 		int x = player.body.t_pos.x;
-		while (world::step_ok(world::winat(y, x)))
+		while (step_ok(game().level.seen_at({x, y})))
 		{
 			y += turn.delta.y;
 			x += turn.delta.x;
 		}
-		if (Maybe<Creature> tp = entities::moat(y, x))
+		if (Maybe<Creature> tp = game().level.monster_at({x, y}))
 		{
 			unsigned char monster = tp->t_type;
 			const unsigned char omonst = monster;
@@ -196,7 +196,7 @@ do_zap()
 					{
 						int rm = world::rnd_room();
 						new_yx = rnd_pos(game().level.rooms[rm]);
-					}  while (!(is_floor(world::winat(new_yx.y, new_yx.x))));
+					}  while (!(is_floor(game().level.seen_at(new_yx))));
 					tp->t_pos = new_yx;
 					if (entities::see_monst(*tp))
 						ui::display().draw_tile(tp->t_pos, tp->t_disguise);
@@ -231,7 +231,7 @@ do_zap()
 		if (player.weapon_item())
 			bolt.o_launch = launched_by(player.weapon_item()->which<WeaponType>());
 		do_motion(bolt, turn.delta.y, turn.delta.x);
-		Maybe<Creature> tp = entities::moat(bolt.o_pos.y, bolt.o_pos.x);
+		Maybe<Creature> tp = game().level.monster_at(bolt.o_pos);
 		if (tp && !rules::save_throw(rules::SaveThrow::Magic, *tp))
 			hit_monster(bolt.o_pos.y, bolt.o_pos.x, bolt);
 		else
@@ -241,7 +241,7 @@ do_zap()
 	case Stick::Striking:
 		turn.delta.y += player.body.t_pos.y;
 		turn.delta.x += player.body.t_pos.x;
-		if (Maybe<Creature> tp = entities::moat(turn.delta.y, turn.delta.x))
+		if (Maybe<Creature> tp = game().level.monster_at(turn.delta))
 		{
 			if (rnd(20) == 0)
 			{
@@ -260,12 +260,12 @@ do_zap()
 	case Stick::SlowMonster: {
 		int y = player.body.t_pos.y;
 		int x = player.body.t_pos.x;
-		while (world::step_ok(world::winat(y, x)))
+		while (step_ok(game().level.seen_at({x, y})))
 		{
 			y += turn.delta.y;
 			x += turn.delta.x;
 		}
-		if (Maybe<Creature> tp = entities::moat(y, x))
+		if (Maybe<Creature> tp = game().level.monster_at({x, y}))
 		{
 			if (which_one == Stick::HasteMonster)
 			{
@@ -314,7 +314,7 @@ void
 drain()
 {
 	rogue::Player &player = game().player;
-	rogue::Level &level = game().level;
+	world::Level &level = game().level;
 
 	/*
 	 * First cnt how many things we need to spread the hit points among
@@ -389,7 +389,7 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 	for (; i < BOLT_LENGTH && !used; i++) {
 		pos.y += dir.y;
 		pos.x += dir.x;
-		unsigned char ch = world::winat(pos.y, pos.x);
+		unsigned char ch = game().level.seen_at(pos);
 		spotpos[i].s_pos = pos;
 		if ((spotpos[i].s_under = ui::display().tile_at(pos)) == dirch)
 			spotpos[i].s_under = 0;
@@ -411,7 +411,7 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 			msg("the {} bounces", name);
 			break;
 		default:
-			if (Maybe<Creature> tp = hit_hero ? Maybe<Creature>() : entities::moat(pos.y, pos.x)) {
+			if (Maybe<Creature> tp = hit_hero ? Maybe<Creature>() : game().level.monster_at(pos)) {
 				hit_hero = true;
 				changed = !changed;
 				if (tp->t_oldch != '@')
@@ -445,7 +445,7 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 						if (by_hero)
 							death('b');
 						else
-							death(entities::moat(start.y, start.x)->t_type);
+							death(game().level.monster_at(start)->t_type);
 					}
 					used = true;
 					if (!is_frost)

@@ -37,8 +37,8 @@
 #include "rules/Experience.hpp"
 #include "rules/Strength.hpp"
 #include "ui/Display.hpp"
+#include "world/Level.hpp"
 #include "world/LevelGenerator.hpp"
-#include "world/Map.hpp"
 #include "world/Rooms.hpp"
 
 namespace rogue::rules {
@@ -76,7 +76,7 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 	/*
 	 * Find the monster we want to fight
 	 */
-	Maybe<Creature> tp = entities::moat(mp.y, mp.x);
+	Maybe<Creature> tp = game().level.monster_at(mp);
 	if (!tp)
 		return false;
 	/*
@@ -665,7 +665,7 @@ remove_monster(Coord mp, Creature &tp, bool waskill)
 		else
 			discard(*obj);
 	}
-	ui::TileStyle style = (game().level.map[world::INDEX(mp.y,mp.x)] == PASSAGE) ? ui::TileStyle::Inverse : ui::TileStyle::Normal;
+	ui::TileStyle style = (game().level.map[world::Level::index(mp)] == PASSAGE) ? ui::TileStyle::Inverse : ui::TileStyle::Normal;
 	if (tp.t_oldch == FLOOR && !world::cansee(mp.y, mp.x))
 		ui::display().draw_tile(mp, ' ', style);
 	else if (tp.t_oldch != '@')

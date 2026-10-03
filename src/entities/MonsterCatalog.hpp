@@ -82,11 +82,5 @@ void give_pack(Creature &tp);
  */
 Maybe<Creature> wake_monster(int y, int x);
 
-/*
- * moat:
- *	The monster at a coordinate, or null if there is none.
- */
-Maybe<Creature> moat(int my, int mx);
-
 }  // namespace entities
 }  // namespace rogue

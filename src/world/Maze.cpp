@@ -5,7 +5,19 @@
  * maze.c	1.4		(A.I. Design)	12/14/84
  */
 
-#include "rogue.h"
+#include "world/Maze.hpp"
+
+#include <array>
+
+#include "core/Config.hpp"
+#include "core/Coord.hpp"
+#include "core/Glyphs.hpp"
+#include "game/Game.hpp"
+#include "game/Messages.hpp"
+#include "world/Map.hpp"
+#include "world/MapFlags.hpp"
+#include "world/Room.hpp"
+#include "world/Rooms.hpp"
 
 namespace rogue::world {
 
@@ -123,7 +135,6 @@ con_frnt()
 	int n, which, ydelt = 0, xdelt = 0;
 	int choice[4];
 	int cnt = 0, y, x;
-
 
 	/*
 	 * Choose a random frontier

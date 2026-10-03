@@ -7,7 +7,23 @@
  * misc.c	1.4		(A.I. Design)	12/14/84
  */
 
-#include "rogue.h"
+#include "world/Look.hpp"
+
+#include <optional>
+
+#include "core/Glyphs.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
+#include "entities/MonsterAI.hpp"
+#include "entities/MonsterCatalog.hpp"
+#include "game/Game.hpp"
+#include "game/Messages.hpp"
+#include "ui/Display.hpp"
+#include "world/Map.hpp"
+#include "world/MapFlags.hpp"
+#include "world/Room.hpp"
+#include "world/RoomRef.hpp"
+#include "world/Traps.hpp"
 
 namespace rogue::world {
 
@@ -44,10 +60,10 @@ look(bool wakeup)
 				for (y = player.old_pos.y - 1; y <= (player.old_pos.y + 1); y++) {
 					if ((y == player.body.t_pos.y && x == player.body.t_pos.x) || offmap(y,x))
 						continue;
-					ch = display().tile_at({x, y});
+					ch = ui::display().tile_at({x, y});
 					if (ch == FLOOR) {
 						if (level.room(*player.old_room).r_flags.test(RoomFlag::Dark) && !level.room(*player.old_room).r_flags.test(RoomFlag::Gone))
-							display().draw_tile({x, y}, ' ');
+							ui::display().draw_tile({x, y}, ' ');
 					} else {
 						MapFlags &fp = level.flags[INDEX(y,x)];
 						/*
@@ -58,7 +74,7 @@ look(bool wakeup)
 						if ((fp.test(MapFlag::Maze) || fp.test(MapFlag::Passage)) && (ch!=PASSAGE)
 							&& (ch != STAIRS) &&
 							(fp.passage() == pfl.passage()) )
-								display().draw_tile({x, y}, PASSAGE);
+								ui::display().draw_tile({x, y}, PASSAGE);
 					}
 				}
 		}
@@ -111,18 +127,18 @@ look(bool wakeup)
 					continue;
 			}
 
-			if ((tp = moat(y,x))) {
+			if ((tp = entities::moat(y,x))) {
 				if (player.body.t_flags.test(CreatureFlag::SeeMonst) && tp->t_flags.test(CreatureFlag::Invisible)) {
 					if (turn.door_stop && !turn.first_move)
 						turn.running = false;
 					continue;
 				} else {
 					if (wakeup)
-						wake_monster(y, x);
+						entities::wake_monster(y, x);
 					if (tp->t_oldch != ' ' ||
 						(!level.room(*rp).r_flags.test(RoomFlag::Dark) && !player.body.t_flags.test(CreatureFlag::Blind)))
 							tp->t_oldch = level.map[index];
-					if (see_monst(*tp))
+					if (entities::see_monst(*tp))
 						ch = tp->t_disguise;
 				}
 			}
@@ -131,9 +147,9 @@ look(bool wakeup)
 			 * The current character used for IBM ARMOR doesn't
 			 * look right in Inverse
 			 */
-			display().draw_tile({x, y}, ch,
+			ui::display().draw_tile({x, y}, ch,
 					((ch!=PASSAGE) && fp.test(MapFlag::Passage | MapFlag::Maze) && ch != ARMOR)
-						? TileStyle::Inverse : TileStyle::Normal);
+						? ui::TileStyle::Inverse : ui::TileStyle::Normal);
 
 			if (turn.door_stop && !turn.first_move && turn.running) {
 				switch (turn.run_dir) {
@@ -196,12 +212,12 @@ look(bool wakeup)
 		}
 	if (turn.door_stop && !turn.first_move && passcount > 1)
 		turn.running = false;
-	display().draw_tile(player.body.t_pos, PLAYER,
+	ui::display().draw_tile(player.body.t_pos, PLAYER,
 			(level.flags_at(player.body.t_pos).test(MapFlag::Passage) || (player.was_trapped == rogue::Trapped::Teleported)
 					|| level.flags_at(player.body.t_pos).test(MapFlag::Maze))
-				? TileStyle::Inverse : TileStyle::Normal);
+				? ui::TileStyle::Inverse : ui::TileStyle::Normal);
 	if (player.was_trapped != rogue::Trapped::None) {
-		display().bell();
+		ui::display().bell();
 		player.was_trapped = rogue::Trapped::None;
 	}
 }

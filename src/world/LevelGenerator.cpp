@@ -5,7 +5,31 @@
  * new_level.c	1.4 (A.I. Design) 12/13/84
  */
 
-#include "rogue.h"
+#include "world/LevelGenerator.hpp"
+
+#include <algorithm>
+
+#include "core/Coord.hpp"
+#include "core/Glyphs.hpp"
+#include "core/KindTable.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Item.hpp"
+#include "entities/MonsterCatalog.hpp"
+#include "game/Game.hpp"
+#include "game/Pool.hpp"
+#include "game/StatusLine.hpp"
+#include "items/ItemCatalog.hpp"
+#include "items/Kinds.hpp"
+#include "items/effects/Potion.hpp"
+#include "ui/Display.hpp"
+#include "world/Map.hpp"
+#include "world/MapFlags.hpp"
+#include "world/Maze.hpp"
+#include "world/Passages.hpp"
+#include "world/Room.hpp"
+#include "world/Rooms.hpp"
+#include "world/Trap.hpp"
 
 namespace rogue::world {
 
@@ -60,7 +84,7 @@ new_level()
 	/*
 	 * just in case we left some flytraps behind
 	 */
-	f_restor();
+	entities::f_restor();
 	/*
 	 * Throw away stuff left on the previous level (if anything)
 	 */
@@ -68,7 +92,7 @@ new_level()
 	do_rooms();				/* Draw rooms */
 	if (player.max_level > 1)
 	{
-		display().wipe();
+		ui::display().wipe();
 	}
 	status();
 	do_passages();			/* Draw passages */
@@ -108,15 +132,15 @@ new_level()
 		player.body.t_pos = rnd_pos(level.rooms[rm]);
 		index = INDEX(player.body.t_pos.y, player.body.t_pos.x);
 	} while (!(is_floor(level.map[index]) && level.flags[index].test(MapFlag::Real)
-				&& !moat(player.body.t_pos.y, player.body.t_pos.x)));
+				&& !entities::moat(player.body.t_pos.y, player.body.t_pos.x)));
 
 	game().message.end = 0;
 	enter_room(player.body.t_pos);
-	display().draw_tile(player.body.t_pos, PLAYER);
+	ui::display().draw_tile(player.body.t_pos, PLAYER);
 	player.old_pos = player.body.t_pos;
 	player.old_room = player.body.t_room;
 	if (player.body.t_flags.test(CreatureFlag::SeeMonst))
-		turn_see(false);
+		items::effects::turn_see(false);
 }
 
 /*
@@ -196,7 +220,7 @@ put_things()
 			/*
 			 * Pick a new object and link it in the list
 			 */
-			cur = new_thing();
+			cur = items::new_thing();
 			level.objects.push_front(*cur);
 			/*
 			 * Put it somewhere
@@ -242,7 +266,7 @@ treas_room()
 			mp = rnd_pos(rp);
 			index = INDEX(mp.y, mp.x);
 		} while (!is_floor(level.map[index]));
-		obj = new_thing();
+		obj = items::new_thing();
 		obj->o_pos = mp;
 		level.objects.push_front(*obj);
 		level.map[index] = glyph_of(obj->o_type);
@@ -264,16 +288,16 @@ treas_room()
 		{
 			mp = rnd_pos(rp);
 			index = INDEX(mp.y, mp.x);
-			if (is_floor(level.map[index]) && !moat(mp.y, mp.x))
+			if (is_floor(level.map[index]) && !entities::moat(mp.y, mp.x))
 				break;
 		}
 		if (spots != MAXTRIES)
 		{
 			if ((tp = new_creature()))
 			{
-				new_monster(*tp, randmonster(false), mp);
+				entities::new_monster(*tp, entities::randmonster(false), mp);
 				tp->t_flags.set(CreatureFlag::Mean);	/* no sloughers in THIS room */
-				give_pack(*tp);
+				entities::give_pack(*tp);
 			}
 		}
 	}
@@ -421,8 +445,8 @@ do_rooms()
 					mp = rnd_pos(rp);
 					mch = winat(mp.y, mp.x);
 				} while (!is_floor(mch));
-				new_monster(*tp, randmonster(false), mp);
-				give_pack(*tp);
+				entities::new_monster(*tp, entities::randmonster(false), mp);
+				entities::give_pack(*tp);
 			}
 		}
 	}

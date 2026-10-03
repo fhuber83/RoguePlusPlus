@@ -10,7 +10,28 @@
  * move.c	1.4 (A.I. Design)	12/22/84
  */
 
-#include "rogue.h"
+#include "world/Rooms.hpp"
+
+#include <optional>
+
+#include "core/Config.hpp"
+#include "core/Coord.hpp"
+#include "core/Glyphs.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
+#include "entities/MonsterAI.hpp"
+#include "entities/MonsterCatalog.hpp"
+#include "game/Game.hpp"
+#include "game/Keyboard.hpp"
+#include "game/Messages.hpp"
+#include "rules/Scheduler.hpp"
+#include "ui/Display.hpp"
+#include "world/LevelGenerator.hpp"
+#include "world/Look.hpp"
+#include "world/Map.hpp"
+#include "world/MapFlags.hpp"
+#include "world/Room.hpp"
+#include "world/RoomRef.hpp"
 
 namespace rogue::world {
 
@@ -34,7 +55,7 @@ door_open(const Room &rp)
 				ch = winat(j, k);
 				/* move(j, k); Why do this,?????? */
 				if (is_monster(ch)) {
-					tp = wake_monster(j, k);
+					tp = entities::wake_monster(j, k);
 					if (!tp)
 					{
 						continue;
@@ -149,12 +170,12 @@ enter_room(Coord cp)
 				 * Displaying monsters is all handled in the
 				 * chase code now
 				 */
-				tp = moat(y, x);
-				if (!tp || !see_monst(*tp))
-					display().draw_tile({x, y}, level.at(y, x));
+				tp = entities::moat(y, x);
+				if (!tp || !entities::see_monst(*tp))
+					ui::display().draw_tile({x, y}, level.at(y, x));
 				else {
 					tp->t_oldch = level.at(y, x);
-					display().draw_tile({x, y}, tp->t_disguise);
+					ui::display().draw_tile({x, y}, tp->t_disguise);
 				}
 			}
 		}
@@ -179,7 +200,7 @@ leave_room(Coord cp)
 		floor = PASSAGE;
 	for (y = rp.r_pos.y + 1; y < rp.r_max.y + rp.r_pos.y - 1; y++)
 		for (x = rp.r_pos.x + 1; x < rp.r_max.x + rp.r_pos.x - 1; x++)
-			switch (ch = display().tile_at({x, y})) {
+			switch (ch = ui::display().tile_at({x, y})) {
 			case ' ':
 			case PASSAGE:
 			case TRAP:
@@ -187,7 +208,7 @@ leave_room(Coord cp)
 				break;
 			case FLOOR:
 				if (floor == ' ')
-					display().draw_tile({x, y}, ' ');
+					ui::display().draw_tile({x, y}, ' ');
 				break;
 			default:
 				/*
@@ -197,12 +218,12 @@ leave_room(Coord cp)
 				if (is_monster(ch))
 				{
 					if (player.body.t_flags.test(CreatureFlag::SeeMonst)) {
-						display().draw_tile({x, y}, ch, TileStyle::Inverse);
+						ui::display().draw_tile({x, y}, ch, ui::TileStyle::Inverse);
 						break;
 					} else
-						moat(y, x)->t_oldch = '@';
+						entities::moat(y, x)->t_oldch = '@';
 				}
-				display().draw_tile({x, y}, floor);
+				ui::display().draw_tile({x, y}, floor);
 				break;
 			}
 	door_open(rp);
@@ -223,7 +244,7 @@ teleport()
 	Coord c;
 	rogue::Player &player = game().player;
 
-	display().draw_tile(player.body.t_pos, game().level.at(player.body.t_pos));
+	ui::display().draw_tile(player.body.t_pos, game().level.at(player.body.t_pos));
 	do
 	{
 		rm = rnd_room();
@@ -240,14 +261,14 @@ teleport()
 		player.body.t_pos = c;
 		look(true);
 	}
-	display().draw_tile(player.body.t_pos, PLAYER);
+	ui::display().draw_tile(player.body.t_pos, PLAYER);
 	/*
 	 * turn off Held in case teleportation was done while fighting
 	 * a Fungi
 	 */
 	if (player.body.t_flags.test(CreatureFlag::Held)) {
 		player.body.t_flags.unset(CreatureFlag::Held);
-		f_restor();
+		entities::f_restor();
 	}
 	player.no_move = 0;
 	game().turn.count = 0;
@@ -257,9 +278,9 @@ teleport()
 	 * Teleportation can be a confusing experience
 	 */
 	if (player.body.t_flags.test(CreatureFlag::Confused))
-		lengthen(Event::Unconfuse, rnd(4)+2);
+		rules::lengthen(rules::Event::Unconfuse, rnd(4)+2);
 	else
-		fuse(Event::Unconfuse, rnd(4)+2);
+		rules::fuse(rules::Event::Unconfuse, rnd(4)+2);
 	player.body.t_flags.set(CreatureFlag::Confused);
 }
 

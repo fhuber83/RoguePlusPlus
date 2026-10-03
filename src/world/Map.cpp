@@ -7,7 +7,18 @@
  * misc.c	1.4		(A.I. Design)	12/14/84
  */
 
-#include "rogue.h"
+#include "world/Map.hpp"
+
+#include <optional>
+
+#include "core/Config.hpp"
+#include "core/Glyphs.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Item.hpp"
+#include "entities/MonsterCatalog.hpp"
+#include "game/Game.hpp"
+#include "platform/Session.hpp"
 
 namespace rogue::world {
 
@@ -16,7 +27,7 @@ INDEX(int y, int x)
 {
 	if constexpr (rogue::config::debug_checks)
 		if (offmap(y, x))
-			fatal("BAD INDEX {},{}\n", y, x);
+			platform::fatal("BAD INDEX {},{}\n", y, x);
 	return x * (maxrow - 1) + y - 1;
 }
 
@@ -29,7 +40,7 @@ offmap(int y, int x)
 unsigned char
 winat(int y, int x)
 {
-	if (Maybe<Creature> tp = moat(y, x))
+	if (Maybe<Creature> tp = entities::moat(y, x))
 		return tp->t_disguise;
 	return game().level.at(y, x);
 }

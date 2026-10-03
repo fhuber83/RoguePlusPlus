@@ -71,14 +71,13 @@ int	add_dam(entities::str_t str);
 bool
 fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 {
-	Maybe<Creature> tp;
-	std::string_view mname;
 	rogue::Player &player = game().player;
 
 	/*
 	 * Find the monster we want to fight
 	 */
-	if (!(tp = entities::moat(mp.y, mp.x)))
+	Maybe<Creature> tp = entities::moat(mp.y, mp.x);
+	if (!tp)
 		return false;
 	/*
 	 * Since we are fighting, things are not quiet so no healing takes
@@ -95,7 +94,7 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 			return false;
 		msg("wait! That's a Xeroc!");
 	}
-	mname = entities::monsters[mn-'A'].m_name;
+	std::string_view mname = entities::monsters[mn-'A'].m_name;
 	if (player.body.t_flags.test(CreatureFlag::Blind))
 		mname = "it";
 	if (roll_em(player.body, *tp, weap, thrown)||(weap && weap->o_type == ItemKind::Potion)) {
@@ -146,7 +145,6 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 void
 attack(Creature &mp)
 {
-	std::string_view mname;
 	rogue::Player &player = game().player;
 
 	/*
@@ -157,7 +155,7 @@ attack(Creature &mp)
 	game().turn.count = player.quiet = 0;
 	if (mp.t_type == 'X' && !player.body.t_flags.test(CreatureFlag::Blind))
 		mp.t_disguise = 'X';
-	mname = entities::monsters[mp.t_type-'A'].m_name;
+	std::string_view mname = entities::monsters[mp.t_type-'A'].m_name;
 	if (player.body.t_flags.test(CreatureFlag::Blind))
 		mname = "it";
 	if (roll_em(mp, player.body, std::nullopt, false)) {
@@ -253,9 +251,8 @@ attack(Creature &mp)
 			/*
 			 * Leperachaun steals some gold
 			 */
-			long lastpurse;
+			long lastpurse = player.purse;
 
-			lastpurse = player.purse;
 			player.purse -= world::gold_calc();
 			if (!save(SaveThrow::Magic))
 			player.purse -= world::gold_calc() + world::gold_calc() + world::gold_calc() + world::gold_calc();
@@ -268,16 +265,15 @@ attack(Creature &mp)
 			break;
 		case 'N':
 		{
-			Maybe<Item> obj, steal;
-			int nobj;
 			constexpr std::string_view she_stole = "she stole {}!";
 
 			/*
 			 * Nymph's steal a magic item, look through the pack
 			 * and pick out one we like.
 			 */
-			steal.reset();
-			for (nobj = 0, obj = player.body.t_pack.first(); obj; obj = player.body.t_pack.after(*obj))
+			Maybe<Item> steal;
+			int nobj = 0;
+			for (Maybe<Item> obj = player.body.t_pack.first(); obj; obj = player.body.t_pack.after(*obj))
 			if (obj != player.armor_item() && obj != player.weapon_item()
 				&& obj != player.ring_item(Hand::Left) && obj != player.ring_item(Hand::Right)
 				&& is_magic(*obj) && rnd(++nobj) == 0)
@@ -288,9 +284,7 @@ attack(Creature &mp)
 				player.in_pack--;
 				if (steal->o_count > 1 && steal->o_group == 0)
 				{
-					int oc;
-
-					oc = steal->o_count--;
+					int oc = steal->o_count--;
 					steal->o_count = 1;
 					msg(she_stole, items::inv_name(*steal, true));
 					steal->o_count = oc;
@@ -345,18 +339,18 @@ swing(int at_lvl, int op_arm, int wplus)
 void
 check_level()
 {
-	int i, add, olevel;
 	rogue::Player &player = game().player;
 
-	for (i = 0; e_levels[i] != 0; i++)
+	int i = 0;
+	for (; e_levels[i] != 0; i++)
 	if (e_levels[i] > player.body.t_stats.s_exp)
 		break;
 	i++;
-	olevel = player.body.t_stats.s_lvl;
+	int olevel = player.body.t_stats.s_lvl;
 	player.body.t_stats.s_lvl = i;
 	if (i > olevel)
 	{
-		add = roll(i - olevel, 10);
+		int add = roll(i - olevel, 10);
 		player.body.t_stats.s_maxhp += add;
 		if ((player.body.t_stats.s_hpt += add) > player.body.t_stats.s_maxhp)
 			player.body.t_stats.s_hpt = player.body.t_stats.s_maxhp;
@@ -375,11 +369,9 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 {
 	rogue::Player &player = game().player;
 	rogue::Attacks attacks;
-	int def_arm;
 	bool did_hit = false;
 	int hplus;
 	int dplus;
-	int damage;
 	const entities::Stats &att = thatt.t_stats;
 	entities::Stats &def = thdef.t_stats;
 	if (!weap)
@@ -442,7 +434,7 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 	 */
 	if (!thdef.t_flags.test(CreatureFlag::Running))
 		hplus += 4;
-	def_arm = def.s_arm;
+	int def_arm = def.s_arm;
 	if (&def == &player.body.t_stats)
 	{
 		if (player.armor_item())
@@ -456,7 +448,7 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 	{
 		if (swing(att.s_lvl, def_arm, hplus + str_plus(att.s_str)))
 		{
-			damage = dplus + attack.roll(rogue::rng()) + add_dam(att.s_str);
+			int damage = dplus + attack.roll(rogue::rng()) + add_dam(att.s_str);
 			/*
 			 * special goodies for the commercial version of rogue
 			 */
@@ -541,9 +533,7 @@ miss(Who er, Who ee)
 bool
 throw_against(int which, const Creature &tp)
 {
-	int need;
-
-	need = 14 + which - tp.t_stats.s_lvl / 2;
+	int need = 14 + which - tp.t_stats.s_lvl / 2;
 	return (roll(1, 20) >= need);
 }
 
@@ -664,10 +654,7 @@ thunk(const Item &weap, std::string_view mname, std::string_view does, std::stri
 void
 remove_monster(Coord mp, Creature &tp, bool waskill)
 {
-	Maybe<Item> obj, nexti;
-	ui::TileStyle style;
-
-	for (obj = tp.t_pack.first(); obj; obj = nexti)
+	for (Maybe<Item> obj = tp.t_pack.first(), nexti; obj; obj = nexti)
 	{
 		nexti = tp.t_pack.after(*obj);
 		obj->o_pos = tp.t_pos;
@@ -677,7 +664,7 @@ remove_monster(Coord mp, Creature &tp, bool waskill)
 		else
 			discard(*obj);
 	}
-	style = (game().level.map[world::INDEX(mp.y,mp.x)] == PASSAGE) ? ui::TileStyle::Inverse : ui::TileStyle::Normal;
+	ui::TileStyle style = (game().level.map[world::INDEX(mp.y,mp.x)] == PASSAGE) ? ui::TileStyle::Inverse : ui::TileStyle::Normal;
 	if (tp.t_oldch == FLOOR && !world::cansee(mp.y, mp.x))
 		ui::display().draw_tile(mp, ' ', style);
 	else if (tp.t_oldch != '@')
@@ -732,10 +719,9 @@ killed(Creature &tp, bool pr)
 		game().player.body.t_flags.unset(CreatureFlag::Held);
 		entities::f_restor();
 		break;
-	case 'L':;
-		Maybe<Item> gold;
-
-		if (!(gold = new_item()))
+	case 'L': {
+		Maybe<Item> gold = new_item();
+		if (!gold)
 			return;
 		gold->o_type = ItemKind::Gold;
 		gold->gold_value() = world::gold_calc();
@@ -743,6 +729,7 @@ killed(Creature &tp, bool pr)
 			gold->gold_value() += world::gold_calc() + world::gold_calc() + world::gold_calc() + world::gold_calc();
 		tp.t_pack.push_front(*gold);
 		break;
+	}
 	}
 	/*
 	 * Get rid of the monster.

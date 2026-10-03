@@ -29,29 +29,8 @@ namespace rogue::ui {
 
 namespace {
 
-// Terminal size we *want*, not necessarily what we will get
-int want_lines = MAXLINES;
-int want_cols = MAXCOLS;
-
 // ASCII instead of Unicode glyphs (the ROGUE_ASCII build switch)
 constexpr bool ascii = rogue::config::ascii_glyphs;
-
-/*
- * Number of colors we're working with, regardless if terminal has more colors
- * available. Set by init_colors():
- * -  0 for monochrome
- * -  8 for 8 basic colors (light versions will use BOLD text attribute)
- * - 16 if all 16 PC colors are directly indexable
- */
-int colors = 0;
-
-// if user allows us to redefine color palette to match original RGB
-bool change_colors = true;
-
-// if user wants to use default terminal foreground / background color
-bool use_terminal_fgbg = true;
-
-int key_mask = ~0;  // all bits until define_keys() knows better
 
 /*
  * How each glyph code is shown. Codes not listed are printable ASCII shown
@@ -223,21 +202,21 @@ const struct {
 	{KEY_F(57),	key::AltF9}  // ALT+F9
 };
 
-void define_keys()
+// Define the escape sequences of ttymap as keys, and return the mask that
+// read_key() takes them out with
+int define_keys()
 {
 	// get the shift offset of the bit past KEY_MAX
 	int shift = 1;
 	for (int i = KEY_MAX; i >>= 1; shift++)
 		;
 
-	// define the mask that will be used by read_key()
-	key_mask = (1 << shift) - 1;
-
 	// define keys. first key gets i>0 to leave room for user terminfo keys
 	int i = 8;
 	for (const auto &seq : ttymap)
 		if (!key_defined(seq.def))
 			define_key(seq.def, ((i++) << shift) | seq.dest);
+	return (1 << shift) - 1;
 }
 
 /// ANSI colour index of a PC colour: CGA has red and blue swapped
@@ -246,7 +225,7 @@ short ansi(int pc)
 	return static_cast<short>(((pc & 1) << 2) | (pc & 2) | ((pc & 4) >> 2));
 }
 
-short pair_index(int fg, int bg)
+short pair_index(int fg, int bg, int colors)
 {
 	return static_cast<short>(bg * colors + fg + 1);
 }
@@ -289,19 +268,19 @@ double cga_blue(int c) { return cga_component(c, 4); }
  * Color pair 0 is not initialized and used for plain text. The plain
  * light grey on black maps to the terminal's default colours when the
  * user allows it.
+ *
+ * Returns the number of colors (see CursesTerminal::colors_).
  */
-void init_colors()
+int init_colors(bool change_colors, bool use_terminal_fgbg)
 {
 	int cube = 0;
 	int cmap[16];
 	bool colors_changed = false;
 
-	if (!has_colors() || COLORS < 8) {
-		colors = 0;
-		return;
-	}
+	if (!has_colors() || COLORS < 8)
+		return 0;
 
-	colors = COLORS >= 16 ? 16 : 8;
+	int colors = COLORS >= 16 ? 16 : 8;
 	if (COLORS >= 256)
 		cube = 6;
 	else if (COLORS >= 88)
@@ -336,13 +315,14 @@ void init_colors()
 
 	for (int bg = 0; bg < colors; bg++)
 		for (int fg = colors - (bg ? 2 : 1); fg >= 0; fg--)
-			init_pair(pair_index(fg, bg),
+			init_pair(pair_index(fg, bg, colors),
 			          static_cast<short>(fg == plain_fg ? dfg : cmap[fg]),
 			          static_cast<short>(bg == plain_bg ? dbg : cmap[bg]));
+	return colors;
 }
 
-/// Curses attributes and colour pair for a style
-void render(const Style &style, attr_t &attrs, short &pair)
+/// Curses attributes and colour pair for a style, with this many colors
+void render(const Style &style, int colors, bool use_terminal_fgbg, attr_t &attrs, short &pair)
 {
 	attrs = WA_NORMAL;
 	pair = 0;
@@ -387,10 +367,10 @@ void render(const Style &style, attr_t &attrs, short &pair)
 	}
 
 	if (colors > 0)
-		pair = pair_index(fg, bg);
+		pair = pair_index(fg, bg, colors);
 }
 
-void resize_screen()
+void resize_screen(int want_lines, int want_cols)
 {
 	if ((LINES != want_lines) || (COLS != want_cols))
 		if (resizeterm(want_lines, want_cols) == OK)
@@ -405,17 +385,17 @@ CursesTerminal::open(int rows, int cols)
 	if (open_)
 		return {};
 
-	want_lines = rows;
-	want_cols = cols;
+	want_lines_ = rows;
+	want_cols_ = cols;
 
 	setenv("ESCDELAY", "25", 0);
 	initscr();
 	open_ = true;
-	if ((LINES < want_lines) || (COLS < want_cols)) {
+	if ((LINES < want_lines_) || (COLS < want_cols_)) {
 		std::string error = std::format(
 				"{}-column mode requires at least a {} x {} screen\n"
 				"Your terminal size is {} x {}\n",
-				want_cols, want_cols, want_lines, COLS, LINES);
+				want_cols_, want_cols_, want_lines_, COLS, LINES);
 		close();
 		return std::unexpected(std::move(error));
 	}
@@ -425,9 +405,9 @@ CursesTerminal::open(int rows, int cols)
 	nodelay(stdscr, false); // use a blocking getch() (already the default)
 	keypad(stdscr, true);   // enable directional arrows, keypad, home, etc
 
-	resize_screen();
-	define_keys();
-	init_colors();
+	resize_screen(want_lines_, want_cols_);
+	key_mask_ = define_keys();
+	colors_ = init_colors(change_colors_, use_terminal_fgbg_);
 	return {};
 }
 
@@ -450,7 +430,7 @@ CursesTerminal::close()
 bool
 CursesTerminal::has_color() const
 {
-	return colors > 0;
+	return colors_ > 0;
 }
 
 /*
@@ -465,7 +445,7 @@ CursesTerminal::draw(int row, int col, const Cell &cell)
 	short pair;
 	cchar_t cch;
 
-	render(cell.style, attrs, pair);
+	render(cell.style, colors_, use_terminal_fgbg_, attrs, pair);
 	setcchar(&cch, text, attrs, pair, nullptr);
 	mvwadd_wchnstr(stdscr, row, col, &cch, 1);
 }
@@ -515,11 +495,11 @@ CursesTerminal::read_key(int timeout_ms)
 		return key::None;
 
 	// mask-map custom keys
-	int ch = key_mask & static_cast<int>(wch);
+	int ch = key_mask_ & static_cast<int>(wch);
 
 	// window resize needs special handling
 	if (ch == KEY_RESIZE) {
-		resize_screen();
+		resize_screen(want_lines_, want_cols_);
 		return key::None;
 	}
 	if (ch < KEY_MIN)

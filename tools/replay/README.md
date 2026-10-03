@@ -25,6 +25,20 @@ tools/replay/classify.py /tmp/rg/out base new asan --seeds $(seq 1 12)
 tools/replay/resume.py /tmp/rg/resume /tmp/rg/new/build/rogue++ --seeds $(seq 1 12) --save-after 100
 ```
 
+## Progress
+
+While they play, `replay.py` and `resume.py` print a line to stderr every
+minute (`--progress SECONDS` changes it, `0` turns it off), so the summary on
+stdout stays as it is:
+
+    replay: 46%, 7/36 runs done, 4m10s elapsed, about 4m53s left (done at 16:46)
+
+The percentage counts the pauses the runs plan (each key's `--delay`, the start
+and the curtain; for `resume.py` also the save and restore), and the time left
+comes from the rate measured so far, so it allows for `--jobs` and a slower
+ASan build. A run whose rogue dies early takes the keys it didn't play off the
+total. The estimate settles after the first minute or two.
+
 ## Reading the results
 
 - `replay.py` reports how many captures differ from the first build, and any

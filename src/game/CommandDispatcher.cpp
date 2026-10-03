@@ -4,7 +4,43 @@
  * command.c	1.44	(A.I. Design)	2/14/85
  */
 
-#include	"rogue.h"
+#include "game/CommandDispatcher.hpp"
+
+#include <optional>
+
+#include "core/Ascii.hpp"
+#include "core/Coord.hpp"
+#include "core/Glyphs.hpp"
+#include "core/KindTable.hpp"
+#include "core/Text.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Item.hpp"
+#include "game/Command.hpp"
+#include "game/Game.hpp"
+#include "game/GameLoop.hpp"
+#include "game/Help.hpp"
+#include "game/Keyboard.hpp"
+#include "game/Messages.hpp"
+#include "game/Movement.hpp"
+#include "game/PlayerCommands.hpp"
+#include "game/StatusLine.hpp"
+#include "items/Identification.hpp"
+#include "items/Inventory.hpp"
+#include "items/Kinds.hpp"
+#include "items/effects/Armor.hpp"
+#include "items/effects/Potion.hpp"
+#include "items/effects/Ring.hpp"
+#include "items/effects/Scroll.hpp"
+#include "items/effects/Wand.hpp"
+#include "items/effects/Weapon.hpp"
+#include "persistence/SaveCommands.hpp"
+#include "rules/Hunger.hpp"
+#include "rules/Regeneration.hpp"
+#include "rules/Scheduler.hpp"
+#include "ui/Display.hpp"
+#include "world/Look.hpp"
+#include "world/Rooms.hpp"
+#include "world/Traps.hpp"
 
 namespace rogue {
 
@@ -48,11 +84,11 @@ command()
 				msg("you can move again");
 				player.no_command = 0;
 			}
-			display().flush();  // sleeping, fainted, frozen, etc
+			ui::display().flush();  // sleeping, fainted, frozen, etc
 		} else
 			execcom();
-		do_fuses();
-		do_daemons();
+		rules::do_fuses();
+		rules::do_daemons();
 		for (Hand hand : kinds<Hand>())
 		{
 			if (player.ring_item(hand))
@@ -60,11 +96,11 @@ command()
 				switch (player.ring_item(hand)->which<Ring>())
 				{
 				case Ring::Searching:
-					search();
+					world::search();
 					break;
 				case Ring::Teleportation:
 					if (rnd(50) == 17)
-						teleport();
+						world::teleport();
 					break;
 				default:
 					break;
@@ -116,7 +152,7 @@ get_prefix()
 	if (resuming)
 		resuming = false;	// the save was made after this look()
 	else
-		look(true); // draw player in updated position on every non-sleep frame
+		world::look(true); // draw player in updated position on every non-sleep frame
 	if (!turn.running)
 		turn.door_stop = false;
 	turn.do_take = true;
@@ -125,13 +161,13 @@ get_prefix()
 		turn.do_take = turn.last_take;
 		retch = turn.last_ch;
 		turn.fast_mode = false;
-		display().flush();  // repeated commands, ie, "10s"
+		ui::display().flush();  // repeated commands, ie, "10s"
 	} else {
 		turn.count = 0;
 		if (turn.running) {
 			retch = turn.run_dir;
 			turn.do_take = turn.last_take;
-			display().flush();  // running ("H", "fh", "L", etc)
+			ui::display().flush();  // running ("H", "fh", "L", etc)
 		} else {
 			for (retch = 0; retch == 0; ) {
 				switch (ch = com_char()) {
@@ -194,7 +230,7 @@ get_prefix()
 void
 show_count()
 {
-	display().draw_count(game().turn.count);
+	ui::display().draw_count(game().turn.count);
 }
 
 void
@@ -220,34 +256,34 @@ execcom()
 			break;
 		case Command::Throw:
 			if (get_dir())
-				missile(turn.delta.y, turn.delta.x);
+				items::effects::missile(turn.delta.y, turn.delta.x);
 			else
 				turn.after = false;
 			break;
 		case Command::Quit: quit(); break;
-		case Command::Inventory: inventory(player.body.t_pack, ItemFilter::all(), ""); break;
-		case Command::Drop: drop(); break;
-		case Command::Quaff: quaff(); break;
-		case Command::Read: read_scroll(); break;
-		case Command::Eat: eat(); break;
-		case Command::Wield: wield(); break;
-		case Command::Wear: wear(); break;
-		case Command::TakeOff: take_off(); break;
-		case Command::PutOnRing: ring_on(); break;
-		case Command::RemoveRing: ring_off(); break;
-		case Command::Call: call(); break;
+		case Command::Inventory: items::inventory(player.body.t_pack, ItemFilter::all(), ""); break;
+		case Command::Drop: items::drop(); break;
+		case Command::Quaff: items::effects::quaff(); break;
+		case Command::Read: items::effects::read_scroll(); break;
+		case Command::Eat: rules::eat(); break;
+		case Command::Wield: items::effects::wield(); break;
+		case Command::Wear: items::effects::wear(); break;
+		case Command::TakeOff: items::effects::take_off(); break;
+		case Command::PutOnRing: items::effects::ring_on(); break;
+		case Command::RemoveRing: items::effects::ring_off(); break;
+		case Command::Call: items::call(); break;
 		case Command::Descend: d_level(); break;
 		case Command::Ascend: u_level(); break;
 		case Command::HelpObjects: help(helpobjs); break;
 		case Command::HelpCommands: help(helpcoms); break;
-		case Command::Search: search(); break;
+		case Command::Search: world::search(); break;
 		case Command::Zap:
 			if (get_dir())
-				do_zap();
+				items::effects::do_zap();
 			else
 				turn.after = false;
 			break;
-		case Command::Discoveries: discovered(); break;
+		case Command::Discoveries: items::discovered(); break;
 		case Command::ToggleBrief:
 			msg("{}", (game().options.expert ^= 1)
 				? "Ok, I'll be brief"
@@ -260,8 +296,8 @@ execcom()
 			msg("Rogue version {}.{} (Mr. Mctesq was here), dungeon {}", REV, VER,
 				rogue::rng().seed());
 			break;
-		case Command::Save: save_game(); break;
-		case Command::Rest: doctor(); break;
+		case Command::Save: persistence::save_game(); break;
+		case Command::Rest: rules::doctor(); break;
 		case Command::IdentifyTrap:
 			if (get_dir()) {
 				Coord lookat;
@@ -272,7 +308,7 @@ execcom()
 					msg("no trap there.");
 				else
 					msg("you found {}",
-						tr_name(level.flags_at(lookat).trap()));
+						world::tr_name(level.flags_at(lookat).trap()));
 			}
 			break;
 		case Command::Options: msg("i don't have any options, oh my!"); break;
@@ -284,7 +320,7 @@ execcom()
 			game().message.remember = true;
 		}
 		if (turn.take && turn.do_take)
-			pick_up(turn.take);
+			items::pick_up(turn.take);
 		turn.take = 0;
 		if (!turn.running)
 			turn.door_stop = false;

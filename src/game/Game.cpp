@@ -1,4 +1,19 @@
-#include "rogue.h"
+#include "game/Game.hpp"
+
+#include <optional>
+#include <string>
+#include <utility>
+#include <variant>
+#include <vector>
+
+#include "core/Coord.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Item.hpp"
+#include "entities/List.hpp"
+#include "game/Id.hpp"
+#include "items/ItemCatalog.hpp"
+#include "items/Kinds.hpp"
 
 namespace rogue {
 
@@ -10,7 +25,6 @@ Items::Items()
 	ws_magic = items::ws_magic_base;
 	things = items::things_base;
 }
-
 
 std::vector<std::string>
 pool_problems(const Game &g)

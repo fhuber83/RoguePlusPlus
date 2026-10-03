@@ -5,11 +5,38 @@
  * rip.c	1.4 (A.I. Design)	12/14/84
  */
 
+#include "game/Endings.hpp"
+
+#include <algorithm>
+#include <bits/chrono.h>
+#include <chrono>
+#include <cstddef>
+#include <cstdlib>
+#include <format>
 #include <fstream>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
+#include "core/Ascii.hpp"
+#include "core/Glyphs.hpp"
+#include "core/Maybe.hpp"
+#include "core/Text.hpp"
+#include "entities/Item.hpp"
+#include "entities/MonsterCatalog.hpp"
+#include "game/Game.hpp"
+#include "game/Keyboard.hpp"
+#include "game/Messages.hpp"
+#include "items/Identification.hpp"
+#include "items/ItemCatalog.hpp"
+#include "items/Kinds.hpp"
 #include "persistence/HighScores.hpp"
-#include "rogue.h"
+#include "platform/Clock.hpp"
+#include "platform/Session.hpp"
+#include "rules/Experience.hpp"
+#include "ui/Display.hpp"
 
 namespace rogue {
 
@@ -88,10 +115,10 @@ pr_scores(int newrank, const std::vector<ScoreEntry> &top10)
 			}
 		}
 		std::string &text = texts.emplace_back();
-		if (static_cast<int>(sc.name.size() + 10 + he_man[sc.experience-1].size()) < MAXCOLS)
+		if (static_cast<int>(sc.name.size() + 10 + rules::he_man[sc.experience-1].size()) < MAXCOLS)
 		{
 			if (sc.experience > 1 && !sc.name.empty())
-				text = std::format(" \"{}\"", he_man[sc.experience - 1]);
+				text = std::format(" \"{}\"", rules::he_man[sc.experience - 1]);
 		}
 		if (!altmsg)
 			text += std::format("{} on level {}", dthstr, sc.depth);
@@ -99,7 +126,7 @@ pr_scores(int newrank, const std::vector<ScoreEntry> &top10)
 			text += *altmsg;
 		lines.push_back({.gold = sc.gold, .name = sc.name, .text = text});
 	}
-	display().draw_scores(lines, newrank - 1);
+	ui::display().draw_scores(lines, newrank - 1);
 }
 
 }  // namespace
@@ -136,7 +163,7 @@ score(int amount, int flags, char monst)
 {
 	int rank = 0;
 
-	display().open_page();  // stops the clock, as is_saved did
+	ui::display().open_page();  // stops the clock, as is_saved did
 
 	if (amount || flags || monst)
 	{
@@ -144,7 +171,7 @@ score(int amount, int flags, char monst)
 	}
 	while (!std::ifstream(game().options.score_file).is_open())
 	{
-		display().write("\n");
+		ui::display().write("\n");
 		if (game().noscore || (amount == 0))
 			return;
 		str_attr("No scorefile: %Create %Retry %Abort");
@@ -169,7 +196,7 @@ score(int amount, int flags, char monst)
 			}
 		}
 	}
-	display().write("\n");
+	ui::display().write("\n");
 	bool legacy = false;
 	std::optional<std::vector<ScoreEntry>> top_ten = get_scores(legacy);
 	std::vector<ScoreEntry> unread;		// shown in its place: no scores
@@ -189,9 +216,9 @@ score(int amount, int flags, char monst)
 		put_scores(*top_ten);
 	pr_scores(rank, top_ten ? *top_ten : unread);
 	if (!top_ten)
-		display().write("The score file can't be read, so this score is not kept.\n");
+		ui::display().write("The score file can't be read, so this score is not kept.\n");
 	wait_msg("exit");
-	display().write("\n");
+	ui::display().write("\n");
 }
 
 /*
@@ -205,14 +232,14 @@ death(char monst)
 
 	game().player.purse -= game().player.purse / 10;
 
-	display().curtain_down();
+	ui::display().curtain_down();
 	year = static_cast<int>(std::chrono::year_month_day{
 		std::chrono::floor<std::chrono::days>(rogue::platform::local_time(rogue::platform::now()))}.year());
-	display().draw_tombstone(game().options.name, killname(monst, true), game().player.purse, year);
-	display().curtain_up();
-	display().write_at(MAXLINES-1, 0, "");
+	ui::display().draw_tombstone(game().options.name, killname(monst, true), game().player.purse, year);
+	ui::display().curtain_up();
+	ui::display().write_at(MAXLINES-1, 0, "");
 	score(game().player.purse, 0, monst);
-	md_exit(EXIT_SUCCESS);
+	platform::md_exit(EXIT_SUCCESS);
 }
 
 /*
@@ -229,10 +256,10 @@ total_winner()
 	rogue::Items &items = game().items;
 	rogue::Player &player = game().player;
 
-	display().draw_winner(game().options.terse);
+	ui::display().draw_winner(game().options.terse);
 	wait_for(' ');
-	display().clear_page();
-	display().write_at(0, 0, "   Worth  Item");
+	ui::display().clear_page();
+	ui::display().write_at(0, 0, "   Worth  Item");
 	oldpurse = player.purse;
 	for (c = 'a', obj = player.body.t_pack.first(); obj; c++, obj = player.body.t_pack.after(*obj))
 	{
@@ -274,7 +301,7 @@ total_winner()
 				break;
 			}
 			worth += (9 - obj->o_ac) * 100;
-			worth += (10 * (a_class[obj->which<ArmorType>()] - obj->o_ac));
+			worth += (10 * (items::a_class[obj->which<ArmorType>()] - obj->o_ac));
 			obj->o_flags.set(ItemFlag::Known);
 			break;
 		case ItemKind::Scroll:
@@ -322,14 +349,14 @@ total_winner()
 	}
 	if (worth < 0)
 		worth = 0;
-	display().write_at(c - 'a' + 1, 0,
-		std::format("{}) {:5}  {}", static_cast<char>(c), worth, inv_name(*obj, false)));
+	ui::display().write_at(c - 'a' + 1, 0,
+		std::format("{}) {:5}  {}", static_cast<char>(c), worth, items::inv_name(*obj, false)));
 	player.purse += worth;
 	}
-	display().write_at(c - 'a' + 1, 0,
+	ui::display().write_at(c - 'a' + 1, 0,
 		std::format("   {:5}  Gold Pieces          ", static_cast<unsigned>(oldpurse)));
 	score(player.purse, 2, 0);
-	md_exit(EXIT_SUCCESS);
+	platform::md_exit(EXIT_SUCCESS);
 }
 
 /*
@@ -363,7 +390,7 @@ killname(unsigned char monst, bool doart)
 		break;
 	default:
 		if (is_monster(monst))
-			sp = monsters[monst-'A'].m_name;
+			sp = entities::monsters[monst-'A'].m_name;
 		else
 		{
 			sp = "God";

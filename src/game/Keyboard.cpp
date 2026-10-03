@@ -4,7 +4,15 @@
  * mach_dep.c	1.4 (A.I. Design) 12/1/84
  */
 
-#include "rogue.h"
+#include "game/Keyboard.hpp"
+
+#include <string>
+
+#include "core/Glyphs.hpp"
+#include "game/Game.hpp"
+#include "game/StatusLine.hpp"
+#include "ui/Display.hpp"
+#include "ui/Input.hpp"
 #include "ui/Keys.hpp"
 
 namespace rogue {
@@ -31,7 +39,7 @@ readchar()
 
 	if (std::string &typeahead = game().turn.typeahead; !typeahead.empty()) {
 		SIG2();
-		display().flush();
+		ui::display().flush();
 		ch = typeahead.front();
 		typeahead.erase(0, 1);
 		return ch;
@@ -43,9 +51,9 @@ readchar()
 	do
 	{
 		SIG2();  /* Rogue spends a lot of time here */
-		display().flush();
+		ui::display().flush();
 	}
-	while ((xch = input().read_key(250)) == ui::key::None);
+	while ((xch = ui::input().read_key(250)) == ui::key::None);
 	ch = ui::command_char(xch);
 	if (ch == ESCAPE)
 		game().turn.count = 0;

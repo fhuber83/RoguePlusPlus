@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <format>
+#include <optional>
 #include <string>
 #include <thread>
 #include <variant>

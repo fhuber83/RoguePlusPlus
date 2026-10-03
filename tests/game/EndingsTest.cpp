@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <string_view>
 #include <vector>
 
 #include "game/Endings.hpp"
@@ -12,7 +13,7 @@ using persistence::ScoreEntry;
 namespace {
 
 ScoreEntry
-entry(int gold, const char *name = "x")
+entry(int gold, std::string_view name = "x")
 {
 	ScoreEntry e;
 	e.name = name;

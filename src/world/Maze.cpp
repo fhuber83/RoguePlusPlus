@@ -28,16 +28,25 @@ constexpr unsigned char NOTHING = ' ';
 
 namespace {
 
-int frcnt, ny, nx, topy, topx;
-int maxx, maxy;
-std::array<int, MAXFRNT> fr_y, fr_x;	/* the frontier */
+/*
+ * A maze being drawn in a box of the level: the frontier (squares two
+ * steps from the paths, not yet reached), the square connected last, and
+ * how far right and down the paths reach.
+ */
+struct MazeBuilder {
+	int topy, topx;					/* the box's upper left corner */
+	int frcnt = 0;
+	std::array<int, MAXFRNT> fr_y{}, fr_x{};	/* the frontier */
+	int ny = 0, nx = 0;				/* the square connected last */
+	int maxx = 0, maxy = 0;
 
-void	new_frontier(int y, int x);
-void	add_frnt(int y, int x);
-void	con_frnt();
-void	splat(int y, int x);
-bool	maze_at(int y, int x);
-bool	inrange(int y, int x);
+	void	new_frontier(int y, int x);
+	void	add_frnt(int y, int x);
+	void	con_frnt();
+	void	splat(int y, int x);
+	bool	maze_at(int y, int x) const;
+	bool	inrange(int y, int x) const;
+};
 
 }  // namespace
 
@@ -46,32 +55,30 @@ draw_maze(Room &rp)
 {
 	rogue::Level &level = game().level;
 
-	maxx = maxy = 0;
-	topy = rp.r_pos.y;
-	if (topy == 0)
-		topy = ++rp.r_pos.y;
-	topx = rp.r_pos.x;
+	if (rp.r_pos.y == 0)
+		++rp.r_pos.y;
+	MazeBuilder maze{.topy = rp.r_pos.y, .topx = rp.r_pos.x};
 	/*
 	 * Choose a random spot in the maze and initialize the frontier
 	 * to be the immediate neighbors of this random spot.
 	 */
-	splat(topy, topx);
-	new_frontier(topy, topx);
+	maze.splat(maze.topy, maze.topx);
+	maze.new_frontier(maze.topy, maze.topx);
 	/*
 	 * While there are new frontiers, connect them to the path and
 	 * possibly expand the frontier even more.
 	 */
-	while(frcnt)
+	while(maze.frcnt)
 	{
-		con_frnt();
-		new_frontier(ny, nx);
+		maze.con_frnt();
+		maze.new_frontier(maze.ny, maze.nx);
 	}
 	/*
 	 * According to the Grand Beeking, every maze should have a loop
 	 * Don't worry if you don't understand this.
 	 */
-	rp.r_max.x = maxx - rp.r_pos.x + 1;
-	rp.r_max.y = maxy - rp.r_pos.y + 1;
+	rp.r_max.x = maze.maxx - rp.r_pos.x + 1;
+	rp.r_max.y = maze.maxy - rp.r_pos.y + 1;
 	Coord spos;
 	int psgcnt;
 	do {
@@ -91,13 +98,13 @@ draw_maze(Room &rp)
 			sh <<= 1;
 		}
 	} while (level.at(spos) == PASSAGE || psgcnt % 5);
-	splat(spos.y, spos.x);
+	maze.splat(spos.y, spos.x);
 }
 
 namespace {
 
 void
-new_frontier(int y, int x)
+MazeBuilder::new_frontier(int y, int x)
 {
 	add_frnt(y-2, x);
 	add_frnt(y+2, x);
@@ -106,7 +113,7 @@ new_frontier(int y, int x)
 }
 
 void
-add_frnt(int y, int x)
+MazeBuilder::add_frnt(int y, int x)
 {
 	rogue::Level &level = game().level;
 
@@ -125,7 +132,7 @@ add_frnt(int y, int x)
  * Connect randomly to one of the adjacent points in the spanning tree
  */
 void
-con_frnt()
+MazeBuilder::con_frnt()
 {
 	/*
 	 * Choose a random frontier
@@ -171,13 +178,13 @@ con_frnt()
 }
 
 bool
-maze_at(int y, int x)
+MazeBuilder::maze_at(int y, int x) const
 {
 	return (inrange(y, x) && game().level.at(y, x) == PASSAGE);
 }
 
 void
-splat(int y, int x)
+MazeBuilder::splat(int y, int x)
 {
 	rogue::Level &level = game().level;
 
@@ -190,7 +197,7 @@ splat(int y, int x)
 }
 
 bool
-inrange(int y, int x)
+MazeBuilder::inrange(int y, int x) const
 {
 	return y >= topy && y < topy + (maxrow + 1) / 3 && x >= topx && x < topx + MAXCOLS / 3;
 }

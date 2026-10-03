@@ -67,12 +67,12 @@ static_assert(map_rows == maxrow - 1 && map_cols == MAXCOLS);
  * then update the size (measured on x86-64 Linux, where these hold).
  */
 #if defined(__x86_64__) && defined(__linux__)
-static_assert(sizeof(Game) == 18560, "a Game member was added or removed: save it");
+static_assert(sizeof(Game) == 18568, "a Game member was added or removed: save it");
 static_assert(sizeof(Player) == 328, "a Player field was added or removed: save it");
 static_assert(sizeof(Level) == 6488, "a Level field was added or removed: save it");
 static_assert(sizeof(Items) == 4808, "an Items field was added or removed: save it");
 static_assert(sizeof(Pool) == 1336, "a Pool field was added or removed: save it");
-static_assert(sizeof(Turn) == 80, "a Turn field was added or removed: save it");
+static_assert(sizeof(Turn) == 88, "a Turn field was added or removed: save it");
 static_assert(sizeof(MessageLine) == 80, "a MessageLine field was added or removed: save it");
 static_assert(sizeof(Options) == 264, "an Options field was added or removed: decide whether to save it");
 static_assert(sizeof(Creature) == 152, "a Creature field was added or removed: save it");
@@ -386,7 +386,8 @@ json turn_json(const Game &g)
 		{"running", t.running}, {"run_dir", t.run_dir}, {"door_stop", t.door_stop},
 		{"first_move", t.first_move}, {"fast_mode", t.fast_mode}, {"fast_state", t.fast_state},
 		{"delta", coord_json(t.delta)}, {"typeahead", text_json(t.typeahead)},
-		{"bailout", t.bailout}, {"moves_left", t.moves_left}, {"last_count", t.last_count}, {"last_ch", t.last_ch},
+		{"bailout", t.bailout}, {"moves_left", t.moves_left}, {"resuming", t.resuming},
+		{"last_count", t.last_count}, {"last_ch", t.last_ch},
 		{"last_take", t.last_take}, {"do_take", t.do_take},
 		{"last_item_key", t.last_item_key}, {"last_item", item_ref(g, t.last_item)},
 	};
@@ -882,6 +883,8 @@ void turn_from(Game &g, const json &j)
 	t.bailout = flag(j, "bailout");
 	// A save made before F.2 has none: it goes on with one move, as restoring it did then
 	t.moves_left = j.contains("moves_left") ? num_in<int>(j, "moves_left", 0, 3) : 1;
+	// Saves made before 15.5 have none; it is false when a game is saved
+	t.resuming = j.contains("resuming") && flag(j, "resuming");
 	t.last_count = num<int>(j, "last_count");
 	t.last_ch = num<unsigned char>(j, "last_ch");
 	t.last_take = num<unsigned char>(j, "last_take");

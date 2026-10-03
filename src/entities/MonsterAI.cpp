@@ -40,17 +40,11 @@ namespace rogue::entities {
 namespace {
 
 void	do_chase(Creature &th);
-void	chase(Creature &tp, Coord ee);
+Coord	chase(Creature &tp, Coord ee);
 
 }  // namespace
 
 constexpr int DRAGONSHOT = 5;	/* one chance in DRAGONSHOT that a dragon will flame */
-
-namespace {
-
-Coord ch_ret;			/* Where chasing takes	you */
-
-}  // namespace
 
 /*
  * runners:
@@ -170,7 +164,7 @@ do_chase(Creature &th)
 	 * so we run to it.	 If we hit it we either	want to	fight it
 	 * or stop running
 	 */
-	chase(th, target);
+	const Coord ch_ret = chase(th, target);	/* Where chasing takes	you */
 	if (ch_ret == player.body.t_pos) {
 		rules::attack(th);
 		return;
@@ -291,12 +285,13 @@ namespace {
 /*
  * chase:
  *	Find	the spot for the chaser(er) to move closer to the
- *	chasee(ee).
+ *	chasee(ee), and return it.
  */
-void
+Coord
 chase(Creature &tp, Coord ee)
 {
 	const Coord er = tp.t_pos;
+	Coord ch_ret;
 	int	dist;
 	int	plcnt =	1;
 
@@ -380,6 +375,7 @@ chase(Creature &tp, Coord ee)
 			}
 		}
 	}
+	return ch_ret;
 }
 
 }  // namespace
@@ -427,17 +423,17 @@ find_dest(const Creature &tp)
 
 namespace {
 
-Coord slimy;
-
-bool	new_slime(Creature &tp);
+std::optional<Coord>	new_slime(Creature &tp);
 
 }  // namespace
 
 void
 slime_split(Creature &tp)
 {
-	if (!new_slime(tp))
+	std::optional<Coord> slime_at = new_slime(tp);
+	if (!slime_at)
 		return;
+	const Coord slimy = *slime_at;
 	Maybe<Creature> nslime = new_creature();
 	if (!nslime)
 		return;
@@ -452,10 +448,10 @@ slime_split(Creature &tp)
 
 namespace {
 
-bool
+std::optional<Coord>
 new_slime(Creature &tp)
 {
-	bool ret = false;
+	std::optional<Coord> ret;
 	tp.t_flags.set(CreatureFlag::Flying);
 	int ty = tp.t_pos.y;
 	int tx = tp.t_pos.x;
@@ -472,15 +468,14 @@ new_slime(Creature &tp)
 				Maybe<Creature> ntp = moat(y, x);
 				if (!ntp || ntp->t_flags.test(CreatureFlag::Flying))
 					continue;				/* none, or already done this one */
+				// One that divides there doesn't make this one divide
 				if (new_slime(*ntp)) {
 					y = ty+2;
 					x = tx +2;
 				}
 			}
-	} else {
-		ret = true;
-		slimy = *sp;
-	}
+	} else
+		ret = sp;
 	tp.t_flags.unset(CreatureFlag::Flying);
 	return ret;
 }

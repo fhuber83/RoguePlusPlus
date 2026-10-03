@@ -250,6 +250,7 @@ add_pack(Maybe<Item> given, bool silent)
 unsigned char
 inventory(const List<Item> &list, ItemFilter type, std::string_view lstr)
 {
+	Pager page;
 	int n_objs = 0;
 	unsigned char ch = 'a';
 	for (Maybe<Item> obj = list.first(); obj; ch++, obj = list.after(*obj))
@@ -267,7 +268,7 @@ inventory(const List<Item> &list, ItemFilter type, std::string_view lstr)
 		  !(type.is(ItemKind::Stick) && obj->o_enemy && obj->charges()))
 			continue;
 		n_objs++;
-		add_line(lstr, std::format("{}) {}", static_cast<char>(ch), inv_name(*obj, false)));
+		page.add_line(lstr, std::format("{}) {}", static_cast<char>(ch), inv_name(*obj, false)));
 	}
 	if (n_objs == 0)
 	{
@@ -275,7 +276,7 @@ inventory(const List<Item> &list, ItemFilter type, std::string_view lstr)
 					"you don't have anything appropriate");
 		return 0;
 	}
-	return(end_line(lstr));
+	return page.end_line(lstr);
 }
 
 /*

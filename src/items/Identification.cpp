@@ -33,7 +33,7 @@ namespace rogue::items {
 
 namespace {
 
-void	print_disc(ItemKind type);
+void	print_disc(ItemKind type, Pager &page);
 void	set_order(std::span<short> order);
 std::string	nothing(ItemKind type);
 
@@ -206,27 +206,22 @@ inv_name(const Item &obj, bool drop)
 	return name;
 }
 
-namespace {
-
 /*
  * discovered:
  *	list what the player has discovered in this game of a certain type
  */
-int line_cnt = 0;
-
-}  // namespace
-
 void
 discovered()
 {
-	print_disc(ItemKind::Potion);
-	add_line("", " ");
-	print_disc(ItemKind::Scroll);
-	add_line("", " ");
-	print_disc(ItemKind::Ring);
-	add_line("", " ");
-	print_disc(ItemKind::Stick);
-	end_line("");
+	Pager page;
+	print_disc(ItemKind::Potion, page);
+	page.add_line("", " ");
+	print_disc(ItemKind::Scroll, page);
+	page.add_line("", " ");
+	print_disc(ItemKind::Ring, page);
+	page.add_line("", " ");
+	print_disc(ItemKind::Stick, page);
+	page.end_line("");
 }
 
 /*
@@ -237,7 +232,7 @@ discovered()
 namespace {
 
 void
-print_disc(ItemKind type)
+print_disc(ItemKind type, Pager &page)
 {
 	std::span<const bool> know;
 	std::span<const std::string> guess;
@@ -280,11 +275,11 @@ print_disc(ItemKind type)
 		{
 			obj.o_type = type;
 			obj.o_which = order[i];
-			add_line("", inv_name(obj, false));
+			page.add_line("", inv_name(obj, false));
 			num_found++;
 		}
 	if (num_found == 0)
-		add_line("", nothing(type));
+		page.add_line("", nothing(type));
 }
 
 /*
@@ -311,7 +306,7 @@ set_order(std::span<short> order)
  *	(end_line())
  */
 unsigned char
-add_line(std::string_view use, std::optional<std::string_view> line)
+Pager::add_line(std::string_view use, std::optional<std::string_view> line)
 {
 	unsigned char retchar = ' ';
 	if (line_cnt == 0)
@@ -350,7 +345,7 @@ add_line(std::string_view use, std::optional<std::string_view> line)
  *	End the list of lines
  */
 unsigned char
-end_line(std::string_view use)
+Pager::end_line(std::string_view use)
 {
 	int retchar = add_line(use, std::nullopt);
 	ui::display().close_page();

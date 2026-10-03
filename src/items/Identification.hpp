@@ -28,12 +28,19 @@ std::string inv_name(const Item &obj, bool drop);
 void discovered();
 
 /*
- * add_line/end_line:
- *	Build a paged list of lines (inventory, discoveries) through the
- *	display, one call per line. end_line closes the page.
+ * Pager:
+ *	A paged list of lines (inventory, discoveries) through the display,
+ *	one add_line() per line; end_line() waits for a key and closes the
+ *	page. Both return the key that ended a page (' ' if none did yet).
  */
-unsigned char add_line(std::string_view use, std::optional<std::string_view> line);
-unsigned char end_line(std::string_view use);
+class Pager {
+public:
+	unsigned char add_line(std::string_view use, std::optional<std::string_view> line);
+	unsigned char end_line(std::string_view use);
+
+private:
+	int line_cnt = 0;	/* the next line of the page */
+};
 
 /*
  * call_it:

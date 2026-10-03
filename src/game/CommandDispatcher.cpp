@@ -51,17 +51,10 @@ constexpr int VER = 48;
 
 }  // namespace
 
-// Set by resume_saved_game() until the first command after a restore
-namespace {
-
-bool resuming = false;
-
-}  // namespace
-
 void
 resume_saved_game()
 {
-	resuming = true;
+	game().turn.resuming = true;
 }
 
 void
@@ -75,7 +68,7 @@ command()
 	 * starts. A restored game goes on with the command the save was made
 	 * in, and the moves it had left.
 	 */
-	if (!resuming || turn.moves_left == 0)
+	if (!turn.resuming || turn.moves_left == 0)
 		turn.moves_left = player.body.t_flags.test(CreatureFlag::Hasted) ? rnd(2) + 2 : 1;
 	for (; turn.moves_left > 0; turn.moves_left--) {
 		status();
@@ -146,8 +139,8 @@ get_prefix()
 
 	turn.after = true;
 	turn.fast_mode = turn.fast_state;
-	if (resuming)
-		resuming = false;	// the save was made after this look()
+	if (turn.resuming)
+		turn.resuming = false;	// the save was made after this look()
 	else
 		world::look(true); // draw player in updated position on every non-sleep frame
 	if (!turn.running)

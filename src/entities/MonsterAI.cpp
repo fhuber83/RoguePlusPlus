@@ -174,10 +174,10 @@ do_chase(Creature &th)
 			if	(th.dest == Destination(*game().pool.id_of(obj))) {
 				level.objects.remove(*obj);
 				th.pack.push_front(*obj);
-				unsigned char oldchar = level.at(obj->o_pos) =
+				unsigned char oldchar = level.at(obj->pos) =
 				level.room(*th.room).r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
-				if (world::cansee(obj->o_pos.y, obj->o_pos.x))
-					ui::display().draw_tile(obj->o_pos, oldchar);
+				if (world::cansee(obj->pos.y, obj->pos.x))
+					ui::display().draw_tile(obj->pos, oldchar);
 				th.dest = find_dest(th);
 				break;
 			}
@@ -248,10 +248,10 @@ see_monst(const Creature &mp)
 	 * If we are seeing	the enemy of a vorpally	enchanted weapon for the first
 	 * time, give the player a hint as to what that weapon is good for.
 	 */
-	if (player.weapon_item() && mp.type == player.weapon_item()->o_enemy
-	  && !player.weapon_item()->o_flags.test(ItemFlag::DidFlash))
+	if (player.weapon_item() && mp.type == player.weapon_item()->enemy
+	  && !player.weapon_item()->flags.test(ItemFlag::DidFlash))
 	{
-		player.weapon_item()->o_flags.set(ItemFlag::DidFlash);
+		player.weapon_item()->flags.set(ItemFlag::DidFlash);
 		msg(items::effects::flashmsg, items::w_names[player.weapon_item()->which<WeaponType>()], game().options.brief() ? "" : items::effects::intense);
 	}
 	return true;
@@ -392,9 +392,9 @@ find_dest(const Creature &tp)
 	std::optional<RoomRef> rp = tp.room;
 	for (Item &obj : game().level.objects)
 	{
-	if (obj.o_type == ItemKind::Scroll && obj.which<Scroll>() == Scroll::ScareMonster)
+	if (obj.kind == ItemKind::Scroll && obj.which<Scroll>() == Scroll::ScareMonster)
 		continue;
-	if (world::roomin(obj.o_pos) == rp && rnd(100) < prob)
+	if (world::roomin(obj.pos) == rp && rnd(100) < prob)
 	{
 		// unless another monster is after it already
 		ItemId id = *game().pool.id_of(obj);

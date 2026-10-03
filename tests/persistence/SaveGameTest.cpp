@@ -56,9 +56,9 @@ protected:
 		Player &p = g.player;
 		// A ring worn, a guess named, a fuse burning, a macro half typed
 		Item &ring = *new_item();
-		ring.o_type = ItemKind::Ring;
+		ring.kind = ItemKind::Ring;
 		ring.set_which(Ring::Searching);
-		ring.o_damage = ring.o_hurldmg = "0d0";
+		ring.damage = ring.thrown_damage = "0d0";
 		p.body.pack.push_front(ring);
 		p.rings[Hand::Right] = g.pool.id_of(ring);
 		g.items.p_guess[Potion::Poison] = "fizzy";

@@ -207,13 +207,13 @@ new_thing()
 	Maybe<Item> cur = new_item();
 	if (!cur)
 		return std::nullopt;
-	cur->o_hplus = cur->o_dplus = 0;
-	cur->o_damage = cur->o_hurldmg = "0d0";
-	cur->o_ac = 11;
-	cur->o_count = 1;
-	cur->o_group = 0;
-	cur->o_flags.reset();
-	cur->o_enemy = 0;
+	cur->hit_plus = cur->damage_plus = 0;
+	cur->damage = cur->thrown_damage = "0d0";
+	cur->ac = 11;
+	cur->count = 1;
+	cur->group = 0;
+	cur->flags.reset();
+	cur->enemy = 0;
 	/*
 	 * Decide what kind of object it will be
 	 * If we haven't had food for a while, let it be food.
@@ -221,39 +221,39 @@ new_thing()
 	switch (game().level.no_food > 3 ? 2 : pick_one(items.things))
 	{
 	case 0:
-		cur->o_type = ItemKind::Potion;
+		cur->kind = ItemKind::Potion;
 		cur->set_which(pick_one(items.p_magic));
 		break;
 	case 1:
-		cur->o_type = ItemKind::Scroll;
+		cur->kind = ItemKind::Scroll;
 		cur->set_which(pick_one(items.s_magic));
 		break;
 	case 2:
 		game().level.no_food = 0;
-		cur->o_type = ItemKind::Food;
+		cur->kind = ItemKind::Food;
 		if (rnd(10) != 0)
 			cur->set_which(Food::Ration);
 		else
 			cur->set_which(Food::Fruit);
 		break;
 	case 3: {
-		cur->o_type = ItemKind::Weapon;
+		cur->kind = ItemKind::Weapon;
 		cur->set_which(static_cast<WeaponType>(rnd(kind_count<WeaponType>)));
 		items::effects::init_weapon(*cur, cur->which<WeaponType>());
 		int k = rnd(100);
 		if (k < 10)
 		{
-			cur->o_flags.set(ItemFlag::Cursed);
-			cur->o_hplus -= rnd(3) + 1;
+			cur->flags.set(ItemFlag::Cursed);
+			cur->hit_plus -= rnd(3) + 1;
 		}
 		else if (k < 15)
-			cur->o_hplus += rnd(3) + 1;
+			cur->hit_plus += rnd(3) + 1;
 		break;
 	}
 	case 4: {
 		std::optional<ArmorType> armor;
 
-		cur->o_type = ItemKind::Armor;
+		cur->kind = ItemKind::Armor;
 		int k = rnd(100);
 		for (ArmorType a : kinds<ArmorType>())
 			if (k < a_chances[a]) {
@@ -267,18 +267,18 @@ new_thing()
 			armor = ArmorType::Leather;
 		}
 		cur->set_which(*armor);
-		cur->o_ac = a_class[*armor];
+		cur->ac = a_class[*armor];
 		if ((k = rnd(100)) < 20)
 		{
-			cur->o_flags.set(ItemFlag::Cursed);
-			cur->o_ac += rnd(3) + 1;
+			cur->flags.set(ItemFlag::Cursed);
+			cur->ac += rnd(3) + 1;
 		}
 		else if (k < 28)
-			cur->o_ac -= rnd(3) + 1;
+			cur->ac -= rnd(3) + 1;
 		break;
 	}
 	case 5:
-		cur->o_type = ItemKind::Ring;
+		cur->kind = ItemKind::Ring;
 		cur->set_which(pick_one(items.r_magic));
 		switch (cur->which<Ring>())
 		{
@@ -286,22 +286,22 @@ new_thing()
 		case Ring::Protection:
 		case Ring::Dexterity:
 		case Ring::IncreaseDamage:
-			if ((cur->o_ac = rnd(3)) == 0)
+			if ((cur->ac = rnd(3)) == 0)
 			{
-				cur->o_ac = -1;
-				cur->o_flags.set(ItemFlag::Cursed);
+				cur->ac = -1;
+				cur->flags.set(ItemFlag::Cursed);
 			}
 			break;
 		case Ring::AggravateMonster:
 		case Ring::Teleportation:
-			cur->o_flags.set(ItemFlag::Cursed);
+			cur->flags.set(ItemFlag::Cursed);
 			break;
 		default:
 			break;
 		}
 		break;
 	case 6:
-		cur->o_type = ItemKind::Stick;
+		cur->kind = ItemKind::Stick;
 		cur->set_which(pick_one(items.ws_magic));
 		items::effects::fix_stick(*cur);
 		break;

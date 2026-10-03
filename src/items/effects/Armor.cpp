@@ -29,12 +29,12 @@ wear()
 	Maybe<Item> obj = get_item("wear", ItemKind::Armor);
 	if (!obj)
 		return;
-	if (obj->o_type != ItemKind::Armor) {
+	if (obj->kind != ItemKind::Armor) {
 		msg("you can't wear that");
 		return;
 	}
 	waste_time();
-	obj->o_flags.set(ItemFlag::Known);
+	obj->flags.set(ItemFlag::Known);
 	std::string sp = inv_name(*obj, true);
 	game().player.armor = game().pool.id_of(obj);
 	msg("you are now wearing {}", sp);

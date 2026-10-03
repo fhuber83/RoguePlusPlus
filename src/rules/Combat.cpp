@@ -97,7 +97,7 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 	std::string_view mname = entities::monsters[mn-'A'].m_name;
 	if (player.body.flags.test(CreatureFlag::Blind))
 		mname = "it";
-	if (roll_em(player.body, *tp, weap, thrown)||(weap && weap->o_type == ItemKind::Potion)) {
+	if (roll_em(player.body, *tp, weap, thrown)||(weap && weap->kind == ItemKind::Potion)) {
 		bool did_huh = false;
 
 		if (thrown)
@@ -105,11 +105,11 @@ fight(Coord mp, char mn, Maybe<Item> weap, bool thrown)
 		else
 			hit(std::nullopt, mname);
 		// original missed null check for weap
-		if (weap && weap->o_type == ItemKind::Potion) {
+		if (weap && weap->kind == ItemKind::Potion) {
 			items::effects::th_effect(*weap, *tp);
 			if (!thrown) {
-				if (weap->o_count > 1)
-					weap->o_count--;
+				if (weap->count > 1)
+					weap->count--;
 				else {
 					player.body.pack.remove(*weap);
 					discard(*weap);
@@ -170,7 +170,7 @@ attack(Creature &mp)
 			 * If a rust monster hits, you lose armor, unless
 			 * that armor is leather or there is a magic ring
 			 */
-			if (player.armor_item() && player.armor_item()->o_ac < 9
+			if (player.armor_item() && player.armor_item()->ac < 9
 			  && player.armor_item()->which<ArmorType>() != ArmorType::Leather)
 			{
 				if (player.wears(Ring::MaintainArmor))
@@ -178,7 +178,7 @@ attack(Creature &mp)
 				else
 				{
 					msg("your armor weakens, oh my!");
-					player.armor_item()->o_ac++;
+					player.armor_item()->ac++;
 				}
 			}
 			break;
@@ -282,12 +282,12 @@ attack(Creature &mp)
 			{
 				remove_monster(mp.pos, mp, false);
 				player.in_pack--;
-				if (steal->o_count > 1 && steal->o_group == 0)
+				if (steal->count > 1 && steal->group == 0)
 				{
-					int oc = steal->o_count--;
-					steal->o_count = 1;
+					int oc = steal->count--;
+					steal->count = 1;
 					msg(she_stole, items::inv_name(*steal, true));
-					steal->o_count = oc;
+					steal->count = oc;
 				}
 				else
 				{
@@ -383,12 +383,12 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 	}
 	else
 	{
-		hplus = weap->o_hplus;
-		dplus = weap->o_dplus;
+		hplus = weap->hit_plus;
+		dplus = weap->damage_plus;
 		/*
 		 * Check for vorpally enchanted weapon
 		 */
-		if (thdef.type == weap->o_enemy)
+		if (thdef.type == weap->enemy)
 		{
 			hplus += 4;
 			dplus += 4;
@@ -396,30 +396,30 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 		if (weap == player.weapon_item())
 		{
 			if (player.wears(Hand::Left, Ring::IncreaseDamage))
-				dplus += player.ring_item(Hand::Left)->o_ac;
+				dplus += player.ring_item(Hand::Left)->ac;
 			else if (player.wears(Hand::Left, Ring::Dexterity))
-				hplus += player.ring_item(Hand::Left)->o_ac;
+				hplus += player.ring_item(Hand::Left)->ac;
 			if (player.wears(Hand::Right, Ring::IncreaseDamage))
-				dplus += player.ring_item(Hand::Right)->o_ac;
+				dplus += player.ring_item(Hand::Right)->ac;
 			else if (player.wears(Hand::Right, Ring::Dexterity))
-				hplus += player.ring_item(Hand::Right)->o_ac;
+				hplus += player.ring_item(Hand::Right)->ac;
 		}
-		attacks = weap->o_damage;
-		if (hurl && weap->o_flags.test(ItemFlag::Missile) && player.weapon_item() &&
-			  items::effects::launched_by(player.weapon_item()->which<WeaponType>()) == weap->o_launch)
+		attacks = weap->damage;
+		if (hurl && weap->flags.test(ItemFlag::Missile) && player.weapon_item() &&
+			  items::effects::launched_by(player.weapon_item()->which<WeaponType>()) == weap->launcher)
 		{
-			attacks = weap->o_hurldmg;
-			hplus += player.weapon_item()->o_hplus;
-			dplus += player.weapon_item()->o_dplus;
+			attacks = weap->thrown_damage;
+			hplus += player.weapon_item()->hit_plus;
+			dplus += player.weapon_item()->damage_plus;
 		}
 		/*
 		 * Drain a staff of striking
 		 */
-		if (weap->o_type == ItemKind::Stick && weap->which<Stick>() == Stick::Striking
+		if (weap->kind == ItemKind::Stick && weap->which<Stick>() == Stick::Striking
 			&& --weap->charges() < 0)
 		{
-			attacks = weap->o_damage = "0d0";
-			weap->o_hplus = weap->o_dplus = 0;
+			attacks = weap->damage = "0d0";
+			weap->hit_plus = weap->damage_plus = 0;
 			weap->charges() = 0;
 		}
 	}
@@ -438,11 +438,11 @@ roll_em(Creature &thatt, Creature &thdef, Maybe<Item> weap, bool hurl)
 	if (&def == &player.body.stats)
 	{
 		if (player.armor_item())
-			def_arm = player.armor_item()->o_ac;
+			def_arm = player.armor_item()->ac;
 		if (player.wears(Hand::Left, Ring::Protection))
-			def_arm -= player.ring_item(Hand::Left)->o_ac;
+			def_arm -= player.ring_item(Hand::Left)->ac;
 		if (player.wears(Hand::Right, Ring::Protection))
-			def_arm -= player.ring_item(Hand::Right)->o_ac;
+			def_arm -= player.ring_item(Hand::Right)->ac;
 	}
 	for (const rogue::Dice &attack : attacks)
 	{
@@ -556,9 +556,9 @@ save(SaveThrow which)
 
 	if (which == SaveThrow::Magic) {
 		if (game().player.wears(Hand::Left, Ring::Protection))
-			against -= game().player.ring_item(Hand::Left)->o_ac;
+			against -= game().player.ring_item(Hand::Left)->ac;
 		if (game().player.wears(Hand::Right, Ring::Protection))
-			against -= game().player.ring_item(Hand::Right)->o_ac;
+			against -= game().player.ring_item(Hand::Right)->ac;
 	}
 	return throw_against(against, game().player.body);
 }
@@ -637,7 +637,7 @@ namespace {
 void
 thunk(const Item &weap, std::string_view mname, std::string_view does, std::string_view did)
 {
-	if (weap.o_type == ItemKind::Weapon)
+	if (weap.kind == ItemKind::Weapon)
 		addmsg("the {} {} ", items::w_names[weap.which<WeaponType>()], does);
 	else
 		addmsg("you {} ", did);
@@ -658,7 +658,7 @@ remove_monster(Coord mp, Creature &tp, bool waskill)
 	for (Maybe<Item> obj = tp.pack.first(), nexti; obj; obj = nexti)
 	{
 		nexti = tp.pack.after(*obj);
-		obj->o_pos = tp.pos;
+		obj->pos = tp.pos;
 		tp.pack.remove(*obj);
 		if (waskill)
 			items::effects::fall(*obj, false);
@@ -683,12 +683,12 @@ remove_monster(Coord mp, Creature &tp, bool waskill)
 bool
 is_magic(const Item &obj)
 {
-	switch (obj.o_type)
+	switch (obj.kind)
 	{
 	case ItemKind::Armor:
-		return obj.o_ac != items::a_class[obj.which<ArmorType>()];
+		return obj.ac != items::a_class[obj.which<ArmorType>()];
 	case ItemKind::Weapon:
-		return obj.o_hplus != 0 || obj.o_dplus != 0;
+		return obj.hit_plus != 0 || obj.damage_plus != 0;
 	case ItemKind::Potion:
 	case ItemKind::Scroll:
 	case ItemKind::Stick:
@@ -724,7 +724,7 @@ killed(Creature &tp, bool pr)
 		Maybe<Item> gold = new_item();
 		if (!gold)
 			return;
-		gold->o_type = ItemKind::Gold;
+		gold->kind = ItemKind::Gold;
 		gold->gold_value() = world::gold_calc();
 		if (save(SaveThrow::Magic))
 			gold->gold_value() += world::gold_calc() + world::gold_calc() + world::gold_calc() + world::gold_calc();

@@ -78,11 +78,11 @@ picked_up(Item &obj, bool silent)
 		 * be not chasing (sleeping, another room, Ice Monster, etc), so a
 		 * destination could possibly have never been assigned.
 		 */
-		if (mp.dest && game().where(*mp.dest) == obj.o_pos)
+		if (mp.dest && game().where(*mp.dest) == obj.pos)
 			mp.dest = Hero{};
 	}
 
-	if (obj.o_type == ItemKind::Amulet)
+	if (obj.kind == ItemKind::Amulet)
 	{
 		player.has_amulet = true;
 		player.saw_amulet = true;
@@ -129,16 +129,16 @@ add_pack(Maybe<Item> given, bool silent)
 	 *  set in enter_room(), which is first called in new_level()
 	 */
 	unsigned char floor = (player.body.room && level.room(*player.body.room).r_flags.test(RoomFlag::Gone)) ? PASSAGE : FLOOR;
-	if (obj->o_group)
+	if (obj->group)
 	{
 		for (Item &op : player.body.pack)
 		{
-			if (op.o_group == obj->o_group)
+			if (op.group == obj->group)
 			{
 			/*
 			 * Put it in the pack and notify the user
 			 */
-				op.o_count += obj->o_count;
+				op.count += obj->count;
 				if (from_floor)
 				{
 					level.objects.remove(*obj);
@@ -162,9 +162,9 @@ add_pack(Maybe<Item> given, bool silent)
 	/*
 	 * Check for and deal with scare monster scrolls
 	 */
-	if (obj->o_type == ItemKind::Scroll && obj->which<Scroll>() == Scroll::ScareMonster)
+	if (obj->kind == ItemKind::Scroll && obj->which<Scroll>() == Scroll::ScareMonster)
 	{
-		if (obj->o_flags.test(rogue::ItemFlag::Found))
+		if (obj->flags.test(rogue::ItemFlag::Found))
 		{
 			level.objects.remove(*obj);
 			ui::display().draw_tile(player.body.pos, floor);
@@ -173,7 +173,7 @@ add_pack(Maybe<Item> given, bool silent)
 			return;
 		}
 		else
-			obj->o_flags.set(rogue::ItemFlag::Found);
+			obj->flags.set(rogue::ItemFlag::Found);
 	}
 
 	player.in_pack++;
@@ -190,7 +190,7 @@ add_pack(Maybe<Item> given, bool silent)
 	// Walks by first()/after(), since op (where to put it) is used after them
 	Maybe<Item> op = player.body.pack.first(), lp;
 	for (; op; op = player.body.pack.after(*op))
-		if (obj->o_type == op->o_type)
+		if (obj->kind == op->kind)
 			break;
 	if (!op)
 	{
@@ -199,7 +199,7 @@ add_pack(Maybe<Item> given, bool silent)
 		 */
 		for (op = player.body.pack.first(); op; op = player.body.pack.after(*op))
 		{
-			if (op->o_type != ItemKind::Food)
+			if (op->kind != ItemKind::Food)
 				break;
 			lp = op;
 		}
@@ -209,9 +209,9 @@ add_pack(Maybe<Item> given, bool silent)
 		/*
 		 * Search for an object which is exactly the same
 		 */
-		while (op->o_type == obj->o_type)
+		while (op->kind == obj->kind)
 		{
-			if (op->o_which == obj->o_which)
+			if (op->number == obj->number)
 			{
 				exact = true;
 				break;
@@ -234,9 +234,9 @@ add_pack(Maybe<Item> given, bool silent)
 		 * If we found an exact match.  If it is a potion, food, or a
 		 * scroll, increase the count, otherwise put it with its clones.
 		 */
-		if (exact && is_multiple(obj->o_type))
+		if (exact && is_multiple(obj->kind))
 		{
-			op->o_count++;
+			op->count++;
 			discard(*obj);
 			picked_up(*op, silent);
 			return;
@@ -265,11 +265,11 @@ inventory(const List<Item> &list, ItemFilter type, std::string_view lstr)
 		 *	it isn't a callable type AND
 		 *	it isn't a zappable weapon
 		 */
-		if (!type.is_all() && !type.is(obj.o_type) && !(type.is_callable() &&
-		  (obj.o_type == ItemKind::Scroll || obj.o_type == ItemKind::Potion ||
-		  obj.o_type == ItemKind::Ring || obj.o_type == ItemKind::Stick)) &&
-		  !(type.is(ItemKind::Weapon) && obj.o_type == ItemKind::Potion) &&
-		  !(type.is(ItemKind::Stick) && obj.o_enemy && obj.charges()))
+		if (!type.is_all() && !type.is(obj.kind) && !(type.is_callable() &&
+		  (obj.kind == ItemKind::Scroll || obj.kind == ItemKind::Potion ||
+		  obj.kind == ItemKind::Ring || obj.kind == ItemKind::Stick)) &&
+		  !(type.is(ItemKind::Weapon) && obj.kind == ItemKind::Potion) &&
+		  !(type.is(ItemKind::Stick) && obj.enemy && obj.charges()))
 			continue;
 		n_objs++;
 		page.add_line(lstr, std::format("{}) {}", static_cast<char>(ch), inv_name(obj, false)));
@@ -302,12 +302,12 @@ pick_up(unsigned char ch)
 		money(obj->gold_value());
 		/*
 		 * find_dest() can point a monster's dest straight at this gold's
-		 * o_pos. Redirect it to the hero before the gold's pool slot is
+		 * position. Redirect it to the hero before the gold's pool slot is
 		 * discarded, same as add_pack()'s picked_up() redirect for other
 		 * floor items, so nothing is left pointing at a freed Item.
 		 */
 		for (Creature &mp : game().level.monsters)
-			if (mp.dest && game().where(*mp.dest) == obj->o_pos)
+			if (mp.dest && game().where(*mp.dest) == obj->pos)
 				mp.dest = Hero{};
 		game().level.objects.remove(*obj);
 		discard(*obj);
@@ -469,7 +469,7 @@ drop()
 	/*
 	 * Take it out of the pack
 	 */
-	if (op->o_count >= 2 && op->o_type != ItemKind::Weapon)
+	if (op->count >= 2 && op->kind != ItemKind::Weapon)
 	{
 		Maybe<Item> nobj = new_item();
 		if (!nobj)
@@ -478,11 +478,11 @@ drop()
 				noterse("can't drop it, "));
 			return;
 		}
-		op->o_count--;
+		op->count--;
 		*nobj = *op;
-		nobj->o_count = 1;
+		nobj->count = 1;
 		op = nobj;
-		if (op->o_group != 0)
+		if (op->group != 0)
 			player.in_pack++;
 	}
 	else
@@ -492,9 +492,9 @@ drop()
 	 * Link it into the level object list
 	 */
 	game().level.objects.push_front(*op);
-	game().level.at(player.body.pos) = glyph_of(op->o_type);
-	op->o_pos = player.body.pos;
-	if (op->o_type == ItemKind::Amulet)
+	game().level.at(player.body.pos) = glyph_of(op->kind);
+	op->pos = player.body.pos;
+	if (op->kind == ItemKind::Amulet)
 		player.has_amulet = false;
 	msg("dropped {}", inv_name(*op, true));
 }
@@ -510,7 +510,7 @@ can_drop(const Item &op)
 	if (!refers_to(player.armor_item(), op) && !refers_to(player.weapon_item(), op)
 		&& !refers_to(player.ring_item(Hand::Left), op) && !refers_to(player.ring_item(Hand::Right), op))
 		return true;
-	if (op.o_flags.test(ItemFlag::Cursed)) {
+	if (op.flags.test(ItemFlag::Cursed)) {
 		msg("you can't.  It appears to be cursed");
 		return false;
 	}
@@ -531,7 +531,7 @@ can_drop(const Item &op)
 		player.rings[hand] = std::nullopt;
 		switch (op.which<Ring>()) {
 		case Ring::AddStrength:
-			rules::chg_str(-op.o_ac);
+			rules::chg_str(-op.ac);
 			break;
 		case Ring::SeeInvisible:
 			rules::unsee();

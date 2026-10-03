@@ -49,9 +49,9 @@ protected:
 	static Item item(ItemKind kind, E which, int count = 1)
 	{
 		Item obj{};
-		obj.o_type = kind;
+		obj.kind = kind;
 		obj.set_which(which);
-		obj.o_count = count;
+		obj.count = count;
 		return obj;
 	}
 };
@@ -66,7 +66,7 @@ TEST_F(Names, Scrolls)
 	EXPECT_EQ(items::inv_name(obj, false), "A scroll titled 'zim zam zoo zar bax'");
 	game().options.terse = true;	// brief names cut the title
 	EXPECT_EQ(items::inv_name(obj, false), "A scroll titled 'zim zam zoo zar b'");
-	obj.o_count = 3;
+	obj.count = 3;
 	game().items.s_guess[scroll] = "boom";
 	EXPECT_EQ(items::inv_name(obj, false), "3 scrolls called boom");
 	game().items.s_know[scroll] = true;
@@ -77,7 +77,7 @@ TEST_F(Names, Potions)
 {
 	Item obj = item(ItemKind::Potion, Potion::Poison);
 	EXPECT_EQ(items::inv_name(obj, false), "A red potion");
-	obj.o_count = 2;
+	obj.count = 2;
 	EXPECT_EQ(items::inv_name(obj, false), "2 red potions");
 	game().items.p_know[Potion::Poison] = true;
 	EXPECT_EQ(items::inv_name(obj, false), std::format("2 potions of {}(red)", game().items.p_magic[Potion::Poison].mi_name));
@@ -89,7 +89,7 @@ TEST_F(Names, FoodUsesTheFruit)
 	EXPECT_EQ(items::inv_name(obj, false), "A Slime Mold");
 	game().options.fruit = "apple";
 	EXPECT_EQ(items::inv_name(obj, false), "An apple");
-	obj.o_count = 4;
+	obj.count = 4;
 	EXPECT_EQ(items::inv_name(obj, false), "4 apples");
 	obj = item(ItemKind::Food, Food::Ration, 2);
 	EXPECT_EQ(items::inv_name(obj, false), "2 rations of food");
@@ -99,21 +99,21 @@ TEST_F(Names, WeaponsAndArmor)
 {
 	Item &obj = *new_item();	// in the pool, so it can be wielded
 	obj = item(ItemKind::Weapon, WeaponType::Mace);
-	obj.o_hplus = 1;
-	obj.o_dplus = -2;
+	obj.hit_plus = 1;
+	obj.damage_plus = -2;
 	EXPECT_EQ(items::inv_name(obj, false), "A mace");
-	obj.o_flags.set(ItemFlag::Known);
+	obj.flags.set(ItemFlag::Known);
 	EXPECT_EQ(items::inv_name(obj, false), "A +1,-2 mace");
 	game().player.weapon = game().pool.id_of(obj);
 	EXPECT_EQ(items::inv_name(obj, false), "A +1,-2 mace (weapon in hand)");
 
 	game().player.weapon = std::nullopt;
 	Item armor = item(ItemKind::Armor, ArmorType::RingMail);
-	armor.o_ac = items::a_class[ArmorType::RingMail] - 1;	// one better than usual
+	armor.ac = items::a_class[ArmorType::RingMail] - 1;	// one better than usual
 	EXPECT_EQ(items::inv_name(armor, false), "Ring mail");
-	armor.o_flags.set(ItemFlag::Known);
+	armor.flags.set(ItemFlag::Known);
 	EXPECT_EQ(items::inv_name(armor, false),
-		"+1 ring mail [armor class " + std::to_string(11 - armor.o_ac) + "]");
+		"+1 ring mail [armor class " + std::to_string(11 - armor.ac) + "]");
 	game().options.expert = true;
 	EXPECT_EQ(items::inv_name(armor, false), "+1 ring mail");
 }
@@ -132,11 +132,11 @@ TEST_F(Names, RingsAndHands)
 {
 	Item &obj = *new_item();	// in the pool, so it can be worn
 	obj = item(ItemKind::Ring, Ring::Protection);
-	obj.o_ac = 2;
+	obj.ac = 2;
 	game().player.rings[Hand::Left] = game().pool.id_of(obj);
 	EXPECT_EQ(items::inv_name(obj, false), "An opal ring (on left hand)");
 	game().items.r_know[Ring::Protection] = true;
-	obj.o_flags.set(ItemFlag::Known);
+	obj.flags.set(ItemFlag::Known);
 	EXPECT_EQ(items::inv_name(obj, false),
 		std::format("A +2 ring of {}(opal) (on left hand)", game().items.r_magic[Ring::Protection].mi_name));
 }

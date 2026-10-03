@@ -46,7 +46,7 @@ read_scroll()
 	Maybe<Item> obj = get_item("read", ItemKind::Scroll);
 	if (!obj)
 		return;
-	if (obj->o_type != ItemKind::Scroll){
+	if (obj->kind != ItemKind::Scroll){
 		msg("there is nothing on it to read");
 		return;
 	}
@@ -66,8 +66,8 @@ read_scroll()
 		break;
 	case Scroll::EnchantArmor:
 		if (player.armor_item()) {
-			player.armor_item()->o_ac--;
-			player.armor_item()->o_flags.unset(ItemFlag::Cursed);
+			player.armor_item()->ac--;
+			player.armor_item()->flags.unset(ItemFlag::Cursed);
 			ifterse("your armor glows faintly",
 				"your armor glows faintly for a moment");
 		}
@@ -166,13 +166,13 @@ read_scroll()
 		 */
 		bool found = false;
 		for (Item &op : level.objects) {
-			if (op.o_type == ItemKind::Food) {
+			if (op.kind == ItemKind::Food) {
 				found = true;
-				ui::display().draw_tile(op.o_pos, FOOD, ui::TileStyle::Inverse);
+				ui::display().draw_tile(op.pos, FOOD, ui::TileStyle::Inverse);
 			} else /* as a bonus this will detect amulets as well */
-			if (op.o_type == ItemKind::Amulet) {
+			if (op.kind == ItemKind::Amulet) {
 				found = true;
-				ui::display().draw_tile(op.o_pos, AMULET, ui::TileStyle::Inverse);
+				ui::display().draw_tile(op.pos, AMULET, ui::TileStyle::Inverse);
 			}
 		}
 		if (found) {
@@ -195,15 +195,15 @@ read_scroll()
 		}
 		break;
 	case Scroll::EnchantWeapon:
-		if (!player.weapon_item() || player.weapon_item()->o_type != ItemKind::Weapon)
+		if (!player.weapon_item() || player.weapon_item()->kind != ItemKind::Weapon)
 		msg("you feel a strange sense of loss");
 		else
 		{
-		player.weapon_item()->o_flags.unset(ItemFlag::Cursed);
+		player.weapon_item()->flags.unset(ItemFlag::Cursed);
 		if (rnd(2) == 0)
-			player.weapon_item()->o_hplus++;
+			player.weapon_item()->hit_plus++;
 		else
-			player.weapon_item()->o_dplus++;
+			player.weapon_item()->damage_plus++;
 		ifterse("your {} glows blue","your {} glows blue for a moment", w_names[player.weapon_item()->which<WeaponType>()]);
 		}
 		break;
@@ -216,13 +216,13 @@ read_scroll()
 		break;
 	case Scroll::RemoveCurse:
 		if (player.armor_item())
-			player.armor_item()->o_flags.unset(ItemFlag::Cursed);
+			player.armor_item()->flags.unset(ItemFlag::Cursed);
 		if (player.weapon_item())
-			player.weapon_item()->o_flags.unset(ItemFlag::Cursed);
+			player.weapon_item()->flags.unset(ItemFlag::Cursed);
 		if (player.ring_item(Hand::Left))
-			player.ring_item(Hand::Left)->o_flags.unset(ItemFlag::Cursed);
+			player.ring_item(Hand::Left)->flags.unset(ItemFlag::Cursed);
 		if (player.ring_item(Hand::Right))
-			player.ring_item(Hand::Right)->o_flags.unset(ItemFlag::Cursed);
+			player.ring_item(Hand::Right)->flags.unset(ItemFlag::Cursed);
 		ifterse("somebody is watching over you","you feel as if somebody is watching over you");
 		break;
 	case Scroll::AggravateMonsters:
@@ -242,7 +242,7 @@ read_scroll()
 		 * Extra Vorpal Enchant Weapon
 		 *     Give weapon +1,+1
 		 *     Is extremely vorpal against one certain type of monster
-		 *     Against this type (o_enemy) the weapon gets:
+		 *     Against this type (enemy) the weapon gets:
 		 *		+4,+4
 		 *		The ability to zap one such monster into oblivion
 		 *
@@ -252,22 +252,22 @@ read_scroll()
 		 *
 		 * If he doesn't have a weapon I get to chortle again!
 		 */
-		if (!player.weapon_item() || player.weapon_item()->o_type != ItemKind::Weapon)
+		if (!player.weapon_item() || player.weapon_item()->kind != ItemKind::Weapon)
 			msg(laugh, game().options.brief() ? "" : in_dist);
 		else {
 			/*
 			 * You aren't allowed to doubly vorpalize a weapon.
 			 */
-			if (player.weapon_item()->o_enemy != 0) {
+			if (player.weapon_item()->enemy != 0) {
 				msg("your {} vanishes in a puff of smoke",
 				w_names[player.weapon_item()->which<WeaponType>()]);
 				player.body.pack.remove(*player.weapon_item());
 				discard(*player.weapon_item());
 				player.weapon = std::nullopt;
 			} else {
-				player.weapon_item()->o_enemy = entities::pick_mons();
-				player.weapon_item()->o_hplus++;
-				player.weapon_item()->o_dplus++;
+				player.weapon_item()->enemy = entities::pick_mons();
+				player.weapon_item()->hit_plus++;
+				player.weapon_item()->damage_plus++;
 				player.weapon_item()->charges() = 1;
 				msg(flashmsg, w_names[player.weapon_item()->which<WeaponType>()],
 					game().options.brief() ? "" : intense);
@@ -275,12 +275,12 @@ read_scroll()
 				/*
 				 * Sometimes this is a mixed blessing ...
 					if (rnd(20) == 0) {
-						cur_weapon->o_flags.set(ItemFlag::Cursed);
+						cur_weapon->flags.set(ItemFlag::Cursed);
 						if (!save(SaveThrow::Magic)) {
-							cur_weapon->o_flags.set(ItemFlag::Ego|ItemFlag::Revealed);
+							cur_weapon->flags.set(ItemFlag::Ego|ItemFlag::Revealed);
 							s_know[Scroll::Vorpalize] = true;
 							msg("you feel a sudden desire to kill {}s.",
-							monsters[cur_weapon->o_enemy-'A'].m_name);
+							monsters[cur_weapon->enemy-'A'].m_name);
 						}
 					}
 				 */
@@ -297,8 +297,8 @@ read_scroll()
 	 * Get rid of the thing
 	 */
 	player.in_pack--;
-	if (obj->o_count > 1)
-	obj->o_count--;
+	if (obj->count > 1)
+	obj->count--;
 	else
 	{
 	player.body.pack.remove(*obj);

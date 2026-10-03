@@ -65,15 +65,15 @@ goodch(const Item &obj)
 {
 	char ch = MAGIC;
 
-	if (obj.o_flags.test(ItemFlag::Cursed))
+	if (obj.flags.test(ItemFlag::Cursed))
 		ch = BMAGIC;
-	switch (obj.o_type) {
+	switch (obj.kind) {
 	case ItemKind::Armor:
-		if (obj.o_ac > a_class[obj.which<ArmorType>()])
+		if (obj.ac > a_class[obj.which<ArmorType>()])
 			ch = BMAGIC;
 		break;
 	case ItemKind::Weapon:
-		if (obj.o_hplus < 0 || obj.o_dplus < 0)
+		if (obj.hit_plus < 0 || obj.damage_plus < 0)
 			ch = BMAGIC;
 		break;
 	case ItemKind::Scroll:
@@ -115,7 +115,7 @@ goodch(const Item &obj)
 		case Ring::AddStrength:
 		case Ring::IncreaseDamage:
 		case Ring::Dexterity:
-			if (obj.o_ac < 0)
+			if (obj.ac < 0)
 				ch = BMAGIC;
 			break;
 		case Ring::AggravateMonster:
@@ -151,7 +151,7 @@ quaff()
 	/*
 	 * Make certain that it is somethings that we want to drink
 	 */
-	if (obj->o_type != ItemKind::Potion)
+	if (obj->kind != ItemKind::Potion)
 	{
 		msg("yuk! Why would you want to drink that?");
 		return;
@@ -230,7 +230,7 @@ quaff()
 				if (rules::is_magic(tp))
 				{
 					show = true;
-					ui::display().draw_tile(tp.o_pos, goodch(tp));
+					ui::display().draw_tile(tp.pos, goodch(tp));
 					items.p_know[Potion::MagicDetection] = true;
 				}
 			}
@@ -293,15 +293,15 @@ quaff()
 		break;
 	case Potion::RestoreStrength:
 		if (player.wears(Hand::Left, Ring::AddStrength))
-			rules::add_str(player.body.stats.s_str, -player.ring_item(Hand::Left)->o_ac);
+			rules::add_str(player.body.stats.s_str, -player.ring_item(Hand::Left)->ac);
 		if (player.wears(Hand::Right, Ring::AddStrength))
-			rules::add_str(player.body.stats.s_str, -player.ring_item(Hand::Right)->o_ac);
+			rules::add_str(player.body.stats.s_str, -player.ring_item(Hand::Right)->ac);
 		if (player.body.stats.s_str < player.max_stats.s_str)
 			player.body.stats.s_str = player.max_stats.s_str;
 		if (player.wears(Hand::Left, Ring::AddStrength))
-			rules::add_str(player.body.stats.s_str, player.ring_item(Hand::Left)->o_ac);
+			rules::add_str(player.body.stats.s_str, player.ring_item(Hand::Left)->ac);
 		if (player.wears(Hand::Right, Ring::AddStrength))
-			rules::add_str(player.body.stats.s_str, player.ring_item(Hand::Right)->o_ac);
+			rules::add_str(player.body.stats.s_str, player.ring_item(Hand::Right)->ac);
 		msg("{}you feel warm all over",
 			noterse("hey, this tastes great.  It makes "));
 		break;
@@ -327,8 +327,8 @@ quaff()
 	 * Throw the item away
 	 */
 	player.in_pack--;
-	if (obj->o_count > 1)
-		obj->o_count--;
+	if (obj->count > 1)
+		obj->count--;
 	else
 	{
 		player.body.pack.remove(*obj);

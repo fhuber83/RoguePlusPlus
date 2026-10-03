@@ -90,20 +90,20 @@ missile(int ydelta, int xdelta)
 	/*
 	 * here is a quick hack to check if we can get a new item
 	 */
-	Maybe<Item> nitem = obj->o_count >= 2 ? new_item() : Maybe<Item>();
-	if (obj->o_count >= 2 && !nitem) {
-		obj->o_count = 1;
+	Maybe<Item> nitem = obj->count >= 2 ? new_item() : Maybe<Item>();
+	if (obj->count >= 2 && !nitem) {
+		obj->count = 1;
 		msg("something in your pack explodes!!!");
 	}
-	if (obj->o_count < 2) {
+	if (obj->count < 2) {
 		game().player.body.pack.remove(*obj);
 		game().player.in_pack--;
 	} else {
-		obj->o_count--;
-		if (obj->o_group == 0)
+		obj->count--;
+		if (obj->group == 0)
 			game().player.in_pack--;
 		*nitem = *obj;
-		nitem->o_count = 1;
+		nitem->count = 1;
 		obj = nitem;
 	}
 	do_motion(*obj, ydelta, xdelta);
@@ -113,8 +113,8 @@ missile(int ydelta, int xdelta)
 	 * One that hits is used up. (The original forgot it, which kept
 	 * its slot taken for the rest of the game.)
 	 */
-	if (!game().level.monster_at(obj->o_pos)
-		|| !hit_monster(obj->o_pos.y, obj->o_pos.x, *obj))
+	if (!game().level.monster_at(obj->pos)
+		|| !hit_monster(obj->pos.y, obj->pos.x, *obj))
 			fall(*obj, true);
 	else
 		discard(*obj);
@@ -134,28 +134,28 @@ do_motion(Item &obj, int ydelta, int xdelta)
 	/*
 	 * Come fly with us ...
 	 */
-	obj.o_pos = player.body.pos;
+	obj.pos = player.body.pos;
 	for (;;) {
 		/*
 		 * Erase the old one
 		 */
-		if (under != '@' && !(obj.o_pos == player.body.pos) && world::cansee(obj.o_pos.y, obj.o_pos.x))
-			ui::display().draw_tile(obj.o_pos, under);
+		if (under != '@' && !(obj.pos == player.body.pos) && world::cansee(obj.pos.y, obj.pos.x))
+			ui::display().draw_tile(obj.pos, under);
 		/*
 		 * Get the new position
 		 */
-		obj.o_pos.y += ydelta;
-		obj.o_pos.x += xdelta;
+		obj.pos.y += ydelta;
+		obj.pos.x += xdelta;
 
-		int ch = game().level.seen_at(obj.o_pos);
+		int ch = game().level.seen_at(obj.pos);
 		if (step_ok(ch) && ch != DOOR) {
 			/*
 			 * It hasn't hit anything yet, so display it
 			 * If it alright.
 			 */
-			if (world::cansee(obj.o_pos.y, obj.o_pos.x)) {
-				under = game().level.at(obj.o_pos);
-				ui::display().draw_tile(obj.o_pos, glyph_of(obj.o_type));
+			if (world::cansee(obj.pos.y, obj.pos.x)) {
+				under = game().level.at(obj.pos);
+				ui::display().draw_tile(obj.pos, glyph_of(obj.kind));
 				tick_pause();
 			} else
 				under = '@';
@@ -170,7 +170,7 @@ namespace {
 std::string
 short_name(const Item &obj)
 {
-	switch (obj.o_type) {
+	switch (obj.kind) {
 		case ItemKind::Weapon: return std::string(w_names[obj.which<WeaponType>()]);
 		case ItemKind::Armor: return std::string(a_names[obj.which<ArmorType>()]);
 		case ItemKind::Food: return "food";
@@ -205,16 +205,16 @@ fall(Item &obj, bool pr)
 		const Coord fpos = std::get<Coord>(landing);
 
 		int index = world::Level::index(fpos);
-		level.map[index] = glyph_of(obj.o_type);
-		obj.o_pos = fpos;
+		level.map[index] = glyph_of(obj.kind);
+		obj.pos = fpos;
 		if (world::cansee(fpos.y, fpos.x))
 		{
-			ui::display().draw_tile(fpos, glyph_of(obj.o_type),
-					(level.flags_at(obj.o_pos).test(MapFlag::Passage) ||
-					 level.flags_at(obj.o_pos).test(MapFlag::Maze))
+			ui::display().draw_tile(fpos, glyph_of(obj.kind),
+					(level.flags_at(obj.pos).test(MapFlag::Passage) ||
+					 level.flags_at(obj.pos).test(MapFlag::Maze))
 						? ui::TileStyle::Inverse : ui::TileStyle::Normal);
 			if (level.monster_at(fpos))
-				level.monster_at(fpos)->under = glyph_of(obj.o_type);
+				level.monster_at(fpos)->under = glyph_of(obj.kind);
 		}
 		level.objects.push_front(obj);
 		return;
@@ -236,17 +236,17 @@ init_weapon(Item &weap, WeaponType type)
 {
 	const struct init_weps &iwp = init_dam[type];
 
-	weap.o_damage = iwp.iw_dam;
-	weap.o_hurldmg = iwp.iw_hrl;
-	weap.o_launch = iwp.iw_launch;
-	weap.o_flags = iwp.iw_flags;
-	if (weap.o_flags.test(ItemFlag::Many))
+	weap.damage = iwp.iw_dam;
+	weap.thrown_damage = iwp.iw_hrl;
+	weap.launcher = iwp.iw_launch;
+	weap.flags = iwp.iw_flags;
+	if (weap.flags.test(ItemFlag::Many))
 	{
-		weap.o_count = rnd(8) + 8;
-		weap.o_group = game().items.group++;
+		weap.count = rnd(8) + 8;
+		weap.group = game().items.group++;
 	}
 	else
-		weap.o_count = 1;
+		weap.count = 1;
 }
 
 /*
@@ -300,7 +300,7 @@ wield()
 		return;
 	}
 
-	if (obj->o_type == ItemKind::Armor)
+	if (obj->kind == ItemKind::Armor)
 	{
 		msg("you can't wield armor");
 		game().turn.after = false;
@@ -331,8 +331,8 @@ fallpos(const Item &obj)
 	std::optional<Coord> newpos;	/* set with the first free square */
 	rogue::Player &player = game().player;
 
-	for (int y = obj.o_pos.y - 1; y <= obj.o_pos.y + 1; y++) {
-		for (int x = obj.o_pos.x - 1; x <= obj.o_pos.x + 1; x++) {
+	for (int y = obj.pos.y - 1; y <= obj.pos.y + 1; y++) {
+		for (int x = obj.pos.x - 1; x <= obj.pos.x + 1; x++) {
 			/*
 			 * check to make certain the spot is empty, if it is,
 			 * put the object there, set it in the level list
@@ -350,11 +350,11 @@ fallpos(const Item &obj)
 				continue;
 			Maybe<Item> onfloor = game().level.object_at({x, y});
 			if (onfloor
-				&& onfloor->o_type == obj.o_type
-				&& onfloor->o_group
-				&& onfloor->o_group == obj.o_group)
+				&& onfloor->kind == obj.kind
+				&& onfloor->group
+				&& onfloor->group == obj.group)
 			{
-				onfloor->o_count += obj.o_count;
+				onfloor->count += obj.count;
 				return JoinedPile{};
 			}
 		}

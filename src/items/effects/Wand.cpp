@@ -42,18 +42,18 @@ void
 fix_stick(Item &cur)
 {
 	if (game().items.ws_type[cur.which<Stick>()] == "staff")
-		cur.o_damage = "2d3";
+		cur.damage = "2d3";
 	else
-		cur.o_damage = "1d1";
-	cur.o_hurldmg = "1d1";
+		cur.damage = "1d1";
+	cur.thrown_damage = "1d1";
 
 	cur.charges() = 3 + rnd(5);
 	switch (cur.which<Stick>())
 	{
 	case Stick::Striking:
-		cur.o_hplus = 100;
-		cur.o_dplus = 3;
-		cur.o_damage = "1d8";
+		cur.hit_plus = 100;
+		cur.damage_plus = 3;
+		cur.damage = "1d8";
 		break;
 	case Stick::Light:
 		cur.charges() = 10 + rnd(10);
@@ -77,9 +77,9 @@ do_zap()
 	if (!obj)
 		return;
 	Stick which_one = obj->which<Stick>();
-	if (obj->o_type != ItemKind::Stick)
+	if (obj->kind != ItemKind::Stick)
 	{
-		if (obj->o_enemy && obj->charges())
+		if (obj->enemy && obj->charges())
 			which_one = Stick::Vorpal;
 		else
 		{
@@ -153,7 +153,7 @@ do_zap()
 				player.body.flags.unset(CreatureFlag::Held);
 			if (which_one == Stick::Vorpal)
 			{
-				if (monster == obj->o_enemy)
+				if (monster == obj->enemy)
 				{
 					msg("the {} vanishes in a puff of smoke",
 						entities::monsters[monster-'A'].m_name);
@@ -223,17 +223,17 @@ do_zap()
 		Item bolt;
 
 		game().items.ws_know[Stick::MagicMissile] = true;
-		bolt.o_type = ItemKind::Missile;
-		bolt.o_hurldmg = "1d8";
-		bolt.o_hplus = 1000;
-		bolt.o_dplus = 1;
-		bolt.o_flags = ItemFlag::Missile;
+		bolt.kind = ItemKind::Missile;
+		bolt.thrown_damage = "1d8";
+		bolt.hit_plus = 1000;
+		bolt.damage_plus = 1;
+		bolt.flags = ItemFlag::Missile;
 		if (player.weapon_item())
-			bolt.o_launch = launched_by(player.weapon_item()->which<WeaponType>());
+			bolt.launcher = launched_by(player.weapon_item()->which<WeaponType>());
 		do_motion(bolt, turn.delta.y, turn.delta.x);
-		Maybe<Creature> tp = game().level.monster_at(bolt.o_pos);
+		Maybe<Creature> tp = game().level.monster_at(bolt.pos);
 		if (tp && !rules::save_throw(rules::SaveThrow::Magic, *tp))
-			hit_monster(bolt.o_pos.y, bolt.o_pos.x, bolt);
+			hit_monster(bolt.pos.y, bolt.pos.x, bolt);
 		else
 		msg("the missle vanishes with a puff of smoke");
 	}
@@ -245,13 +245,13 @@ do_zap()
 		{
 			if (rnd(20) == 0)
 			{
-				obj->o_damage = "3d8";
-				obj->o_dplus = 9;
+				obj->damage = "3d8";
+				obj->damage_plus = 9;
 			}
 			else
 			{
-				obj->o_damage = "2d8";
-				obj->o_dplus = 4;
+				obj->damage = "2d8";
+				obj->damage_plus = 4;
 			}
 			rules::fight(turn.delta, tp->type, *obj, false);
 		}
@@ -368,11 +368,11 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 	} spotpos[BOLT_LENGTH*2];
 	Item bolt;
 	const bool is_frost = (name == "frost");
-	bolt.o_type = ItemKind::Weapon;
+	bolt.kind = ItemKind::Weapon;
 	bolt.set_which(WeaponType::Flame);
-	bolt.o_damage = bolt.o_hurldmg = "6d6";
-	bolt.o_hplus = 30;
-	bolt.o_dplus = 0;
+	bolt.damage = bolt.thrown_damage = "6d6";
+	bolt.hit_plus = 30;
+	bolt.damage_plus = 0;
 	w_names[WeaponType::Flame] = name;
 	switch (dir.y + dir.x) {
 		case 0: dirch = '/'; break;
@@ -417,7 +417,7 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 				if (tp->under != '@')
 					tp->under = game().level.at(pos);
 				if (!rules::save_throw(rules::SaveThrow::Magic, *tp) || is_frost) {
-					bolt.o_pos = pos;
+					bolt.pos = pos;
 					used = true;
 					if (tp->type == 'D' && name == "flame")
 						msg("the flame bounces off the dragon");
@@ -472,7 +472,7 @@ fire_bolt(Coord start, Coord &dir, std::string_view name)
 std::string
 charge_str(const Item &obj)
 {
-	if (!obj.o_flags.test(ItemFlag::Known))
+	if (!obj.flags.test(ItemFlag::Known))
 		return "";
 	return std::format(" [{} charges]", obj.charges());
 }

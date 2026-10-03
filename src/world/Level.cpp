@@ -44,7 +44,7 @@ Maybe<Item>
 Level::object_at(Coord pos) const
 {
 	for (Item &op : objects)
-		if (op.o_pos == pos)
+		if (op.pos == pos)
 			return op;
 	return std::nullopt;
 }

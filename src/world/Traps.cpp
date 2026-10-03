@@ -99,11 +99,11 @@ be_trapped(Coord tc)
 		}
 		else {
 			if (Maybe<Item> arrow = new_item()) {
-				arrow->o_type = ItemKind::Weapon;
+				arrow->kind = ItemKind::Weapon;
 				arrow->set_which(WeaponType::Arrow);
 				items::effects::init_weapon(*arrow, WeaponType::Arrow);
-				arrow->o_count = 1;
-				arrow->o_pos = player.body.pos;
+				arrow->count = 1;
+				arrow->pos = player.body.pos;
 				items::effects::fall(*arrow, false);
 			}
 			msg("an arrow shoots past you");

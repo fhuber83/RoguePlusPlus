@@ -183,10 +183,10 @@ put_things()
 		if (level.depth >= AMULETLEVEL && !game().player.saw_amulet) {
 			if (Maybe<Item> cur = new_item()) {
 				level.objects.push_front(*cur);
-				cur->o_hplus = cur->o_dplus = 0;
-				cur->o_damage = cur->o_hurldmg = "0d0";
-				cur->o_ac = 11;
-				cur->o_type = ItemKind::Amulet;
+				cur->hit_plus = cur->damage_plus = 0;
+				cur->damage = cur->thrown_damage = "0d0";
+				cur->ac = 11;
+				cur->kind = ItemKind::Amulet;
 				/*
 				 * Put it somewhere
 				 */
@@ -196,7 +196,7 @@ put_things()
 					tp = rnd_pos(level.rooms[rm]);
 				} while (!is_floor(level.seen_at(tp)));
 				level.at(tp) = AMULET;
-				cur->o_pos = tp;
+				cur->pos = tp;
 			}
 		}
 		/*
@@ -223,8 +223,8 @@ put_things()
 				int rm = rnd_room();
 				tp = rnd_pos(level.rooms[rm]);
 			} while (!is_floor(level.at(tp)));
-			level.at(tp) = glyph_of(cur->o_type);
-			cur->o_pos = tp;
+			level.at(tp) = glyph_of(cur->kind);
+			cur->pos = tp;
 		}
 }
 
@@ -259,9 +259,9 @@ treas_room()
 			index = Level::index(mp);
 		} while (!is_floor(level.map[index]));
 		Maybe<Item> obj = items::new_thing();
-		obj->o_pos = mp;
+		obj->pos = mp;
 		level.objects.push_front(*obj);
-		level.map[index] = glyph_of(obj->o_type);
+		level.map[index] = glyph_of(obj->kind);
 	}
 
 	/*
@@ -406,10 +406,10 @@ do_rooms()
 					if (is_floor(gch))
 						break;
 				}
-				gold->o_pos = rp.r_gold;
-				gold->o_flags = ItemFlag::Many;
-				gold->o_group = GOLDGRP;
-				gold->o_type = ItemKind::Gold;
+				gold->pos = rp.r_gold;
+				gold->flags = ItemFlag::Many;
+				gold->group = GOLDGRP;
+				gold->kind = ItemKind::Gold;
 				level.objects.push_front(*gold);
 				level.at(rp.r_gold) = GOLD;
 			}

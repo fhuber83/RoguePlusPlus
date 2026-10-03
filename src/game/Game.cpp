@@ -98,7 +98,7 @@ Coord Game::where(const Destination &dest) const
 		return player.body.pos;
 	if (std::holds_alternative<Gold>(dest))
 		return level.room(std::get<Gold>(dest).room).r_gold;
-	return pool.item(std::get<ItemId>(dest)).o_pos;
+	return pool.item(std::get<ItemId>(dest)).pos;
 }
 
 Item *ListPool<Item>::at(ItemId id) { return game().pool.items.find(id); }

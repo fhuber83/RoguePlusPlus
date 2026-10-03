@@ -57,8 +57,8 @@ TEST(Level, MonsterAndObjectAt)
 {
 	world::Level level;
 	Item &gold = *new_item();	// lists name things by their pool slot
-	gold.o_type = ItemKind::Gold;
-	gold.o_pos = {10, 5};
+	gold.kind = ItemKind::Gold;
+	gold.pos = {10, 5};
 	Creature &mimic = *new_creature();
 	mimic.type = 'X';
 	mimic.disguise = STAIRS;

@@ -41,7 +41,7 @@ protected:
 	{
 		Item &dagger = *new_item();
 		items::effects::init_weapon(dagger, WeaponType::Dagger);
-		dagger.o_hplus = 100;
+		dagger.hit_plus = 100;
 		game().player.body.pack.push_front(dagger);
 		game().player.in_pack++;
 		return {*game().pool.id_of(dagger)};

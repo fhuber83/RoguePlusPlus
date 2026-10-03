@@ -46,7 +46,7 @@ eat()
 	Maybe<Item> obj = items::get_item("eat", ItemKind::Food);
 	if (!obj)
 		return;
-	if (obj->o_type != ItemKind::Food)
+	if (obj->kind != ItemKind::Food)
 	{
 		msg("ugh, you would get ill if you ate that");
 		return;
@@ -59,7 +59,7 @@ eat()
 	Food which = obj->which<Food>();
 	if (obj == player.weapon_item())
 		player.weapon = std::nullopt;
-	if (--obj->o_count < 1)
+	if (--obj->count < 1)
 	{
 		player.body.pack.remove(*obj);
 		discard(*obj);

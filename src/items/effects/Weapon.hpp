@@ -22,7 +22,7 @@ inline constexpr std::string_view flashmsg = "your {} gives off a flash{}";
 
 /*
  * launched_by:
- *	What o_launch holds for an item shot from this weapon (arrows from a
+ *	What an item's launcher holds when it is shot from this weapon (arrows from a
  *	short bow): the weapon's number.
  */
 constexpr char

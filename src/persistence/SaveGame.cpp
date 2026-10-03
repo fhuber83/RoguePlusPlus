@@ -198,10 +198,10 @@ json creature_json(const Game &g, const Creature &c)
 json item_json(const Item &o)
 {
 	return {
-		{"kind", static_cast<int>(o.o_type)}, {"pos", coord_json(o.o_pos)},
-		{"launch", o.o_launch}, {"damage", attacks_json(o.o_damage)}, {"hurl", attacks_json(o.o_hurldmg)},
-		{"count", o.o_count}, {"which", o.o_which}, {"hplus", o.o_hplus}, {"dplus", o.o_dplus},
-		{"ac", o.o_ac}, {"flags", o.o_flags.bits()}, {"enemy", o.o_enemy}, {"group", o.o_group},
+		{"kind", static_cast<int>(o.kind)}, {"pos", coord_json(o.pos)},
+		{"launch", o.launcher}, {"damage", attacks_json(o.damage)}, {"hurl", attacks_json(o.thrown_damage)},
+		{"count", o.count}, {"which", o.number}, {"hplus", o.hit_plus}, {"dplus", o.damage_plus},
+		{"ac", o.ac}, {"flags", o.flags.bits()}, {"enemy", o.enemy}, {"group", o.group},
 	};
 }
 
@@ -631,19 +631,19 @@ void creature_from(Game &g, Creature &c, const json &j)
 
 void item_from(Item &o, const json &j)
 {
-	o.o_type = static_cast<ItemKind>(num_in<int>(j, "kind", 0, static_cast<int>(ItemKind::Missile)));
-	o.o_pos = coord_of(j, "pos");
-	o.o_launch = num<char>(j, "launch");
-	o.o_damage = attacks_of(field(j, "damage"), "\"damage\"");
-	o.o_hurldmg = attacks_of(field(j, "hurl"), "\"hurl\"");
-	o.o_count = num<int>(j, "count");
-	o.o_which = num<int>(j, "which");
-	o.o_hplus = num<int>(j, "hplus");
-	o.o_dplus = num<int>(j, "dplus");
-	o.o_ac = num<short>(j, "ac");
-	o.o_flags = ItemFlags::from_bits(num<ItemFlags::Bits>(j, "flags"));
-	o.o_enemy = num<char>(j, "enemy");
-	o.o_group = num<int>(j, "group");
+	o.kind = static_cast<ItemKind>(num_in<int>(j, "kind", 0, static_cast<int>(ItemKind::Missile)));
+	o.pos = coord_of(j, "pos");
+	o.launcher = num<char>(j, "launch");
+	o.damage = attacks_of(field(j, "damage"), "\"damage\"");
+	o.thrown_damage = attacks_of(field(j, "hurl"), "\"hurl\"");
+	o.count = num<int>(j, "count");
+	o.number = num<int>(j, "which");
+	o.hit_plus = num<int>(j, "hplus");
+	o.damage_plus = num<int>(j, "dplus");
+	o.ac = num<short>(j, "ac");
+	o.flags = ItemFlags::from_bits(num<ItemFlags::Bits>(j, "flags"));
+	o.enemy = num<char>(j, "enemy");
+	o.group = num<int>(j, "group");
 }
 
 void room_from(world::Room &r, const json &j)

@@ -38,7 +38,7 @@ put_ring_on()
 	/*
 	 * Make certain that it is somethings that we want to wear
 	 */
-	if (obj->o_type != ItemKind::Ring) {
+	if (obj->kind != ItemKind::Ring) {
 		msg("you can't put that on your finger");
 		return false;
 	}
@@ -68,7 +68,7 @@ put_ring_on()
 	 */
 	switch (obj->which<Ring>()) {
 	case Ring::AddStrength:
-		rules::chg_str(obj->o_ac);
+		rules::chg_str(obj->ac);
 		break;
 	case Ring::SeeInvisible:
 		invis_on();
@@ -199,14 +199,14 @@ ring_eat(Hand hand)
 std::string
 ring_num(const Item &obj)
 {
-	if (!obj.o_flags.test(ItemFlag::Known))
+	if (!obj.flags.test(ItemFlag::Known))
 		return "";
 	switch (obj.which<Ring>()) {
 	case Ring::Protection:
 	case Ring::AddStrength:
 	case Ring::IncreaseDamage:
 	case Ring::Dexterity:
-		return " " + num(obj.o_ac, 0, RING);
+		return " " + num(obj.ac, 0, RING);
 	default:
 		return "";
 	}

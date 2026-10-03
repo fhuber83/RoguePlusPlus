@@ -221,7 +221,6 @@ credits()
 void
 init_player()
 {
-	Maybe<Item> obj;
 	game().player.body.t_stats = game().player.max_stats;
 	game().player.food_left = rules::hunger_time();
 	/*
@@ -231,7 +230,7 @@ init_player()
 	/*
 	 * Give the rogue his weaponry.  First a mace.
 	 */
-	obj = new_item();
+	Maybe<Item> obj = new_item();
 	obj->o_type = ItemKind::Weapon;
 	obj->set_which(WeaponType::Mace);
 	items::effects::init_weapon(*obj, WeaponType::Mace);
@@ -309,12 +308,12 @@ init_things()
 void
 init_colors()
 {
-	unsigned int j;
 	std::array<bool, NCOLORS> used{};
 	rogue::Items &items = game().items;
 
 	for (Potion p : kinds<Potion>())
 	{
+		unsigned int j;
 		do
 			j = rnd(NCOLORS);
 		while (used[j]);
@@ -334,20 +333,17 @@ void
 init_names()
 {
 	rogue::Items &items = game().items;
-	int nsyl;
-	std::string sp;
-	int nwords;
 
 	for (Scroll s : kinds<Scroll>())
 	{
 		std::string name;
-		nwords = rnd(game().options.terse?3:4) + 2;
+		int nwords = rnd(game().options.terse?3:4) + 2;
 		while (nwords--)
 		{
-			nsyl = rnd(2) + 1;
+			int nsyl = rnd(2) + 1;
 			while (nsyl--)
 			{
-				sp = getsyl();
+				std::string sp = getsyl();
 				if (name.size() + sp.size() > MAXNAME-1)
 				{
 					nwords = 0;
@@ -396,12 +392,12 @@ rchr(std::string_view string)
 void
 init_stones()
 {
-	unsigned int j;
 	std::array<bool, NSTONES> used{};
 	rogue::Items &items = game().items;
 
 	for (Ring r : kinds<Ring>())
 	{
+		unsigned int j;
 		do
 			j = rnd(NSTONES);
 		while (used[j]);
@@ -421,18 +417,17 @@ init_stones()
 void
 init_materials()
 {
-	unsigned int j;
-	std::string_view str;
 	std::array<bool, NMETAL> metused{};
 	std::array<bool, NWOOD> woodused{};
 	rogue::Items &items = game().items;
 
 	for (Stick w : kinds<Stick>())
 	{
+		std::string_view str;
 		for (;;)
 			if (rnd(2) == 0)
 			{
-				j = rnd(NMETAL);
+				unsigned int j = rnd(NMETAL);
 				if (!metused[j])
 				{
 					items.ws_type[w] = "wand";
@@ -443,7 +438,7 @@ init_materials()
 			}
 			else
 			{
-				j = rnd(NWOOD);
+				unsigned int j = rnd(NWOOD);
 				if (!woodused[j])
 				{
 					items.ws_type[w] = "staff";

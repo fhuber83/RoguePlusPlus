@@ -34,8 +34,6 @@ armor_class(int ac)
 void
 status()
 {
-	rogue::ui::Status st;
-	int ac;
 	rogue::Player &player = game().player;
 
 	SIG2();
@@ -43,8 +41,9 @@ status()
 	/*
 	 * The armor class shown ignores rings of protection, as it always did
 	 */
-	ac = player.armor_item() ? player.armor_item()->o_ac : player.body.t_stats.s_arm;
+	int ac = player.armor_item() ? player.armor_item()->o_ac : player.body.t_stats.s_arm;
 
+	rogue::ui::Status st;
 	st.level = game().level.depth;
 	st.hp = player.body.t_stats.s_hpt;
 	st.hp_max = player.body.t_stats.s_maxhp;

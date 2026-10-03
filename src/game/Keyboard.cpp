@@ -34,13 +34,10 @@ flush_type()
 unsigned char
 readchar()
 {
-	int xch;
-	unsigned char ch;
-
 	if (std::string &typeahead = game().turn.typeahead; !typeahead.empty()) {
 		SIG2();
 		ui::display().flush();
-		ch = typeahead.front();
+		unsigned char ch = typeahead.front();
 		typeahead.erase(0, 1);
 		return ch;
 	}
@@ -48,13 +45,14 @@ readchar()
 	 * while there are no characters in the type ahead buffer
 	 * update the status line at the bottom of the screen
 	 */
+	int xch;
 	do
 	{
 		SIG2();  /* Rogue spends a lot of time here */
 		ui::display().flush();
 	}
 	while ((xch = ui::input().read_key(250)) == ui::key::None);
-	ch = ui::command_char(xch);
+	unsigned char ch = ui::command_char(xch);
 	if (ch == ESCAPE)
 		game().turn.count = 0;
 	return ch;

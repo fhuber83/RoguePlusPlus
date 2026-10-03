@@ -115,12 +115,10 @@ namespace {
 unsigned char
 com_char()
 {
-	bool same;
-	unsigned char ch;
 	rogue::Turn &turn = game().turn;
 
-	same = (turn.fast_mode == turn.fast_state);
-	ch = readchar();
+	bool same = (turn.fast_mode == turn.fast_state);
+	unsigned char ch = readchar();
 	if (same)
 		turn.fast_mode = turn.fast_state;
 	else
@@ -143,8 +141,7 @@ com_char()
 unsigned char
 get_prefix()
 {
-	int junk;
-	unsigned char retch, ch;
+	unsigned char retch;
 	rogue::Turn &turn = game().turn;
 
 	turn.after = true;
@@ -170,14 +167,15 @@ get_prefix()
 			ui::display().flush();  // running ("H", "fh", "L", etc)
 		} else {
 			for (retch = 0; retch == 0; ) {
-				switch (ch = com_char()) {
+				switch (unsigned char ch = com_char()) {
 					case '0': case '1': case '2': case '3': case '4':
-					case '5': case '6': case '7': case '8': case '9':
-						junk = turn.count * 10;
+					case '5': case '6': case '7': case '8': case '9': {
+						int junk = turn.count * 10;
 						if ((junk += ch - '0') > 0 && junk < 10000)
 							turn.count = junk;
 						show_count();
 						break;
+					}
 					case 'f':
 						turn.fast_mode = !turn.fast_mode;
 						break;
@@ -236,13 +234,12 @@ show_count()
 void
 execcom()
 {
-	int ch;
 	rogue::Turn &turn = game().turn;
 	rogue::Player &player = game().player;
 	rogue::Level &level = game().level;
 
 	do {
-		ch = get_prefix();
+		int ch = get_prefix();
 		Command cmd = command_of(ch);
 		if (!takes_turn(cmd))
 			turn.after = false;
@@ -300,10 +297,7 @@ execcom()
 		case Command::Rest: rules::doctor(); break;
 		case Command::IdentifyTrap:
 			if (get_dir()) {
-				Coord lookat;
-
-				lookat.y = player.body.t_pos.y + turn.delta.y;
-				lookat.x = player.body.t_pos.x + turn.delta.x;
+				Coord lookat = player.body.t_pos + turn.delta;
 				if (level.at(lookat) != TRAP)
 					msg("no trap there.");
 				else

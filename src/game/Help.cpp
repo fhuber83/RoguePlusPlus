@@ -131,8 +131,6 @@ const std::array<HelpLine, 23> helpobjs = {{
 void
 help(std::span<const HelpLine> lines)
 {
-	int hrow, hcol;
-	bool isfull;
 	unsigned char answer = 0;
 
 	ui::display().open_page();
@@ -141,13 +139,14 @@ help(std::span<const HelpLine> lines)
 		const HelpLine &line = lines[hcount];
 		bool last = hcount + 1 == std::ssize(lines);
 
-		isfull = false;
+		bool isfull = false;
 		if ((hcount % (game().options.terse?23:46)) == 0)
 			ui::display().clear_page();
 		/*
 		 * determine row and column
 		 */
-		hcol = 0;
+		int hrow;
+		int hcol = 0;
 		if (game().options.terse)
 		{
 			hrow = hcount % 23;

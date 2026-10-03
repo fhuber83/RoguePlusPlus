@@ -29,9 +29,11 @@ Maybe<T>
 talloc(Slots<T, MAXITEMS> &slots)
 {
 	Pool &pool = game().pool;
-	T *thing;
 
-	if (pool.total >= MAXITEMS || (thing = slots.take()) == nullptr)
+	if (pool.total >= MAXITEMS)
+		return std::nullopt;
+	T *thing = slots.take();
+	if (thing == nullptr)
 		return std::nullopt;
 	++pool.total;
 	return *thing;

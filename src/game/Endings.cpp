@@ -84,12 +84,11 @@ pr_scores(int newrank, const std::vector<ScoreEntry> &top10)
 	std::string dthstr;
 	std::vector<std::string> texts;
 	std::vector<ui::ScoreLine> lines;
-	std::optional<std::string_view> altmsg;
 
 	texts.reserve(top10.size());	// the lines point into them
 	for (const ScoreEntry &sc : top10)
 	{
-		altmsg.reset();
+		std::optional<std::string_view> altmsg;
 		if (sc.gold <= 0)
 			break;
 		if (sc.depth >= 26)
@@ -228,12 +227,10 @@ score(int amount, int flags, char monst)
 void
 death(char monst)
 {
-	int year;
-
 	game().player.purse -= game().player.purse / 10;
 
 	ui::display().curtain_down();
-	year = static_cast<int>(std::chrono::year_month_day{
+	int year = static_cast<int>(std::chrono::year_month_day{
 		std::chrono::floor<std::chrono::days>(rogue::platform::local_time(rogue::platform::now()))}.year());
 	ui::display().draw_tombstone(game().options.name, killname(monst, true), game().player.purse, year);
 	ui::display().curtain_up();
@@ -249,10 +246,7 @@ death(char monst)
 void
 total_winner()
 {
-	Maybe<Item> obj;
-	int worth = 0;
-	unsigned char c;
-	int oldpurse;
+	int worth = 0;	/* kept from one item to the next */
 	rogue::Items &items = game().items;
 	rogue::Player &player = game().player;
 
@@ -260,8 +254,9 @@ total_winner()
 	wait_for(' ');
 	ui::display().clear_page();
 	ui::display().write_at(0, 0, "   Worth  Item");
-	oldpurse = player.purse;
-	for (c = 'a', obj = player.body.t_pack.first(); obj; c++, obj = player.body.t_pack.after(*obj))
+	int oldpurse = player.purse;
+	unsigned char c = 'a';
+	for (Maybe<Item> obj = player.body.t_pack.first(); obj; c++, obj = player.body.t_pack.after(*obj))
 	{
 	switch (obj->o_type)
 	{
@@ -367,9 +362,7 @@ std::string
 killname(unsigned char monst, bool doart)
 {
 	std::string_view sp;
-	bool article;
-
-	article = true;
+	bool article = true;
 	switch (monst)
 	{
 	case 'a':

@@ -20,7 +20,6 @@
 #include "game/Pool.hpp"
 #include "game/StatusLine.hpp"
 #include "items/ItemCatalog.hpp"
-#include "items/Kinds.hpp"
 #include "items/effects/Potion.hpp"
 #include "ui/Display.hpp"
 #include "world/Map.hpp"

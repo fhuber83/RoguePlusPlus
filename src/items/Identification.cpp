@@ -1,4 +1,33 @@
-#include "rogue.h"
+#include "items/Identification.hpp"
+
+#include <algorithm>
+#include <array>
+#include <format>
+#include <optional>
+#include <span>
+#include <string>
+#include <string_view>
+
+#include "core/Ascii.hpp"
+#include "core/Config.hpp"
+#include "core/Coord.hpp"
+#include "core/Glyphs.hpp"
+#include "core/KindTable.hpp"
+#include "core/Maybe.hpp"
+#include "core/Text.hpp"
+#include "entities/Item.hpp"
+#include "entities/MonsterCatalog.hpp"
+#include "game/Game.hpp"
+#include "game/Keyboard.hpp"
+#include "game/Messages.hpp"
+#include "items/Inventory.hpp"
+#include "items/ItemCatalog.hpp"
+#include "items/Kinds.hpp"
+#include "items/effects/Ring.hpp"
+#include "items/effects/Wand.hpp"
+#include "items/effects/Weapon.hpp"
+#include "ui/Display.hpp"
+#include "ui/Input.hpp"
 
 namespace rogue::items {
 
@@ -86,14 +115,14 @@ inv_name(const Item &obj, bool drop)
 		else
 			name = std::format("A{} ", vowelstr(w_names[which]));
 		if (obj.o_flags.test(ItemFlag::Known))
-			name += std::format("{} {}", num(obj.o_hplus, obj.o_dplus, WEAPON),
+			name += std::format("{} {}", items::effects::num(obj.o_hplus, obj.o_dplus, WEAPON),
 				w_names[which]);
 		else
 			name += w_names[which];
 		if (obj.o_count > 1)
 			name += "s";
 		if (obj.o_enemy && obj.o_flags.test(ItemFlag::Revealed))
-			name += std::format(" of {} slaying", monsters[obj.o_enemy-'A'].m_name);
+			name += std::format(" of {} slaying", entities::monsters[obj.o_enemy-'A'].m_name);
 		break;
 	}
 	case ItemKind::Armor: {
@@ -102,10 +131,10 @@ inv_name(const Item &obj, bool drop)
 		if (!obj.o_flags.test(ItemFlag::Known))
 			name = a_names[which];
 		else if (brief)
-			name = std::format("{} {}", num(a_class[which] - obj.o_ac, 0, ARMOR),
+			name = std::format("{} {}", items::effects::num(a_class[which] - obj.o_ac, 0, ARMOR),
 				a_names[which]);
 		else
-			name = std::format("{} {} [armor class {}]", num(a_class[which] - obj.o_ac, 0, ARMOR),
+			name = std::format("{} {} [armor class {}]", items::effects::num(a_class[which] - obj.o_ac, 0, ARMOR),
 				a_names[which], -(obj.o_ac-11));
 		break;
 	}
@@ -117,9 +146,9 @@ inv_name(const Item &obj, bool drop)
 
 		name = std::format("A{} {} ", vowelstr(items.ws_type[which]), items.ws_type[which]);
 		if (items.ws_know[which])
-			name += brief ? std::format("of {}{}", items.ws_magic[which].mi_name, charge_str(obj))
+			name += brief ? std::format("of {}{}", items.ws_magic[which].mi_name, items::effects::charge_str(obj))
 				: std::format("of {}{}({})", items.ws_magic[which].mi_name,
-					charge_str(obj), items.ws_made[which]);
+					items::effects::charge_str(obj), items.ws_made[which]);
 		else if (!items.ws_guess[which].empty())
 			name += brief ? std::format("called {}", items.ws_guess[which])
 				: std::format("called {}({})", items.ws_guess[which], items.ws_made[which]);
@@ -137,8 +166,8 @@ inv_name(const Item &obj, bool drop)
 		Ring which = obj.which<Ring>();
 
 		if (items.r_know[which])
-			name = brief ? std::format("A{} ring of {}", ring_num(obj), items.r_magic[which].mi_name)
-				: std::format("A{} ring of {}({})", ring_num(obj),
+			name = brief ? std::format("A{} ring of {}", items::effects::ring_num(obj), items.r_magic[which].mi_name)
+				: std::format("A{} ring of {}({})", items::effects::ring_num(obj),
 					items.r_magic[which].mi_name, items.r_stones[which]);
 		else if (!items.r_guess[which].empty())
 			name = brief ? std::format("A ring called {}", items.r_guess[which])
@@ -293,27 +322,27 @@ add_line(std::string_view use, std::optional<std::string_view> line)
 	unsigned char retchar = ' ';
 	if (line_cnt == 0)
 	{
-		display().open_page();
-		display().clear_page();
+		ui::display().open_page();
+		ui::display().clear_page();
 	}
 	if (line_cnt >= MAXLINES - 1 || !line)
 	{
 		if (!use.empty())
-			display().write_at(MAXLINES-1, 0,
+			ui::display().write_at(MAXLINES-1, 0,
 				std::format("-Select item to {}. Esc to cancel-", use));
 		else
-			display().write_at(MAXLINES-1, 0, "-Press space to continue-");
+			ui::display().write_at(MAXLINES-1, 0, "-Press space to continue-");
 		do
 			retchar = readchar();
 		while (retchar != ESCAPE && retchar != ' ' && (!is_lower(retchar)));
-		display().clear_page();
+		ui::display().clear_page();
 		line_cnt = 0;
 	}
 	if (line && !(line_cnt == 0 && line->empty()))
 	{
 		Coord end;
 
-		end = display().write_at(line_cnt, 0, *line);
+		end = ui::display().write_at(line_cnt, 0, *line);
 		/*
 		 * if the line wrapped but nothing was printed on this
 		 * line you might as well use it for the next item
@@ -334,7 +363,7 @@ end_line(std::string_view use)
 	int retchar;
 
 	retchar = add_line(use, std::nullopt);
-	display().close_page();
+	ui::display().close_page();
 	line_cnt = 0;
 	return(retchar);
 }
@@ -376,7 +405,7 @@ call_it(bool know, std::string &guess)
 		guess.clear();
 	else if (!know && guess.empty()) {
 		msg("{}call it? ",noterse("what do you want to "));
-		if (auto name = input().read_line(MAXNAME))
+		if (auto name = ui::input().read_line(MAXNAME))
 			guess = *name;
 		msg("");
 	}
@@ -438,7 +467,7 @@ call()
 	}
 	msg("Was called \"{}\"", elsewise);
 	msg("what do you want to call it? ");
-	if (auto name = input().read_line(MAXNAME); name && !name->empty())
+	if (auto name = ui::input().read_line(MAXNAME); name && !name->empty())
 		guess[obj->o_which] = *name;
 	msg("");
 }

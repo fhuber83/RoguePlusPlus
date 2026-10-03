@@ -1,4 +1,31 @@
-#include "rogue.h"
+#include "items/effects/Scroll.hpp"
+
+#include <optional>
+#include <string_view>
+
+#include "core/Coord.hpp"
+#include "core/Glyphs.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Item.hpp"
+#include "entities/MonsterAI.hpp"
+#include "entities/MonsterCatalog.hpp"
+#include "game/Game.hpp"
+#include "game/Messages.hpp"
+#include "game/Pool.hpp"
+#include "game/StatusLine.hpp"
+#include "items/Identification.hpp"
+#include "items/Inventory.hpp"
+#include "items/ItemCatalog.hpp"
+#include "items/Kinds.hpp"
+#include "items/effects/Weapon.hpp"
+#include "rules/Durations.hpp"
+#include "ui/Display.hpp"
+#include "world/Look.hpp"
+#include "world/Map.hpp"
+#include "world/MapFlags.hpp"
+#include "world/RoomRef.hpp"
+#include "world/Rooms.hpp"
 
 namespace rogue::items::effects {
 
@@ -60,7 +87,7 @@ read_scroll()
 		for (x = player.body.t_pos.x - 3; x <= player.body.t_pos.x + 3; x++)
 			if (x >= 0 && x < MAXCOLS)
 				for (y = player.body.t_pos.y - 3; y <= player.body.t_pos.y + 3; y++)
-					if ((y > 0 && y < maxrow) && (mo = moat(y, x))) {
+					if ((y > 0 && y < maxrow) && (mo = entities::moat(y, x))) {
 						mo->t_flags.unset(CreatureFlag::Running);
 						mo->t_flags.set(CreatureFlag::Held);
 					}
@@ -70,16 +97,16 @@ read_scroll()
 		 * Scroll which makes you fall asleep
 		 */
 		items.s_know[Scroll::Sleep] = true;
-		player.no_command += rnd(sleep_time()) + 4;
+		player.no_command += rnd(rules::sleep_time()) + 4;
 		player.body.t_flags.unset(CreatureFlag::Running);
 		msg("you fall asleep");
 		break;
 	case Scroll::CreateMonster:
 		{
-		std::optional<Coord> mp = plop_monster(player.body.t_pos.y, player.body.t_pos.x);
+		std::optional<Coord> mp = entities::plop_monster(player.body.t_pos.y, player.body.t_pos.x);
 
 		if (mp && (mo = new_creature()))
-			new_monster(*mo, randmonster(false), *mp);
+			entities::new_monster(*mo, entities::randmonster(false), *mp);
 		else
 			ifterse("you hear a faint cry of anguish",
 				"you hear a faint cry of anguish in the distance");
@@ -106,7 +133,7 @@ read_scroll()
 		 */
 		for (y = 1; y < maxrow; y++)
 			for (x = 0; x < MAXCOLS; x++) {
-				index = INDEX(y, x);
+				index = world::INDEX(y, x);
 				switch (ch = level.map[index])
 				{
 				case VWALL:
@@ -123,7 +150,7 @@ read_scroll()
 				case DOOR:
 				case PASSAGE:
 				case STAIRS:
-					if ((mo = moat(y, x)))
+					if ((mo = entities::moat(y, x)))
 						if (mo->t_oldch == ' ')
 							mo->t_oldch = ch;
 					break;
@@ -131,9 +158,9 @@ read_scroll()
 					ch = ' ';
 				}
 				if (ch != ' ')
-					display().draw_tile({x, y}, ch,
-							(ch == DOOR && display().tile_at({x, y}) != DOOR)
-								? TileStyle::Inverse : TileStyle::Normal);
+					ui::display().draw_tile({x, y}, ch,
+							(ch == DOOR && ui::display().tile_at({x, y}) != DOOR)
+								? ui::TileStyle::Inverse : ui::TileStyle::Normal);
 			}
 		break;
 	case Scroll::FoodDetection:
@@ -144,11 +171,11 @@ read_scroll()
 		for (op = level.objects.first(); op; op = level.objects.after(*op)) {
 			if (op->o_type == ItemKind::Food) {
 				ch = true;
-				display().draw_tile(op->o_pos, FOOD, TileStyle::Inverse);
+				ui::display().draw_tile(op->o_pos, FOOD, ui::TileStyle::Inverse);
 			} else /* as a bonus this will detect amulets as well */
 			if (op->o_type == ItemKind::Amulet) {
 				ch = true;
-				display().draw_tile(op->o_pos, AMULET, TileStyle::Inverse);
+				ui::display().draw_tile(op->o_pos, AMULET, ui::TileStyle::Inverse);
 			}
 		}
 		if (ch) {
@@ -166,7 +193,7 @@ read_scroll()
 		std::optional<RoomRef> cur_room;
 
 		cur_room = player.body.t_room;
-		teleport();
+		world::teleport();
 		if (cur_room != player.body.t_room)
 			items.s_know[Scroll::Teleportation] = true;
 		}
@@ -207,7 +234,7 @@ read_scroll()
 		 * This scroll aggravates all the monsters on the current
 		 * level and sets them running towards the hero
 		 */
-		aggravate();
+		entities::aggravate();
 		ifterse("you hear a humming noise",
 					"you hear a high pitched humming noise");
 		break;
@@ -242,7 +269,7 @@ read_scroll()
 				discard(*player.weapon_item());
 				player.weapon = std::nullopt;
 			} else {
-				player.weapon_item()->o_enemy = pick_mons();
+				player.weapon_item()->o_enemy = entities::pick_mons();
 				player.weapon_item()->o_hplus++;
 				player.weapon_item()->o_dplus++;
 				player.weapon_item()->charges() = 1;
@@ -268,7 +295,7 @@ read_scroll()
 		msg("what a puzzling scroll!");
 		return;
 	}
-	look(true);	/* put the result of the scroll on the screen */
+	world::look(true);	/* put the result of the scroll on the screen */
 	status();
 	/*
 	 * Get rid of the thing

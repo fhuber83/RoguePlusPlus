@@ -1,4 +1,28 @@
-#include "rogue.h"
+#include "items/Inventory.hpp"
+
+#include <format>
+#include <optional>
+#include <string_view>
+
+#include "core/Config.hpp"
+#include "core/Glyphs.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Creature.hpp"
+#include "entities/Item.hpp"
+#include "entities/List.hpp"
+#include "game/Game.hpp"
+#include "game/Keyboard.hpp"
+#include "game/Messages.hpp"
+#include "game/Pool.hpp"
+#include "items/Identification.hpp"
+#include "items/Kinds.hpp"
+#include "items/effects/Armor.hpp"
+#include "rules/Conditions.hpp"
+#include "rules/Scheduler.hpp"
+#include "rules/Strength.hpp"
+#include "ui/Display.hpp"
+#include "world/Map.hpp"
+#include "world/Room.hpp"
 
 namespace rogue::items {
 
@@ -90,7 +114,7 @@ add_pack(Maybe<Item> given, bool silent)
 	if (!given)
 	{
 		from_floor = true;
-		if (!(obj = find_obj(player.body.t_pos.y, player.body.t_pos.x)))
+		if (!(obj = world::find_obj(player.body.t_pos.y, player.body.t_pos.x)))
 			return;
 	}
 	else
@@ -128,7 +152,7 @@ add_pack(Maybe<Item> given, bool silent)
 				if (from_floor)
 				{
 					level.objects.remove(*obj);
-					display().draw_tile(player.body.t_pos, floor);
+					ui::display().draw_tile(player.body.t_pos, floor);
 					level.at(player.body.t_pos) = floor;
 				}
 				discard(*obj);
@@ -153,7 +177,7 @@ add_pack(Maybe<Item> given, bool silent)
 		if (obj->o_flags.test(rogue::ItemFlag::Found))
 		{
 			level.objects.remove(*obj);
-			display().draw_tile(player.body.t_pos, floor);
+			ui::display().draw_tile(player.body.t_pos, floor);
 			level.at(player.body.t_pos) = floor;
 			msg("the scroll turns to dust{}.", noterse(" as you pick it up"));
 			return;
@@ -166,7 +190,7 @@ add_pack(Maybe<Item> given, bool silent)
 	if (from_floor)
 	{
 		level.objects.remove(*obj);
-		display().draw_tile(player.body.t_pos, floor);
+		ui::display().draw_tile(player.body.t_pos, floor);
 		level.at(player.body.t_pos) = floor;
 	}
 	/*
@@ -284,7 +308,7 @@ pick_up(unsigned char ch)
 	{
 		Maybe<Creature> mp;
 
-		if (!(obj = find_obj(player.body.t_pos.y, player.body.t_pos.x)))
+		if (!(obj = world::find_obj(player.body.t_pos.y, player.body.t_pos.x)))
 		return;
 		money(obj->gold_value());
 		/*
@@ -430,7 +454,7 @@ money(int value)
 
 	floor = game().level.room(*player.body.t_room).r_flags.test(RoomFlag::Gone) ? PASSAGE : FLOOR;
 	player.purse += value;
-	display().draw_tile(player.body.t_pos, floor);
+	ui::display().draw_tile(player.body.t_pos, floor);
 	game().level.at(player.body.t_pos) = floor;
 	if (value > 0)
 	{
@@ -509,7 +533,7 @@ can_drop(const Item &op)
 	if (refers_to(player.weapon_item(), op))
 		player.weapon = std::nullopt;
 	else if (refers_to(player.armor_item(), op)) {
-		waste_time();
+		items::effects::waste_time();
 		player.armor = std::nullopt;
 	} else {
 		Hand hand;
@@ -523,11 +547,11 @@ can_drop(const Item &op)
 		player.rings[hand] = std::nullopt;
 		switch (op.which<Ring>()) {
 		case Ring::AddStrength:
-			chg_str(-op.o_ac);
+			rules::chg_str(-op.o_ac);
 			break;
 		case Ring::SeeInvisible:
-			unsee();
-			extinguish(Event::Unsee);
+			rules::unsee();
+			rules::extinguish(rules::Event::Unsee);
 			break;
 		default:
 			break;

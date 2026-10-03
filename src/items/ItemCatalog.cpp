@@ -1,4 +1,22 @@
-#include "rogue.h"
+#include "items/ItemCatalog.hpp"
+
+#include <array>
+#include <cstddef>
+#include <optional>
+#include <span>
+#include <string_view>
+
+#include "core/Config.hpp"
+#include "core/KindTable.hpp"
+#include "core/Maybe.hpp"
+#include "entities/Item.hpp"
+#include "game/Game.hpp"
+#include "game/Messages.hpp"
+#include "game/Pool.hpp"
+#include "items/KindInfo.hpp"
+#include "items/Kinds.hpp"
+#include "items/effects/Wand.hpp"
+#include "items/effects/Weapon.hpp"
 
 namespace rogue::items {
 
@@ -222,7 +240,7 @@ new_thing()
 	case 3:
 		cur->o_type = ItemKind::Weapon;
 		cur->set_which(static_cast<WeaponType>(rnd(kind_count<WeaponType>)));
-		init_weapon(*cur, cur->which<WeaponType>());
+		items::effects::init_weapon(*cur, cur->which<WeaponType>());
 		if ((k = rnd(100)) < 10)
 		{
 			cur->o_flags.set(ItemFlag::Cursed);
@@ -284,7 +302,7 @@ new_thing()
 	case 6:
 		cur->o_type = ItemKind::Stick;
 		cur->set_which(pick_one(items.ws_magic));
-		fix_stick(*cur);
+		items::effects::fix_stick(*cur);
 		break;
 	default:
 		if constexpr (rogue::config::debug_checks) {
